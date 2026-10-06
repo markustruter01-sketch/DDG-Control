@@ -31,6 +31,76 @@ export interface Project {
   created_at: string | null;
 }
 
+export interface Error {
+  error: string;
+}
+
+export interface Member {
+  id: number;
+  name: string;
+  /** Must be one of MEMBER_KINDS from the shared project constants. */
+  kind: string;
+  /** @nullable */
+  created_at: string | null;
+}
+
+export interface Task {
+  id: number;
+  project_id: number;
+  title: string;
+  /** @nullable */
+  notes: string | null;
+  /** Must be one of TASK_STATUSES from the shared project constants. */
+  status: string;
+  owner_id: number;
+  /** @nullable */
+  due_date: string | null;
+  /** @nullable */
+  completed_at: string | null;
+  /** @nullable */
+  created_at: string | null;
+  /** @nullable */
+  updated_at: string | null;
+}
+
+export interface TaskInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /** @minimum 1 */
+  owner_id: number;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  notes?: string | null;
+  /** Must be one of TASK_STATUSES from the shared project constants. */
+  status?: string;
+  /** @nullable */
+  due_date?: string | null;
+}
+
+export interface TaskUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  notes?: string | null;
+  /** Must be one of TASK_STATUSES from the shared project constants. */
+  status?: string;
+  /** @minimum 1 */
+  owner_id?: number;
+  /** @nullable */
+  due_date?: string | null;
+}
+
 export type GetProject404 = {
   error: 'not found';
 };

@@ -6,9 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './error';
 export * from './getProject404';
 export * from './healthStatus';
+export * from './member';
 export * from './project';
 export * from './projectUpdateRequest';
+export * from './task';
+export * from './taskInput';
+export * from './taskUpdate';
 export * from './updateProject400';
 export * from './updateProject404';

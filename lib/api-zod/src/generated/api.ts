@@ -80,3 +80,113 @@ export const UpdateProjectResponse = zod.object({
 })
 
 
+/**
+ * Returns all task owners sorted by id.
+ * @summary List task owners
+ */
+export const ListMembersResponseItem = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "kind": zod.string().describe('Must be one of MEMBER_KINDS from the shared project constants.'),
+  "created_at": zod.coerce.date().nullable()
+})
+export const ListMembersResponse = zod.array(ListMembersResponseItem)
+
+
+/**
+ * @summary List project tasks
+ */
+export const ListProjectTasksParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const ListProjectTasksResponseItem = zod.object({
+  "id": zod.number().int(),
+  "project_id": zod.number().int(),
+  "title": zod.string(),
+  "notes": zod.string().nullable(),
+  "status": zod.string().describe('Must be one of TASK_STATUSES from the shared project constants.'),
+  "owner_id": zod.number().int(),
+  "due_date": zod.coerce.date().nullable(),
+  "completed_at": zod.coerce.date().nullable(),
+  "created_at": zod.coerce.date().nullable(),
+  "updated_at": zod.coerce.date().nullable()
+})
+export const ListProjectTasksResponse = zod.array(ListProjectTasksResponseItem)
+
+
+/**
+ * @summary Create a project task
+ */
+export const CreateProjectTaskParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const createProjectTaskBodyTitleMax = 200;
+
+
+export const createProjectTaskBodyNotesMax = 2000;
+
+
+
+export const CreateProjectTaskBody = zod.object({
+  "title": zod.string().min(1).max(createProjectTaskBodyTitleMax),
+  "owner_id": zod.number().int().min(1),
+  "notes": zod.string().max(createProjectTaskBodyNotesMax).nullish(),
+  "status": zod.string().optional().describe('Must be one of TASK_STATUSES from the shared project constants.'),
+  "due_date": zod.coerce.date().nullish()
+})
+
+export const CreateProjectTaskResponse = zod.object({
+  "id": zod.number().int(),
+  "project_id": zod.number().int(),
+  "title": zod.string(),
+  "notes": zod.string().nullable(),
+  "status": zod.string().describe('Must be one of TASK_STATUSES from the shared project constants.'),
+  "owner_id": zod.number().int(),
+  "due_date": zod.coerce.date().nullable(),
+  "completed_at": zod.coerce.date().nullable(),
+  "created_at": zod.coerce.date().nullable(),
+  "updated_at": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Update a task
+ */
+
+
+
+export const UpdateTaskParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const updateTaskBodyTitleMax = 200;
+
+export const updateTaskBodyNotesMax = 2000;
+
+
+
+
+export const UpdateTaskBody = zod.object({
+  "title": zod.string().min(1).max(updateTaskBodyTitleMax).optional(),
+  "notes": zod.string().max(updateTaskBodyNotesMax).nullish(),
+  "status": zod.string().optional().describe('Must be one of TASK_STATUSES from the shared project constants.'),
+  "owner_id": zod.number().int().min(1).optional(),
+  "due_date": zod.coerce.date().nullish()
+})
+
+export const UpdateTaskResponse = zod.object({
+  "id": zod.number().int(),
+  "project_id": zod.number().int(),
+  "title": zod.string(),
+  "notes": zod.string().nullable(),
+  "status": zod.string().describe('Must be one of TASK_STATUSES from the shared project constants.'),
+  "owner_id": zod.number().int(),
+  "due_date": zod.coerce.date().nullable(),
+  "completed_at": zod.coerce.date().nullable(),
+  "created_at": zod.coerce.date().nullable(),
+  "updated_at": zod.coerce.date().nullable()
+})
+
+

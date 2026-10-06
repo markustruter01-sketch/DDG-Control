@@ -1,4 +1,4 @@
-import { db, projectsTable, type Project } from "@workspace/db";
+import { db, membersTable, projectsTable, type Project } from "@workspace/db";
 import {
   GetProjectParams,
   GetProjectResponse,
@@ -6,7 +6,11 @@ import {
   UpdateProjectParams,
   UpdateProjectResponse,
 } from "@workspace/api-zod";
-import { PROJECT_STATUSES, type ProjectStatus } from "@workspace/project-constants";
+import {
+  MEMBER_KINDS,
+  PROJECT_STATUSES,
+  type ProjectStatus,
+} from "@workspace/project-constants";
 import { eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 
@@ -43,6 +47,11 @@ const initialProjects: Array<typeof projectsTable.$inferInsert> = [
   },
 ];
 
+const initialMembers: Array<typeof membersTable.$inferInsert> = [
+  { name: "Markus", kind: MEMBER_KINDS[0] },
+  { name: "Dad", kind: MEMBER_KINDS[0] },
+];
+
 export async function seedProjectsIfEmpty(): Promise<void> {
   const existing = await db
     .select({ id: projectsTable.id })
@@ -51,6 +60,15 @@ export async function seedProjectsIfEmpty(): Promise<void> {
 
   if (existing.length === 0) {
     await db.insert(projectsTable).values(initialProjects);
+  }
+
+  const existingMembers = await db
+    .select({ id: membersTable.id })
+    .from(membersTable)
+    .limit(1);
+
+  if (existingMembers.length === 0) {
+    await db.insert(membersTable).values(initialMembers);
   }
 }
 

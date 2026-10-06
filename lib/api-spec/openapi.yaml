@@ -12,6 +12,10 @@ tags:
     description: Health operations
   - name: projects
     description: Project operations
+  - name: members
+    description: Member operations
+  - name: tasks
+    description: Task operations
 paths:
   /healthz:
     get:
@@ -119,6 +123,119 @@ paths:
                     type: string
                     const: not found
                 required: [error]
+  /members:
+    get:
+      operationId: listMembers
+      tags: [members]
+      summary: List task owners
+      description: Returns all task owners sorted by id.
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Member"
+  /projects/{slug}/tasks:
+    get:
+      operationId: listProjectTasks
+      tags: [tasks]
+      summary: List project tasks
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project tasks sorted by status, then creation time.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createProjectTask
+      tags: [tasks]
+      summary: Create a project task
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Invalid task input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /tasks/{id}:
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Invalid task update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   schemas:
     ProjectUpdateRequest:
@@ -164,4 +281,107 @@ components:
         - status
         - sort_order
         - created_at
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        error:
+          type: string
+      required: [error]
+    Member:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        kind:
+          type: string
+          description: Must be one of MEMBER_KINDS from the shared project constants.
+        created_at:
+          type: ["string", "null"]
+          format: date-time
+      required: [id, name, kind, created_at]
+    Task:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        project_id:
+          type: integer
+        title:
+          type: string
+        notes:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: Must be one of TASK_STATUSES from the shared project constants.
+        owner_id:
+          type: integer
+        due_date:
+          type: ["string", "null"]
+          format: date
+        completed_at:
+          type: ["string", "null"]
+          format: date-time
+        created_at:
+          type: ["string", "null"]
+          format: date-time
+        updated_at:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - id
+        - project_id
+        - title
+        - notes
+        - status
+        - owner_id
+        - due_date
+        - completed_at
+        - created_at
+        - updated_at
+    TaskInput:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        owner_id:
+          type: integer
+          minimum: 1
+        notes:
+          type: ["string", "null"]
+          maxLength: 2000
+        status:
+          type: string
+          description: Must be one of TASK_STATUSES from the shared project constants.
+        due_date:
+          type: ["string", "null"]
+          format: date
+      required: [title, owner_id]
+    TaskUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        notes:
+          type: ["string", "null"]
+          maxLength: 2000
+        status:
+          type: string
+          description: Must be one of TASK_STATUSES from the shared project constants.
+        owner_id:
+          type: integer
+          minimum: 1
+        due_date:
+          type: ["string", "null"]
+          format: date
 
