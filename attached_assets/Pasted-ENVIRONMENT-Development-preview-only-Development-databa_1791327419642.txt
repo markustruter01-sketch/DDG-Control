@@ -1,0 +1,74 @@
+ENVIRONMENT
+Development preview only. Development database only. Do not publish.
+
+GOAL
+Build the To-do tab on each project page, so I can add tasks, edit them, and see them grouped by status.
+
+DONE WHEN
+In the preview, on /projects/cattle-dog-coffee in the To-do tab:
+- I add a task with a title and an owner, and it appears under "Planned".
+- I edit it to status "Done", and it moves under "Done" with a completed date.
+- After I refresh the page, it is still there.
+
+SCOPE
+- lib/project-constants/src/index.ts
+- artifacts/ddg-control/src/App.tsx
+- artifacts/ddg-control/src/ddg.css (styles only, if needed)
+
+DO NOT
+- Do not change any API route, OpenAPI spec, database schema or seed.
+- Do not change the other tabs.
+- Do not parse due_date into a JavaScript Date. It is a plain YYYY-MM-DD string, and converting it can shift the day.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. In lib/project-constants/src/index.ts, add TASK_STATUS_LABELS with one label for each value in TASK_STATUSES:
+   - planned: "Planned"
+   - in_progress: "In progress"
+   - needs_approval: "Needs approval"
+   - done: "Done"
+   - blocked: "Blocked"
+   Type it so a missing or extra status is a type error.
+
+2. In the To-do tab on the project page, load:
+   - the tasks, using the generated hook for GET /api/projects/:slug/tasks
+   - the members, using the generated hook for GET /api/members
+   Show the tasks in groups, one group per status in TASK_STATUSES order, with headings from TASK_STATUS_LABELS. Hide empty groups. If there are no tasks at all, show "No tasks yet".
+
+3. Each task row shows:
+   - the title
+   - the owner's name
+   - the due date if set, rebuilt from the YYYY-MM-DD string as "7 Oct 2026" without creating a Date
+   - for done tasks, "Completed" plus the completed_at date, formatted in the Australia/Brisbane timezone
+   Phone-first layout.
+
+4. Add an "Add task" button. It opens a form with:
+   - title (required)
+   - owner (a dropdown of members)
+   - due date (optional)
+   - notes (optional)
+   On save, call POST. On error, show the server's error text and keep the form open.
+
+5. Tapping a task opens an edit form with title, notes, status (dropdown from TASK_STATUSES using TASK_STATUS_LABELS), owner and due date.
+   - Save sends only the fields that changed.
+   - Clearing the due date sends null.
+   - On error, show the server's error text and keep the form open.
+
+6. After any create or edit succeeds, refresh this project's cached task list.
+
+7. Test:
+   a) GET /api/projects/cattle-dog-coffee/tasks. This is the "before" snapshot.
+   b) POST one test task with curl, titled "UI test task", owned by Markus. Write down its id. Take a screenshot of the To-do tab at 402 px width showing it under "Planned".
+   c) PATCH it to "done" with curl. Take a screenshot showing it under "Done" with a completed date.
+   d) In one transaction, delete only that id. Exactly 1 row must be deleted; otherwise roll back and report.
+   e) GET the task list again and show that it matches the snapshot from (a).
+
+8. Run `pnpm run typecheck` and show the result.
+   Read-only check: show whether `dist/` folders are listed in .gitignore (`grep -n "dist" .gitignore`), and show the raw output of `git status --short | head -50`. Change nothing.
+   Report every file you touched. If you touched any file outside SCOPE, say which and why.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command or URL you ran for each.
