@@ -4,6 +4,9 @@
   "files": [],
   "references": [
     {
+      "path": "./lib/project-constants"
+    },
+    {
       "path": "./lib/db"
     },
     {

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "DDG Control"
+description = "A project control home page that reads four project records from PostgreSQL and provides an overview page for each project."
+version = "1.0.0"
+id = "artifacts/ddg-control"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26196
+
+[services.development]
+run = "pnpm --filter @workspace/ddg-control run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ddg-control", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ddg-control/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26196"
+BASE_PATH = "/"
