@@ -87,6 +87,15 @@ a { color: inherit; text-decoration: none; }
 button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); outline-offset: 4px; }
 
 .app-shell { min-height: 100dvh; }
+.home-shell {
+  background-color: hsl(var(--background));
+  background-image:
+    linear-gradient(115deg, rgba(248, 246, 237, .58), rgba(248, 246, 237, .38)),
+    var(--home-background);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
 .topbar {
   height: 76px;
   display: flex;

@@ -15,7 +15,7 @@ const router: IRouter = Router();
 const initialProjects: Array<typeof projectsTable.$inferInsert> = [
   {
     slug: "hypest",
-    name: "DD - Hypest",
+    name: "DDG - Hypest",
     description: null,
     status: PROJECT_STATUSES[0],
     sort_order: 1,

@@ -1,0 +1,51 @@
+ENVIRONMENT
+Development preview only. Development database only. Do not publish.
+
+GOAL
+Make code generation run cleanly with no hand-edited generated files, and make the startup seed use the correct Hypest name.
+
+DONE WHEN
+- `pnpm --filter @workspace/api-spec run codegen` exits with code 0, including its built-in typecheck.
+- lib/api-client-react/src/generated/api.ts is exactly as codegen writes it, with no hand edits.
+- `pnpm run typecheck` passes.
+- The startup seed's Hypest row has the name "DDG - Hypest".
+
+SCOPE
+- The tsconfig.json that compiles lib/api-client-react. Its path is unknown: find it and report the path.
+- The file containing the startup seed code. Its path is unknown: find it and report the path.
+- Files that codegen rewrites. List every one.
+
+DO NOT
+- Do not hand-edit any generated file.
+- Do not change any compiler setting other than the lib list in step 2.
+- Do not change any other seed value.
+- Do not change any database rows.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Show the current compilerOptions.lib value used by lib/api-client-react. Include any base tsconfig it extends. Show each file path and the raw lines.
+
+2. Edit lib/api-client-react's own tsconfig so its lib list includes both "DOM" and "DOM.Iterable". Add only whichever is missing.
+   If that tsconfig has no lib of its own, add one that copies the inherited values exactly, then adds the missing entries.
+   Do not edit a shared base tsconfig.
+   Show the lib list before and after.
+
+3. Run `pnpm --filter @workspace/api-spec run codegen`. Show the full output and the exit code. This overwrites the earlier hand edit in api.ts; that is intended.
+
+4. Run `grep -n "Headers" lib/api-client-react/src/generated/api.ts` and show the raw output.
+
+5. In the startup seed code, change only the string "DD - Hypest" to "DDG - Hypest". Show the line before and after.
+
+6. Run `grep -rn "DD - Hypest" --exclude-dir=node_modules --exclude-dir=.agents .` and show the raw output. The expected result is no matches.
+
+7. Run `pnpm run typecheck` and show the result.
+
+8. Report:
+   - Every file you touched, and the two paths from SCOPE.
+   - Every file codegen rewrote.
+   - If you touched any file outside SCOPE, say which and why.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command or URL you ran for each.

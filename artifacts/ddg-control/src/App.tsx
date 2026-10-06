@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import {
@@ -41,9 +41,12 @@ function Home() {
   const projectsQuery = useListProjects({
     query: { queryKey: getListProjectsQueryKey() },
   });
+  const backgroundStyle = {
+    '--home-background': `url("${import.meta.env.BASE_URL}dashboard-background.jpg")`,
+  } as CSSProperties;
 
   return (
-    <div className="app-shell">
+    <div className="app-shell home-shell" style={backgroundStyle}>
       <Header />
       <main className="page-wrap home-main">
         <p className="eyebrow">Control panel</p>
