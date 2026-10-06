@@ -9,3 +9,6 @@
 export * from './getProject404';
 export * from './healthStatus';
 export * from './project';
+export * from './projectUpdateRequest';
+export * from './updateProject400';
+export * from './updateProject404';

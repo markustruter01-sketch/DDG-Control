@@ -5,6 +5,16 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface ProjectUpdateRequest {
+  /** Must be one of PROJECT_STATUSES from the shared project constants. */
+  status?: string;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  description?: string | null;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -22,6 +32,14 @@ export interface Project {
 }
 
 export type GetProject404 = {
+  error: 'not found';
+};
+
+export type UpdateProject400 = {
+  error: string;
+};
+
+export type UpdateProject404 = {
   error: 'not found';
 };
 

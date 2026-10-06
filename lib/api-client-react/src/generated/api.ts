@@ -6,11 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -18,11 +22,14 @@ import type {
 import type {
   GetProject404,
   HealthStatus,
-  Project
+  Project,
+  ProjectUpdateRequest,
+  UpdateProject400,
+  UpdateProject404
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -281,4 +288,100 @@ export function useGetProject<TData = Awaited<ReturnType<typeof getProject>>, TE
 
 
 
+
+export const getUpdateProjectUrl = (slug: string,) => {
+
+
+
+
+  return `/api/projects/${slug}`
+}
+
+/**
+ * Updates only the supplied project fields.
+ * @summary Update a project's status or description
+ */
+export const updateProject = async (slug: string,
+    projectUpdateRequest: ProjectUpdateRequest, options?: Parameters<typeof customFetch>[1]): Promise<Project> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) {
+      const headers: Record<string, string | readonly string[]> = {};
+      h.forEach((value, name) => {
+        headers[name] = value;
+      });
+      return headers;
+    }
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Project>(getUpdateProjectUrl(slug),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(projectUpdateRequest)
+  }
+);}
+
+
+
+
+
+export const getUpdateProjectMutationKey = () => ['updateProject'] as const;
+
+export const getUpdateProjectMutationOptions = <TError = ErrorType<UpdateProject400 | UpdateProject404>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProject>>, TError,UpdateProjectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProject>>, TError,UpdateProjectMutationVariables, TContext> => {
+
+const mutationKey = getUpdateProjectMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProject>>, UpdateProjectMutationVariables> = (props) => {
+          const {slug,data} = props ?? {};
+
+          return  updateProject(slug,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProjectMutationResult = NonNullable<Awaited<ReturnType<typeof updateProject>>>
+    export type UpdateProjectMutationBody = BodyType<ProjectUpdateRequest>
+    export type UpdateProjectMutationError = ErrorType<UpdateProject400 | UpdateProject404>
+    export type UpdateProjectMutationVariables = {slug: string;data: BodyType<ProjectUpdateRequest>}
+
+    /**
+ * @summary Update a project's status or description
+ */
+export const useUpdateProject = <TError = ErrorType<UpdateProject400 | UpdateProject404>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProject>>, TError,UpdateProjectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProject>>,
+        TError,
+        UpdateProjectMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateProjectMutationOptions(options));
+    }
 

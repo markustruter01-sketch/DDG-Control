@@ -52,3 +52,31 @@ export const GetProjectResponse = zod.object({
 })
 
 
+/**
+ * Updates only the supplied project fields.
+ * @summary Update a project's status or description
+ */
+export const UpdateProjectParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const updateProjectBodyDescriptionMax = 2000;
+
+
+
+export const UpdateProjectBody = zod.object({
+  "status": zod.string().optional().describe('Must be one of PROJECT_STATUSES from the shared project constants.'),
+  "description": zod.string().max(updateProjectBodyDescriptionMax).nullish()
+})
+
+export const UpdateProjectResponse = zod.object({
+  "id": zod.number().int(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "status": zod.string(),
+  "sort_order": zod.number().int(),
+  "created_at": zod.coerce.date().nullable()
+})
+
+

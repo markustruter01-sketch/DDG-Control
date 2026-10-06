@@ -11,7 +11,7 @@ tags:
   - name: health
     description: Health operations
   - name: projects
-    description: Project read operations
+    description: Project operations
 paths:
   /healthz:
     get:
@@ -66,6 +66,54 @@ paths:
             application/json:
               schema:
                 type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                    const: not found
+                required: [error]
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update a project's status or description
+      description: Updates only the supplied project fields.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdateRequest"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          description: Invalid update
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                required: [error]
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
                 properties:
                   error:
                     type: string
@@ -73,6 +121,16 @@ paths:
                 required: [error]
 components:
   schemas:
+    ProjectUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          description: Must be one of PROJECT_STATUSES from the shared project constants.
+        description:
+          type: ["string", "null"]
+          maxLength: 2000
     HealthStatus:
       type: object
       properties:

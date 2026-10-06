@@ -1,0 +1,70 @@
+ENVIRONMENT
+Development preview only. Development database only. Do not publish.
+
+GOAL
+On each project page, let me edit the project's status and description and save them.
+
+DONE WHEN
+In the preview:
+- On /projects/cattle-dog-coffee, I tap Edit, pick a status, type a description and tap Save. Both show straight away.
+- After I refresh the page, both are still there.
+- The home page tile for that project shows the new status badge.
+
+SCOPE
+- lib/api-spec/openapi.yaml
+- artifacts/api-server/src/routes/projects.ts
+- The frontend file that renders /projects/:slug. Its path is unknown: find it and report the path. Only change that one frontend file.
+- Files that `pnpm --filter @workspace/api-spec run codegen` creates, changes or removes. List every one.
+
+DO NOT
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not delete files by hand. Files removed by codegen are fine, but list them.
+- Do not change lib/db/src/schema/projects.ts, lib/project-constants/src/index.ts or the startup seed code.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. In lib/api-spec/openapi.yaml, add PATCH /api/projects/:slug. The body is an object that allows no extra properties. Its only two fields are both optional:
+   - status: one of PROJECT_STATUSES
+   - description: a string of at most 2000 characters, or null
+   Responses:
+   - 200 with the updated project
+   - 400 with {"error":"<reason>"}
+   - 404 with {"error":"not found"}
+
+2. Run `pnpm --filter @workspace/api-spec run codegen`.
+
+3. In artifacts/api-server/src/routes/projects.ts, implement the PATCH route. Do these checks in the route code itself, not only in the spec:
+   a) Unknown slug: return 404.
+   b) Any field other than status or description: return 400 and name the field.
+   c) Neither field sent: return 400 "nothing to update".
+   d) Status not in PROJECT_STATUSES: return 400.
+   e) Trim whitespace from description. An empty result is saved as null. Over 2000 characters after trimming: return 400.
+   f) Update only the fields that were sent, and return the updated row.
+
+4. On the project page, add an Edit button. It opens a small form with:
+   - A status dropdown built from PROJECT_STATUSES
+   - A description text box filled with the current value
+   - Save and Cancel buttons
+   On Save, send only the fields that changed. On success, refresh the cached data for this project and for the projects list, so this page and the home tiles both show the new values. On error, show the server's error text and keep the form open.
+
+5. Test with curl against the development server, and show the raw output of each:
+   a) GET /api/projects/cattle-dog-coffee. Write down its current status and description; these are the ORIGINAL values.
+   b) A valid PATCH to cattle-dog-coffee: status "active" plus a description. Expect 200.
+   c) PATCH with status "banana". Expect 400.
+   d) PATCH with an extra field "name". Expect 400.
+   e) PATCH with an empty body {}. Expect 400.
+   f) PATCH with a description of 2001 characters. Expect 400.
+   g) PATCH to slug "no-such-project". Expect 404.
+   h) PATCH cattle-dog-coffee back to its ORIGINAL values from step 5a, then GET it and show the result matches step 5a.
+
+6. Run `pnpm run typecheck` and show the result.
+
+7. Report:
+   - Every file you touched, and the path of the frontend file from SCOPE.
+   - Every file codegen created, changed or removed.
+   - If you touched any file outside SCOPE, say which and why.
+   - Read lib/db/src/schema/projects.ts and say whether the allowed status values are imported from PROJECT_STATUSES in lib/project-constants or typed out by hand. Show the exact lines. Change nothing.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command or URL you ran for each.
