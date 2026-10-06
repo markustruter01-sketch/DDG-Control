@@ -1,0 +1,1 @@
+- [Hypest project label](hypest-project-label.md) — use “DDG - Hypest” as the canonical project name.
