@@ -1,0 +1,67 @@
+ENVIRONMENT
+Development preview only. Development database only. Do not publish.
+
+GOAL
+Add the back end for project to-do lists: a members table for task owners, a tasks table, and the API to list, create and edit tasks.
+
+DONE WHEN
+- Every curl test in step 7 returns the expected HTTP code.
+- After cleanup in step 8, the Cattle Dog Coffee task list is the same as the "before" snapshot from step 7a.
+- `pnpm --filter @workspace/api-spec run codegen` exits with code 0.
+- `pnpm run typecheck` passes.
+
+SCOPE
+- lib/project-constants/src/index.ts
+- lib/db/src/schema/tasks.ts (new)
+- lib/db/src/schema/index.ts
+- lib/api-spec/openapi.yaml
+- artifacts/api-server/src/routes/tasks.ts (new)
+- artifacts/api-server/src/routes/index.ts
+- artifacts/api-server/src/routes/projects.ts (members seed only, in step 4)
+- Files that codegen rewrites. List every one.
+
+DO NOT
+- Do not build any frontend or To-do tab yet.
+- Do not add a DELETE endpoint.
+- Do not change the projects table, its rows or the existing project seed.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. In lib/project-constants/src/index.ts, add these two lists. Nothing else may define them.
+   - TASK_STATUSES = ["planned", "in_progress", "needs_approval", "done", "blocked"]
+   - MEMBER_KINDS = ["human", "agent"]
+
+2. Create lib/db/src/schema/tasks.ts and export it from lib/db/src/schema/index.ts. It defines two tables.
+
+   members:
+   - id: serial primary key
+   - name: text, not null, unique
+   - kind: text, not null, checked against MEMBER_KINDS (import it, same pattern as the projects status check)
+   - created_at: timestamp, default now
+
+   tasks:
+   - id: serial primary key
+   - project_id: integer, not null, references projects.id
+   - title: text, not null
+   - notes: text, may be null
+   - status: text, not null, default "planned", checked against TASK_STATUSES (import it)
+   - owner_id: integer, not null, references members.id
+   - due_date: date, may be null
+   - completed_at: timestamp, may be null
+   - created_at: timestamp, default now
+   - updated_at: timestamp, default now
+   Add no other columns.
+
+3. Run `pnpm --filter @workspace/db run push`. Show the raw output.
+
+4. In artifacts/api-server/src/routes/projects.ts, next to the existing project seed and using the same "only if the table is empty" pattern: if members is empty, insert ("Markus", "human") and ("Dad", "human"). Restart the server so the seed runs.
+
+5. In lib/api-spec/openapi.yaml, add these routes. Every request body allows no extra properties.
+   - GET /api/members: all members, sorted by id.
+   - GET /api/projects/:slug/tasks: that project's tasks, sorted by status in TASK_STATUSES order, then by created_at. Returns 404 for an unknown slug.
+   - POST /api/projects/:slug/tasks: body fields are title (required), owner_id (required), notes, status and due_date. Returns 201 with the task, 400 or 404.
+   - PATCH /api/tasks/:id: body
