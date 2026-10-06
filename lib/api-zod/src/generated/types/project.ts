@@ -5,7 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectStatus } from './projectStatus';
 
 export interface Project {
   id: number;
@@ -13,7 +12,8 @@ export interface Project {
   name: string;
   /** @nullable */
   description: string | null;
-  status: ProjectStatus;
+  status: string;
   sort_order: number;
-  created_at: Date;
+  /** @nullable */
+  created_at: Date | null;
 }

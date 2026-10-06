@@ -9,25 +9,16 @@ export interface HealthStatus {
   status: string;
 }
 
-export type ProjectStatus = typeof ProjectStatus[keyof typeof ProjectStatus];
-
-
-export const ProjectStatus = {
-  unset: 'unset',
-  active: 'active',
-  building: 'building',
-  paused: 'paused',
-} as const;
-
 export interface Project {
   id: number;
   slug: string;
   name: string;
   /** @nullable */
   description: string | null;
-  status: ProjectStatus;
+  status: string;
   sort_order: number;
-  created_at: string;
+  /** @nullable */
+  created_at: string | null;
 }
 
 export type GetProject404 = {

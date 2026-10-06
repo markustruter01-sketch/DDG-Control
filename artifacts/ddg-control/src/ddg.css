@@ -32,9 +32,9 @@
   --chart-3: 210 25% 45%;
   --chart-4: 45 55% 55%;
   --chart-5: 350 35% 55%;
-  --app-font-sans: 'Manrope', sans-serif;
+  --app-font-sans: Inter, sans-serif;
   --app-font-serif: Georgia, serif;
-  --app-font-mono: 'DM Mono', monospace;
+  --app-font-mono: ui-monospace, monospace;
 }
 .dark {
   color-scheme: light;

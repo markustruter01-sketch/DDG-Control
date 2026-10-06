@@ -9,4 +9,3 @@
 export * from './getProject404';
 export * from './healthStatus';
 export * from './project';
-export * from './projectStatus';

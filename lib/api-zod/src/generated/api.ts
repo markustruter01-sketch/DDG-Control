@@ -26,9 +26,9 @@ export const ListProjectsResponseItem = zod.object({
   "slug": zod.string(),
   "name": zod.string(),
   "description": zod.string().nullable(),
-  "status": zod.enum(['unset', 'active', 'building', 'paused']),
+  "status": zod.string(),
   "sort_order": zod.number().int(),
-  "created_at": zod.coerce.date()
+  "created_at": zod.coerce.date().nullable()
 })
 export const ListProjectsResponse = zod.array(ListProjectsResponseItem)
 
@@ -46,9 +46,9 @@ export const GetProjectResponse = zod.object({
   "slug": zod.string(),
   "name": zod.string(),
   "description": zod.string().nullable(),
-  "status": zod.enum(['unset', 'active', 'building', 'paused']),
+  "status": zod.string(),
   "sort_order": zod.number().int(),
-  "created_at": zod.coerce.date()
+  "created_at": zod.coerce.date().nullable()
 })
 
 

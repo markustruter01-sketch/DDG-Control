@@ -17,7 +17,7 @@ export const projectsTable = pgTable(
     check(
       "projects_status_check",
       sql`${table.status} IN (${sql.join(
-        PROJECT_STATUSES.map((status) => sql`${status}`),
+        PROJECT_STATUSES.map((status) => sql.raw(`'${status}'`)),
         sql`, `,
       )})`,
     ),

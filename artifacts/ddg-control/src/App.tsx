@@ -1,8 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
-import { Toaster } from '@/components/ui/toaster';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   getGetProjectQueryKey,
   getListProjectsQueryKey,
@@ -111,7 +109,7 @@ function isNotFound(error: unknown): boolean {
 function ProjectDetail() {
   const { slug = '' } = useParams<{ slug: string }>();
   const projectQuery = useGetProject(slug, {
-    query: { queryKey: getGetProjectQueryKey(slug) },
+    query: { queryKey: getGetProjectQueryKey(slug), retry: false },
   });
   const [activeTab, setActiveTab] = useState<(typeof PROJECT_TABS)[number]>(PROJECT_TABS[0]);
 
@@ -230,12 +228,9 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+        <Router />
+      </WouterRouter>
     </QueryClientProvider>
   );
 }
