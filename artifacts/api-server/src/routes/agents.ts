@@ -59,8 +59,6 @@ router.get("/agent-updates/latest", async (_req, res): Promise<void> => {
     .select({
       project_id: agentProjectUpdatesTable.project_id,
       project_slug: projectsTable.slug,
-      run_id: agentRunsTable.id,
-      run_started_at: agentRunsTable.started_at,
       status_light: agentProjectUpdatesTable.status_light,
       summary: agentProjectUpdatesTable.summary,
       next_action: agentProjectUpdatesTable.next_action,

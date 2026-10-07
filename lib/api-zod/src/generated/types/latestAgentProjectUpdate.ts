@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { LatestAgentProjectUpdatePrevious } from './latestAgentProjectUpdatePrevious';
 import type { LatestAgentProjectUpdateStatusLight } from './latestAgentProjectUpdateStatusLight';
 import type { LatestAgentRisk } from './latestAgentRisk';
 
@@ -21,4 +22,5 @@ export interface LatestAgentProjectUpdate {
   risks: LatestAgentRisk[];
   /** @nullable */
   created_at: Date | null;
+  previous: LatestAgentProjectUpdatePrevious | null;
 }

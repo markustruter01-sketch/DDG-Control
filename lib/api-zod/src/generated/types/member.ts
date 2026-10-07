@@ -5,7 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { LatestAgentProjectUpdatePrevious } from './latestAgentProjectUpdatePrevious';
 
 export interface Member {
   id: number;
@@ -14,5 +13,4 @@ export interface Member {
   kind: string;
   /** @nullable */
   created_at: Date | null;
-  previous?: LatestAgentProjectUpdatePrevious | null;
 }

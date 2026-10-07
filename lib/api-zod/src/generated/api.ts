@@ -127,13 +127,7 @@ export const ListMembersResponseItem = zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
   "kind": zod.string().describe('Must be one of MEMBER_KINDS from the shared project constants.'),
-  "created_at": zod.coerce.date().nullable(),
-  "previous": zod.union([zod.object({
-  "status_light": zod.enum(['green', 'amber', 'red']),
-  "priority": zod.string().nullable().describe('Must be one of PRIORITY_CALLS from the shared project constants, or null.'),
-  "next_action": zod.string(),
   "created_at": zod.coerce.date().nullable()
-}),zod.null()]).optional()
 })
 export const ListMembersResponse = zod.array(ListMembersResponseItem)
 
@@ -432,7 +426,13 @@ export const ListLatestAgentUpdatesResponseItem = zod.object({
   "text": zod.string(),
   "severity": zod.string().nullable().describe('Must be one of LEVELS from the shared project constants, or null for legacy risks.')
 })),
+  "created_at": zod.coerce.date().nullable(),
+  "previous": zod.union([zod.object({
+  "status_light": zod.enum(['green', 'amber', 'red']),
+  "priority": zod.string().nullable().describe('Must be one of PRIORITY_CALLS from the shared project constants, or null.'),
+  "next_action": zod.string(),
   "created_at": zod.coerce.date().nullable()
+}),zod.null()])
 })
 export const ListLatestAgentUpdatesResponse = zod.array(ListLatestAgentUpdatesResponseItem)
 

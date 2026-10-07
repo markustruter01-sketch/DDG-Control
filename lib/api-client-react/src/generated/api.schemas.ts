@@ -53,27 +53,6 @@ export interface Error {
   error: string;
 }
 
-export type LatestAgentProjectUpdatePreviousStatusLight = typeof LatestAgentProjectUpdatePreviousStatusLight[keyof typeof LatestAgentProjectUpdatePreviousStatusLight];
-
-
-export const LatestAgentProjectUpdatePreviousStatusLight = {
-  green: 'green',
-  amber: 'amber',
-  red: 'red',
-} as const;
-
-export interface LatestAgentProjectUpdatePrevious {
-  status_light: LatestAgentProjectUpdatePreviousStatusLight;
-  /**
-     * Must be one of PRIORITY_CALLS from the shared project constants, or null.
-     * @nullable
-     */
-  priority: string | null;
-  next_action: string;
-  /** @nullable */
-  created_at: string | null;
-}
-
 export interface Member {
   id: number;
   name: string;
@@ -81,7 +60,6 @@ export interface Member {
   kind: string;
   /** @nullable */
   created_at: string | null;
-  previous?: LatestAgentProjectUpdatePrevious | null;
 }
 
 export interface Task {
@@ -356,6 +334,27 @@ export interface LatestAgentRisk {
   severity: string | null;
 }
 
+export type LatestAgentProjectUpdatePreviousStatusLight = typeof LatestAgentProjectUpdatePreviousStatusLight[keyof typeof LatestAgentProjectUpdatePreviousStatusLight];
+
+
+export const LatestAgentProjectUpdatePreviousStatusLight = {
+  green: 'green',
+  amber: 'amber',
+  red: 'red',
+} as const;
+
+export interface LatestAgentProjectUpdatePrevious {
+  status_light: LatestAgentProjectUpdatePreviousStatusLight;
+  /**
+     * Must be one of PRIORITY_CALLS from the shared project constants, or null.
+     * @nullable
+     */
+  priority: string | null;
+  next_action: string;
+  /** @nullable */
+  created_at: string | null;
+}
+
 export interface LatestAgentProjectUpdate {
   project_slug: string;
   status_light: LatestAgentProjectUpdateStatusLight;
@@ -369,6 +368,7 @@ export interface LatestAgentProjectUpdate {
   risks: LatestAgentRisk[];
   /** @nullable */
   created_at: string | null;
+  previous: LatestAgentProjectUpdatePrevious | null;
 }
 
 export type GetProject404 = {

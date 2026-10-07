@@ -791,10 +791,6 @@ components:
         created_at:
           type: ["string", "null"]
           format: date-time
-        previous:
-          anyOf:
-            - $ref: "#/components/schemas/LatestAgentProjectUpdatePrevious"
-            - type: "null"
       required: [id, name, kind, created_at]
     Task:
       type: object
@@ -1218,6 +1214,10 @@ components:
         created_at:
           type: ["string", "null"]
           format: date-time
+        previous:
+          anyOf:
+            - $ref: "#/components/schemas/LatestAgentProjectUpdatePrevious"
+            - type: "null"
       required:
         - project_slug
         - status_light

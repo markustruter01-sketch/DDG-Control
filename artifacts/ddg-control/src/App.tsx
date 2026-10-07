@@ -40,6 +40,7 @@ import {
   type GoalInput,
   type GoalUpdate,
   type DecisionWithNames,
+  type LatestAgentProjectUpdate,
   type Member,
   type Project,
   type Task,
@@ -51,6 +52,8 @@ import {
   GOAL_STATUS_LABELS,
   PROJECT_STATUSES,
   PROJECT_TABS,
+  ORG_CHART,
+  PRINCIPLES,
   TASK_STATUSES,
   TASK_STATUS_LABELS,
   type GoalStatus,
@@ -137,6 +140,11 @@ function Header({ showLogout = true }: { showLogout?: boolean }) {
         <span>DDG Control</span>
       </Link>
       <nav className="topbar-actions" aria-label="Main navigation">
+        {showLogout && (
+          <Link href="/organisation" className="header-link" data-testid="link-organisation">
+            Organisation
+          </Link>
+        )}
         <Link href="/agents" className="header-link" data-testid="link-agents">
           Agents
         </Link>
@@ -181,6 +189,34 @@ function Home() {
   const backgroundStyle = {
     '--home-background': `url("${import.meta.env.BASE_URL}dashboard-background.jpg")`,
   } as CSSProperties;
+  const projects = projectsQuery.data ?? [];
+  const reportChanges = (agentUpdatesQuery.data ?? []).flatMap(
+    (update: LatestAgentProjectUpdate) => {
+      const previous = update.previous;
+      if (!previous) return [];
+      const differences: string[] = [];
+      if (previous.status_light !== update.status_light) {
+        differences.push(`Status: ${previous.status_light} → ${update.status_light}`);
+      }
+      if (
+        previous.priority &&
+        update.priority &&
+        previous.priority !== update.priority
+      ) {
+        differences.push(`Priority: ${previous.priority} → ${update.priority}`);
+      }
+      if (previous.next_action !== update.next_action) {
+        differences.push(`Next action changed: ${update.next_action}`);
+      }
+      if (differences.length === 0) return [];
+      const project = projects.find((item) => item.slug === update.project_slug);
+      return [{
+        project_slug: update.project_slug,
+        project_name: project?.name ?? update.project_slug,
+        differences,
+      }];
+    },
+  );
 
   return (
     <div className="app-shell home-shell" style={backgroundStyle}>
@@ -259,6 +295,129 @@ function Home() {
             <h2 className="state-title">No projects found.</h2>
           </section>
         )}
+
+        <section className="report-section" aria-labelledby="report-title" data-testid="section-since-report">
+          <div className="report-heading">
+            <div>
+              <p className="eyebrow">Ollie’s latest comparison</p>
+              <h2 id="report-title" className="report-title">Since last report</h2>
+            </div>
+          </div>
+          {agentUpdatesQuery.isLoading ? (
+            <div className="report-state" role="status" aria-live="polite">
+              <span className="skeleton loading-line" aria-hidden="true" />
+              <span>Checking the latest report…</span>
+            </div>
+          ) : agentUpdatesQuery.isError ? (
+            <div className="report-state report-state-error" role="alert">
+              <span>Unable to load report changes.</span>
+              <button className="retry-button" type="button" onClick={() => void agentUpdatesQuery.refetch()}>
+                Retry
+              </button>
+            </div>
+          ) : reportChanges.length === 0 ? (
+            <p className="report-empty">No changes since last report</p>
+          ) : (
+            <div className="report-list">
+              {reportChanges.map((change) => (
+                  <article className="report-item" key={change.project_slug} data-testid={`report-project-${change.project_slug}`}>
+                    <Link href={`/projects/${change.project_slug}`} className="report-project-link">
+                      {change.project_name}
+                    </Link>
+                    <ul className="report-differences">
+                      {change.differences.map((difference) => <li key={difference}>{difference}</li>)}
+                    </ul>
+                  </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function OrganisationPage() {
+  type OrgPerson = (typeof ORG_CHART)[number];
+  type VenturePerson = Extract<OrgPerson, { group: 'venture' }>;
+  const founder = ORG_CHART.filter((person) => person.group === 'founder');
+  const generalManagers = ORG_CHART.filter((person) => person.group === 'gm');
+  const corporateTeam = ORG_CHART.filter((person) => person.group === 'corporate');
+  const ventureManagers = ORG_CHART.filter(
+    (person): person is VenturePerson => person.group === 'venture',
+  );
+
+  const renderPeople = (people: OrgPerson[]) => people.map((person) => (
+    <article className="org-person" key={`${person.group}-${person.name}`}>
+      <span className="org-person-name">{person.name}</span>
+      <span className="org-person-role">{person.role}</span>
+    </article>
+  ));
+
+  return (
+    <div className="app-shell organisation-shell">
+      <Header />
+      <main className="page-wrap organisation-main">
+        <Link className="back-link" href="/" data-testid="link-organisation-home">← Projects</Link>
+        <header className="organisation-heading">
+          <p className="eyebrow">People & accountability</p>
+          <h1 className="home-title">Organisation</h1>
+          <p className="organisation-intro">The team recommending and delivering approved work across DDG.</p>
+        </header>
+
+        <section className="org-chart" aria-labelledby="org-chart-title">
+          <div className="section-rule"><span id="org-chart-title">Operating structure</span></div>
+          <div className="org-tier org-tier-founder">
+            <h2>Founder</h2>
+            <div className="org-people">{renderPeople(founder)}</div>
+          </div>
+          <div className="org-connector" aria-hidden="true" />
+          <div className="org-tier org-tier-gm">
+            <h2>GM</h2>
+            <div className="org-people">{renderPeople(generalManagers)}</div>
+          </div>
+          <div className="org-connector" aria-hidden="true" />
+          <div className="org-branches">
+            <section className="org-branch" aria-labelledby="corporate-title">
+              <div className="org-tier">
+                <h2 id="corporate-title">Corporate team</h2>
+                <div className="org-people">{renderPeople(corporateTeam)}</div>
+              </div>
+            </section>
+            <section className="org-branch" aria-labelledby="ventures-title">
+              <div className="org-tier">
+                <h2 id="ventures-title">Venture managers</h2>
+                <div className="org-people">
+                  {ventureManagers.map((person) => (
+                    <Link
+                      href={`/projects/${person.project_slug}`}
+                      className="org-person org-person-link"
+                      key={`${person.group}-${person.name}`}
+                      data-testid={`link-org-project-${person.project_slug}`}
+                    >
+                      <span className="org-person-name">{person.name}</span>
+                      <span className="org-person-role">{person.role}</span>
+                      <span className="org-project-arrow" aria-hidden="true">↗</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section className="principles-section" aria-labelledby="principles-title">
+          <div className="section-rule"><span id="principles-title">Principles</span></div>
+          <ol className="principles-list">
+            {PRINCIPLES.map((principle, index) => (
+              <li key={principle}>
+                <span className="principle-index">{String(index + 1).padStart(2, '0')}</span>
+                <span>{principle}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="organisation-note">Agents recommend. Markus decides.</p>
+        </section>
       </main>
     </div>
   );
@@ -1489,6 +1648,7 @@ function ProjectDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [draftStatus, setDraftStatus] = useState<ProjectStatus>(PROJECT_STATUSES[0]);
   const [draftDescription, setDraftDescription] = useState('');
+  const [draftDriveUrl, setDraftDriveUrl] = useState('');
   const updateProjectMutation = useUpdateProject({
     mutation: {
       onSuccess: async (updated) => {
@@ -1558,6 +1718,7 @@ function ProjectDetail() {
     updateProjectMutation.reset();
     setDraftStatus(project.status as ProjectStatus);
     setDraftDescription(project.description ?? '');
+    setDraftDriveUrl(project.drive_url ?? '');
     setIsEditing(true);
   };
 
@@ -1570,11 +1731,13 @@ function ProjectDetail() {
     event.preventDefault();
     updateProjectMutation.reset();
 
-    const changes: { status?: string; description?: string | null } = {};
+    const changes: { status?: string; description?: string | null; drive_url?: string | null } = {};
     if (draftStatus !== project.status) changes.status = draftStatus;
     if (draftDescription !== (project.description ?? '')) {
       changes.description = draftDescription;
     }
+    const driveUrl = draftDriveUrl.trim() || null;
+    if (driveUrl !== project.drive_url) changes.drive_url = driveUrl;
 
     if (Object.keys(changes).length === 0) {
       setIsEditing(false);
@@ -1605,7 +1768,18 @@ function ProjectDetail() {
           <p className="detail-description" data-testid="text-project-description">
             {project.description ?? 'No description yet'}
           </p>
-          <div style={{ marginTop: 20 }}>
+          <div className="project-heading-actions">
+            {project.drive_url && (
+              <a
+                className="project-files-link"
+                href={project.drive_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="link-project-files"
+              >
+                Files <span aria-hidden="true">↗</span>
+              </a>
+            )}
             {!isEditing ? (
               <button className="retry-button" type="button" onClick={openEditor} data-testid="button-edit-project">
                 Edit
@@ -1658,6 +1832,18 @@ function ProjectDetail() {
                       resize: 'vertical',
                     }}
                     data-testid="input-project-description"
+                  />
+                </label>
+                <label htmlFor="project-edit-drive-url" className="project-edit-field">
+                  Drive folder link
+                  <input
+                    id="project-edit-drive-url"
+                    type="url"
+                    inputMode="url"
+                    value={draftDriveUrl}
+                    onChange={(event) => setDraftDriveUrl(event.target.value)}
+                    placeholder="https://drive.google.com/…"
+                    data-testid="input-project-drive-url"
                   />
                 </label>
                 {updateProjectMutation.isError && (
@@ -1730,6 +1916,7 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/organisation" component={OrganisationPage} />
         <Route path="/agents" component={AgentsPage} />
         <Route path="/decisions" component={DecisionsPage} />
         <Route path="/projects/:slug" component={ProjectDetail} />

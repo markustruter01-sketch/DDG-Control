@@ -1,3 +1,4 @@
 - [Hypest project label](hypest-project-label.md) — use “DDG - Hypest” as the canonical project name.
 - [Goal date JSON shape](goal-date-json-shape.md) — all goal API responses return `target_date` as `YYYY-MM-DD` or `null`; use it directly.
+- [OpenAPI patch targeting](openapi-patch-targeting.md) — anchor schema edits to their component name, then verify the generated target type.
 - [Structured Ollie risks](structured-ollie-risks.md) — keep API/UI risk shapes aligned; normalize legacy strings in responses and do not rewrite stored rows.
