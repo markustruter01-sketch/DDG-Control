@@ -5,6 +5,7 @@ import projectsRouter from "./projects";
 import tasksRouter from "./tasks";
 import goalsRouter from "./goals";
 import metricsRouter from "./metrics";
+import agentsRouter from "./agents";
 
 const router: IRouter = Router();
 
@@ -15,5 +16,6 @@ router.use(projectsRouter);
 router.use(tasksRouter);
 router.use(goalsRouter);
 router.use(metricsRouter);
+router.use(agentsRouter);
 
 export default router;

@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AgentRun,
+  AgentRunWithMember,
   Error,
   GetProject404,
   Goal,
@@ -29,6 +31,7 @@ import type {
   LoginInput,
   LoginResult,
   Member,
+  OllieRunRequest,
   Project,
   ProjectMetricsResponse,
   ProjectUpdateRequest,
@@ -1358,6 +1361,171 @@ export function useListProjectMetrics<TData = Awaited<ReturnType<typeof listProj
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListProjectMetricsQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRunOllieUrl = () => {
+
+
+
+
+  return `/api/agents/ollie/run`
+}
+
+/**
+ * @summary Run Ollie's daily dashboard report
+ */
+export const runOllie = async (ollieRunRequest: OllieRunRequest, options?: Parameters<typeof customFetch>[1]): Promise<AgentRun> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AgentRun>(getRunOllieUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ollieRunRequest)
+  }
+);}
+
+
+
+
+
+export const getRunOllieMutationKey = () => ['runOllie'] as const;
+
+export const getRunOllieMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runOllie>>, TError,RunOllieMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runOllie>>, TError,RunOllieMutationVariables, TContext> => {
+
+const mutationKey = getRunOllieMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runOllie>>, RunOllieMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  runOllie(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunOllieMutationResult = NonNullable<Awaited<ReturnType<typeof runOllie>>>
+    export type RunOllieMutationBody = BodyType<OllieRunRequest>
+    export type RunOllieMutationError = ErrorType<Error>
+    export type RunOllieMutationVariables = {data: BodyType<OllieRunRequest>}
+
+    /**
+ * @summary Run Ollie's daily dashboard report
+ */
+export const useRunOllie = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runOllie>>, TError,RunOllieMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runOllie>>,
+        TError,
+        RunOllieMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRunOllieMutationOptions(options));
+    }
+
+export const getListAgentRunsUrl = () => {
+
+
+
+
+  return `/api/agents/runs`
+}
+
+/**
+ * @summary List the latest 20 agent runs
+ */
+export const listAgentRuns = async ( options?: Parameters<typeof customFetch>[1]): Promise<AgentRunWithMember[]> => {
+
+  return customFetch<AgentRunWithMember[]>(getListAgentRunsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgentRunsQueryKey = () => {
+    return [
+    `/api/agents/runs`
+    ] as const;
+    }
+
+
+export const getListAgentRunsQueryOptions = <TData = Awaited<ReturnType<typeof listAgentRuns>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgentRunsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgentRuns>>> = ({ signal }) => listAgentRuns({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgentRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgentRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listAgentRuns>>>
+export type ListAgentRunsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the latest 20 agent runs
+ */
+
+export function useListAgentRuns<TData = Awaited<ReturnType<typeof listAgentRuns>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgentRunsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -22,6 +22,8 @@ tags:
     description: Goal operations
   - name: metrics
     description: Project metric operations
+  - name: agents
+    description: Agent run operations
 paths:
   /healthz:
     get:
@@ -479,6 +481,56 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /agents/ollie/run:
+    post:
+      operationId: runOllie
+      tags: [agents]
+      summary: Run Ollie's daily dashboard report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OllieRunRequest"
+      responses:
+        "200":
+          description: Completed or failed Ollie run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRun"
+        "400":
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Ollie already ran today or is currently running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Ollie or xAI is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /agents/runs:
+    get:
+      operationId: listAgentRuns
+      tags: [agents]
+      summary: List the latest 20 agent runs
+      responses:
+        "200":
+          description: Latest agent runs with member names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentRunWithMember"
 components:
   schemas:
     LoginInput:
@@ -752,4 +804,89 @@ components:
         - label
         - source
         - captured_at
+    OllieRunRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        force:
+          type: boolean
+    AgentRun:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        member_id:
+          type: integer
+        status:
+          type: string
+          enum: [running, ok, invalid, error]
+        model:
+          type: ["string", "null"]
+        input_tokens:
+          type: ["integer", "null"]
+        output_tokens:
+          type: ["integer", "null"]
+        raw_output:
+          type: ["string", "null"]
+        error:
+          type: ["string", "null"]
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - id
+        - member_id
+        - status
+        - model
+        - input_tokens
+        - output_tokens
+        - raw_output
+        - error
+        - started_at
+        - finished_at
+    AgentRunWithMember:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        member_id:
+          type: integer
+        member_name:
+          type: string
+        status:
+          type: string
+          enum: [running, ok, invalid, error]
+        model:
+          type: ["string", "null"]
+        input_tokens:
+          type: ["integer", "null"]
+        output_tokens:
+          type: ["integer", "null"]
+        raw_output:
+          type: ["string", "null"]
+        error:
+          type: ["string", "null"]
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - id
+        - member_id
+        - member_name
+        - status
+        - model
+        - input_tokens
+        - output_tokens
+        - raw_output
+        - error
+        - started_at
+        - finished_at
 

@@ -346,3 +346,43 @@ export const ListProjectMetricsResponseItem = zod.object({
 export const ListProjectMetricsResponse = zod.array(ListProjectMetricsResponseItem)
 
 
+/**
+ * @summary Run Ollie's daily dashboard report
+ */
+export const RunOllieBody = zod.object({
+  "force": zod.boolean().optional()
+})
+
+export const RunOllieResponse = zod.object({
+  "id": zod.number().int(),
+  "member_id": zod.number().int(),
+  "status": zod.enum(['running', 'ok', 'invalid', 'error']),
+  "model": zod.string().nullable(),
+  "input_tokens": zod.number().int().nullable(),
+  "output_tokens": zod.number().int().nullable(),
+  "raw_output": zod.string().nullable(),
+  "error": zod.string().nullable(),
+  "started_at": zod.coerce.date(),
+  "finished_at": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary List the latest 20 agent runs
+ */
+export const ListAgentRunsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "member_id": zod.number().int(),
+  "member_name": zod.string(),
+  "status": zod.enum(['running', 'ok', 'invalid', 'error']),
+  "model": zod.string().nullable(),
+  "input_tokens": zod.number().int().nullable(),
+  "output_tokens": zod.number().int().nullable(),
+  "raw_output": zod.string().nullable(),
+  "error": zod.string().nullable(),
+  "started_at": zod.coerce.date(),
+  "finished_at": zod.coerce.date().nullable()
+})
+export const ListAgentRunsResponse = zod.array(ListAgentRunsResponseItem)
+
+

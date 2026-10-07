@@ -73,7 +73,17 @@ export async function seedProjectsIfEmpty(): Promise<void> {
 
   await db
     .insert(membersTable)
-    .values({ name: "Ollie", kind: MEMBER_KINDS[1] })
+    .values([
+      { name: "Ollie", kind: MEMBER_KINDS[1] },
+      { name: "Harald", kind: MEMBER_KINDS[1] },
+      { name: "Hermes", kind: MEMBER_KINDS[1] },
+      { name: "Plutus", kind: MEMBER_KINDS[1] },
+      { name: "Freya", kind: MEMBER_KINDS[1] },
+      { name: "DDG Finance", kind: MEMBER_KINDS[1] },
+      { name: "DDG Hypest", kind: MEMBER_KINDS[1] },
+      { name: "DDG Coffee", kind: MEMBER_KINDS[1] },
+      { name: "DDG Venture", kind: MEMBER_KINDS[1] },
+    ])
     .onConflictDoNothing({ target: membersTable.name });
 }
 

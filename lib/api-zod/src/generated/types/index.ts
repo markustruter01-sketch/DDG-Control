@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './agentRun';
+export * from './agentRunStatus';
+export * from './agentRunWithMember';
+export * from './agentRunWithMemberStatus';
 export * from './error';
 export * from './getProject404';
 export * from './goal';
@@ -15,6 +19,7 @@ export * from './healthStatus';
 export * from './loginInput';
 export * from './loginResult';
 export * from './member';
+export * from './ollieRunRequest';
 export * from './project';
 export * from './projectMetric';
 export * from './projectMetricsResponse';

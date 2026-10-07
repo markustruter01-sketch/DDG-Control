@@ -178,6 +178,69 @@ export interface ProjectMetric {
 
 export type ProjectMetricsResponse = ProjectMetric[];
 
+export interface OllieRunRequest {
+  force?: boolean;
+}
+
+export type AgentRunStatus = typeof AgentRunStatus[keyof typeof AgentRunStatus];
+
+
+export const AgentRunStatus = {
+  running: 'running',
+  ok: 'ok',
+  invalid: 'invalid',
+  error: 'error',
+} as const;
+
+export interface AgentRun {
+  id: number;
+  member_id: number;
+  status: AgentRunStatus;
+  /** @nullable */
+  model: string | null;
+  /** @nullable */
+  input_tokens: number | null;
+  /** @nullable */
+  output_tokens: number | null;
+  /** @nullable */
+  raw_output: string | null;
+  /** @nullable */
+  error: string | null;
+  started_at: string;
+  /** @nullable */
+  finished_at: string | null;
+}
+
+export type AgentRunWithMemberStatus = typeof AgentRunWithMemberStatus[keyof typeof AgentRunWithMemberStatus];
+
+
+export const AgentRunWithMemberStatus = {
+  running: 'running',
+  ok: 'ok',
+  invalid: 'invalid',
+  error: 'error',
+} as const;
+
+export interface AgentRunWithMember {
+  id: number;
+  member_id: number;
+  member_name: string;
+  status: AgentRunWithMemberStatus;
+  /** @nullable */
+  model: string | null;
+  /** @nullable */
+  input_tokens: number | null;
+  /** @nullable */
+  output_tokens: number | null;
+  /** @nullable */
+  raw_output: string | null;
+  /** @nullable */
+  error: string | null;
+  started_at: string;
+  /** @nullable */
+  finished_at: string | null;
+}
+
 export type GetProject404 = {
   error: 'not found';
 };
