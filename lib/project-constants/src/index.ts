@@ -8,6 +8,16 @@ export const TASK_STATUSES = [
   "blocked",
 ] as const;
 
+export const GOAL_STATUSES = ["active", "achieved", "dropped"] as const;
+
+export type GoalStatus = (typeof GOAL_STATUSES)[number];
+
+export const GOAL_STATUS_LABELS: Record<GoalStatus, string> = {
+  active: "Active",
+  achieved: "Achieved",
+  dropped: "Dropped",
+};
+
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {

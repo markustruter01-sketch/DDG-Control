@@ -20,6 +20,14 @@ import {
 import { MEMBER_KINDS, TASK_STATUSES } from "@workspace/project-constants";
 import { eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
+import {
+  getMissingRequiredFieldError,
+  getUnknownFieldError,
+  requestBodyRecord,
+  validateCalendarDate,
+  validateNotes,
+  validateTitle,
+} from "./validation";
 
 const router: IRouter = Router();
 
@@ -63,66 +71,29 @@ function toApiTask(task: Task) {
   };
 }
 
-function isCalendarDate(value: string): boolean {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) {
-    return false;
-  }
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  if (year < 1 || month < 1 || month > 12) {
-    return false;
-  }
-
-  const isLeapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-  const daysInMonth = [
-    31,
-    isLeapYear ? 29 : 28,
-    31,
-    30,
-    31,
-    30,
-    31,
-    31,
-    30,
-    31,
-    30,
-    31,
-  ];
-  return day >= 1 && day <= daysInMonth[month - 1];
-}
-
 function parseTaskFields(
   body: Record<string, unknown>,
   allowedFields: readonly string[],
   requiredFields: readonly string[],
 ): { fields: ValidTaskFields } | { error: string } {
-  const unknownField = Object.keys(body).find(
-    (field) => !allowedFields.includes(field),
-  );
-  if (unknownField) {
-    return { error: `unknown field: ${unknownField}` };
+  const unknownFieldError = getUnknownFieldError(body, allowedFields);
+  if (unknownFieldError) {
+    return { error: unknownFieldError };
   }
 
-  for (const field of requiredFields) {
-    if (!Object.hasOwn(body, field)) {
-      return { error: `${field} is required` };
-    }
+  const requiredFieldError = getMissingRequiredFieldError(body, requiredFields);
+  if (requiredFieldError) {
+    return { error: requiredFieldError };
   }
 
   const fields: ValidTaskFields = {};
 
   if (Object.hasOwn(body, "title")) {
-    if (typeof body.title !== "string") {
-      return { error: "title must be a string" };
+    const title = validateTitle(body.title);
+    if ("error" in title) {
+      return { error: title.error };
     }
-    const title = body.title.trim();
-    if (title.length < 1 || title.length > 200) {
-      return { error: "title must be 1 to 200 characters after trimming" };
-    }
-    fields.title = title;
+    fields.title = title.value;
   }
 
   if (Object.hasOwn(body, "owner_id")) {
@@ -137,15 +108,11 @@ function parseTaskFields(
   }
 
   if (Object.hasOwn(body, "notes")) {
-    if (body.notes !== null && typeof body.notes !== "string") {
-      return { error: "notes must be a string or null" };
+    const notes = validateNotes(body.notes);
+    if ("error" in notes) {
+      return { error: notes.error };
     }
-    const notes =
-      typeof body.notes === "string" ? body.notes.trim() || null : null;
-    if (notes !== null && notes.length > 2000) {
-      return { error: "notes must not exceed 2000 characters after trimming" };
-    }
-    fields.notes = notes;
+    fields.notes = notes.value;
   }
 
   if (Object.hasOwn(body, "status")) {
@@ -159,28 +126,14 @@ function parseTaskFields(
   }
 
   if (Object.hasOwn(body, "due_date")) {
-    if (body.due_date === null) {
-      fields.due_date = null;
-    } else if (
-      typeof body.due_date !== "string" ||
-      !isCalendarDate(body.due_date)
-    ) {
-      return { error: "due_date must be null or a real YYYY-MM-DD date" };
-    } else {
-      fields.due_date = body.due_date;
+    const dueDate = validateCalendarDate(body.due_date, "due_date");
+    if ("error" in dueDate) {
+      return { error: dueDate.error };
     }
+    fields.due_date = dueDate.value;
   }
 
   return { fields };
-}
-
-function taskRequestBody(
-  value: unknown,
-): Record<string, unknown> | null {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return null;
-  }
-  return value as Record<string, unknown>;
 }
 
 async function ownerExists(ownerId: number): Promise<boolean> {
@@ -262,7 +215,7 @@ router.post("/projects/:slug/tasks", async (req, res): Promise<void> => {
     return;
   }
 
-  const body = taskRequestBody(req.body);
+  const body = requestBodyRecord(req.body);
   if (!body) {
     res.status(400).json({ error: "request body must be an object" });
     return;
@@ -332,7 +285,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const body = taskRequestBody(req.body);
+  const body = requestBodyRecord(req.body);
   if (!body) {
     res.status(400).json({ error: "request body must be an object" });
     return;

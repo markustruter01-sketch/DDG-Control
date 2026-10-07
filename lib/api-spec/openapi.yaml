@@ -16,6 +16,8 @@ tags:
     description: Member operations
   - name: tasks
     description: Task operations
+  - name: goals
+    description: Goal operations
 paths:
   /healthz:
     get:
@@ -236,6 +238,105 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /projects/{slug}/goals:
+    get:
+      operationId: listProjectGoals
+      tags: [goals]
+      summary: List project goals
+      description: Returns goals sorted by status, target date with empty dates last, then creation time.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Goal"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createProjectGoal
+      tags: [goals]
+      summary: Create a project goal
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInput"
+      responses:
+        "201":
+          description: Created goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          description: Invalid goal input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /goals/{id}:
+    patch:
+      operationId: updateGoal
+      tags: [goals]
+      summary: Update a goal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalUpdate"
+      responses:
+        "200":
+          description: Updated goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          description: Invalid goal update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Goal not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   schemas:
     ProjectUpdateRequest:
@@ -382,6 +483,78 @@ components:
           type: integer
           minimum: 1
         due_date:
+          type: ["string", "null"]
+          format: date
+    Goal:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        project_id:
+          type: integer
+        title:
+          type: string
+        notes:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: Must be one of GOAL_STATUSES from the shared project constants.
+        target_date:
+          type: ["string", "null"]
+          format: date
+        achieved_at:
+          type: ["string", "null"]
+          format: date-time
+        created_at:
+          type: ["string", "null"]
+          format: date-time
+        updated_at:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - id
+        - project_id
+        - title
+        - notes
+        - status
+        - target_date
+        - achieved_at
+        - created_at
+        - updated_at
+    GoalInput:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        notes:
+          type: ["string", "null"]
+          maxLength: 2000
+        status:
+          type: string
+          description: Must be one of GOAL_STATUSES from the shared project constants.
+        target_date:
+          type: ["string", "null"]
+          format: date
+      required: [title]
+    GoalUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        notes:
+          type: ["string", "null"]
+          maxLength: 2000
+        status:
+          type: string
+          description: Must be one of GOAL_STATUSES from the shared project constants.
+        target_date:
           type: ["string", "null"]
           format: date
 
