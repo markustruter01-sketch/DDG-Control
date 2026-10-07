@@ -11,6 +11,7 @@ import {
   getGetProjectQueryKey,
   getGetSessionQueryKey,
   getListAgentRunsQueryKey,
+  getListDecisionsQueryKey,
   getListLatestAgentUpdatesQueryKey,
   getListProjectGoalsQueryKey,
   getListMembersQueryKey,
@@ -22,6 +23,9 @@ import {
   useGetSession,
   useLogin,
   useLogout,
+  useApproveDecision,
+  useDeclineDecision,
+  useListDecisions,
   useListProjectGoals,
   useListMembers,
   useListAgentRuns,
@@ -35,6 +39,7 @@ import {
   type Goal,
   type GoalInput,
   type GoalUpdate,
+  type DecisionWithNames,
   type Member,
   type Project,
   type Task,
@@ -119,6 +124,11 @@ function Header({ showLogout = true }: { showLogout?: boolean }) {
   const client = useQueryClient();
   const logoutMutation = useLogout();
   const devBypass = useContext(DevAuthBypassContext);
+  const pendingDecisionsQuery = useListDecisions(
+    { status: 'pending' },
+    { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } },
+  );
+  const pendingCount = pendingDecisionsQuery.data?.length ?? 0;
 
   return (
     <header className="topbar">
@@ -129,6 +139,9 @@ function Header({ showLogout = true }: { showLogout?: boolean }) {
       <nav className="topbar-actions" aria-label="Main navigation">
         <Link href="/agents" className="header-link" data-testid="link-agents">
           Agents
+        </Link>
+        <Link href="/decisions" className="header-link" data-testid="link-decisions">
+          Decisions{pendingCount > 0 && <span className="header-count">[{pendingCount}]</span>}
         </Link>
         {showLogout && !devBypass && (
           <button
@@ -161,6 +174,10 @@ function Home() {
       staleTime: 60_000,
     },
   });
+  const pendingDecisionsQuery = useListDecisions(
+    { status: 'pending' },
+    { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } },
+  );
   const backgroundStyle = {
     '--home-background': `url("${import.meta.env.BASE_URL}dashboard-background.jpg")`,
   } as CSSProperties;
@@ -171,6 +188,12 @@ function Home() {
       <main className="page-wrap home-main">
         <p className="eyebrow">Control panel</p>
         <h1 className="home-title">Projects</h1>
+        {(pendingDecisionsQuery.data?.length ?? 0) > 0 && (
+          <Link className="decisions-waiting" href="/decisions" data-testid="link-decisions-waiting">
+            Decisions waiting: {pendingDecisionsQuery.data?.length}
+            <span aria-hidden="true">→</span>
+          </Link>
+        )}
         <div className="section-rule"><span>Projects</span></div>
 
         {projectsQuery.isLoading ? (
@@ -213,6 +236,11 @@ function Home() {
                           aria-label={`Ollie's status light: ${latestUpdate.status_light}`}
                           data-testid={`agent-light-${project.slug}`}
                         />
+                      )}
+                      {latestUpdate?.priority && (
+                        <span className={`priority-chip priority-${latestUpdate.priority}`} data-testid={`priority-project-${project.slug}`}>
+                          {latestUpdate.priority}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -1000,6 +1028,11 @@ function ProjectGoals({ slug }: { slug: string }) {
                 data-testid={`agent-overview-light-${slug}`}
               />
               <span>{latestUpdate.status_light}</span>
+              {latestUpdate.priority && (
+                <span className={`priority-chip priority-${latestUpdate.priority}`} data-testid={`priority-overview-${slug}`}>
+                  {latestUpdate.priority}
+                </span>
+              )}
             </div>
             <p className="agent-update-summary" data-testid={`agent-overview-summary-${slug}`}>
               {latestUpdate.summary}
@@ -1009,7 +1042,10 @@ function ProjectGoals({ slug }: { slug: string }) {
               {latestUpdate.risks.length > 0 ? (
                 <ul>
                   {latestUpdate.risks.map((risk, index) => (
-                    <li key={`${risk}-${index}`}>{risk}</li>
+                    <li key={`${risk.text}-${index}`}>
+                      {risk.text}
+                      {risk.severity && <span className={`risk-severity severity-${risk.severity}`}>{risk.severity}</span>}
+                    </li>
                   ))}
                 </ul>
               ) : (
@@ -1120,6 +1156,212 @@ function ProjectGoals({ slug }: { slug: string }) {
         </section>
       ))}
     </section>
+  );
+}
+
+function DecisionsPage() {
+  const pendingQuery = useListDecisions(
+    { status: 'pending' },
+    { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } },
+  );
+  const approvedQuery = useListDecisions(
+    { status: 'approved' },
+    { query: { queryKey: getListDecisionsQueryKey({ status: 'approved' }) } },
+  );
+  const declinedQuery = useListDecisions(
+    { status: 'declined' },
+    { query: { queryKey: getListDecisionsQueryKey({ status: 'declined' }) } },
+  );
+  const projectsQuery = useListProjects({
+    query: { queryKey: getListProjectsQueryKey() },
+  });
+  const client = useQueryClient();
+  const [notes, setNotes] = useState<Record<number, string>>({});
+  const pending = pendingQuery.data ?? [];
+  const projectNames = new Map((projectsQuery.data ?? []).map((project) => [project.slug, project.name]));
+  const refreshDecisionData = async (decisionId: number) => {
+    const affected = pending.find((decision) => decision.id === decisionId);
+    const refreshes = [
+      client.invalidateQueries({ queryKey: getListDecisionsQueryKey({ status: 'pending' }) }),
+      client.invalidateQueries({ queryKey: getListDecisionsQueryKey({ status: 'approved' }) }),
+      client.invalidateQueries({ queryKey: getListDecisionsQueryKey({ status: 'declined' }) }),
+    ];
+    if (affected) {
+      refreshes.push(client.invalidateQueries({
+        queryKey: getListProjectTasksQueryKey(affected.project_slug),
+      }));
+    }
+    await Promise.all(refreshes);
+  };
+  const approveMutation = useApproveDecision({
+    mutation: {
+      onSuccess: async (_decision, variables) => refreshDecisionData(variables.id),
+    },
+  });
+  const declineMutation = useDeclineDecision({
+    mutation: {
+      onSuccess: async (_decision, variables) => refreshDecisionData(variables.id),
+    },
+  });
+  const sortedHistory: DecisionWithNames[] = [
+    ...(approvedQuery.data ?? []),
+    ...(declinedQuery.data ?? []),
+  ].sort((a, b) => {
+    const aTime = a.decided_at ? new Date(a.decided_at).getTime() : 0;
+    const bTime = b.decided_at ? new Date(b.decided_at).getTime() : 0;
+    return bTime - aTime;
+  });
+  const decide = async (decision: DecisionWithNames, action: 'approve' | 'decline') => {
+    const body = { note: (notes[decision.id] ?? '').trim() || undefined };
+    try {
+      if (action === 'approve') {
+        await approveMutation.mutateAsync({ id: decision.id, data: body });
+      } else {
+        await declineMutation.mutateAsync({ id: decision.id, data: body });
+      }
+      setNotes((current) => {
+        const next = { ...current };
+        delete next[decision.id];
+        return next;
+      });
+    } catch {
+      // The server error is shown on the corresponding pending recommendation.
+    }
+  };
+  const isLoading = pendingQuery.isLoading || approvedQuery.isLoading || declinedQuery.isLoading;
+  const queryError = pendingQuery.error ?? approvedQuery.error ?? declinedQuery.error;
+
+  return (
+    <div className="app-shell">
+      <Header />
+      <main className="page-wrap detail-main decisions-main">
+        <Link className="back-link" href="/" data-testid="link-decisions-home">← Home</Link>
+        <div className="detail-heading decisions-heading">
+          <p className="eyebrow">Review queue</p>
+          <h1 className="detail-title">Decisions</h1>
+          <p className="detail-description">Ollie’s recommendations, ready for your call.</p>
+        </div>
+
+        <section className="decision-section" aria-labelledby="pending-decisions-title">
+          <div className="decision-section-heading">
+            <h2 id="pending-decisions-title">Waiting for review</h2>
+            {!pendingQuery.isLoading && <span className="decision-count">{pending.length} pending</span>}
+          </div>
+          {isLoading ? (
+            <div className="decision-skeleton" role="status" aria-label="Loading decisions"><span /><span /></div>
+          ) : queryError ? (
+            <div className="task-query-error" role="alert">
+              <p>{serverErrorText(queryError, 'Unable to load decisions.')}</p>
+              <button className="task-secondary-button" type="button" onClick={() => {
+                void Promise.all([pendingQuery.refetch(), approvedQuery.refetch(), declinedQuery.refetch()]);
+              }}>Retry</button>
+            </div>
+          ) : pending.length === 0 ? (
+            <p className="decision-empty" data-testid="status-no-decisions">No decisions waiting</p>
+          ) : (
+            <div className="decision-list" data-testid="list-pending-decisions">
+              {pending.map((decision) => {
+                const isApproving = approveMutation.isPending && approveMutation.variables?.id === decision.id;
+                const isDeclining = declineMutation.isPending && declineMutation.variables?.id === decision.id;
+                const actionError = approveMutation.variables?.id === decision.id && approveMutation.isError
+                  ? approveMutation.error
+                  : declineMutation.variables?.id === decision.id && declineMutation.isError
+                    ? declineMutation.error
+                    : null;
+                return (
+                  <article className="decision-card" key={decision.id} data-testid={`card-decision-${decision.id}`}>
+                    <div className="decision-card-top">
+                      <div>
+                        <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
+                        <h3 className="decision-title">{decision.title}</h3>
+                      </div>
+                      <span className={`decision-urgency urgency-${decision.urgency}`}>{decision.urgency} urgency</span>
+                    </div>
+                    <p className="decision-recommendation">{decision.recommendation}</p>
+                    <dl className="decision-facts">
+                      <div><dt>Cost</dt><dd>{decision.cost_estimate_aud == null ? 'Cost unknown' : `$${decision.cost_estimate_aud} est.`}</dd></div>
+                      <div><dt>Risk</dt><dd>{decision.risk}</dd></div>
+                      <div><dt>Confidence</dt><dd>{decision.confidence}</dd></div>
+                      <div><dt>Owner</dt><dd>{decision.owner_name}</dd></div>
+                      <div><dt>Due</dt><dd>{decision.due_date ? formatDueDate(decision.due_date) : 'Date unavailable'}</dd></div>
+                    </dl>
+                    <label className="decision-note">
+                      <span>Review note <span className="task-field-optional">(optional)</span></span>
+                      <input
+                        type="text"
+                        maxLength={500}
+                        value={notes[decision.id] ?? ''}
+                        onChange={(event) => setNotes((current) => ({ ...current, [decision.id]: event.target.value }))}
+                        placeholder="Add context for this call"
+                        data-testid={`input-decision-note-${decision.id}`}
+                      />
+                    </label>
+                    {actionError && (
+                      <p className="decision-error" role="alert" data-testid={`error-decision-${decision.id}`}>
+                        {serverErrorText(actionError, 'Unable to update this decision.')}
+                      </p>
+                    )}
+                    <div className="decision-actions">
+                      <button
+                        className="decision-approve"
+                        type="button"
+                        disabled={approveMutation.isPending || declineMutation.isPending}
+                        onClick={() => void decide(decision, 'approve')}
+                        data-testid={`button-approve-decision-${decision.id}`}
+                      >
+                        {isApproving ? 'Approving…' : 'Approve'}
+                      </button>
+                      <button
+                        className="decision-decline"
+                        type="button"
+                        disabled={approveMutation.isPending || declineMutation.isPending}
+                        onClick={() => void decide(decision, 'decline')}
+                        data-testid={`button-decline-decision-${decision.id}`}
+                      >
+                        {isDeclining ? 'Declining…' : 'Decline'}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="decision-history" aria-labelledby="decision-history-title">
+          <div className="decision-section-heading">
+            <h2 id="decision-history-title">Decision history</h2>
+            <span className="decision-count">{sortedHistory.length} resolved</span>
+          </div>
+          {isLoading ? (
+            <div className="decision-history-skeleton" role="status" aria-label="Loading decision history" />
+          ) : sortedHistory.length === 0 ? (
+            <p className="decision-empty">No decisions recorded yet</p>
+          ) : (
+            <div className="decision-history-list" data-testid="list-decision-history">
+              {sortedHistory.map((decision) => (
+                <article className="decision-history-row" key={decision.id} data-testid={`history-decision-${decision.id}`}>
+                  <div className="history-decision-copy">
+                    <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
+                    <h3>{decision.title}</h3>
+                    {decision.note && <p className="history-note">{decision.note}</p>}
+                  </div>
+                  <div className="history-decision-meta">
+                    <span className={`history-status history-status-${decision.status}`}>{decision.status}</span>
+                    <time>{formatBrisbaneDateTime(decision.decided_at)}</time>
+                    {decision.status === 'approved' && (
+                      <Link className="history-task-link" href={`/projects/${decision.project_slug}?tab=To-do`}>
+                        View task
+                      </Link>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
   );
 }
 
@@ -1239,7 +1481,11 @@ function ProjectDetail() {
   const projectQuery = useGetProject(slug, {
     query: { queryKey: getGetProjectQueryKey(slug), retry: false },
   });
-  const [activeTab, setActiveTab] = useState<(typeof PROJECT_TABS)[number]>(PROJECT_TABS[0]);
+  const [activeTab, setActiveTab] = useState<(typeof PROJECT_TABS)[number]>(() => (
+    new URLSearchParams(window.location.search).get('tab') === 'To-do'
+      ? 'To-do'
+      : PROJECT_TABS[0]
+  ));
   const [isEditing, setIsEditing] = useState(false);
   const [draftStatus, setDraftStatus] = useState<ProjectStatus>(PROJECT_STATUSES[0]);
   const [draftDescription, setDraftDescription] = useState('');
@@ -1485,6 +1731,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/agents" component={AgentsPage} />
+        <Route path="/decisions" component={DecisionsPage} />
         <Route path="/projects/:slug" component={ProjectDetail} />
       </Switch>
     </RoutedErrorBoundary>

@@ -21,6 +21,7 @@ export * from './goalUpdate';
 export * from './healthStatus';
 export * from './latestAgentProjectUpdate';
 export * from './latestAgentProjectUpdateStatusLight';
+export * from './latestAgentRisk';
 export * from './listDecisionsParams';
 export * from './loginInput';
 export * from './loginResult';

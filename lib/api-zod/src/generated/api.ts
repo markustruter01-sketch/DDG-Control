@@ -411,7 +411,11 @@ export const ListLatestAgentUpdatesResponseItem = zod.object({
   "status_light": zod.enum(['green', 'amber', 'red']),
   "summary": zod.string(),
   "next_action": zod.string(),
-  "risks": zod.array(zod.string()),
+  "priority": zod.string().nullable().describe('Must be one of PRIORITY_CALLS from the shared project constants, or null.'),
+  "risks": zod.array(zod.object({
+  "text": zod.string(),
+  "severity": zod.string().nullable().describe('Must be one of LEVELS from the shared project constants, or null for legacy risks.')
+})),
   "created_at": zod.coerce.date().nullable()
 })
 export const ListLatestAgentUpdatesResponse = zod.array(ListLatestAgentUpdatesResponseItem)

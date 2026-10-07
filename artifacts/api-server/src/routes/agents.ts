@@ -13,6 +13,22 @@ import { runOllie } from "../agents/ollie";
 
 const router: IRouter = Router();
 
+export type LatestUpdateRisk = {
+  text: string;
+  severity: string | null;
+};
+
+export function convertStoredRisks(risks: unknown): LatestUpdateRisk[] {
+  if (!Array.isArray(risks)) {
+    throw new Error("invalid stored agent update risks");
+  }
+  return risks.map((risk) =>
+    typeof risk === "string"
+      ? { text: risk, severity: null }
+      : (risk as LatestUpdateRisk),
+  );
+}
+
 router.post("/agents/ollie/cron", async (req, res): Promise<void> => {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
@@ -46,6 +62,7 @@ router.get("/agent-updates/latest", async (_req, res): Promise<void> => {
       status_light: agentProjectUpdatesTable.status_light,
       summary: agentProjectUpdatesTable.summary,
       next_action: agentProjectUpdatesTable.next_action,
+      priority: agentProjectUpdatesTable.priority,
       risks: agentProjectUpdatesTable.risks,
       created_at: agentProjectUpdatesTable.created_at,
     })
@@ -68,7 +85,8 @@ router.get("/agent-updates/latest", async (_req, res): Promise<void> => {
       status_light: row.status_light,
       summary: row.summary,
       next_action: row.next_action,
-      risks: row.risks,
+      priority: row.priority,
+      risks: convertStoredRisks(row.risks),
       created_at: row.created_at?.toISOString() ?? null,
     }];
   });

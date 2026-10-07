@@ -3,8 +3,8 @@ name: Structured Ollie risks
 description: Compatibility boundary between stored structured risks and the existing latest-updates API and dashboard.
 ---
 
-Keep the latest-updates API contract and dashboard aligned when changing project risks from strings to `{ text, severity }` objects. Preserve support for legacy string-array rows during that transition.
+Keep the latest-updates API contract and dashboard aligned when exposing `{ text, severity }` risks. Normalize legacy string-array entries at the API response boundary as `{ text, severity: null }`; do not rewrite stored rows.
 
-**Why:** Ollie's v2 report stores structured risks, but the current latest-updates API validator and dashboard still expect strings. The current task explicitly excluded those surfaces, so their contract was left unchanged.
+**Why:** Existing database rows may still contain string risks while newer rows store structured objects. Response-boundary normalization provides one stable API shape without changing stored history.
 
-**How to apply:** When structured risks need to be exposed, update the API response schema and frontend rendering together; handle both old string rows and new structured rows.
+**How to apply:** Update the generated API schema and frontend together when the risk shape changes; pass structured objects through unchanged, convert only legacy strings, and show severity only when non-null.

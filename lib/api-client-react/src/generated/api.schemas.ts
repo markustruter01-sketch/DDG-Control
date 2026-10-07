@@ -321,12 +321,26 @@ export const LatestAgentProjectUpdateStatusLight = {
   red: 'red',
 } as const;
 
+export interface LatestAgentRisk {
+  text: string;
+  /**
+     * Must be one of LEVELS from the shared project constants, or null for legacy risks.
+     * @nullable
+     */
+  severity: string | null;
+}
+
 export interface LatestAgentProjectUpdate {
   project_slug: string;
   status_light: LatestAgentProjectUpdateStatusLight;
   summary: string;
   next_action: string;
-  risks: string[];
+  /**
+     * Must be one of PRIORITY_CALLS from the shared project constants, or null.
+     * @nullable
+     */
+  priority: string | null;
+  risks: LatestAgentRisk[];
   /** @nullable */
   created_at: string | null;
 }

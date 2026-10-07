@@ -1192,10 +1192,13 @@ components:
           type: string
         next_action:
           type: string
+        priority:
+          type: ["string", "null"]
+          description: Must be one of PRIORITY_CALLS from the shared project constants, or null.
         risks:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/LatestAgentRisk"
         created_at:
           type: ["string", "null"]
           format: date-time
@@ -1204,6 +1207,17 @@ components:
         - status_light
         - summary
         - next_action
+        - priority
         - risks
         - created_at
+    LatestAgentRisk:
+      type: object
+      additionalProperties: false
+      properties:
+        text:
+          type: string
+        severity:
+          type: ["string", "null"]
+          description: Must be one of LEVELS from the shared project constants, or null for legacy risks.
+      required: [text, severity]
 

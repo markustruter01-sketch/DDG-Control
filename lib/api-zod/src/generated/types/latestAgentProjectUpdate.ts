@@ -6,13 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { LatestAgentProjectUpdateStatusLight } from './latestAgentProjectUpdateStatusLight';
+import type { LatestAgentRisk } from './latestAgentRisk';
 
 export interface LatestAgentProjectUpdate {
   project_slug: string;
   status_light: LatestAgentProjectUpdateStatusLight;
   summary: string;
   next_action: string;
-  risks: string[];
+  /**
+     * Must be one of PRIORITY_CALLS from the shared project constants, or null.
+     * @nullable
+     */
+  priority: string | null;
+  risks: LatestAgentRisk[];
   /** @nullable */
   created_at: Date | null;
 }
