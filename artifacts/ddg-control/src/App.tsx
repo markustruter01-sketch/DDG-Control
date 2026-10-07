@@ -279,7 +279,7 @@ function TaskEditorForm({
           data-testid="input-task-notes"
         />
       </label>
-      {error && (
+      {error != null && (
         <p className="task-form-error" role="alert" data-testid="error-save-task">
           {serverErrorText(error, isCreate ? 'Unable to create task.' : 'Unable to update task.')}
         </p>
@@ -480,7 +480,7 @@ function ProjectTodo({ slug }: { slug: string }) {
         </div>
       )}
 
-      {canShowTaskList && tasks.length === 0 && (
+      {!tasksQuery.isLoading && !tasksQuery.isError && tasks.length === 0 && (
         <p className="task-state-message" data-testid="status-no-tasks">No tasks yet</p>
       )}
       {canShowTaskList && groupedTasks.map((group) => (
