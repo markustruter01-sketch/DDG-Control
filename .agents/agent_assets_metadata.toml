@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "DJ47pH22x6h4N4Aa_al99"
+uri = "file://screenshots/ddg-control-todo-tab.png"
+type = "image"
+title = "To-do tab screenshot"
+description = "402 × 874 screenshot of the Cattle Dog Coffee To-do tab, showing the existing task row."
+logical_id = "81a33ff9-b35a-4dbf-90c9-4410a2e18071"
+content_hash = "sha256:98a06df2e8fc1342cfc0f3ba2b73f67748b5d1ed87af270e529f462f3eb84fa8"
+size = 27850
+mtime_ms = 1791336278159
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:0355effe-3533-4c3b-be29-95ce418e1c72/81a33ff9-b35a-4dbf-90c9-4410a2e18071/c2717305-a1c6-45fd-bc6f-491718de4bb7"
+storage_version_token = "1791336429954447"
+content_type = "image/png"
