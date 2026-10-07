@@ -1,5 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { Router, type IRouter, type Request, type RequestHandler } from "express";
+import { and, count, eq, gte, lt } from "drizzle-orm";
+import { db, failedLoginsTable } from "@workspace/db";
 import {
   GetSessionResponse,
   LoginBody,
@@ -11,21 +13,16 @@ const router: IRouter = Router();
 const SESSION_COOKIE_NAME = "ddg_session";
 const SESSION_DURATION_SECONDS = 30 * 24 * 60 * 60;
 const FAILURE_WINDOW_MS = 15 * 60 * 1000;
+const FAILURE_RETENTION_MS = 24 * 60 * 60 * 1000;
 const MAX_FAILED_ATTEMPTS = 5;
+const MAX_TOTAL_FAILED_ATTEMPTS = 20;
+let missingConfigurationLogged = false;
+let productionBypassWarningLogged = false;
 
 type AuthConfiguration = {
   adminPassword: string;
   sessionSecret: string;
 };
-
-type FailedAttemptWindow = {
-  firstFailureAt: number;
-  count: number;
-};
-
-const failedAttemptsByAddress = new Map<string, FailedAttemptWindow>();
-let missingConfigurationLogged = false;
-let productionBypassWarningLogged = false;
 
 function isAuthBypassed(): boolean {
   if (process.env.DDG_DEV_AUTH_BYPASS !== "true") {
@@ -66,15 +63,11 @@ function getAuthConfiguration(): AuthConfiguration | null {
 }
 
 function getClientAddress(req: Request): string {
-  return req.ip || req.socket.remoteAddress || "unknown";
-}
-
-function pruneExpiredFailureWindows(now: number): void {
-  for (const [address, window] of failedAttemptsByAddress) {
-    if (now - window.firstFailureAt >= FAILURE_WINDOW_MS) {
-      failedAttemptsByAddress.delete(address);
-    }
-  }
+  const firstForwardedAddress = req
+    .get("x-forwarded-for")
+    ?.split(",")[0]
+    ?.trim();
+  return firstForwardedAddress || req.ip || "unknown";
 }
 
 function hashPassword(password: string): Buffer {
@@ -152,7 +145,7 @@ function isExactLoginBody(body: unknown): body is { password: string } {
   return Object.keys(body).length === 1 && Object.hasOwn(body, "password");
 }
 
-router.post("/login", (req, res): void => {
+router.post("/login", async (req, res): Promise<void> => {
   const configuration = getAuthConfiguration();
   if (!configuration) {
     res.status(503).json({ error: "auth not configured" });
@@ -160,10 +153,33 @@ router.post("/login", (req, res): void => {
   }
 
   const now = Date.now();
-  pruneExpiredFailureWindows(now);
   const address = getClientAddress(req);
-  const existingWindow = failedAttemptsByAddress.get(address);
-  if (existingWindow && existingWindow.count >= MAX_FAILED_ATTEMPTS) {
+  const windowStart = new Date(now - FAILURE_WINDOW_MS);
+  const [totalFailures] = await db
+    .select({ count: count() })
+    .from(failedLoginsTable)
+    .where(gte(failedLoginsTable.created_at, windowStart));
+  if (totalFailures.count >= MAX_TOTAL_FAILED_ATTEMPTS) {
+    logger.warn({
+      result: "locked",
+      req_ip: req.ip,
+      socket_addr: req.socket.remoteAddress,
+      xff: req.get("x-forwarded-for") ?? null,
+    }, "failed login");
+    res.status(429).json({ error: "too many attempts" });
+    return;
+  }
+
+  const [addressFailures] = await db
+    .select({ count: count() })
+    .from(failedLoginsTable)
+    .where(
+      and(
+        eq(failedLoginsTable.address, address),
+        gte(failedLoginsTable.created_at, windowStart),
+      ),
+    );
+  if (addressFailures.count >= MAX_FAILED_ATTEMPTS) {
     logger.warn({
       result: "locked",
       req_ip: req.ip,
@@ -183,9 +199,17 @@ router.post("/login", (req, res): void => {
   );
 
   if (!exactBody || !matchesPassword) {
-    const window = existingWindow ?? { firstFailureAt: now, count: 0 };
-    window.count += 1;
-    failedAttemptsByAddress.set(address, window);
+    await db.transaction(async (tx) => {
+      await tx.insert(failedLoginsTable).values({ address });
+      await tx
+        .delete(failedLoginsTable)
+        .where(
+          lt(
+            failedLoginsTable.created_at,
+            new Date(now - FAILURE_RETENTION_MS),
+          ),
+        );
+    });
     logger.warn({
       result: "invalid",
       req_ip: req.ip,
@@ -196,7 +220,9 @@ router.post("/login", (req, res): void => {
     return;
   }
 
-  failedAttemptsByAddress.delete(address);
+  await db
+    .delete(failedLoginsTable)
+    .where(eq(failedLoginsTable.address, address));
   const expiresAtSeconds = Math.floor(Date.now() / 1000) + SESSION_DURATION_SECONDS;
   const token = makeSessionToken(configuration.sessionSecret, expiresAtSeconds);
   res.cookie(SESSION_COOKIE_NAME, token, {
