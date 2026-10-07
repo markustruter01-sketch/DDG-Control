@@ -18,6 +18,34 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Log in with the admin password
+ */
+export const LoginBody = zod.object({
+  "password": zod.string()
+})
+
+export const LoginResponse = zod.object({
+  "ok": zod.literal(true)
+})
+
+
+/**
+ * @summary Log out
+ */
+export const LogoutResponse = zod.object({
+  "ok": zod.literal(true)
+})
+
+
+/**
+ * @summary Check the current session
+ */
+export const GetSessionResponse = zod.object({
+  "authenticated": zod.literal(true)
+})
+
+
+/**
  * Returns all projects sorted by sort_order
  * @summary List projects
  */

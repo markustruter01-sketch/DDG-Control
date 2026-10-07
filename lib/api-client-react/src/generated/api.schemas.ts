@@ -5,6 +5,20 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface LoginInput {
+  password: string;
+}
+
+export const LoginResultValue = {
+  ok: true,
+} as const;
+export type LoginResult = typeof LoginResultValue;
+
+export const SessionResultValue = {
+  authenticated: true,
+} as const;
+export type SessionResult = typeof SessionResultValue;
+
 export interface ProjectUpdateRequest {
   /** Must be one of PROJECT_STATUSES from the shared project constants. */
   status?: string;
