@@ -1,0 +1,51 @@
+ENVIRONMENT
+DDG Control workspace. READ-ONLY check. Change nothing. Do not publish.
+
+GOAL
+Report exactly what publishing this app would do, so the first publish can be planned safely.
+
+DONE WHEN
+Every question in STEPS is answered with raw evidence: the file lines, command output or settings listing it comes from. Anything that cannot be determined is marked UNKNOWN, with the reason.
+
+SCOPE
+Read only. No file, setting, secret, database or git changes of any kind.
+
+DO NOT
+- Do not edit, create or delete any file.
+- Do not change any setting, configuration or secret.
+- Do not run any database write, schema push or migration.
+- Do not run any git command that writes, and do not remove any lock file.
+- Do not print secret values, or the passwords inside connection strings. Names, "set/missing" and host names only.
+- Do not publish or deploy.
+
+STEPS
+1. Deployment settings: show the deployment section of .replit, and any build and run commands the published app will use. State the deployment type, if it is shown.
+
+2. Production mode: from the run command and the code, state whether NODE_ENV will be "production" in the published app. Show the lines that decide it.
+
+3. Database:
+   - Show whether DATABASE_URL (or whatever the app uses) is set separately for development and for production.
+   - Show the host name only for each, never the password.
+   - State whether the published app would use a different database from the preview.
+
+4. Tables in production: state how the tables (projects, members, tasks, goals) would be created in the published app's database. Is it a step at publish, a command in the build, something the platform does, or nothing? Show the evidence.
+
+5. Starting data: show the startup seed code for projects and members. Confirm whether it runs when the published app starts against an empty database.
+
+6. Secrets: report set or missing for DDG_ADMIN_PASSWORD and SESSION_SECRET in production. Report whether DDG_DEV_AUTH_BYPASS is set in production (it should not be).
+
+7. Lockout address:
+   - Show the exact lines in auth.ts that decide the client address for the failed-login counter.
+   - Show whether Express "trust proxy" is set anywhere.
+   - State what address the counter would most likely see for real visitors once published, and mark it UNKNOWN if it cannot be confirmed from code.
+
+8. Serving: state whether the published app serves both the web pages and /api from one address, and show the evidence.
+
+9. Git lock:
+   - Show `ls -la .git/index.lock` with its timestamp.
+   - Show whether any git process is running: `ps aux | grep -i [g]it`.
+   - State whether the lock looks stale. Do not remove it.
+
+10. List anything else you find that would break or leak on first publish. Report only; do not fix.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
