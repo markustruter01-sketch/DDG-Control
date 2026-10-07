@@ -188,7 +188,10 @@ try {
     "cattle-dog-coffee",
     "gods-eye-view",
   ]) {
-    assert.ok(projectRows.some((project) => project.slug === slug), `Missing project: ${slug}`);
+    assert.ok(
+      projectRows.some((project: { slug: string }) => project.slug === slug),
+      `Missing project: ${slug}`,
+    );
   }
 
   beforeCounts = await getCounts();
@@ -216,7 +219,7 @@ try {
 } finally {
   try {
     if (beforeCounts && testRunIds.length > 0) {
-      await db.transaction(async (tx) => {
+      await db.transaction(async (tx: any) => {
         const deletedTasks =
           createdTaskIds.length > 0
             ? await tx
