@@ -30,6 +30,10 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
 
 export const MEMBER_KINDS = ["human", "agent"] as const;
 
+export const STATUS_LIGHTS = ["green", "amber", "red"] as const;
+
+export const AGENT_RUN_STATUSES = ["running", "ok", "invalid", "error"] as const;
+
 export const PROJECT_TABS = [
   "Overview & Goals",
   "To-do",

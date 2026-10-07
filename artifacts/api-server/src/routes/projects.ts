@@ -70,6 +70,11 @@ export async function seedProjectsIfEmpty(): Promise<void> {
   if (existingMembers.length === 0) {
     await db.insert(membersTable).values(initialMembers);
   }
+
+  await db
+    .insert(membersTable)
+    .values({ name: "Ollie", kind: MEMBER_KINDS[1] })
+    .onConflictDoNothing({ target: membersTable.name });
 }
 
 function toApiProject(project: Project) {
