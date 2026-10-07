@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useSyncExternalStore, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useSyncExternalStore, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import {
   MutationCache,
   QueryCache,
@@ -123,10 +123,60 @@ const queryClient = new QueryClient({
 
 const DevAuthBypassContext = createContext(false);
 
+type ColorMode = 'dark' | 'day';
+
+const ColorModeContext = createContext<{
+  mode: ColorMode;
+  toggleMode: () => void;
+} | null>(null);
+
+function useColorMode() {
+  const colorMode = useContext(ColorModeContext);
+  if (!colorMode) throw new Error('Color mode context is missing');
+  return colorMode;
+}
+
+function ColorModeProvider({ children }: { children: ReactNode }) {
+  const [mode, setMode] = useState<ColorMode>(() => {
+    try {
+      return window.localStorage.getItem('ddg-control-color-mode') === 'day'
+        ? 'day'
+        : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+
+  useEffect(() => {
+    if (mode === 'day') {
+      document.documentElement.dataset.theme = 'day';
+    } else {
+      delete document.documentElement.dataset.theme;
+    }
+
+    try {
+      window.localStorage.setItem('ddg-control-color-mode', mode);
+    } catch {
+      // The selected mode still applies for this session if storage is unavailable.
+    }
+  }, [mode]);
+
+  const toggleMode = () => {
+    setMode((currentMode) => currentMode === 'dark' ? 'day' : 'dark');
+  };
+
+  return (
+    <ColorModeContext.Provider value={{ mode, toggleMode }}>
+      {children}
+    </ColorModeContext.Provider>
+  );
+}
+
 function Header({ showLogout = true }: { showLogout?: boolean }) {
   const client = useQueryClient();
   const logoutMutation = useLogout();
   const devBypass = useContext(DevAuthBypassContext);
+  const { mode, toggleMode } = useColorMode();
   const pendingDecisionsQuery = useListDecisions(
     { status: 'pending' },
     { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } },
@@ -151,6 +201,15 @@ function Header({ showLogout = true }: { showLogout?: boolean }) {
         <Link href="/decisions" className="header-link" data-testid="link-decisions">
           Decisions{pendingCount > 0 && <span className="header-count">[{pendingCount}]</span>}
         </Link>
+        <button
+          className="theme-toggle"
+          type="button"
+          onClick={toggleMode}
+          aria-label={`Switch to ${mode === 'dark' ? 'day' : 'night'} mode`}
+          data-testid="button-theme-toggle"
+        >
+          {mode === 'dark' ? 'Day mode' : 'Night mode'}
+        </button>
         {showLogout && !devBypass && (
           <button
             className="logout-button"
@@ -1973,11 +2032,13 @@ function AuthGate() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-        <AuthGate />
-      </WouterRouter>
-    </QueryClientProvider>
+    <ColorModeProvider>
+      <QueryClientProvider client={queryClient}>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+          <AuthGate />
+        </WouterRouter>
+      </QueryClientProvider>
+    </ColorModeProvider>
   );
 }
 

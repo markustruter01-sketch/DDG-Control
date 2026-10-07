@@ -284,6 +284,18 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 }
 .logout-button:hover:not(:disabled) { background: hsl(var(--muted)); }
 .logout-button:disabled { cursor: wait; opacity: .6; }
+.theme-toggle {
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  background: hsl(var(--card) / .88);
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+.theme-toggle:hover { background: hsl(var(--muted)); }
 .header-link {
   min-height: 36px;
   display: inline-flex;
@@ -606,7 +618,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   .topbar { height: auto; min-height: 66px; flex-wrap: wrap; gap: 8px; padding: 10px 16px; }
   .topbar-actions { flex: 1 1 100%; flex-wrap: wrap; gap: 5px; }
   .header-link { min-height: 34px; padding: 7px 8px; font-size: 11px; }
-  .logout-button { min-height: 34px; padding: 7px 8px; font-size: 11px; }
+  .logout-button, .theme-toggle { min-height: 34px; padding: 7px 8px; font-size: 11px; }
   .brand { gap: 8px; font-size: 13px; }
   .page-wrap { width: calc(100% - 32px); }
   .decision-history-row { gap: 10px; }
@@ -729,3 +741,82 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   .org-person { padding: 11px; }
   .report-item { padding: 13px; }
 }
+
+:root[data-theme='day'] {
+  color-scheme: light;
+  --background: 42 38% 96%;
+  --foreground: 218 24% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 218 24% 15%;
+  --card-border: 34 18% 81%;
+  --border: 34 18% 82%;
+  --muted: 38 31% 92%;
+  --muted-foreground: 216 12% 40%;
+  --accent: 158 48% 31%;
+  --accent-foreground: 0 0% 100%;
+  --primary: 158 48% 31%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 38 31% 92%;
+  --secondary-foreground: 218 24% 15%;
+  --input: 34 18% 82%;
+  --ring: 158 48% 31%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 218 24% 15%;
+  --destructive: 0 65% 43%;
+  --destructive-foreground: 0 0% 100%;
+  --sidebar: 42 38% 96%;
+  --sidebar-foreground: 218 24% 15%;
+  --sidebar-border: 34 18% 82%;
+  --sidebar-primary: 158 48% 31%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 38 31% 92%;
+  --sidebar-accent-foreground: 218 24% 15%;
+}
+
+:root[data-theme='day'] .home-shell {
+  background-color: hsl(var(--background));
+  background-image:
+    linear-gradient(180deg, rgba(250, 248, 241, .12), rgba(250, 248, 241, .28)),
+    var(--home-background);
+}
+:root[data-theme='day'] .home-shell .project-tile {
+  background-color: rgba(255, 255, 255, .78);
+  border-color: rgba(44, 57, 49, .2);
+  box-shadow: 0 14px 38px rgba(29, 39, 33, .16), inset 0 1px 0 rgba(255, 255, 255, .86);
+}
+:root[data-theme='day'] .home-shell .project-tile:hover {
+  border-color: rgba(44, 57, 49, .32);
+  background-color: rgba(255, 255, 255, .93);
+  box-shadow: 0 18px 44px rgba(29, 39, 33, .2), inset 0 1px 0 rgba(255, 255, 255, .95);
+}
+:root[data-theme='day'] .report-item {
+  background: rgba(255, 255, 255, .82);
+}
+:root[data-theme='day'] .agent-light-dot {
+  border-color: rgba(28, 36, 31, .48);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .75);
+}
+:root[data-theme='day'] .agents-run-status-ok {
+  background: rgba(47, 139, 89, .14);
+  color: #205c39;
+}
+:root[data-theme='day'] .agents-run-status-invalid,
+:root[data-theme='day'] .agents-run-status-error {
+  background: rgba(200, 63, 58, .12);
+  color: #8d302d;
+}
+:root[data-theme='day'] .agents-run-status-running {
+  background: rgba(208, 139, 18, .15);
+  color: #74500c;
+}
+:root[data-theme='day'] .priority-chip { color: #205c49; }
+:root[data-theme='day'] .priority-kill,
+:root[data-theme='day'] .priority-delay { color: #843d32; }
+:root[data-theme='day'] .priority-investigate { color: #74500c; }
+:root[data-theme='day'] .severity-high { color: #8c302b; }
+:root[data-theme='day'] .severity-medium { color: #74500c; }
+:root[data-theme='day'] .severity-low { color: #286347; }
+:root[data-theme='day'] .urgency-high { color: #843d32; }
+:root[data-theme='day'] .urgency-medium { color: #74500c; }
+:root[data-theme='day'] .history-status-approved { color: #286347; }
+:root[data-theme='day'] .history-status-declined { color: #8c302b; }

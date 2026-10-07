@@ -1,0 +1,108 @@
+ENVIRONMENT
+DDG Control workspace. Development only. Do not publish. Make NO xAI requests.
+
+GOAL
+Add a key-protected "inbound" API that Ollie, running in Cursor, uses to record decisions, update task status, post risk, incident or update notes, and read the current state. It never deletes anything and never touches money.
+
+DONE WHEN
+- Every /api/inbound/* route requires "Authorization: Bearer <OLLIE_INBOUND_KEY>". A missing or wrong key returns 401. A missing env var returns 503. The login check does not apply to these routes only.
+- POST /api/inbound/decisions records a new decision (approved or declined, decided_via "cursor"), or decides an existing pending decision by decision_id. Approved creates a "planned" task. Deciding a non-pending decision returns 409.
+- POST /api/inbound/tasks/:id/status changes the status, and done/completed_at follow the existing task rules.
+- POST /api/inbound/notes stores a note.
+- GET /api/inbound/state returns pending decisions and open tasks with their ids.
+- After cleanup, the counts match the "before" snapshot.
+- Codegen exits with code 0. `pnpm run typecheck` passes.
+
+SCOPE
+- lib/project-constants/src/index.ts
+- lib/db/src/schema/agents.ts
+- artifacts/api-server/src/routes/decisions.ts (extract the shared decide logic only)
+- artifacts/api-server/src/routes/inbound.ts (new)
+- artifacts/api-server/src/routes/auth.ts (exempt /api/inbound/* from the login check only)
+- artifacts/api-server/src/routes/index.ts
+- lib/api-spec/openapi.yaml
+- scripts/src/test-ollie.ts (only if needed for test rows)
+- Files that codegen rewrites. List every one.
+
+DO NOT
+- Do not print, log or store OLLIE_INBOUND_KEY or any other secret.
+- Do not add any delete endpoint, and nothing that touches Stripe, metrics, login or members.
+- Do not change the existing approve and decline routes' behaviour.
+- Do not build any frontend.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Check that OLLIE_INBOUND_KEY exists, without printing it. Report "set" or "missing" and its length. If it is missing, stop here.
+
+2. Constants:
+   - DECISION_SOURCES = ["ollie_daily", "cursor"]
+   - NOTE_KINDS = ["risk", "incident", "update"]
+
+3. Schema:
+   a) decisions: add
+      - source: text, not null, default "ollie_daily", checked against DECISION_SOURCES
+      - decided_via: text, may be null, either "dashboard" or "cursor"
+   b) New table inbound_notes:
+      - id: serial primary key
+      - project_id: references projects, not null
+      - kind: text, not null, checked against NOTE_KINDS
+      - severity: text, not null, checked against LEVELS
+      - text: text, not null
+      - created_at: default now
+   Run `pnpm --filter @workspace/db run push` and show the output.
+
+4. In decisions.ts, move the approve and decline transaction logic into one exported function, decideDecision(id, outcome, note, decidedVia). The existing routes call it with "dashboard". Their responses must not change.
+
+5. Create routes/inbound.ts and register it. One shared key check: if OLLIE_INBOUND_KEY is missing, return 503 {"error":"inbound not configured"}. Compare the Bearer token with crypto.timingSafeEqual on hashes of both. On a mismatch, return 401 {"error":"unauthorised"}. In auth.ts, exempt only paths starting with /api/inbound/. Every body allows no extra fields (400).
+   a) GET /api/inbound/state returns:
+      - pending decisions: id, project_slug, title, recommendation
+      - tasks not "done": id, project_slug, title, status, owner_name, due_date
+      - project slugs
+      - member names
+   b) POST /api/inbound/decisions, body:
+      - decision_id: integer, optional
+      - outcome: "approved" or "declined"
+      - note: string of at most 500 characters, optional
+      If decision_id is given, call decideDecision(decision_id, outcome, note, "cursor"). No other fields are allowed.
+      If decision_id is not given, these are required:
+      - project_slug
+      - title: 1 to 200 characters
+      - summary: 1 to 300 characters, stored as recommendation
+      - owner_name
+      - due_date: optional, YYYY-MM-DD or null
+      Then insert a decision with source "cursor", risk "Recorded from Cursor", urgency "medium" and confidence "medium", and decide it in the same transaction through decideDecision's logic, with decided_via "cursor".
+      Unknown project or owner: 400. Use the existing shared title and date checks.
+   c) POST /api/inbound/tasks/:id/status, body {status: one of TASK_STATUSES}. Use the existing task update logic, so completed_at follows the same rules. Unknown id: 404.
+   d) POST /api/inbound/notes, body:
+      - project_slug
+      - kind: one of NOTE_KINDS
+      - severity: one of LEVELS
+      - text: 1 to 300 characters
+   Update openapi.yaml, run codegen and show the exit code. Restart the API server.
+
+6. Test with curl against the development server, reading the key from the environment and never printing it. Show the HTTP code and body of each. Record every id created.
+   a) Show the "before" counts of decisions, tasks and inbound_notes.
+   b) GET /api/inbound/state with no key. Expect 401. With "Bearer wrong". Expect 401.
+   c) GET /api/inbound/state with the key. Expect 200.
+   d) POST a new approved decision for cattle-dog-coffee, owner "Markus". Expect 200, plus 1 new "planned" task.
+   e) POST a new declined decision. Expect 200, with no task.
+   f) POST with owner "Bob". Expect 400. POST with an extra field "x". Expect 400.
+   g) Create 1 pending decision directly in the database for the test. Decide it through the inbound route with decision_id. Expect 200. Decide it again. Expect 409.
+   h) Set the task from (d) to "done". Expect completed_at set. Set it to "planned". Expect completed_at null.
+   i) POST a note: finance, risk, high, "Test risk note". Expect 200.
+   j) Start a temporary production-mode instance on a spare port. Call GET /api/projects with no cookie (expect 401), and GET /api/inbound/state with the key (expect 200). Stop the instance.
+   k) Call GET /api/inbound/state on a temporary instance started without OLLIE_INBOUND_KEY. Expect 503. Stop it.
+
+7. Cleanup, in one transaction, deleting only the recorded ids, in this order:
+   - the inbound_notes rows
+   - the decisions
+   - the tasks
+   Each count must match exactly; otherwise roll back. Show that the counts equal the "before" counts.
+   Run `pnpm run typecheck`. Report every file touched, and the exact final request and response shape of each inbound route.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
