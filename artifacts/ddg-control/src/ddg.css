@@ -192,7 +192,9 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   font: 400 12px/1.5 var(--app-font-mono);
 }
 .tab-panel.todo-tab-panel { display: block; min-height: 0; padding: 16px; }
+.tab-panel.goal-tab-panel { display: block; min-height: 0; padding: 16px; }
 .todo-workspace { display: grid; gap: 18px; width: 100%; }
+.goal-workspace { display: grid; gap: 18px; width: 100%; }
 .todo-toolbar { display: flex; justify-content: flex-end; }
 .task-primary-button, .task-secondary-button {
   min-height: 38px; padding: 9px 13px; border-radius: 7px; cursor: pointer; font: inherit;
@@ -222,6 +224,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 .todo-task-title { font-size: 14px; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
 .todo-task-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: hsl(var(--muted-foreground)); font-size: 12px; }
 .todo-task-completed { color: hsl(var(--accent)); font-size: 12px; font-weight: 700; }
+.goal-notes { color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
 .task-editor-form { display: grid; gap: 13px; padding: 15px; }
 .task-field { display: grid; gap: 6px; color: hsl(var(--foreground)); font-size: 12px; font-weight: 700; }
 .task-field-optional { color: hsl(var(--muted-foreground)); font-weight: 400; }
@@ -241,6 +244,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   .project-tile { min-height: 205px; padding: 28px 30px; }
   .tile-facts { padding-top: 40px; }
   .tab-panel.todo-tab-panel { padding: 20px; }
+  .tab-panel.goal-tab-panel { padding: 20px; }
   .task-editor-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .task-field-wide { grid-column: 1 / -1; }
 }

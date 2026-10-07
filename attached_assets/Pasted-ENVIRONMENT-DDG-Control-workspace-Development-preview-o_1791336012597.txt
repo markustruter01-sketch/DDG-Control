@@ -1,0 +1,66 @@
+ENVIRONMENT
+DDG Control workspace. Development preview only. Development database only. Do not publish.
+
+GOAL
+Build the goals list on the "Overview & Goals" tab of each project page, so I can add goals, edit them, and see them grouped by status.
+
+DONE WHEN
+In the preview, on /projects/cattle-dog-coffee in the "Overview & Goals" tab:
+- I add a goal with a title and a target date, and it appears under "Active".
+- I edit it to status "Achieved", and it moves under "Achieved" with an achieved date.
+- After I refresh the page, it is still there.
+
+SCOPE
+- artifacts/ddg-control/src/App.tsx
+- artifacts/ddg-control/src/ddg.css (styles only, if needed)
+
+DO NOT
+- Do not change any API route, OpenAPI spec, database schema, seed or constants file.
+- Do not change the To-do tab's behaviour, or any other tab.
+- Do not write a second date formatter. Reuse the existing ones from the To-do tab.
+- Do not parse target_date into a JavaScript Date.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. In App.tsx, find the two date formatters the To-do tab uses: one for YYYY-MM-DD strings, and one for timestamps in the Australia/Brisbane timezone. Report their names. If either one is defined inside the To-do component, move it to the top level of App.tsx unchanged so both tabs can use it. Change nothing else about it.
+
+2. In the "Overview & Goals" tab, load the goals using the generated hook for GET /api/projects/:slug/goals.
+   - Show them in groups, one group per status in GOAL_STATUSES order, with headings from GOAL_STATUS_LABELS.
+   - Hide empty groups.
+   - If there are no goals at all, show "No goals yet".
+
+3. Each goal row shows:
+   - the title
+   - "Target <date>" if target_date is set, using the YYYY-MM-DD formatter
+   - for achieved goals, "Achieved · <date>" from achieved_at, using the Brisbane timestamp formatter
+   - the notes, if any
+   Phone-first layout, matching the To-do rows' style.
+
+4. Add an "Add goal" button. It opens a form with:
+   - title (required)
+   - target date (optional)
+   - notes (optional)
+   On save, call POST. On error, show the server's error text and keep the form open.
+
+5. Tapping a goal opens an edit form with title, notes, status (dropdown from GOAL_STATUSES using GOAL_STATUS_LABELS) and target date.
+   - Save sends only the fields that changed.
+   - Clearing the target date sends null.
+   - On error, show the server's error text and keep the form open.
+   After any create or edit succeeds, refresh this project's cached goal list.
+
+6. Test:
+   a) GET /api/projects/cattle-dog-coffee/goals. This is the "before" snapshot.
+   b) POST one test goal with curl, titled "UI test goal", with target_date "2026-12-31". Write down its id. Take a screenshot of the tab at 402 px width showing it under "Active" with "Target 31 Dec 2026".
+   c) PATCH it to "achieved" with curl. Take a screenshot showing it under "Achieved" with an achieved date.
+   d) In one transaction, delete only that id. Exactly 1 row must be deleted; otherwise roll back and report.
+   e) GET the goal list again and show that it matches the snapshot from (a).
+   f) Take a screenshot of the To-do tab, showing it still works.
+
+7. Run `pnpm run typecheck` and show the result.
+   Report every file you touched. If you touched any file outside SCOPE, say which and why.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command or URL you ran for each.
