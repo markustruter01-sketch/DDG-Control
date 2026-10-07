@@ -1,0 +1,68 @@
+ENVIRONMENT
+DDG Control workspace. Development preview and development database only. Do not publish.
+
+GOAL
+Make the login lockout work correctly when published: store failed attempts in the database, lock one address after 5 failures in 15 minutes, and lock login for everyone after 20 failures from all addresses combined in 15 minutes.
+
+DONE WHEN
+- 5 wrong passwords from one address make its 6th attempt return 429, while a different address still gets 401.
+- Once failures from all addresses total 20 within 15 minutes, any login attempt from any address, including one with the correct password, returns 429.
+- After test cleanup, the correct password returns 200.
+- Failed attempts live in a database table, not in memory.
+- `pnpm run typecheck` passes.
+
+SCOPE
+- lib/db/src/schema/auth.ts (new)
+- lib/db/src/schema/index.ts
+- artifacts/api-server/src/routes/auth.ts
+
+DO NOT
+- Do not store or log any password, cookie value or secret.
+- Do not change the cookie, the session check, the dev bypass or the "failed login" log line.
+- Do not set Express "trust proxy".
+- Do not publish or deploy.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Create lib/db/src/schema/auth.ts with one table, failed_logins:
+   - id: serial primary key
+   - address: text, not null
+   - created_at: timestamp, not null, default now
+   Add an index on created_at. Export it from lib/db/src/schema/index.ts.
+   Run `pnpm --filter @workspace/db run push` and show the raw output.
+
+2. In auth.ts, set the client address as follows:
+   - the first entry of the X-Forwarded-For header, trimmed, if present
+   - otherwise req.ip
+   - otherwise "unknown"
+   Keep it in one function, used in one place.
+
+3. In auth.ts, replace the in-memory failure counter with the failed_logins table:
+   a) Before checking the password, count rows from the last 15 minutes:
+      - If all rows total 20 or more, return 429 {"error":"too many attempts"}.
+      - Else if rows for this address total 5 or more, return 429 {"error":"too many attempts"}.
+   b) On a wrong password, insert one row for this address. Do not insert a row for 429 responses.
+   c) On a correct password, delete this address's rows.
+   d) On every wrong-password insert, also delete rows older than 1 day.
+   Remove the in-memory Map and its code. Keep the "failed login" log line exactly as it is.
+
+4. Restart the API server. Run every test with curl against http://localhost (not the preview domain), setting X-Forwarded-For explicitly. Use only addresses from the 203.0.113.0/24 test range. Show the HTTP code of each request, and the response body wherever the code is not 401.
+   a) Count the rows in failed_logins. This is the "before" count.
+   b) Address 203.0.113.1: send 5 wrong passwords (expect 401 each), then a 6th (expect 429).
+   c) Address 203.0.113.2: send 1 wrong password. Expect 401.
+   d) Addresses 203.0.113.11 through 203.0.113.24: send 1 wrong password each. Expect 401 each. Total failures in the table should now be 20.
+   e) Address 203.0.113.50: send a wrong password. Expect 429.
+   f) Address 203.0.113.51: send the CORRECT password, read from the DDG_ADMIN_PASSWORD environment variable without printing it. Expect 429.
+   g) Show the row count. Expect the "before" count plus 20.
+
+5. Cleanup: in one transaction, delete from failed_logins only the rows whose address starts with "203.0.113.". Exactly 20 rows must be deleted; otherwise roll back and report.
+   Then show that the row count equals the "before" count.
+   Then send the CORRECT password from address 203.0.113.60. Expect 200.
+
+6. Run `pnpm run typecheck` and show the result.
+   Report every file you touched. If you touched any file outside SCOPE, say which and why.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
