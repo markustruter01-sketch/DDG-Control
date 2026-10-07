@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export const SessionResultValue = {
-  authenticated: true,
-} as const;
-export type SessionResult = typeof SessionResultValue;
+export interface SessionResult {
+  authenticated: true;
+  dev_bypass: boolean;
+}

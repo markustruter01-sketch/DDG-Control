@@ -41,7 +41,8 @@ export const LogoutResponse = zod.object({
  * @summary Check the current session
  */
 export const GetSessionResponse = zod.object({
-  "authenticated": zod.literal(true)
+  "authenticated": zod.literal(true),
+  "dev_bypass": zod.boolean()
 })
 
 

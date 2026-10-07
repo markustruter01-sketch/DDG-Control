@@ -435,7 +435,9 @@ components:
         authenticated:
           type: boolean
           const: true
-      required: [authenticated]
+        dev_bypass:
+          type: boolean
+      required: [authenticated, dev_bypass]
     ProjectUpdateRequest:
       type: object
       additionalProperties: false

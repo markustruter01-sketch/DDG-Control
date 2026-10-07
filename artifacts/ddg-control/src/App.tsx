@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import { createContext, useContext, useState, useSyncExternalStore, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import {
   MutationCache,
   QueryCache,
@@ -108,9 +108,12 @@ const queryClient = new QueryClient({
   },
 });
 
+const DevAuthBypassContext = createContext(false);
+
 function Header({ showLogout = true }: { showLogout?: boolean }) {
   const client = useQueryClient();
   const logoutMutation = useLogout();
+  const devBypass = useContext(DevAuthBypassContext);
 
   return (
     <header className="topbar">
@@ -118,7 +121,7 @@ function Header({ showLogout = true }: { showLogout?: boolean }) {
         <span className="brand-mark" aria-hidden="true">dd</span>
         <span>DDG Control</span>
       </Link>
-      {showLogout && (
+      {showLogout && !devBypass && (
         <button
           className="logout-button"
           type="button"
@@ -1293,7 +1296,17 @@ function AuthGate() {
     return <LoginScreen />;
   }
   if (sessionQuery.isSuccess) {
-    return <Router />;
+    const devBypass = sessionQuery.data.dev_bypass;
+    return (
+      <DevAuthBypassContext.Provider value={devBypass}>
+        {devBypass && (
+          <div className="dev-auth-banner" role="status">
+            DEV: login off
+          </div>
+        )}
+        <Router />
+      </DevAuthBypassContext.Provider>
+    );
   }
   if (sessionQuery.isError) {
     return (

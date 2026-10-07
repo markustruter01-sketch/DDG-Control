@@ -25,6 +25,21 @@ type FailedAttemptWindow = {
 
 const failedAttemptsByAddress = new Map<string, FailedAttemptWindow>();
 let missingConfigurationLogged = false;
+let productionBypassWarningLogged = false;
+
+function isAuthBypassed(): boolean {
+  if (process.env.DDG_DEV_AUTH_BYPASS !== "true") {
+    return false;
+  }
+  if (process.env.NODE_ENV === "production") {
+    if (!productionBypassWarningLogged) {
+      logger.error("DDG_DEV_AUTH_BYPASS ignored in production");
+      productionBypassWarningLogged = true;
+    }
+    return false;
+  }
+  return true;
+}
 
 function getAuthConfiguration(): AuthConfiguration | null {
   const adminPassword = process.env.DDG_ADMIN_PASSWORD;
@@ -193,6 +208,13 @@ router.post("/logout", (_req, res): void => {
 });
 
 router.get("/session", (req, res): void => {
+  if (isAuthBypassed()) {
+    res.status(200).json(
+      GetSessionResponse.parse({ authenticated: true, dev_bypass: true }),
+    );
+    return;
+  }
+
   const configuration = getAuthConfiguration();
   if (!configuration) {
     res.status(503).json({ error: "auth not configured" });
@@ -204,10 +226,17 @@ router.get("/session", (req, res): void => {
     return;
   }
 
-  res.status(200).json(GetSessionResponse.parse({ authenticated: true }));
+  res.status(200).json(
+    GetSessionResponse.parse({ authenticated: true, dev_bypass: false }),
+  );
 });
 
 export const requireAuth: RequestHandler = (req, res, next): void => {
+  if (isAuthBypassed()) {
+    next();
+    return;
+  }
+
   const configuration = getAuthConfiguration();
   if (!configuration) {
     res.status(503).json({ error: "auth not configured" });

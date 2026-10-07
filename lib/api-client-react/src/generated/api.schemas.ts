@@ -14,10 +14,10 @@ export const LoginResultValue = {
 } as const;
 export type LoginResult = typeof LoginResultValue;
 
-export const SessionResultValue = {
-  authenticated: true,
-} as const;
-export type SessionResult = typeof SessionResultValue;
+export interface SessionResult {
+  authenticated: true;
+  dev_bypass: boolean;
+}
 
 export interface ProjectUpdateRequest {
   /** Must be one of PROJECT_STATUSES from the shared project constants. */

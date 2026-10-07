@@ -1,0 +1,71 @@
+ENVIRONMENT
+DDG Control workspace. Development preview only. Development database only. Do not publish.
+
+GOAL
+Turn login off in the development preview only, using a development-only setting that is ignored in production mode, and show a clear banner whenever login is off.
+
+DONE WHEN
+- In the preview, the app loads with no login screen, survives page refreshes, and shows a "DEV: login off" banner on every page.
+- With no cookie, GET /api/projects on the development server returns 200.
+- A separate temporary API instance started with NODE_ENV=production and DDG_DEV_AUTH_BYPASS=true still returns 401 for GET /api/projects without a cookie.
+- DDG_DEV_AUTH_BYPASS is set for development and NOT set for production.
+- `pnpm run typecheck` passes.
+
+SCOPE
+- artifacts/api-server/src/routes/auth.ts
+- lib/api-spec/openapi.yaml
+- artifacts/ddg-control/src/App.tsx
+- artifacts/ddg-control/src/ddg.css (banner style only)
+- Files that codegen rewrites. List every one.
+- The environment configuration DDG_DEV_AUTH_BYPASS (development only)
+
+DO NOT
+- Do not set DDG_DEV_AUTH_BYPASS for production or for the published app.
+- Do not remove or weaken the login, logout, cookie signing or lockout code. The bypass only skips the check.
+- Do not print the value of any secret.
+- Do not publish or deploy.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Set the non-secret configuration DDG_DEV_AUTH_BYPASS=true for the development environment only. Show the configuration listing for both development and production, by name and value, to prove it exists only in development.
+
+2. In auth.ts, add one function, isAuthBypassed(), that returns true only when both of these hold:
+   - DDG_DEV_AUTH_BYPASS is exactly "true"
+   - NODE_ENV is not "production"
+   If DDG_DEV_AUTH_BYPASS is "true" while NODE_ENV is "production", return false and log one error: "DDG_DEV_AUTH_BYPASS ignored in production".
+   This is the only place the bypass decision is made.
+
+3. When isAuthBypassed() is true:
+   - The protection check lets the request through.
+   - GET /api/session returns 200 {"authenticated":true,"dev_bypass":true}.
+   Otherwise, behaviour is exactly as now, and the session response includes "dev_bypass":false.
+   In openapi.yaml, add the required boolean field dev_bypass to the session response. Run `pnpm --filter @workspace/api-spec run codegen` and show the exit code.
+
+4. In App.tsx, when the session response has dev_bypass true:
+   - Show a thin banner at the top of every page reading "DEV: login off".
+   - Hide the Log out button.
+   When it is false, the app behaves exactly as now.
+
+5. Restart the API server. Test against the development server, and show the raw output and HTTP code of each:
+   a) GET /api/session with no cookie. Expect 200 with dev_bypass true.
+   b) GET /api/projects with no cookie. Expect 200.
+   c) Screenshot at 402 px width: the home page with the banner and no login screen. Reload, then take a second screenshot showing the same.
+
+6. Production-gate test:
+   - Start a second, temporary API instance on a spare port with NODE_ENV=production and DDG_DEV_AUTH_BYPASS=true. Show the exact command, without printing secrets.
+   - GET /api/projects on that instance with no cookie. Expect 401.
+   - Show the "DDG_DEV_AUTH_BYPASS ignored in production" log line.
+   - Stop that instance and show that it is stopped.
+
+7. Run `pnpm run typecheck` and show the result.
+   Do not save screenshots inside the workspace.
+   Report:
+   - Every file you touched.
+   - Every file codegen rewrote.
+   - If you touched any file outside SCOPE, say which and why.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command or URL you ran for each.
