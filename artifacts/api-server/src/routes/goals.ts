@@ -154,7 +154,8 @@ router.get("/projects/:slug/goals", async (req, res): Promise<void> => {
   });
 
   const response = goals.map(toApiGoal);
-  res.json(ListProjectGoalsResponse.parse(response));
+  ListProjectGoalsResponse.parse(response);
+  res.json(response);
 });
 
 router.post("/projects/:slug/goals", async (req, res): Promise<void> => {

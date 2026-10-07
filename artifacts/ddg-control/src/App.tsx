@@ -565,7 +565,7 @@ function emptyGoalDraft(): GoalDraft {
 function goalDraftFromGoal(goal: Goal): GoalDraft {
   return {
     title: goal.title,
-    targetDate: goal.target_date?.slice(0, 10) ?? '',
+    targetDate: goal.target_date ?? '',
     notes: goal.notes ?? '',
     status: goal.status as GoalStatus,
   };
@@ -753,7 +753,7 @@ function ProjectGoals({ slug }: { slug: string }) {
     const title = draft.title.trim();
     const notes = draft.notes.trim() || null;
     const targetDate = draft.targetDate || null;
-    const originalTargetDate = goal.target_date?.slice(0, 10) ?? null;
+    const originalTargetDate = goal.target_date ?? null;
     if (title !== goal.title) changes.title = title;
     if (notes !== (goal.notes ?? null)) changes.notes = notes;
     if (draft.status !== goal.status) changes.status = draft.status;
@@ -858,7 +858,7 @@ function ProjectGoals({ slug }: { slug: string }) {
                       {(goal.target_date || achievedDate) && (
                         <span className="todo-task-meta">
                           {goal.target_date && (
-                            <span>Target {formatDueDate(goal.target_date.slice(0, 10))}</span>
+                            <span>Target {formatDueDate(goal.target_date)}</span>
                           )}
                           {achievedDate && (
                             <span className="todo-task-completed">

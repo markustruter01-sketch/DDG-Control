@@ -1,2 +1,2 @@
 - [Hypest project label](hypest-project-label.md) — use “DDG - Hypest” as the canonical project name.
-- [Goal date JSON shape](goal-date-json-shape.md) — goals-list date values may be ISO timestamps; use the date-only prefix without parsing them as Date objects.
+- [Goal date JSON shape](goal-date-json-shape.md) — all goal API responses return `target_date` as `YYYY-MM-DD` or `null`; use it directly.
