@@ -9,6 +9,7 @@ export const projectsTable = pgTable(
     slug: text("slug").notNull().unique(),
     name: text("name").notNull(),
     description: text("description"),
+    drive_url: text("drive_url"),
     status: text("status").notNull().default(PROJECT_STATUSES[0]),
     sort_order: integer("sort_order").notNull(),
     created_at: timestamp("created_at").defaultNow(),

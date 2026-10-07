@@ -558,7 +558,7 @@ export const getUpdateProjectUrl = (slug: string,) => {
 
 /**
  * Updates only the supplied project fields.
- * @summary Update a project's status or description
+ * @summary Update a project's status, description, or Drive folder link
  */
 export const updateProject = async (slug: string,
     projectUpdateRequest: ProjectUpdateRequest, options?: Parameters<typeof customFetch>[1]): Promise<Project> => {
@@ -625,7 +625,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdateProjectMutationVariables = {slug: string;data: BodyType<ProjectUpdateRequest>}
 
     /**
- * @summary Update a project's status or description
+ * @summary Update a project's status, description, or Drive folder link
  */
 export const useUpdateProject = <TError = ErrorType<UpdateProject400 | UpdateProject404>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProject>>, TError,UpdateProjectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

@@ -46,6 +46,50 @@ export const LEVELS = ["low", "medium", "high"] as const;
 
 export const DECISION_STATUSES = ["pending", "approved", "declined"] as const;
 
+export const ORG_CHART = [
+  { name: "Markus", role: "Founder", group: "founder" },
+  { name: "Ollie", role: "General Manager & COO", group: "gm" },
+  { name: "Harald", role: "Chief of Staff", group: "corporate" },
+  { name: "Hermes", role: "Operations Manager", group: "corporate" },
+  { name: "Plutus", role: "Finance & Analytics Manager", group: "corporate" },
+  { name: "Freya", role: "Marketing Director", group: "corporate" },
+  {
+    name: "DDG Finance",
+    role: "Venture Manager",
+    group: "venture",
+    project_slug: "finance",
+  },
+  {
+    name: "DDG Hypest",
+    role: "Venture Manager",
+    group: "venture",
+    project_slug: "hypest",
+  },
+  {
+    name: "DDG Coffee",
+    role: "Venture Manager",
+    group: "venture",
+    project_slug: "cattle-dog-coffee",
+  },
+  {
+    name: "DDG Venture",
+    role: "Venture Manager",
+    group: "venture",
+    project_slug: "gods-eye-view",
+  },
+] as const;
+
+export const PRINCIPLES = [
+  "THINK INDEPENDENTLY.",
+  "CHALLENGE EVERYTHING.",
+  "EXECUTE APPROVED DECISIONS EXCEPTIONALLY WELL.",
+  "WE DO NOT PUNISH MISTAKES. WE PUNISH LYING AND COWARDICE.",
+  "OVERALL COMPANY SUCCESS COMES FIRST.",
+  "YOU ARE ALLOWED TO THINK BEFORE YOU ARE ALLOWED TO ACT.",
+  "OLLIE MANAGES THE ORGANISATION. MARKUS MAKES THE CONSEQUENTIAL DECISIONS. EMPLOYEES EXECUTE APPROVED ACTIONS.",
+  "REVENUE BEFORE EXPENDITURE. CREATIVITY BEFORE CAPITAL. FREE BEFORE PAID.",
+] as const;
+
 export const PROJECT_TABS = [
   "Overview & Goals",
   "To-do",

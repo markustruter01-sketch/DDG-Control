@@ -55,6 +55,7 @@ export const ListProjectsResponseItem = zod.object({
   "slug": zod.string(),
   "name": zod.string(),
   "description": zod.string().nullable(),
+  "drive_url": zod.string().nullable(),
   "status": zod.string(),
   "sort_order": zod.number().int(),
   "created_at": zod.coerce.date().nullable()
@@ -75,6 +76,7 @@ export const GetProjectResponse = zod.object({
   "slug": zod.string(),
   "name": zod.string(),
   "description": zod.string().nullable(),
+  "drive_url": zod.string().nullable(),
   "status": zod.string(),
   "sort_order": zod.number().int(),
   "created_at": zod.coerce.date().nullable()
@@ -83,7 +85,7 @@ export const GetProjectResponse = zod.object({
 
 /**
  * Updates only the supplied project fields.
- * @summary Update a project's status or description
+ * @summary Update a project's status, description, or Drive folder link
  */
 export const UpdateProjectParams = zod.object({
   "slug": zod.coerce.string()
@@ -91,11 +93,18 @@ export const UpdateProjectParams = zod.object({
 
 export const updateProjectBodyDescriptionMax = 2000;
 
+export const updateProjectBodyDriveUrlOneMax = 500;
+
+
+export const updateProjectBodyDriveUrlOneRegExp = new RegExp('^https://drive\\.google\\.com');
+export const updateProjectBodyDriveUrlTwoMax = 0;
+
 
 
 export const UpdateProjectBody = zod.object({
   "status": zod.string().optional().describe('Must be one of PROJECT_STATUSES from the shared project constants.'),
-  "description": zod.string().max(updateProjectBodyDescriptionMax).nullish()
+  "description": zod.string().max(updateProjectBodyDescriptionMax).nullish(),
+  "drive_url": zod.union([zod.string().max(updateProjectBodyDriveUrlOneMax).regex(updateProjectBodyDriveUrlOneRegExp),zod.string().max(updateProjectBodyDriveUrlTwoMax),zod.null()]).optional().describe('A Google Drive URL, an empty string to clear it, or null.')
 })
 
 export const UpdateProjectResponse = zod.object({
@@ -103,6 +112,7 @@ export const UpdateProjectResponse = zod.object({
   "slug": zod.string(),
   "name": zod.string(),
   "description": zod.string().nullable(),
+  "drive_url": zod.string().nullable(),
   "status": zod.string(),
   "sort_order": zod.number().int(),
   "created_at": zod.coerce.date().nullable()
@@ -117,7 +127,13 @@ export const ListMembersResponseItem = zod.object({
   "id": zod.number().int(),
   "name": zod.string(),
   "kind": zod.string().describe('Must be one of MEMBER_KINDS from the shared project constants.'),
+  "created_at": zod.coerce.date().nullable(),
+  "previous": zod.union([zod.object({
+  "status_light": zod.enum(['green', 'amber', 'red']),
+  "priority": zod.string().nullable().describe('Must be one of PRIORITY_CALLS from the shared project constants, or null.'),
+  "next_action": zod.string(),
   "created_at": zod.coerce.date().nullable()
+}),zod.null()]).optional()
 })
 export const ListMembersResponse = zod.array(ListMembersResponseItem)
 

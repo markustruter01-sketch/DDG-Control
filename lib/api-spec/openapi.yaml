@@ -159,7 +159,7 @@ paths:
     patch:
       operationId: updateProject
       tags: [projects]
-      summary: Update a project's status or description
+      summary: Update a project's status, description, or Drive folder link
       description: Updates only the supplied project fields.
       parameters:
         - name: slug
@@ -725,6 +725,15 @@ components:
         description:
           type: ["string", "null"]
           maxLength: 2000
+        drive_url:
+          description: A Google Drive URL, an empty string to clear it, or null.
+          anyOf:
+            - type: string
+              maxLength: 500
+              pattern: '^https://drive\.google\.com/'
+            - type: string
+              maxLength: 0
+            - type: "null"
     HealthStatus:
       type: object
       properties:
@@ -743,6 +752,8 @@ components:
           type: string
         description:
           type: ["string", "null"]
+        drive_url:
+          type: ["string", "null"]
         status:
           type: string
         sort_order:
@@ -755,6 +766,7 @@ components:
         - slug
         - name
         - description
+        - drive_url
         - status
         - sort_order
         - created_at
@@ -779,6 +791,10 @@ components:
         created_at:
           type: ["string", "null"]
           format: date-time
+        previous:
+          anyOf:
+            - $ref: "#/components/schemas/LatestAgentProjectUpdatePrevious"
+            - type: "null"
       required: [id, name, kind, created_at]
     Task:
       type: object
@@ -1210,6 +1226,23 @@ components:
         - priority
         - risks
         - created_at
+        - previous
+    LatestAgentProjectUpdatePrevious:
+      type: object
+      additionalProperties: false
+      properties:
+        status_light:
+          type: string
+          enum: [green, amber, red]
+        priority:
+          type: ["string", "null"]
+          description: Must be one of PRIORITY_CALLS from the shared project constants, or null.
+        next_action:
+          type: string
+        created_at:
+          type: ["string", "null"]
+          format: date-time
+      required: [status_light, priority, next_action, created_at]
     LatestAgentRisk:
       type: object
       additionalProperties: false

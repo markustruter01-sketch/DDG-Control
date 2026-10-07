@@ -14,4 +14,6 @@ export interface ProjectUpdateRequest {
      * @nullable
      */
   description?: string | null;
+  /** A Google Drive URL, an empty string to clear it, or null. */
+  drive_url?: string | null;
 }

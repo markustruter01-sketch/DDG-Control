@@ -59,6 +59,8 @@ router.get("/agent-updates/latest", async (_req, res): Promise<void> => {
     .select({
       project_id: agentProjectUpdatesTable.project_id,
       project_slug: projectsTable.slug,
+      run_id: agentRunsTable.id,
+      run_started_at: agentRunsTable.started_at,
       status_light: agentProjectUpdatesTable.status_light,
       summary: agentProjectUpdatesTable.summary,
       next_action: agentProjectUpdatesTable.next_action,
@@ -71,25 +73,68 @@ router.get("/agent-updates/latest", async (_req, res): Promise<void> => {
       projectsTable,
       eq(agentProjectUpdatesTable.project_id, projectsTable.id),
     )
+    .innerJoin(
+      agentRunsTable,
+      eq(agentProjectUpdatesTable.run_id, agentRunsTable.id),
+    )
+    .innerJoin(
+      membersTable,
+      eq(agentRunsTable.member_id, membersTable.id),
+    )
+    .where(eq(membersTable.name, "Ollie"))
     .orderBy(
-      desc(agentProjectUpdatesTable.created_at),
+      desc(agentRunsTable.started_at),
+      desc(agentRunsTable.id),
       desc(agentProjectUpdatesTable.id),
     );
 
-  const seenProjectIds = new Set<number>();
-  const latestUpdates = rows.flatMap((row) => {
-    if (seenProjectIds.has(row.project_id)) return [];
-    seenProjectIds.add(row.project_id);
-    return [{
-      project_slug: row.project_slug,
+  const updatesByProject = new Map<
+    number,
+    {
+      latest: {
+        project_slug: string;
+        status_light: string;
+        summary: string;
+        next_action: string;
+        priority: string | null;
+        risks: LatestUpdateRisk[];
+        created_at: string | null;
+      };
+      previous: {
+        status_light: string;
+        priority: string | null;
+        next_action: string;
+        created_at: string | null;
+      } | null;
+    }
+  >();
+
+  for (const row of rows) {
+    const update = {
       status_light: row.status_light,
-      summary: row.summary,
-      next_action: row.next_action,
       priority: row.priority,
-      risks: convertStoredRisks(row.risks),
+      next_action: row.next_action,
       created_at: row.created_at?.toISOString() ?? null,
-    }];
-  });
+    };
+    const existing = updatesByProject.get(row.project_id);
+    if (!existing) {
+      updatesByProject.set(row.project_id, {
+        latest: {
+          project_slug: row.project_slug,
+          ...update,
+          summary: row.summary,
+          risks: convertStoredRisks(row.risks),
+        },
+        previous: null,
+      });
+    } else if (existing.previous === null) {
+      existing.previous = update;
+    }
+  }
+
+  const latestUpdates = Array.from(updatesByProject.values()).map(
+    ({ latest, previous }) => ({ ...latest, previous }),
+  );
 
   res.json(ListLatestAgentUpdatesResponse.parse(latestUpdates));
 });

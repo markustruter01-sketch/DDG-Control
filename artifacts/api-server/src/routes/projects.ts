@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-zod";
 import {
   MEMBER_KINDS,
+  ORG_CHART,
   PROJECT_STATUSES,
   type ProjectStatus,
 } from "@workspace/project-constants";
@@ -73,17 +74,11 @@ export async function seedProjectsIfEmpty(): Promise<void> {
 
   await db
     .insert(membersTable)
-    .values([
-      { name: "Ollie", kind: MEMBER_KINDS[1] },
-      { name: "Harald", kind: MEMBER_KINDS[1] },
-      { name: "Hermes", kind: MEMBER_KINDS[1] },
-      { name: "Plutus", kind: MEMBER_KINDS[1] },
-      { name: "Freya", kind: MEMBER_KINDS[1] },
-      { name: "DDG Finance", kind: MEMBER_KINDS[1] },
-      { name: "DDG Hypest", kind: MEMBER_KINDS[1] },
-      { name: "DDG Coffee", kind: MEMBER_KINDS[1] },
-      { name: "DDG Venture", kind: MEMBER_KINDS[1] },
-    ])
+    .values(
+      ORG_CHART
+        .filter((member) => member.name !== "Markus")
+        .map(({ name }) => ({ name, kind: MEMBER_KINDS[1] })),
+    )
     .onConflictDoNothing({ target: membersTable.name });
 }
 
@@ -157,7 +152,10 @@ router.patch("/projects/:slug", async (req, res): Promise<void> => {
 
   const body = req.body as Record<string, unknown>;
   const unknownField = Object.keys(body).find(
-    (field) => field !== "status" && field !== "description",
+    (field) =>
+      field !== "status" &&
+      field !== "description" &&
+      field !== "drive_url",
   );
   if (unknownField) {
     res.status(400).json({ error: `unknown field: ${unknownField}` });
@@ -171,7 +169,10 @@ router.patch("/projects/:slug", async (req, res): Promise<void> => {
   }
 
   const updates: Partial<
-    Pick<typeof projectsTable.$inferInsert, "status" | "description">
+    Pick<
+      typeof projectsTable.$inferInsert,
+      "status" | "description" | "drive_url"
+    >
   > = {};
 
   if (Object.hasOwn(body, "status")) {
@@ -200,6 +201,24 @@ router.patch("/projects/:slug", async (req, res): Promise<void> => {
       return;
     }
     updates.description = trimmedDescription || null;
+  }
+
+  if (Object.hasOwn(body, "drive_url")) {
+    const driveUrl = body.drive_url;
+    if (driveUrl === null || driveUrl === "") {
+      updates.drive_url = null;
+    } else if (typeof driveUrl !== "string") {
+      res.status(400).json({ error: "drive_url must be a string or null" });
+      return;
+    } else if (driveUrl.length > 500) {
+      res.status(400).json({ error: "drive_url exceeds 500 characters" });
+      return;
+    } else if (!driveUrl.startsWith("https://drive.google.com/")) {
+      res.status(400).json({ error: "invalid drive_url" });
+      return;
+    } else {
+      updates.drive_url = driveUrl;
+    }
   }
 
   const [updated] = await db

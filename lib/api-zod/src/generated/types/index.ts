@@ -20,6 +20,8 @@ export * from './goalInput';
 export * from './goalUpdate';
 export * from './healthStatus';
 export * from './latestAgentProjectUpdate';
+export * from './latestAgentProjectUpdatePrevious';
+export * from './latestAgentProjectUpdatePreviousStatusLight';
 export * from './latestAgentProjectUpdateStatusLight';
 export * from './latestAgentRisk';
 export * from './listDecisionsParams';

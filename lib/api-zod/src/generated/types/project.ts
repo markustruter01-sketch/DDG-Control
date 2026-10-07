@@ -12,6 +12,8 @@ export interface Project {
   name: string;
   /** @nullable */
   description: string | null;
+  /** @nullable */
+  drive_url: string | null;
   status: string;
   sort_order: number;
   /** @nullable */
