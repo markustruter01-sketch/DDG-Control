@@ -164,6 +164,12 @@ router.post("/login", (req, res): void => {
   const address = getClientAddress(req);
   const existingWindow = failedAttemptsByAddress.get(address);
   if (existingWindow && existingWindow.count >= MAX_FAILED_ATTEMPTS) {
+    logger.warn({
+      result: "locked",
+      req_ip: req.ip,
+      socket_addr: req.socket.remoteAddress,
+      xff: req.get("x-forwarded-for") ?? null,
+    }, "failed login");
     res.status(429).json({ error: "too many attempts" });
     return;
   }
@@ -180,6 +186,12 @@ router.post("/login", (req, res): void => {
     const window = existingWindow ?? { firstFailureAt: now, count: 0 };
     window.count += 1;
     failedAttemptsByAddress.set(address, window);
+    logger.warn({
+      result: "invalid",
+      req_ip: req.ip,
+      socket_addr: req.socket.remoteAddress,
+      xff: req.get("x-forwarded-for") ?? null,
+    }, "failed login");
     res.status(401).json({ error: "invalid credentials" });
     return;
   }

@@ -1,0 +1,48 @@
+ENVIRONMENT
+DDG Control workspace. Development preview only. Do not publish.
+
+GOAL
+Prepare for first publish: remove the open cross-site access rule, and log the address details of every failed login so the real visitor address can be read once published.
+
+DONE WHEN
+- `cors()` is no longer applied in app.ts, and the preview still loads all project data.
+- A failed login writes one log line containing req.ip, the socket remote address and the raw X-Forwarded-For header, and the line does not contain the submitted password.
+- `pnpm run typecheck` passes.
+
+SCOPE
+- artifacts/api-server/src/app.ts (remove the cors() line and its import only)
+- artifacts/api-server/src/routes/auth.ts (add the log line only)
+
+DO NOT
+- Do not log, print or store any password, cookie value or secret.
+- Do not change the lockout logic, the cookie or the bypass.
+- Do not set Express "trust proxy". That comes after publishing.
+- Do not remove the cors package from package.json. Report that it is now unused.
+- Do not publish or deploy.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. In artifacts/api-server/src/app.ts, remove the `cors()` middleware line and its import. Show the lines before and after.
+
+2. In auth.ts, on every failed login, including the 429 lockout response, write one log line at warn level, with:
+   - msg: "failed login"
+   - result: "invalid" or "locked"
+   - req_ip: req.ip
+   - socket_addr: req.socket.remoteAddress
+   - xff: the raw X-Forwarded-For header value, or null
+   Nothing else from the request body.
+
+3. Restart the API server. Test against the development server, and show the raw output and HTTP code of each:
+   a) GET /api/projects from the browser preview (bypass on). Expect 200 with 4 projects.
+   b) POST /api/login with password "zz-wrong-pw-log-test" once. Expect 401.
+   c) Show the "failed login" log line from (b).
+   d) Search the API logs for "zz-wrong-pw-log-test" and show that there are no matches.
+   e) Restart the API server to clear the failed-login counter.
+
+4. Run `pnpm run typecheck` and show the result.
+   Report every file you touched. Confirm whether the cors package is now unused anywhere: `grep -rn "cors" artifacts/api-server/src`.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
