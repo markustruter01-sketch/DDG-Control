@@ -29,16 +29,14 @@ let missingConfigurationLogged = false;
 function getAuthConfiguration(): AuthConfiguration | null {
   const adminPassword = process.env.DDG_ADMIN_PASSWORD;
   const sessionSecret = process.env.SESSION_SECRET;
-  const missingSecrets: string[] = [];
-
-  if (!adminPassword) {
-    missingSecrets.push("DDG_ADMIN_PASSWORD");
-  }
-  if (!sessionSecret) {
-    missingSecrets.push("SESSION_SECRET");
-  }
-
-  if (missingSecrets.length > 0) {
+  if (!adminPassword || !sessionSecret) {
+    const missingSecrets: string[] = [];
+    if (!adminPassword) {
+      missingSecrets.push("DDG_ADMIN_PASSWORD");
+    }
+    if (!sessionSecret) {
+      missingSecrets.push("SESSION_SECRET");
+    }
     if (!missingConfigurationLogged) {
       logger.error(
         { missingSecrets },
