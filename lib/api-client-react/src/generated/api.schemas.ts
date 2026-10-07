@@ -101,6 +101,58 @@ export interface TaskUpdate {
   due_date?: string | null;
 }
 
+export interface Goal {
+  id: number;
+  project_id: number;
+  title: string;
+  /** @nullable */
+  notes: string | null;
+  /** Must be one of GOAL_STATUSES from the shared project constants. */
+  status: string;
+  /** @nullable */
+  target_date: string | null;
+  /** @nullable */
+  achieved_at: string | null;
+  /** @nullable */
+  created_at: string | null;
+  /** @nullable */
+  updated_at: string | null;
+}
+
+export interface GoalInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  notes?: string | null;
+  /** Must be one of GOAL_STATUSES from the shared project constants. */
+  status?: string;
+  /** @nullable */
+  target_date?: string | null;
+}
+
+export interface GoalUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  notes?: string | null;
+  /** Must be one of GOAL_STATUSES from the shared project constants. */
+  status?: string;
+  /** @nullable */
+  target_date?: string | null;
+}
+
 export type GetProject404 = {
   error: 'not found';
 };

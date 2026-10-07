@@ -190,3 +190,94 @@ export const UpdateTaskResponse = zod.object({
 })
 
 
+/**
+ * Returns goals sorted by status, target date with empty dates last, then creation time.
+ * @summary List project goals
+ */
+export const ListProjectGoalsParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const ListProjectGoalsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "project_id": zod.number().int(),
+  "title": zod.string(),
+  "notes": zod.string().nullable(),
+  "status": zod.string().describe('Must be one of GOAL_STATUSES from the shared project constants.'),
+  "target_date": zod.coerce.date().nullable(),
+  "achieved_at": zod.coerce.date().nullable(),
+  "created_at": zod.coerce.date().nullable(),
+  "updated_at": zod.coerce.date().nullable()
+})
+export const ListProjectGoalsResponse = zod.array(ListProjectGoalsResponseItem)
+
+
+/**
+ * @summary Create a project goal
+ */
+export const CreateProjectGoalParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const createProjectGoalBodyTitleMax = 200;
+
+export const createProjectGoalBodyNotesMax = 2000;
+
+
+
+export const CreateProjectGoalBody = zod.object({
+  "title": zod.string().min(1).max(createProjectGoalBodyTitleMax),
+  "notes": zod.string().max(createProjectGoalBodyNotesMax).nullish(),
+  "status": zod.string().optional().describe('Must be one of GOAL_STATUSES from the shared project constants.'),
+  "target_date": zod.coerce.date().nullish()
+})
+
+export const CreateProjectGoalResponse = zod.object({
+  "id": zod.number().int(),
+  "project_id": zod.number().int(),
+  "title": zod.string(),
+  "notes": zod.string().nullable(),
+  "status": zod.string().describe('Must be one of GOAL_STATUSES from the shared project constants.'),
+  "target_date": zod.coerce.date().nullable(),
+  "achieved_at": zod.coerce.date().nullable(),
+  "created_at": zod.coerce.date().nullable(),
+  "updated_at": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Update a goal
+ */
+
+
+
+export const UpdateGoalParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const updateGoalBodyTitleMax = 200;
+
+export const updateGoalBodyNotesMax = 2000;
+
+
+
+export const UpdateGoalBody = zod.object({
+  "title": zod.string().min(1).max(updateGoalBodyTitleMax).optional(),
+  "notes": zod.string().max(updateGoalBodyNotesMax).nullish(),
+  "status": zod.string().optional().describe('Must be one of GOAL_STATUSES from the shared project constants.'),
+  "target_date": zod.coerce.date().nullish()
+})
+
+export const UpdateGoalResponse = zod.object({
+  "id": zod.number().int(),
+  "project_id": zod.number().int(),
+  "title": zod.string(),
+  "notes": zod.string().nullable(),
+  "status": zod.string().describe('Must be one of GOAL_STATUSES from the shared project constants.'),
+  "target_date": zod.coerce.date().nullable(),
+  "achieved_at": zod.coerce.date().nullable(),
+  "created_at": zod.coerce.date().nullable(),
+  "updated_at": zod.coerce.date().nullable()
+})
+
+

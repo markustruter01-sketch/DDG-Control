@@ -8,6 +8,9 @@
 
 export * from './error';
 export * from './getProject404';
+export * from './goal';
+export * from './goalInput';
+export * from './goalUpdate';
 export * from './healthStatus';
 export * from './member';
 export * from './project';
