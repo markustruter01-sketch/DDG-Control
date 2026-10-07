@@ -1,0 +1,35 @@
+ENVIRONMENT
+DDG Control workspace. READ-ONLY, apart from ONE wrong-password login request to the published app in step 2. Change no files, settings or secrets. Do not publish.
+
+GOAL
+Find out exactly what client-address details the published app sees, so the login lockout can count real visitors correctly.
+
+DONE WHEN
+The report shows the raw "failed login" log lines from the published app, one from my phone and one from the test in step 2, and answers the questions in step 3 with evidence.
+
+SCOPE
+Read only. One POST to the published app's /api/login, in step 2.
+
+DO NOT
+- Do not edit, create or delete any file, setting or secret.
+- Do not send more than one login request to the published app.
+- Do not print any password, cookie value or secret.
+- Do not publish or deploy.
+
+STEPS
+1. Report the published app's URL. Read the published app's logs and show the most recent raw "failed login" line. That one is from my phone.
+   If you cannot access the published app's logs, say so plainly, and still do steps 2 and 3 with what you can see.
+
+2. Send exactly one request to the published app:
+   POST <published URL>/api/login
+   body {"password":"zz-wrong-pw-xff-test"}
+   with the extra header "X-Forwarded-For: 1.2.3.4".
+   Show the HTTP code and response body. Then show the new "failed login" log line it produced.
+
+3. Answer, quoting the log lines:
+   a) What is req_ip on the published app? Is it the same for both requests?
+   b) What does the xff chain look like for my phone's request? How many entries are there, and which position looks like a real public address?
+   c) For the test request, did the fake "1.2.3.4" survive in the xff chain? If so, in which position? Did the published proxy add entries after it?
+   d) Based only on (a) to (c): which position in the xff chain is the true visitor address that a client cannot fake? Mark UNKNOWN if the evidence is not enough.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
