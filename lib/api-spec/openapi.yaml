@@ -1195,9 +1195,7 @@ components:
         risks:
           type: array
           items:
-            oneOf:
-              - type: string
-              - $ref: "#/components/schemas/AgentRisk"
+            type: string
         created_at:
           type: ["string", "null"]
           format: date-time
@@ -1208,14 +1206,4 @@ components:
         - next_action
         - risks
         - created_at
-    AgentRisk:
-      type: object
-      additionalProperties: false
-      properties:
-        text:
-          type: string
-        severity:
-          type: string
-          description: Must be one of LEVELS from the shared project constants.
-      required: [text, severity]
 

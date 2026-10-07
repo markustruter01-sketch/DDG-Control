@@ -182,6 +182,77 @@ export interface OllieRunRequest {
   force?: boolean;
 }
 
+export interface DecisionActionBody {
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export interface Decision {
+  id: number;
+  /** @nullable */
+  run_id: number | null;
+  project_id: number;
+  title: string;
+  recommendation: string;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  cost_estimate_aud: number | null;
+  risk: string;
+  /** Must be one of LEVELS from the shared project constants. */
+  urgency: string;
+  /** Must be one of LEVELS from the shared project constants. */
+  confidence: string;
+  owner_id: number;
+  /** @nullable */
+  due_date: string | null;
+  /** Must be one of DECISION_STATUSES from the shared project constants. */
+  status: string;
+  /** @nullable */
+  note: string | null;
+  /** @nullable */
+  decided_at: string | null;
+  /** @nullable */
+  task_id: number | null;
+  /** @nullable */
+  created_at: string | null;
+}
+
+export interface DecisionWithNames {
+  id: number;
+  /** @nullable */
+  run_id: number | null;
+  project_id: number;
+  project_slug: string;
+  title: string;
+  recommendation: string;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  cost_estimate_aud: number | null;
+  risk: string;
+  /** Must be one of LEVELS from the shared project constants. */
+  urgency: string;
+  /** Must be one of LEVELS from the shared project constants. */
+  confidence: string;
+  owner_id: number;
+  owner_name: string;
+  /** @nullable */
+  due_date: string | null;
+  /** Must be one of DECISION_STATUSES from the shared project constants. */
+  status: string;
+  /** @nullable */
+  note: string | null;
+  /** @nullable */
+  decided_at: string | null;
+  /** @nullable */
+  task_id: number | null;
+  /** @nullable */
+  created_at: string | null;
+}
+
 export type AgentRunStatus = typeof AgentRunStatus[keyof typeof AgentRunStatus];
 
 
@@ -270,5 +341,12 @@ export type UpdateProject400 = {
 
 export type UpdateProject404 = {
   error: 'not found';
+};
+
+export type ListDecisionsParams = {
+/**
+ * Must be one of DECISION_STATUSES from the shared project constants.
+ */
+status: string;
 };
 

@@ -22,6 +22,9 @@ import type {
 import type {
   AgentRun,
   AgentRunWithMember,
+  Decision,
+  DecisionActionBody,
+  DecisionWithNames,
   Error,
   GetProject404,
   Goal,
@@ -29,6 +32,7 @@ import type {
   GoalUpdate,
   HealthStatus,
   LatestAgentProjectUpdate,
+  ListDecisionsParams,
   LoginInput,
   LoginResult,
   Member,
@@ -1689,4 +1693,266 @@ export function useListLatestAgentUpdates<TData = Awaited<ReturnType<typeof list
 
 
 
+
+export const getListDecisionsUrl = (params: ListDecisionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/decisions?${stringifiedParams}` : `/api/decisions`
+}
+
+/**
+ * @summary List decisions by status
+ */
+export const listDecisions = async (params: ListDecisionsParams, options?: Parameters<typeof customFetch>[1]): Promise<DecisionWithNames[]> => {
+
+  return customFetch<DecisionWithNames[]>(getListDecisionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDecisionsQueryKey = (params?: ListDecisionsParams,) => {
+    return [
+    `/api/decisions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListDecisionsQueryOptions = <TData = Awaited<ReturnType<typeof listDecisions>>, TError = ErrorType<Error>>(params: ListDecisionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDecisionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDecisions>>> = ({ signal }) => listDecisions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDecisions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDecisionsQueryResult = NonNullable<Awaited<ReturnType<typeof listDecisions>>>
+export type ListDecisionsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary List decisions by status
+ */
+
+export function useListDecisions<TData = Awaited<ReturnType<typeof listDecisions>>, TError = ErrorType<Error>>(
+ params: ListDecisionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDecisionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getApproveDecisionUrl = (id: number,) => {
+
+
+
+
+  return `/api/decisions/${id}/approve`
+}
+
+/**
+ * @summary Approve a pending decision and create its task
+ */
+export const approveDecision = async (id: number,
+    decisionActionBody: DecisionActionBody, options?: Parameters<typeof customFetch>[1]): Promise<Decision> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Decision>(getApproveDecisionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(decisionActionBody)
+  }
+);}
+
+
+
+
+
+export const getApproveDecisionMutationKey = () => ['approveDecision'] as const;
+
+export const getApproveDecisionMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveDecision>>, TError,ApproveDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveDecision>>, TError,ApproveDecisionMutationVariables, TContext> => {
+
+const mutationKey = getApproveDecisionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveDecision>>, ApproveDecisionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  approveDecision(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof approveDecision>>>
+    export type ApproveDecisionMutationBody = BodyType<DecisionActionBody>
+    export type ApproveDecisionMutationError = ErrorType<Error>
+    export type ApproveDecisionMutationVariables = {id: number;data: BodyType<DecisionActionBody>}
+
+    /**
+ * @summary Approve a pending decision and create its task
+ */
+export const useApproveDecision = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveDecision>>, TError,ApproveDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveDecision>>,
+        TError,
+        ApproveDecisionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getApproveDecisionMutationOptions(options));
+    }
+
+export const getDeclineDecisionUrl = (id: number,) => {
+
+
+
+
+  return `/api/decisions/${id}/decline`
+}
+
+/**
+ * @summary Decline a pending decision
+ */
+export const declineDecision = async (id: number,
+    decisionActionBody: DecisionActionBody, options?: Parameters<typeof customFetch>[1]): Promise<Decision> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Decision>(getDeclineDecisionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(decisionActionBody)
+  }
+);}
+
+
+
+
+
+export const getDeclineDecisionMutationKey = () => ['declineDecision'] as const;
+
+export const getDeclineDecisionMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declineDecision>>, TError,DeclineDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof declineDecision>>, TError,DeclineDecisionMutationVariables, TContext> => {
+
+const mutationKey = getDeclineDecisionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof declineDecision>>, DeclineDecisionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  declineDecision(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeclineDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof declineDecision>>>
+    export type DeclineDecisionMutationBody = BodyType<DecisionActionBody>
+    export type DeclineDecisionMutationError = ErrorType<Error>
+    export type DeclineDecisionMutationVariables = {id: number;data: BodyType<DecisionActionBody>}
+
+    /**
+ * @summary Decline a pending decision
+ */
+export const useDeclineDecision = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declineDecision>>, TError,DeclineDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof declineDecision>>,
+        TError,
+        DeclineDecisionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeclineDecisionMutationOptions(options));
+    }
 

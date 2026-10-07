@@ -417,3 +417,121 @@ export const ListLatestAgentUpdatesResponseItem = zod.object({
 export const ListLatestAgentUpdatesResponse = zod.array(ListLatestAgentUpdatesResponseItem)
 
 
+/**
+ * @summary List decisions by status
+ */
+export const ListDecisionsQueryParams = zod.object({
+  "status": zod.coerce.string()
+})
+
+export const listDecisionsResponseCostEstimateAudMin = 0;
+
+
+
+export const ListDecisionsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "run_id": zod.number().int().nullable(),
+  "project_id": zod.number().int(),
+  "project_slug": zod.string(),
+  "title": zod.string(),
+  "recommendation": zod.string(),
+  "cost_estimate_aud": zod.number().int().min(listDecisionsResponseCostEstimateAudMin).nullable(),
+  "risk": zod.string(),
+  "urgency": zod.string().describe('Must be one of LEVELS from the shared project constants.'),
+  "confidence": zod.string().describe('Must be one of LEVELS from the shared project constants.'),
+  "owner_id": zod.number().int(),
+  "owner_name": zod.string(),
+  "due_date": zod.coerce.date().nullable(),
+  "status": zod.string().describe('Must be one of DECISION_STATUSES from the shared project constants.'),
+  "note": zod.string().nullable(),
+  "decided_at": zod.coerce.date().nullable(),
+  "task_id": zod.number().int().nullable(),
+  "created_at": zod.coerce.date().nullable()
+})
+export const ListDecisionsResponse = zod.array(ListDecisionsResponseItem)
+
+
+/**
+ * @summary Approve a pending decision and create its task
+ */
+
+
+
+export const ApproveDecisionParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const approveDecisionBodyNoteMax = 500;
+
+
+
+export const ApproveDecisionBody = zod.object({
+  "note": zod.string().max(approveDecisionBodyNoteMax).optional()
+})
+
+export const approveDecisionResponseCostEstimateAudMin = 0;
+
+
+
+export const ApproveDecisionResponse = zod.object({
+  "id": zod.number().int(),
+  "run_id": zod.number().int().nullable(),
+  "project_id": zod.number().int(),
+  "title": zod.string(),
+  "recommendation": zod.string(),
+  "cost_estimate_aud": zod.number().int().min(approveDecisionResponseCostEstimateAudMin).nullable(),
+  "risk": zod.string(),
+  "urgency": zod.string().describe('Must be one of LEVELS from the shared project constants.'),
+  "confidence": zod.string().describe('Must be one of LEVELS from the shared project constants.'),
+  "owner_id": zod.number().int(),
+  "due_date": zod.coerce.date().nullable(),
+  "status": zod.string().describe('Must be one of DECISION_STATUSES from the shared project constants.'),
+  "note": zod.string().nullable(),
+  "decided_at": zod.coerce.date().nullable(),
+  "task_id": zod.number().int().nullable(),
+  "created_at": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Decline a pending decision
+ */
+
+
+
+export const DeclineDecisionParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const declineDecisionBodyNoteMax = 500;
+
+
+
+export const DeclineDecisionBody = zod.object({
+  "note": zod.string().max(declineDecisionBodyNoteMax).optional()
+})
+
+export const declineDecisionResponseCostEstimateAudMin = 0;
+
+
+
+export const DeclineDecisionResponse = zod.object({
+  "id": zod.number().int(),
+  "run_id": zod.number().int().nullable(),
+  "project_id": zod.number().int(),
+  "title": zod.string(),
+  "recommendation": zod.string(),
+  "cost_estimate_aud": zod.number().int().min(declineDecisionResponseCostEstimateAudMin).nullable(),
+  "risk": zod.string(),
+  "urgency": zod.string().describe('Must be one of LEVELS from the shared project constants.'),
+  "confidence": zod.string().describe('Must be one of LEVELS from the shared project constants.'),
+  "owner_id": zod.number().int(),
+  "due_date": zod.coerce.date().nullable(),
+  "status": zod.string().describe('Must be one of DECISION_STATUSES from the shared project constants.'),
+  "note": zod.string().nullable(),
+  "decided_at": zod.coerce.date().nullable(),
+  "task_id": zod.number().int().nullable(),
+  "created_at": zod.coerce.date().nullable()
+})
+
+
