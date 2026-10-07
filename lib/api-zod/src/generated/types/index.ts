@@ -16,6 +16,8 @@ export * from './goal';
 export * from './goalInput';
 export * from './goalUpdate';
 export * from './healthStatus';
+export * from './latestAgentProjectUpdate';
+export * from './latestAgentProjectUpdateStatusLight';
 export * from './loginInput';
 export * from './loginResult';
 export * from './member';

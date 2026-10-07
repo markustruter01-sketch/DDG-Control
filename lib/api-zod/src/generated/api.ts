@@ -386,3 +386,17 @@ export const ListAgentRunsResponseItem = zod.object({
 export const ListAgentRunsResponse = zod.array(ListAgentRunsResponseItem)
 
 
+/**
+ * @summary List the latest Ollie update for each project
+ */
+export const ListLatestAgentUpdatesResponseItem = zod.object({
+  "project_slug": zod.string(),
+  "status_light": zod.enum(['green', 'amber', 'red']),
+  "summary": zod.string(),
+  "next_action": zod.string(),
+  "risks": zod.array(zod.string()),
+  "created_at": zod.coerce.date().nullable()
+})
+export const ListLatestAgentUpdatesResponse = zod.array(ListLatestAgentUpdatesResponseItem)
+
+

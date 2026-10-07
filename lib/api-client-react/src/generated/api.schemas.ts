@@ -241,6 +241,25 @@ export interface AgentRunWithMember {
   finished_at: string | null;
 }
 
+export type LatestAgentProjectUpdateStatusLight = typeof LatestAgentProjectUpdateStatusLight[keyof typeof LatestAgentProjectUpdateStatusLight];
+
+
+export const LatestAgentProjectUpdateStatusLight = {
+  green: 'green',
+  amber: 'amber',
+  red: 'red',
+} as const;
+
+export interface LatestAgentProjectUpdate {
+  project_slug: string;
+  status_light: LatestAgentProjectUpdateStatusLight;
+  summary: string;
+  next_action: string;
+  risks: string[];
+  /** @nullable */
+  created_at: string | null;
+}
+
 export type GetProject404 = {
   error: 'not found';
 };

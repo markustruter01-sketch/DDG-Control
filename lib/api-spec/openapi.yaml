@@ -531,6 +531,20 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AgentRunWithMember"
+  /agent-updates/latest:
+    get:
+      operationId: listLatestAgentUpdates
+      tags: [agents]
+      summary: List the latest Ollie update for each project
+      responses:
+        "200":
+          description: Latest Ollie project updates; projects without updates are omitted
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LatestAgentProjectUpdate"
 components:
   schemas:
     LoginInput:
@@ -889,4 +903,31 @@ components:
         - error
         - started_at
         - finished_at
+    LatestAgentProjectUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        project_slug:
+          type: string
+        status_light:
+          type: string
+          enum: [green, amber, red]
+        summary:
+          type: string
+        next_action:
+          type: string
+        risks:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - project_slug
+        - status_light
+        - summary
+        - next_action
+        - risks
+        - created_at
 

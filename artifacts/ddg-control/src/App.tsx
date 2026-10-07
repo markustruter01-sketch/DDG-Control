@@ -10,6 +10,8 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import {
   getGetProjectQueryKey,
   getGetSessionQueryKey,
+  getListAgentRunsQueryKey,
+  getListLatestAgentUpdatesQueryKey,
   getListProjectGoalsQueryKey,
   getListMembersQueryKey,
   getListProjectTasksQueryKey,
@@ -22,8 +24,11 @@ import {
   useLogout,
   useListProjectGoals,
   useListMembers,
+  useListAgentRuns,
+  useListLatestAgentUpdates,
   useListProjectTasks,
   useListProjects,
+  useRunOllie,
   useUpdateGoal,
   useUpdateTask,
   useUpdateProject,
@@ -121,22 +126,27 @@ function Header({ showLogout = true }: { showLogout?: boolean }) {
         <span className="brand-mark" aria-hidden="true">dd</span>
         <span>DDG Control</span>
       </Link>
-      {showLogout && !devBypass && (
-        <button
-          className="logout-button"
-          type="button"
-          disabled={logoutMutation.isPending}
-          onClick={() => logoutMutation.mutate(undefined, {
-            onSuccess: () => {
-              client.clear();
-              setAuthenticationRequired(true);
-            },
-          })}
-          data-testid="button-logout"
-        >
-          {logoutMutation.isPending ? 'Logging out…' : 'Log out'}
-        </button>
-      )}
+      <nav className="topbar-actions" aria-label="Main navigation">
+        <Link href="/agents" className="header-link" data-testid="link-agents">
+          Agents
+        </Link>
+        {showLogout && !devBypass && (
+          <button
+            className="logout-button"
+            type="button"
+            disabled={logoutMutation.isPending}
+            onClick={() => logoutMutation.mutate(undefined, {
+              onSuccess: () => {
+                client.clear();
+                setAuthenticationRequired(true);
+              },
+            })}
+            data-testid="button-logout"
+          >
+            {logoutMutation.isPending ? 'Logging out…' : 'Log out'}
+          </button>
+        )}
+      </nav>
     </header>
   );
 }
@@ -144,6 +154,12 @@ function Header({ showLogout = true }: { showLogout?: boolean }) {
 function Home() {
   const projectsQuery = useListProjects({
     query: { queryKey: getListProjectsQueryKey() },
+  });
+  const agentUpdatesQuery = useListLatestAgentUpdates({
+    query: {
+      queryKey: getListLatestAgentUpdatesQueryKey(),
+      staleTime: 60_000,
+    },
   });
   const backgroundStyle = {
     '--home-background': `url("${import.meta.env.BASE_URL}dashboard-background.jpg")`,
@@ -172,26 +188,43 @@ function Home() {
           </section>
         ) : projectsQuery.data?.length ? (
           <div className="project-grid" data-testid="list-projects">
-            {projectsQuery.data.map((project) => (
-              <Link
-                key={project.id}
-                href={`/projects/${project.slug}`}
-                className="project-tile"
-                data-testid={`link-project-${project.slug}`}
-              >
-                <div className="tile-top">
-                  <h2 className="tile-name" data-testid={`text-project-name-${project.slug}`}>{project.name}</h2>
-                  <span className="status-badge" data-testid={`status-project-${project.slug}`}>
-                    <span className="status-dot" aria-hidden="true" />
-                    {project.status}
-                  </span>
-                </div>
-                <div className="tile-facts">
-                  <p className="tile-fact"><strong>Headline:</strong> No data yet</p>
-                  <p className="tile-fact"><strong>Next action:</strong> No data yet</p>
-                </div>
-              </Link>
-            ))}
+            {projectsQuery.data.map((project) => {
+              const latestUpdate = agentUpdatesQuery.data?.find(
+                (update) => update.project_slug === project.slug,
+              );
+              return (
+                <Link
+                  key={project.id}
+                  href={`/projects/${project.slug}`}
+                  className="project-tile"
+                  data-testid={`link-project-${project.slug}`}
+                >
+                  <div className="tile-top">
+                    <h2 className="tile-name" data-testid={`text-project-name-${project.slug}`}>{project.name}</h2>
+                    <div className="tile-status-group">
+                      <span className="status-badge" data-testid={`status-project-${project.slug}`}>
+                        <span className="status-dot" aria-hidden="true" />
+                        {project.status}
+                      </span>
+                      {latestUpdate && (
+                        <span
+                          className={`agent-light-dot agent-light-${latestUpdate.status_light}`}
+                          title={`Ollie: ${latestUpdate.status_light}`}
+                          aria-label={`Ollie's status light: ${latestUpdate.status_light}`}
+                          data-testid={`agent-light-${project.slug}`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className="tile-facts">
+                    <p className="tile-fact"><strong>Headline:</strong> No data yet</p>
+                    <p className="tile-fact">
+                      <strong>Next action:</strong> {latestUpdate?.next_action ?? 'No data yet'}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         ) : (
           <section className="state-panel" data-testid="status-projects-empty">
@@ -338,11 +371,27 @@ const completedDateFormatter = new Intl.DateTimeFormat('en-AU', {
   month: 'short',
   year: 'numeric',
 });
+const brisbaneDateTimeFormatter = new Intl.DateTimeFormat('en-AU', {
+  timeZone: 'Australia/Brisbane',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
 
 function formatCompletedDate(value: string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : completedDateFormatter.format(date);
+}
+
+function formatBrisbaneDateTime(value: string | null): string {
+  if (!value) return 'Date unavailable';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? 'Date unavailable'
+    : brisbaneDateTimeFormatter.format(date);
 }
 
 function TaskEditorForm({
@@ -799,6 +848,12 @@ function ProjectGoals({ slug }: { slug: string }) {
   const goalsQuery = useListProjectGoals(slug, {
     query: { queryKey: getListProjectGoalsQueryKey(slug) },
   });
+  const agentUpdatesQuery = useListLatestAgentUpdates({
+    query: {
+      queryKey: getListLatestAgentUpdatesQueryKey(),
+      staleTime: 60_000,
+    },
+  });
   const createGoalMutation = useCreateProjectGoal({
     mutation: {
       onSuccess: async () => {
@@ -821,6 +876,9 @@ function ProjectGoals({ slug }: { slug: string }) {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [draft, setDraft] = useState<GoalDraft>(emptyGoalDraft);
   const goals = goalsQuery.data ?? [];
+  const latestUpdate = agentUpdatesQuery.data?.find(
+    (update) => update.project_slug === slug,
+  );
   const groupedGoals = GOAL_STATUSES
     .map((status) => ({
       status,
@@ -921,6 +979,50 @@ function ProjectGoals({ slug }: { slug: string }) {
 
   return (
     <section className="goal-workspace" data-testid="section-project-goals">
+      <aside className="agent-latest-box" data-testid="box-ollie-latest">
+        <h2 className="todo-group-title">Ollie's latest</h2>
+        {agentUpdatesQuery.isLoading ? (
+          <p className="task-state-message" role="status">Loading Ollie's latest…</p>
+        ) : agentUpdatesQuery.isError ? (
+          <p className="task-form-error" role="alert">
+            {serverErrorText(agentUpdatesQuery.error, "Unable to load Ollie's latest report.")}
+          </p>
+        ) : !latestUpdate ? (
+          <p className="task-state-message" data-testid="status-no-ollie-report">
+            No report from Ollie yet
+          </p>
+        ) : (
+          <>
+            <div className="agent-update-light">
+              <span
+                className={`agent-light-dot agent-light-${latestUpdate.status_light}`}
+                aria-hidden="true"
+                data-testid={`agent-overview-light-${slug}`}
+              />
+              <span>{latestUpdate.status_light}</span>
+            </div>
+            <p className="agent-update-summary" data-testid={`agent-overview-summary-${slug}`}>
+              {latestUpdate.summary}
+            </p>
+            <div className="agent-update-risks">
+              <strong>Risks</strong>
+              {latestUpdate.risks.length > 0 ? (
+                <ul>
+                  {latestUpdate.risks.map((risk, index) => (
+                    <li key={`${risk}-${index}`}>{risk}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="task-state-message">No risks listed</p>
+              )}
+            </div>
+            <p className="agent-update-date" data-testid={`agent-overview-updated-${slug}`}>
+              Updated {formatBrisbaneDateTime(latestUpdate.created_at)}
+            </p>
+          </>
+        )}
+      </aside>
+
       <div className="todo-toolbar">
         <button
           className="task-primary-button"
@@ -1018,6 +1120,117 @@ function ProjectGoals({ slug }: { slug: string }) {
         </section>
       ))}
     </section>
+  );
+}
+
+function AgentsPage() {
+  const client = useQueryClient();
+  const runsQuery = useListAgentRuns({
+    query: { queryKey: getListAgentRunsQueryKey() },
+  });
+  const [runNotice, setRunNotice] = useState<{ text: string; isError: boolean } | null>(null);
+  const runMutation = useRunOllie({
+    mutation: {
+      onSuccess: async (run) => {
+        setRunNotice({
+          text: `Run status: ${run.status}${run.error ? ` — ${run.error}` : ''}`,
+          isError: run.status === 'error' || run.status === 'invalid',
+        });
+        await Promise.all([
+          client.invalidateQueries({ queryKey: getListAgentRunsQueryKey() }),
+          client.invalidateQueries({ queryKey: getListLatestAgentUpdatesQueryKey() }),
+        ]);
+      },
+      onError: (error) => {
+        setRunNotice({
+          text: serverErrorText(error, 'Unable to run Ollie.'),
+          isError: true,
+        });
+      },
+    },
+  });
+  const runs = runsQuery.data ?? [];
+
+  return (
+    <div className="app-shell">
+      <Header />
+      <main className="page-wrap detail-main agents-main">
+        <Link className="back-link" href="/" data-testid="link-agents-home">← Home</Link>
+        <div className="detail-heading agents-heading">
+          <p className="eyebrow">Team activity</p>
+          <h1 className="detail-title">Agents</h1>
+          <p className="detail-description">Daily report runs and their results.</p>
+        </div>
+
+        <section className="agents-run-panel" aria-labelledby="agents-run-title">
+          <div className="agents-run-toolbar">
+            <h2 id="agents-run-title" className="todo-group-title">Ollie</h2>
+            <button
+              className="task-primary-button"
+              type="button"
+              disabled={runMutation.isPending}
+              onClick={() => {
+                setRunNotice(null);
+                runMutation.mutate({ data: {} });
+              }}
+              data-testid="button-run-ollie"
+            >
+              {runMutation.isPending ? 'Running…' : 'Run Ollie now'}
+            </button>
+          </div>
+          {runNotice && (
+            <p
+              className={runNotice.isError ? 'agents-run-notice agents-run-notice-error' : 'agents-run-notice'}
+              role={runNotice.isError ? 'alert' : 'status'}
+              data-testid="status-ollie-run"
+            >
+              {runNotice.text}
+            </p>
+          )}
+        </section>
+
+        <section className="agents-history" aria-labelledby="agents-history-title">
+          <h2 id="agents-history-title" className="section-rule">
+            <span>Recent runs</span>
+          </h2>
+          {runsQuery.isLoading ? (
+            <p className="task-state-message" role="status">Loading agent runs…</p>
+          ) : runsQuery.isError ? (
+            <div className="task-query-error" role="alert">
+              <p>{serverErrorText(runsQuery.error, 'Unable to load agent runs.')}</p>
+              <button
+                className="task-secondary-button"
+                type="button"
+                onClick={() => void runsQuery.refetch()}
+              >
+                Retry
+              </button>
+            </div>
+          ) : runs.length === 0 ? (
+            <p className="task-state-message" data-testid="status-no-agent-runs">No agent runs yet</p>
+          ) : (
+            <ol className="agents-run-list" data-testid="list-agent-runs">
+              {runs.map((run) => (
+                <li className="agents-run-card" key={run.id} data-testid={`card-agent-run-${run.id}`}>
+                  <div className="agents-run-header">
+                    <strong>{run.member_name}</strong>
+                    <span className={`agents-run-status agents-run-status-${run.status}`}>
+                      {run.status}
+                    </span>
+                  </div>
+                  <p className="agents-run-date">Started {formatBrisbaneDateTime(run.started_at)}</p>
+                  <div className="agents-run-tokens">
+                    <span>Input tokens: {run.input_tokens ?? 'No data yet'}</span>
+                    <span>Output tokens: {run.output_tokens ?? 'No data yet'}</span>
+                  </div>
+                  {run.error && <p className="agents-run-error">{run.error}</p>}
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+      </main>
+    </div>
   );
 }
 
@@ -1271,6 +1484,7 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/agents" component={AgentsPage} />
         <Route path="/projects/:slug" component={ProjectDetail} />
       </Switch>
     </RoutedErrorBoundary>

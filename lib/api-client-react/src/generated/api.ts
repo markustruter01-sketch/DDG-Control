@@ -28,6 +28,7 @@ import type {
   GoalInput,
   GoalUpdate,
   HealthStatus,
+  LatestAgentProjectUpdate,
   LoginInput,
   LoginResult,
   Member,
@@ -1526,6 +1527,83 @@ export function useListAgentRuns<TData = Awaited<ReturnType<typeof listAgentRuns
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListAgentRunsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListLatestAgentUpdatesUrl = () => {
+
+
+
+
+  return `/api/agent-updates/latest`
+}
+
+/**
+ * @summary List the latest Ollie update for each project
+ */
+export const listLatestAgentUpdates = async ( options?: Parameters<typeof customFetch>[1]): Promise<LatestAgentProjectUpdate[]> => {
+
+  return customFetch<LatestAgentProjectUpdate[]>(getListLatestAgentUpdatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLatestAgentUpdatesQueryKey = () => {
+    return [
+    `/api/agent-updates/latest`
+    ] as const;
+    }
+
+
+export const getListLatestAgentUpdatesQueryOptions = <TData = Awaited<ReturnType<typeof listLatestAgentUpdates>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLatestAgentUpdates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLatestAgentUpdatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLatestAgentUpdates>>> = ({ signal }) => listLatestAgentUpdates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLatestAgentUpdates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLatestAgentUpdatesQueryResult = NonNullable<Awaited<ReturnType<typeof listLatestAgentUpdates>>>
+export type ListLatestAgentUpdatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the latest Ollie update for each project
+ */
+
+export function useListLatestAgentUpdates<TData = Awaited<ReturnType<typeof listLatestAgentUpdates>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLatestAgentUpdates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLatestAgentUpdatesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

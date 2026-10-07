@@ -1,9 +1,54 @@
-import { agentRunsTable, db, membersTable } from "@workspace/db";
+import { ListLatestAgentUpdatesResponse } from "@workspace/api-zod";
+import {
+  agentProjectUpdatesTable,
+  agentRunsTable,
+  db,
+  membersTable,
+  projectsTable,
+} from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { runOllie } from "../agents/ollie";
 
 const router: IRouter = Router();
+
+router.get("/agent-updates/latest", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select({
+      project_id: agentProjectUpdatesTable.project_id,
+      project_slug: projectsTable.slug,
+      status_light: agentProjectUpdatesTable.status_light,
+      summary: agentProjectUpdatesTable.summary,
+      next_action: agentProjectUpdatesTable.next_action,
+      risks: agentProjectUpdatesTable.risks,
+      created_at: agentProjectUpdatesTable.created_at,
+    })
+    .from(agentProjectUpdatesTable)
+    .innerJoin(
+      projectsTable,
+      eq(agentProjectUpdatesTable.project_id, projectsTable.id),
+    )
+    .orderBy(
+      desc(agentProjectUpdatesTable.created_at),
+      desc(agentProjectUpdatesTable.id),
+    );
+
+  const seenProjectIds = new Set<number>();
+  const latestUpdates = rows.flatMap((row) => {
+    if (seenProjectIds.has(row.project_id)) return [];
+    seenProjectIds.add(row.project_id);
+    return [{
+      project_slug: row.project_slug,
+      status_light: row.status_light,
+      summary: row.summary,
+      next_action: row.next_action,
+      risks: row.risks,
+      created_at: row.created_at?.toISOString() ?? null,
+    }];
+  });
+
+  res.json(ListLatestAgentUpdatesResponse.parse(latestUpdates));
+});
 
 router.post("/agents/ollie/run", async (req, res): Promise<void> => {
   if (
