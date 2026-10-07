@@ -1283,6 +1283,7 @@ function AuthGate() {
   const authRequired = useAuthenticationRequired();
   const sessionQuery = useGetSession({
     query: {
+      queryKey: getGetSessionQueryKey(),
       enabled: !authRequired,
       retry: false,
     },

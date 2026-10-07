@@ -14,3 +14,87 @@ mtime_ms = 1791336278159
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:0355effe-3533-4c3b-be29-95ce418e1c72/81a33ff9-b35a-4dbf-90c9-4410a2e18071/c2717305-a1c6-45fd-bc6f-491718de4bb7"
 storage_version_token = "1791336429954447"
 content_type = "image/png"
+
+[[outputs]]
+id = "La-8n6-QRMTefGxgjgsoP"
+uri = "file://attached_assets/ddg-auth-evidence/01-login.png"
+type = "image"
+title = "Login screen — no session"
+description = "402×874 browser screenshot before authentication."
+logical_id = "d8e9d5af-337a-4875-8185-021d4649168e"
+content_hash = "sha256:59b48ae4c10608a4af46bd56342fee8f8c7da943f734ca4f619f8448d56c3a69"
+size = 42219
+mtime_ms = 1791350557876
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:0355effe-3533-4c3b-be29-95ce418e1c72/d8e9d5af-337a-4875-8185-021d4649168e/8e775600-625a-4a83-8d35-94f83aa9c257"
+storage_version_token = "1791350653841177"
+content_type = "image/png"
+
+[[outputs]]
+id = "3HovS1k7zyWiwBatMTGZL"
+uri = "file://attached_assets/ddg-auth-evidence/02-login-error.png"
+type = "image"
+title = "Login screen — invalid password"
+description = "402×874 screenshot showing the server error and an empty password field."
+logical_id = "cb0893cc-3451-4804-bc73-116b1ceb6b04"
+content_hash = "sha256:7249ff7f8b8e991eaea2971c3765595c445ff4f3ec3de70138cc854b7c5a21fe"
+size = 44454
+mtime_ms = 1791350558156
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:0355effe-3533-4c3b-be29-95ce418e1c72/cb0893cc-3451-4804-bc73-116b1ceb6b04/888e7a55-fb4e-47ff-9f45-af1f64ebcde6"
+storage_version_token = "1791350654500101"
+content_type = "image/png"
+
+[[outputs]]
+id = "cq7gLhBjImMkqqXnarjxu"
+uri = "file://attached_assets/ddg-auth-evidence/03-project-page.png"
+type = "image"
+title = "Cattle Dog Coffee page"
+description = "402×874 screenshot after successful login at the requested project URL."
+logical_id = "f19c1c7e-f934-4b31-a4fb-a729567aa9f1"
+content_hash = "sha256:67df16c6a369f7eedca15120683c087f6086a0fb4d4d43c48ccd954e7319c2c3"
+size = 24372
+mtime_ms = 1791350558531
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:0355effe-3533-4c3b-be29-95ce418e1c72/f19c1c7e-f934-4b31-a4fb-a729567aa9f1/a5e7fdaf-6aa9-4dc6-ad81-63ce5f9e0194"
+storage_version_token = "1791350654999396"
+content_type = "image/png"
+
+[[outputs]]
+id = "xjMVGUwPz6ZzhxEK9aGcD"
+uri = "file://attached_assets/ddg-auth-evidence/04-home.png"
+type = "image"
+title = "Home — four projects and logout"
+description = "Full-page 402px-wide screenshot showing all four tiles and the Log out button."
+logical_id = "449ec02a-d8c8-4395-b237-20daca32c686"
+content_hash = "sha256:8995743020495d15c182d218864082f49c7e508d3adf7090ca5bf0d03966f6bd"
+size = 209000
+mtime_ms = 1791350611388
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:0355effe-3533-4c3b-be29-95ce418e1c72/449ec02a-d8c8-4395-b237-20daca32c686/d2620f6b-b0d0-4120-b219-432ab10b5073"
+storage_version_token = "1791350655597785"
+content_type = "image/png"
+
+[[outputs]]
+id = "nVLSbTNjb_OZOG5Mt3qXl"
+uri = "file://attached_assets/ddg-auth-evidence/05-logged-out.png"
+type = "image"
+title = "Login screen after logout"
+description = "402×874 screenshot after logout; no project data remains visible."
+logical_id = "95b5f7f3-fd31-4a81-b52b-93b7885c3ccf"
+content_hash = "sha256:59b48ae4c10608a4af46bd56342fee8f8c7da943f734ca4f619f8448d56c3a69"
+size = 42219
+mtime_ms = 1791350559628
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:0355effe-3533-4c3b-be29-95ce418e1c72/95b5f7f3-fd31-4a81-b52b-93b7885c3ccf/f0b7c4b5-9289-4516-89e9-5a3bed44016b"
+storage_version_token = "1791350656029501"
+content_type = "image/png"
+
+[[outputs]]
+id = "iDYv01nBplH34rcZHF8kU"
+uri = "file://attached_assets/ddg-auth-evidence/06-session-expired.png"
+type = "image"
+title = "Login screen after session expiry"
+description = "402×874 screenshot after deleting the session cookie and selecting To-do."
+logical_id = "8db583fc-2dd3-44e4-8937-e0163bb0cdd2"
+content_hash = "sha256:59b48ae4c10608a4af46bd56342fee8f8c7da943f734ca4f619f8448d56c3a69"
+size = 42219
+mtime_ms = 1791350560544
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:0355effe-3533-4c3b-be29-95ce418e1c72/8db583fc-2dd3-44e4-8937-e0163bb0cdd2/83266483-2d78-4a9a-b707-f7daff189476"
+storage_version_token = "1791350656507827"
+content_type = "image/png"
