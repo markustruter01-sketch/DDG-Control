@@ -517,6 +517,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /agents/ollie/cron:
+    post:
+      operationId: runOllieCron
+      tags: [agents]
+      summary: Run Ollie's daily dashboard report with a scheduler token
+      responses:
+        "200":
+          description: Completed or failed Ollie run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRun"
+        "401":
+          description: Missing or invalid scheduler token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Ollie already ran today or is currently running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Scheduler token is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /agents/runs:
     get:
       operationId: listAgentRuns

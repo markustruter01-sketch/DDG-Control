@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { ListLatestAgentUpdatesResponse } from "@workspace/api-zod";
 import {
   agentProjectUpdatesTable,
@@ -11,6 +12,31 @@ import { Router, type IRouter } from "express";
 import { runOllie } from "../agents/ollie";
 
 const router: IRouter = Router();
+
+router.post("/agents/ollie/cron", async (req, res): Promise<void> => {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    res.status(503).json({ error: "cron not configured" });
+    return;
+  }
+
+  const authorization = req.get("authorization");
+  const bearerToken = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!bearerToken) {
+    res.status(401).json({ error: "unauthorised" });
+    return;
+  }
+
+  const expectedHash = createHash("sha256").update(cronSecret).digest();
+  const tokenHash = createHash("sha256").update(bearerToken).digest();
+  if (!timingSafeEqual(expectedHash, tokenHash)) {
+    res.status(401).json({ error: "unauthorised" });
+    return;
+  }
+
+  const result = await runOllie({ force: false });
+  res.status(result.httpStatus).json(result.response);
+});
 
 router.get("/agent-updates/latest", async (_req, res): Promise<void> => {
   const rows = await db

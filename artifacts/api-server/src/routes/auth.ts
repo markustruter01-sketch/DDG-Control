@@ -270,6 +270,14 @@ router.get("/session", (req, res): void => {
 });
 
 export const requireAuth: RequestHandler = (req, res, next): void => {
+  if (
+    req.method === "POST" &&
+    req.originalUrl.split("?", 1)[0] === "/api/agents/ollie/cron"
+  ) {
+    next();
+    return;
+  }
+
   if (isAuthBypassed()) {
     next();
     return;
