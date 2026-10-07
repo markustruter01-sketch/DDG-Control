@@ -1462,6 +1462,80 @@ export const useRunOllie = <TError = ErrorType<Error>,
       return useMutation(getRunOllieMutationOptions(options));
     }
 
+export const getRunOllieCronUrl = () => {
+
+
+
+
+  return `/api/agents/ollie/cron`
+}
+
+/**
+ * @summary Run Ollie's daily dashboard report with a scheduler token
+ */
+export const runOllieCron = async ( options?: Parameters<typeof customFetch>[1]): Promise<AgentRun> => {
+
+  return customFetch<AgentRun>(getRunOllieCronUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRunOllieCronMutationKey = () => ['runOllieCron'] as const;
+
+export const getRunOllieCronMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runOllieCron>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runOllieCron>>, TError,void, TContext> => {
+
+const mutationKey = getRunOllieCronMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runOllieCron>>, void> = () => {
+
+
+          return  runOllieCron(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunOllieCronMutationResult = NonNullable<Awaited<ReturnType<typeof runOllieCron>>>
+
+    export type RunOllieCronMutationError = ErrorType<Error>
+
+
+    /**
+ * @summary Run Ollie's daily dashboard report with a scheduler token
+ */
+export const useRunOllieCron = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runOllieCron>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runOllieCron>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRunOllieCronMutationOptions(options));
+    }
+
 export const getListAgentRunsUrl = () => {
 
 

@@ -368,6 +368,23 @@ export const RunOllieResponse = zod.object({
 
 
 /**
+ * @summary Run Ollie's daily dashboard report with a scheduler token
+ */
+export const RunOllieCronResponse = zod.object({
+  "id": zod.number().int(),
+  "member_id": zod.number().int(),
+  "status": zod.enum(['running', 'ok', 'invalid', 'error']),
+  "model": zod.string().nullable(),
+  "input_tokens": zod.number().int().nullable(),
+  "output_tokens": zod.number().int().nullable(),
+  "raw_output": zod.string().nullable(),
+  "error": zod.string().nullable(),
+  "started_at": zod.coerce.date(),
+  "finished_at": zod.coerce.date().nullable()
+})
+
+
+/**
  * @summary List the latest 20 agent runs
  */
 export const ListAgentRunsResponseItem = zod.object({
