@@ -1,0 +1,95 @@
+ENVIRONMENT
+DDG Control workspace. Development preview and development database only. Do not publish.
+
+GOAL
+Add a back-end feed that reads Cattle Dog Coffee's payments from Stripe with a read-only key, and saves sales and order totals for the last 7 and 30 days into a shared metrics table.
+
+DONE WHEN
+- POST /api/projects/cattle-dog-coffee/metrics/refresh returns 200 and saves 4 figures: sales_7d, sales_30d, orders_7d and orders_30d.
+- GET /api/projects/cattle-dog-coffee/metrics returns the latest value of each figure, with its unit and the time it was captured.
+- Refresh for any other project returns 400 {"error":"no data source yet"}.
+- The Stripe key is never printed or logged.
+- `pnpm --filter @workspace/api-spec run codegen` exits with code 0.
+- `pnpm run typecheck` passes.
+
+SCOPE
+- lib/project-constants/src/index.ts
+- lib/db/src/schema/metrics.ts (new)
+- lib/db/src/schema/index.ts
+- lib/api-spec/openapi.yaml
+- artifacts/api-server/src/routes/metrics.ts (new)
+- artifacts/api-server/src/routes/index.ts
+- Files that codegen rewrites. List every one.
+
+DO NOT
+- Do not print, log or store the value of STRIPE_CDC_READ_KEY.
+- Do not call any Stripe endpoint that creates, updates, refunds or deletes anything. Use GET requests only.
+- Do not store any customer name, email, address or card detail. Store totals only.
+- Do not touch the Cattle Dog Coffee workspace or its code.
+- Do not build any frontend yet.
+- Do not publish or deploy.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages. Call Stripe's API with fetch.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Check that the secret STRIPE_CDC_READ_KEY exists, without printing it. Report "set" or "missing", and report whether it starts with "rk_live_", "rk_test_" or something else (prefix only).
+   If it is missing, stop here and report.
+
+2. In lib/project-constants/src/index.ts, add METRIC_DEFINITIONS. Nothing else may define these.
+   - sales_7d: unit "aud_cents", label "Sales, last 7 days"
+   - sales_30d: unit "aud_cents", label "Sales, last 30 days"
+   - orders_7d: unit "count", label "Orders, last 7 days"
+   - orders_30d: unit "count", label "Orders, last 30 days"
+   Type it so the keys and units are fixed.
+
+3. Create lib/db/src/schema/metrics.ts with one table, metric_snapshots:
+   - id: serial primary key
+   - project_id: integer, not null, references projects.id
+   - key: text, not null, checked against the METRIC_DEFINITIONS keys
+   - value: bigint, not null
+   - source: text, not null
+   - captured_at: timestamp, not null, default now
+   Add an index on (project_id, key, captured_at). Export it from the schema index.
+   Run `pnpm --filter @workspace/db run push` and show the raw output.
+
+4. In lib/api-spec/openapi.yaml, add:
+   - POST /api/projects/:slug/metrics/refresh: returns 200 with the saved figures, 400, 404, 502 or 503.
+   - GET /api/projects/:slug/metrics: returns the latest row for each key, as {key, value, unit, label, source, captured_at}. Returns an empty list if there are none.
+   Errors use {"error":"<reason>"}.
+   Run `pnpm --filter @workspace/api-spec run codegen` and show the exit code.
+
+5. Create artifacts/api-server/src/routes/metrics.ts and register it in routes/index.ts. The refresh route:
+   a) Unknown slug: 404. Any slug other than "cattle-dog-coffee": 400 {"error":"no data source yet"}.
+   b) Missing STRIPE_CDC_READ_KEY: 503 {"error":"stripe not configured"}.
+   c) GET https://api.stripe.com/v1/charges, with Bearer auth, created[gte] set to 30 days ago, and limit=100. Follow has_more and starting_after until every page is read.
+   d) Keep only charges where status is "succeeded" and paid is true.
+   e) If any kept charge has a currency other than "aud": save nothing, and return 502 {"error":"non-AUD charges found: <count>"}.
+   f) Each charge's value is amount minus amount_refunded, in cents.
+      - sales_30d and orders_30d cover every kept charge.
+      - sales_7d and orders_7d cover only charges created in the last 7 days.
+      - Orders count charges whose value is above 0.
+   g) Stripe returns 401 or 403: return 502 {"error":"stripe auth failed"}. Any other Stripe error: 502 {"error":"stripe error <status>"}. Never include the key in an error or log.
+   h) Insert the 4 rows in one transaction, with source "stripe". Return them.
+
+6. Restart the API server. Test against the development server, and show the raw output and HTTP code of each:
+   a) GET /api/projects/cattle-dog-coffee/metrics before any refresh. Expect 200 [].
+   b) POST /api/projects/cattle-dog-coffee/metrics/refresh. Expect 200 with 4 figures. Also report:
+      - how many Stripe pages were read
+      - how many charges were seen in total
+      - how many were kept
+      - the livemode value seen on the charges (true or false)
+   c) GET /api/projects/cattle-dog-coffee/metrics. Expect the same 4 values.
+   d) POST /api/projects/hypest/metrics/refresh. Expect 400.
+   e) POST /api/projects/no-such-project/metrics/refresh. Expect 404.
+   f) Search the API logs for "rk_live_" and "rk_test_". Expect no matches.
+
+7. Run `pnpm run typecheck` and show the result.
+   Report:
+   - Every file you touched.
+   - Every file codegen rewrote.
+   - If you touched any file outside SCOPE, say which and why.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
