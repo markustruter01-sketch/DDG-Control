@@ -1,0 +1,76 @@
+ENVIRONMENT
+DDG Control workspace. Development only. Do not publish. Make NO xAI requests.
+
+GOAL
+Show the Founder Decision Queue and Ollie's v2 report on screen, and make the latest-updates API return one risk format.
+
+DONE WHEN
+- GET /api/agent-updates/latest returns priority (or null) and risks as [{text, severity}], with severity null for old rows that stored plain strings.
+- Home shows "Decisions waiting: N" linking to /decisions when N > 0, and each tile shows its priority call when present.
+- /decisions lists pending decisions with Approve and Decline buttons and a note box, plus a history section of approved and declined decisions.
+- Overview's "Ollie's latest" shows the priority, and the risks with their severity.
+- After cleanup, the counts match the "before" snapshot.
+- Codegen exits with code 0. `pnpm run typecheck` passes.
+
+SCOPE
+- lib/api-spec/openapi.yaml
+- artifacts/api-server/src/routes/agents.ts
+- artifacts/ddg-control/src/App.tsx
+- artifacts/ddg-control/src/ddg.css
+- Files that codegen rewrites. List every one.
+
+DO NOT
+- Do not make any xAI request.
+- Do not change stored rows to convert old risks. Convert them in the API response only.
+- Do not change OllieForm, slotOllieReport, the decisions routes or the run guard.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. In openapi.yaml, change the latest-update response:
+   - add priority (one of PRIORITY_CALLS, or null)
+   - risks become an array of {text: string, severity: one of LEVELS or null}
+   Run codegen and show the exit code.
+   In agents.ts, convert each stored risk in one function:
+   - a plain string becomes {text, severity: null}
+   - an object passes through unchanged
+   Restart the API server.
+
+2. Home page:
+   - If there are pending decisions, show a prominent banner at the top reading "Decisions waiting: N", linking to /decisions.
+   - On each tile with an update, show its priority as a small badge.
+
+3. Add a header link "Decisions", with the pending count in brackets when it is above 0, next to Agents.
+
+4. /decisions page:
+   a) Pending section. One card per decision, showing:
+      - project name
+      - title
+      - recommendation
+      - cost: "$<n> est." or "Cost unknown"
+      - risk
+      - urgency
+      - confidence
+      - owner
+      - due date (using the existing date formatter)
+      Plus a note box, and Approve and Decline buttons. Each button calls its endpoint with the note, then refreshes the decisions, the pending count, and that project's tasks. On error, show the server's error text.
+   b) History section. Approved and declined decisions, newest first, each showing: status, decided_at in Brisbane time, the note, and for approved ones a link to that project's To-do tab.
+   If there is nothing pending, show "No decisions waiting".
+   Phone-first layout, matching the dark style.
+
+5. Overview "Ollie's latest": show the priority badge, and list risks with a severity tag (low, medium or high). Show no tag when severity is null.
+
+6. Test at 402 px width. Do not save screenshots in the workspace.
+   a) Run `pnpm --filter @workspace/scripts exec tsx src/test-ollie.ts --keep` to create the sample rows. Show the "before" counts it prints.
+   b) Screenshot: home (banner and priority badges), /decisions (2 pending), and the Cattle Dog Coffee Overview (priority and risk severities).
+   c) In the browser: approve one decision with note "ui test", and decline the other. Screenshot the history section. Confirm that 1 new task appears in that project's To-do.
+   d) Call GET /api/agent-updates/latest and show the raw JSON. Also call the conversion function on one existing old-format row, and show that the output has severity null.
+   e) Run the script's cleanup, using its state from (a). Cleanup must also delete the task created in (c). Every delete count must match exactly; otherwise roll back. Show that the counts equal the "before" counts.
+
+7. Run `pnpm run typecheck`. Report every file touched.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
