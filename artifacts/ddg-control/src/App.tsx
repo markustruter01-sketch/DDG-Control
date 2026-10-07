@@ -1,8 +1,15 @@
-import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState, useSyncExternalStore, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import {
+  MutationCache,
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import {
   getGetProjectQueryKey,
+  getGetSessionQueryKey,
   getListProjectGoalsQueryKey,
   getListMembersQueryKey,
   getListProjectTasksQueryKey,
@@ -10,6 +17,9 @@ import {
   useCreateProjectGoal,
   useCreateProjectTask,
   useGetProject,
+  useGetSession,
+  useLogin,
+  useLogout,
   useListProjectGoals,
   useListMembers,
   useListProjectTasks,
@@ -47,15 +57,83 @@ import {
 } from 'wouter';
 import './ddg.css';
 
-const queryClient = new QueryClient();
+let authenticationRequired = false;
+const authenticationListeners = new Set<() => void>();
 
-function Header() {
+function setAuthenticationRequired(required: boolean): void {
+  if (authenticationRequired === required) return;
+  authenticationRequired = required;
+  authenticationListeners.forEach((listener) => listener());
+}
+
+function useAuthenticationRequired(): boolean {
+  return useSyncExternalStore(
+    (listener) => {
+      authenticationListeners.add(listener);
+      return () => {
+        authenticationListeners.delete(listener);
+      };
+    },
+    () => authenticationRequired,
+    () => authenticationRequired,
+  );
+}
+
+function isUnauthorizedError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as {
+    status?: number;
+    statusCode?: number;
+    response?: { status?: number };
+  };
+  return candidate.status === 401
+    || candidate.statusCode === 401
+    || candidate.response?.status === 401;
+}
+
+function handleUnauthorizedError(error: unknown): void {
+  if (!isUnauthorizedError(error)) return;
+  queryClient.clear();
+  setAuthenticationRequired(true);
+}
+
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: handleUnauthorizedError }),
+  mutationCache: new MutationCache({ onError: handleUnauthorizedError }),
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) =>
+        isUnauthorizedError(error) ? false : failureCount < 3,
+    },
+  },
+});
+
+function Header({ showLogout = true }: { showLogout?: boolean }) {
+  const client = useQueryClient();
+  const logoutMutation = useLogout();
+
   return (
     <header className="topbar">
       <Link href="/" className="brand" data-testid="link-home-brand">
         <span className="brand-mark" aria-hidden="true">dd</span>
         <span>DDG Control</span>
       </Link>
+      {showLogout && (
+        <button
+          className="logout-button"
+          type="button"
+          disabled={logoutMutation.isPending}
+          onClick={() => logoutMutation.mutate(undefined, {
+            onSuccess: () => {
+              client.clear();
+              setAuthenticationRequired(true);
+            },
+          })}
+          data-testid="button-logout"
+        >
+          {logoutMutation.isPending ? 'Logging out…' : 'Log out'}
+        </button>
+      )}
     </header>
   );
 }
@@ -151,6 +229,66 @@ function serverErrorText(error: unknown, fallback = 'Unable to save project.'): 
     }
   }
   return error instanceof Error ? error.message : fallback;
+}
+
+function LoginScreen({ initialError }: { initialError?: string }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(initialError ?? '');
+  const loginMutation = useLogin();
+
+  const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const submittedPassword = password;
+    setPassword('');
+    setError('');
+
+    try {
+      await loginMutation.mutateAsync({ data: { password: submittedPassword } });
+      setAuthenticationRequired(false);
+      await queryClient.invalidateQueries({
+        queryKey: getGetSessionQueryKey(),
+        exact: true,
+      });
+    } catch (loginError) {
+      setError(serverErrorText(loginError, 'Unable to log in.'));
+    }
+  };
+
+  return (
+    <div className="app-shell auth-shell">
+      <Header showLogout={false} />
+      <main className="auth-main">
+        <section className="auth-card">
+          <p className="eyebrow">Control panel</p>
+          <h1 className="auth-title">Log in</h1>
+          <form className="auth-form" onSubmit={submitLogin} data-testid="login-form">
+            <label className="auth-field" htmlFor="login-password">
+              Password
+              <input
+                id="login-password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                data-testid="input-login-password"
+              />
+            </label>
+            {error && <p className="auth-error" role="alert" data-testid="error-login">{error}</p>}
+            <button
+              className="task-primary-button auth-submit"
+              type="submit"
+              disabled={loginMutation.isPending}
+              data-testid="button-login"
+            >
+              {loginMutation.isPending ? 'Logging in…' : 'Log in'}
+            </button>
+          </form>
+        </section>
+      </main>
+    </div>
+  );
 }
 
 type TaskDraft = {
@@ -1141,11 +1279,41 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
+function AuthGate() {
+  const authRequired = useAuthenticationRequired();
+  const sessionQuery = useGetSession({
+    query: {
+      enabled: !authRequired,
+      retry: false,
+    },
+  });
+
+  if (authRequired) {
+    return <LoginScreen />;
+  }
+  if (sessionQuery.isSuccess) {
+    return <Router />;
+  }
+  if (sessionQuery.isError) {
+    return (
+      <LoginScreen
+        initialError={
+          isUnauthorizedError(sessionQuery.error)
+            ? undefined
+            : serverErrorText(sessionQuery.error, 'Unable to check session.')
+        }
+      />
+    );
+  }
+
+  return <main className="auth-loading" aria-live="polite">Loading…</main>;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-        <Router />
+        <AuthGate />
       </WouterRouter>
     </QueryClientProvider>
   );
