@@ -34,6 +34,18 @@ export const STATUS_LIGHTS = ["green", "amber", "red"] as const;
 
 export const AGENT_RUN_STATUSES = ["running", "ok", "invalid", "error"] as const;
 
+export const PRIORITY_CALLS = [
+  "accelerate",
+  "maintain",
+  "investigate",
+  "delay",
+  "kill",
+] as const;
+
+export const LEVELS = ["low", "medium", "high"] as const;
+
+export const DECISION_STATUSES = ["pending", "approved", "declined"] as const;
+
 export const PROJECT_TABS = [
   "Overview & Goals",
   "To-do",

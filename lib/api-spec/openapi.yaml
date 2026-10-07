@@ -575,6 +575,119 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/LatestAgentProjectUpdate"
+  /decisions:
+    get:
+      operationId: listDecisions
+      tags: [decisions]
+      summary: List decisions by status
+      parameters:
+        - name: status
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Must be one of DECISION_STATUSES from the shared project constants.
+      responses:
+        "200":
+          description: Decisions newest first with project and owner names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DecisionWithNames"
+        "400":
+          description: Missing or invalid decision status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /decisions/{id}/approve:
+    post:
+      operationId: approveDecision
+      tags: [decisions]
+      summary: Approve a pending decision and create its task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionActionBody"
+      responses:
+        "200":
+          description: Approved decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decision"
+        "400":
+          description: Invalid decision id or request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Decision not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Decision is not pending
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /decisions/{id}/decline:
+    post:
+      operationId: declineDecision
+      tags: [decisions]
+      summary: Decline a pending decision
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionActionBody"
+      responses:
+        "200":
+          description: Declined decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decision"
+        "400":
+          description: Invalid decision id or request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Decision not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Decision is not pending
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   schemas:
     LoginInput:
@@ -854,6 +967,139 @@ components:
       properties:
         force:
           type: boolean
+    DecisionActionBody:
+      type: object
+      additionalProperties: false
+      properties:
+        note:
+          type: string
+          maxLength: 500
+    Decision:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        run_id:
+          type: ["integer", "null"]
+        project_id:
+          type: integer
+        title:
+          type: string
+        recommendation:
+          type: string
+        cost_estimate_aud:
+          type: ["integer", "null"]
+          minimum: 0
+        risk:
+          type: string
+        urgency:
+          type: string
+          description: Must be one of LEVELS from the shared project constants.
+        confidence:
+          type: string
+          description: Must be one of LEVELS from the shared project constants.
+        owner_id:
+          type: integer
+        due_date:
+          type: ["string", "null"]
+          format: date
+        status:
+          type: string
+          description: Must be one of DECISION_STATUSES from the shared project constants.
+        note:
+          type: ["string", "null"]
+        decided_at:
+          type: ["string", "null"]
+          format: date-time
+        task_id:
+          type: ["integer", "null"]
+        created_at:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - id
+        - run_id
+        - project_id
+        - title
+        - recommendation
+        - cost_estimate_aud
+        - risk
+        - urgency
+        - confidence
+        - owner_id
+        - due_date
+        - status
+        - note
+        - decided_at
+        - task_id
+        - created_at
+    DecisionWithNames:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        run_id:
+          type: ["integer", "null"]
+        project_id:
+          type: integer
+        project_slug:
+          type: string
+        title:
+          type: string
+        recommendation:
+          type: string
+        cost_estimate_aud:
+          type: ["integer", "null"]
+          minimum: 0
+        risk:
+          type: string
+        urgency:
+          type: string
+          description: Must be one of LEVELS from the shared project constants.
+        confidence:
+          type: string
+          description: Must be one of LEVELS from the shared project constants.
+        owner_id:
+          type: integer
+        owner_name:
+          type: string
+        due_date:
+          type: ["string", "null"]
+          format: date
+        status:
+          type: string
+          description: Must be one of DECISION_STATUSES from the shared project constants.
+        note:
+          type: ["string", "null"]
+        decided_at:
+          type: ["string", "null"]
+          format: date-time
+        task_id:
+          type: ["integer", "null"]
+        created_at:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - id
+        - run_id
+        - project_id
+        - project_slug
+        - title
+        - recommendation
+        - cost_estimate_aud
+        - risk
+        - urgency
+        - confidence
+        - owner_id
+        - owner_name
+        - due_date
+        - status
+        - note
+        - decided_at
+        - task_id
+        - created_at
     AgentRun:
       type: object
       additionalProperties: false
@@ -949,7 +1195,9 @@ components:
         risks:
           type: array
           items:
-            type: string
+            oneOf:
+              - type: string
+              - $ref: "#/components/schemas/AgentRisk"
         created_at:
           type: ["string", "null"]
           format: date-time
@@ -960,4 +1208,14 @@ components:
         - next_action
         - risks
         - created_at
+    AgentRisk:
+      type: object
+      additionalProperties: false
+      properties:
+        text:
+          type: string
+        severity:
+          type: string
+          description: Must be one of LEVELS from the shared project constants.
+      required: [text, severity]
 

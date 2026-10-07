@@ -2,6 +2,7 @@ import {
   agentProjectUpdatesTable,
   agentRunsTable,
   db,
+  decisionsTable,
   goalsTable,
   membersTable,
   metricSnapshotsTable,
@@ -10,8 +11,11 @@ import {
 } from "@workspace/db";
 import {
   AGENT_RUN_STATUSES,
+  DECISION_STATUSES,
   GOAL_STATUSES,
+  LEVELS,
   METRIC_DEFINITIONS,
+  PRIORITY_CALLS,
   STATUS_LIGHTS,
   type MetricKey,
 } from "@workspace/project-constants";
@@ -38,8 +42,11 @@ This is your automated daily dashboard run. You receive a JSON snapshot of the d
 
 Rules:
 - Use only facts in the snapshot. Never invent revenue, customers, progress or completion. If data is missing, say so plainly in the summary.
-- You recommend; you never execute. Proposed tasks are recommendations that Markus approves or rejects.
-- Propose at most 5 tasks, and only where they create a clear business outcome. Zero is fine. No busywork.
+- You recommend; you never execute. Each decision is a brief for Markus to approve or decline.
+- Propose at most 5 decisions, and only where they create a clear business outcome. Zero is fine. No busywork. Do not repeat a pending decision or one decided in the snapshot.
+- cost_estimate_aud: your estimate in whole Australian dollars, or null if unknown. Never guess a number you cannot support from the snapshot.
+- priority per venture: accelerate, maintain, investigate, delay or kill, ranked across the whole portfolio.
+- Give each risk a severity: low, medium or high.
 - Treat every trading, financial or spending matter as high-sensitivity.
 - Give exactly one entry per project, using the slugs in the snapshot.
 - status_light: green = no material issues and progressing; amber = blockers, approaching deadlines, missing data or rising risk; red = critical issue, overdue material work or a breach.
@@ -59,19 +66,36 @@ export const OllieForm = z
           status_light: z.enum(STATUS_LIGHTS),
           summary: z.string().min(1).max(200),
           next_action: z.string().min(1).max(120),
-          risks: z.array(z.string().min(1).max(200)).max(5),
+          priority: z.enum(PRIORITY_CALLS),
+          risks: z
+            .array(
+              z
+                .object({
+                  text: z.string().min(1).max(200),
+                  severity: z.enum(LEVELS),
+                })
+                .strict(),
+            )
+            .max(5),
         })
         .strict(),
     ),
-    proposed_tasks: z
+    decisions: z
       .array(
         z
           .object({
             project_slug: z.string(),
             title: z.string().min(1).max(200),
+            recommendation: z.string().min(1).max(300),
+            cost_estimate_aud: z.union([
+              z.number().int().min(0),
+              z.null(),
+            ]),
+            risk: z.string().min(1).max(200),
+            urgency: z.enum(LEVELS),
+            confidence: z.enum(LEVELS),
             owner_name: z.string(),
             due_date: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.null()]),
-            reason: z.string().min(1).max(200),
           })
           .strict(),
       )
@@ -84,7 +108,7 @@ export const ollieFormJsonSchema = z.toJSONSchema(OllieForm);
 export async function slotOllieReport(
   runId: number,
   rawText: string,
-): Promise<{ status: "ok" | "invalid"; taskIds: number[]; error?: string }> {
+): Promise<{ status: "ok" | "invalid"; decisionIds: number[]; error?: string }> {
   try {
     const parsed = OllieForm.safeParse(JSON.parse(rawText) as unknown);
     if (!parsed.success) {
@@ -113,7 +137,7 @@ export async function slotOllieReport(
     const allProjectSlugs = Array.from(
       new Set([
         ...form.projects.map((project) => project.slug),
-        ...form.proposed_tasks.map((task) => task.project_slug),
+        ...form.decisions.map((decision) => decision.project_slug),
       ]),
     );
     const existingProjects =
@@ -133,7 +157,7 @@ export async function slotOllieReport(
     }
 
     const ownerNames = Array.from(
-      new Set(form.proposed_tasks.map((task) => task.owner_name)),
+      new Set(form.decisions.map((decision) => decision.owner_name)),
     );
     const existingMembers =
       ownerNames.length > 0
@@ -151,19 +175,22 @@ export async function slotOllieReport(
       }
     }
 
-    const checkedTasks = form.proposed_tasks.map((task) => {
-      const titleResult = validateTitle(task.title);
+    const checkedDecisions = form.decisions.map((decision) => {
+      const titleResult = validateTitle(decision.title);
       if ("error" in titleResult) {
         throw new Error(titleResult.error);
       }
 
-      const dueDateResult = validateCalendarDate(task.due_date, "due_date");
+      const dueDateResult = validateCalendarDate(
+        decision.due_date,
+        "due_date",
+      );
       if ("error" in dueDateResult) {
         throw new Error(dueDateResult.error);
       }
 
       return {
-        ...task,
+        ...decision,
         title: titleResult.value,
         due_date: dueDateResult.value,
       };
@@ -180,40 +207,46 @@ export async function slotOllieReport(
         status_light: project.status_light,
         summary: project.summary,
         next_action: project.next_action,
+        priority: project.priority,
         risks: project.risks,
       };
     });
 
-    const tasks = checkedTasks.map((task) => {
-      const dbProject = projectBySlug.get(task.project_slug);
-      const owner = memberByName.get(task.owner_name);
+    const decisions = checkedDecisions.map((decision) => {
+      const dbProject = projectBySlug.get(decision.project_slug);
+      const owner = memberByName.get(decision.owner_name);
       if (!dbProject) {
-        throw new Error(`unknown project: ${task.project_slug}`);
+        throw new Error(`unknown project: ${decision.project_slug}`);
       }
       if (!owner) {
-        throw new Error(`unknown member: ${task.owner_name}`);
+        throw new Error(`unknown member: ${decision.owner_name}`);
       }
       return {
+        run_id: runId,
         project_id: dbProject.id,
-        title: task.title,
-        notes: `Ollie: ${task.reason}`,
-        status: "needs_approval",
+        title: decision.title,
+        recommendation: decision.recommendation,
+        cost_estimate_aud: decision.cost_estimate_aud,
+        risk: decision.risk,
+        urgency: decision.urgency,
+        confidence: decision.confidence,
         owner_id: owner.id,
-        due_date: task.due_date,
+        due_date: decision.due_date,
+        status: DECISION_STATUSES[0],
       };
     });
 
-    const taskIds = await db.transaction(async (tx) => {
+    const decisionIds = await db.transaction(async (tx) => {
       if (projectUpdates.length > 0) {
         await tx.insert(agentProjectUpdatesTable).values(projectUpdates);
       }
 
-      const insertedTasks =
-        tasks.length > 0
+      const insertedDecisions =
+        decisions.length > 0
           ? await tx
-              .insert(tasksTable)
-              .values(tasks)
-              .returning({ id: tasksTable.id })
+              .insert(decisionsTable)
+              .values(decisions)
+              .returning({ id: decisionsTable.id })
           : [];
 
       const [updatedRun] = await tx
@@ -225,10 +258,10 @@ export async function slotOllieReport(
         throw new Error(`agent run not found: ${runId}`);
       }
 
-      return insertedTasks.map((task) => task.id);
+      return insertedDecisions.map((decision) => decision.id);
     });
 
-    return { status: "ok", taskIds };
+    return { status: "ok", decisionIds };
   } catch (error) {
     const errorText = error instanceof Error ? error.message : String(error);
     await db
@@ -240,7 +273,7 @@ export async function slotOllieReport(
         finished_at: new Date(),
       })
       .where(eq(agentRunsTable.id, runId));
-    return { status: "invalid", taskIds: [], error: errorText };
+    return { status: "invalid", decisionIds: [], error: errorText };
   }
 }
 
@@ -300,6 +333,7 @@ async function buildOllieSnapshot(
   ollieMemberId: number,
   apiKey: string,
 ): Promise<string> {
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
   const [
     projects,
     activeGoals,
@@ -307,6 +341,8 @@ async function buildOllieSnapshot(
     metricRows,
     members,
     ollieUpdateRows,
+    pendingDecisions,
+    recentlyDecided,
   ] = await Promise.all([
     db.select().from(projectsTable).orderBy(projectsTable.sort_order),
     db
@@ -363,6 +399,24 @@ async function buildOllieSnapshot(
       )
       .where(eq(agentRunsTable.member_id, ollieMemberId))
       .orderBy(desc(agentProjectUpdatesTable.created_at)),
+    db
+      .select({
+        project_slug: projectsTable.slug,
+        title: decisionsTable.title,
+      })
+      .from(decisionsTable)
+      .innerJoin(projectsTable, eq(decisionsTable.project_id, projectsTable.id))
+      .where(eq(decisionsTable.status, DECISION_STATUSES[0]))
+      .orderBy(desc(decisionsTable.created_at), desc(decisionsTable.id)),
+    db
+      .select({
+        title: decisionsTable.title,
+        status: decisionsTable.status,
+        note: decisionsTable.note,
+      })
+      .from(decisionsTable)
+      .where(gte(decisionsTable.decided_at, fourteenDaysAgo))
+      .orderBy(desc(decisionsTable.decided_at), desc(decisionsTable.id)),
   ]);
 
   const latestMetricKeys = new Set<string>();
@@ -429,6 +483,15 @@ async function buildOllieSnapshot(
     members: members.map((member) => ({
       name: member.name,
       kind: member.kind,
+    })),
+    pending_decisions: pendingDecisions.map((decision) => ({
+      project_slug: decision.project_slug,
+      title: redactSnapshotText(decision.title, apiKey),
+    })),
+    decisions_decided_last_14_days: recentlyDecided.map((decision) => ({
+      title: redactSnapshotText(decision.title, apiKey),
+      status: decision.status,
+      note: redactSnapshotText(decision.note, apiKey),
     })),
     ollie_latest_updates: projects.flatMap((project) => {
       const update = latestUpdateByProject.get(project.id);

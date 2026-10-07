@@ -1,0 +1,123 @@
+ENVIRONMENT
+DDG Control workspace. Development only. Do not publish. Make NO xAI requests.
+
+GOAL
+Upgrade Ollie's form so he proposes DECISIONS (not tasks), gives each venture a priority call, and rates each risk's severity. Add a decisions table, plus approve and decline endpoints that record who decided what and when. Approving creates a task.
+
+DONE WHEN
+- A valid v2 sample form creates: a run with status "ok", 4 updates (each with a priority), and 2 decisions with status "pending".
+- Invalid sample forms create a run with status "invalid" and nothing else.
+- POST /api/decisions/:id/approve sets status "approved", decided_at and note, and creates 1 task with status "planned". A second approve or decline on the same decision returns 409.
+- POST /api/decisions/:id/decline sets status "declined", and creates no task.
+- After cleanup, the counts match the "before" snapshot.
+- No xAI request. Codegen exits with code 0. `pnpm run typecheck` passes.
+
+SCOPE
+- lib/project-constants/src/index.ts
+- lib/db/src/schema/agents.ts
+- artifacts/api-server/src/agents/ollie.ts
+- lib/api-spec/openapi.yaml
+- artifacts/api-server/src/routes/decisions.ts (new)
+- artifacts/api-server/src/routes/index.ts
+- scripts/src/test-ollie.ts
+- Files that codegen rewrites. List every one.
+
+DO NOT
+- Do not make any xAI request.
+- Do not change existing agent_project_updates rows.
+- Do not change the run guard or the cron route.
+- Do not build any frontend.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Constants: add these lists. Nothing else may define them.
+   - PRIORITY_CALLS = ["accelerate", "maintain", "investigate", "delay", "kill"]
+   - LEVELS = ["low", "medium", "high"]
+   - DECISION_STATUSES = ["pending", "approved", "declined"]
+
+2. Schema (agents.ts):
+   a) agent_project_updates: add priority as text that may be null, checked against PRIORITY_CALLS. It stays null on old rows.
+   b) A new decisions table:
+      - id: serial primary key
+      - run_id: references agent_runs, may be null
+      - project_id: references projects, not null
+      - title: text, not null
+      - recommendation: text, not null
+      - cost_estimate_aud: integer, may be null
+      - risk: text, not null
+      - urgency: text, not null, checked against LEVELS
+      - confidence: text, not null, checked against LEVELS
+      - owner_id: references members, not null
+      - due_date: date, may be null
+      - status: text, not null, default "pending", checked against DECISION_STATUSES
+      - note: text, may be null
+      - decided_at: timestamp, may be null
+      - task_id: references tasks, may be null
+      - created_at: default now
+   Run `pnpm --filter @workspace/db run push` and show the raw output.
+
+3. In ollie.ts, change OllieForm (the only definition):
+   a) Each project item adds:
+      - priority: one of PRIORITY_CALLS
+      - risks become an array of at most 5 objects {text: 1 to 200 characters, severity: one of LEVELS}
+   b) Replace proposed_tasks with decisions: an array of at most 5 items, each with:
+      - project_slug
+      - title: 1 to 200 characters
+      - recommendation: 1 to 300 characters
+      - cost_estimate_aud: a whole number of 0 or more, or null
+      - risk: 1 to 200 characters
+      - urgency: one of LEVELS
+      - confidence: one of LEVELS
+      - owner_name
+      - due_date: "YYYY-MM-DD" or null
+   No extra fields allowed anywhere.
+
+4. slotOllieReport: keep every existing check (slugs, duplicates, owners, titles and dates). Insert updates with priority and with the new risks, and insert decisions with status "pending". Do not create tasks. Keep it all or nothing.
+
+5. In OLLIE_INSTRUCTIONS, replace the three rules starting "You recommend; you never execute", "Propose at most 5 tasks" and "owner_name must be" with these lines:
+   - You recommend; you never execute. Each decision is a brief for Markus to approve or decline.
+   - Propose at most 5 decisions, and only where they create a clear business outcome. Zero is fine. No busywork. Do not repeat a pending decision or one decided in the snapshot.
+   - cost_estimate_aud: your estimate in whole Australian dollars, or null if unknown. Never guess a number you cannot support from the snapshot.
+   - priority per venture: accelerate, maintain, investigate, delay or kill, ranked across the whole portfolio.
+   - Give each risk a severity: low, medium or high.
+   - owner_name must be a name from the snapshot's members list.
+   Add to the snapshot:
+   - pending decisions: project slug, title
+   - decisions decided in the last 14 days: title, status, note
+
+6. OpenAPI and routes (decisions.ts, registered in index.ts; normal login protection):
+   - GET /api/decisions?status=<one of DECISION_STATUSES>: newest first, with project slug and owner name.
+   - POST /api/decisions/:id/approve with body {note?: string of at most 500 characters}: only when status is "pending", otherwise 409. In ONE transaction:
+     - create a task with the decision's project, title, owner and due_date, status "planned", and notes "Approved decision #<id>: <recommendation>"
+     - set the decision to status "approved", with decided_at, note and task_id
+     Return the decision.
+   - POST /api/decisions/:id/decline with body {note?}: only when "pending", otherwise 409. Set status "declined", decided_at and note.
+   - Unknown id: 404. Extra fields: 400.
+   Run codegen and show the exit code. Restart the API server.
+
+7. Update the test script. Show "before" counts for agent_runs, agent_project_updates, decisions and tasks. Then:
+   a) A valid v2 form with 4 projects (with priorities and risk objects) and 2 decisions (owners "Markus" and "Hermes"). Expect "ok", +4 updates, +2 pending decisions, +0 tasks.
+   b) priority "explode". Expect "invalid", with nothing added.
+   c) A decision with owner "Bob". Expect "invalid", with nothing added.
+   Then with curl against the development server:
+   d) Approve decision 1 with note "test". Expect 200, plus 1 new task with status "planned".
+   e) Approve decision 1 again. Expect 409.
+   f) Decline decision 2. Expect 200, with no new task.
+   g) Decline id 999999. Expect 404.
+   h) Approve decision 2 with an extra field "x". Expect 400.
+
+8. Cleanup, in one transaction, deleting only the rows the test created, in this order:
+   - 2 decisions
+   - 1 task
+   - 4 updates
+   - 3 runs
+   Each count must match exactly; otherwise roll back and report.
+   Show that the counts equal the "before" counts.
+   Run `pnpm run typecheck`. Report every file touched.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
