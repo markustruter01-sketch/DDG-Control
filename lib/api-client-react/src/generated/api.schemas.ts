@@ -167,6 +167,17 @@ export interface GoalUpdate {
   target_date?: string | null;
 }
 
+export interface ProjectMetric {
+  key: string;
+  value: number;
+  unit: string;
+  label: string;
+  source: string;
+  captured_at: string;
+}
+
+export type ProjectMetricsResponse = ProjectMetric[];
+
 export type GetProject404 = {
   error: 'not found';
 };

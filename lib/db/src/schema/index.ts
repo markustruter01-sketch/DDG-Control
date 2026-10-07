@@ -21,3 +21,4 @@ export * from "./projects";
 export * from "./tasks";
 export * from "./goals";
 export * from "./auth";
+export * from "./metrics";

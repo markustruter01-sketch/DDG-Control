@@ -16,6 +16,8 @@ export * from './loginInput';
 export * from './loginResult';
 export * from './member';
 export * from './project';
+export * from './projectMetric';
+export * from './projectMetricsResponse';
 export * from './projectUpdateRequest';
 export * from './sessionResult';
 export * from './task';

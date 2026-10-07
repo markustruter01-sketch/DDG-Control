@@ -4,6 +4,7 @@ import authRouter, { requireAuth } from "./auth";
 import projectsRouter from "./projects";
 import tasksRouter from "./tasks";
 import goalsRouter from "./goals";
+import metricsRouter from "./metrics";
 
 const router: IRouter = Router();
 
@@ -13,5 +14,6 @@ router.use(requireAuth);
 router.use(projectsRouter);
 router.use(tasksRouter);
 router.use(goalsRouter);
+router.use(metricsRouter);
 
 export default router;

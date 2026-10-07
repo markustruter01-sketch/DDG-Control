@@ -40,5 +40,14 @@ export const PROJECT_TABS = [
   "Next Best Action",
 ] as const;
 
+export const METRIC_DEFINITIONS = {
+  sales_7d: { unit: "aud_cents", label: "Sales, last 7 days" },
+  sales_30d: { unit: "aud_cents", label: "Sales, last 30 days" },
+  orders_7d: { unit: "count", label: "Orders, last 7 days" },
+  orders_30d: { unit: "count", label: "Orders, last 30 days" },
+} as const;
+
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 export type ProjectTab = (typeof PROJECT_TABS)[number];
+export type MetricKey = keyof typeof METRIC_DEFINITIONS;
+export type MetricUnit = (typeof METRIC_DEFINITIONS)[MetricKey]["unit"];

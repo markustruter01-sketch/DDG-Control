@@ -30,6 +30,7 @@ import type {
   LoginResult,
   Member,
   Project,
+  ProjectMetricsResponse,
   ProjectUpdateRequest,
   SessionResult,
   Task,
@@ -1217,4 +1218,155 @@ export const useUpdateGoal = <TError = ErrorType<Error>,
       > => {
       return useMutation(getUpdateGoalMutationOptions(options));
     }
+
+export const getRefreshProjectMetricsUrl = (slug: string,) => {
+
+
+
+
+  return `/api/projects/${slug}/metrics/refresh`
+}
+
+/**
+ * @summary Refresh project metrics from its data source
+ */
+export const refreshProjectMetrics = async (slug: string, options?: Parameters<typeof customFetch>[1]): Promise<ProjectMetricsResponse> => {
+
+  return customFetch<ProjectMetricsResponse>(getRefreshProjectMetricsUrl(slug),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRefreshProjectMetricsMutationKey = () => ['refreshProjectMetrics'] as const;
+
+export const getRefreshProjectMetricsMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshProjectMetrics>>, TError,RefreshProjectMetricsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshProjectMetrics>>, TError,RefreshProjectMetricsMutationVariables, TContext> => {
+
+const mutationKey = getRefreshProjectMetricsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshProjectMetrics>>, RefreshProjectMetricsMutationVariables> = (props) => {
+          const {slug} = props ?? {};
+
+          return  refreshProjectMetrics(slug,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshProjectMetricsMutationResult = NonNullable<Awaited<ReturnType<typeof refreshProjectMetrics>>>
+
+    export type RefreshProjectMetricsMutationError = ErrorType<Error>
+    export type RefreshProjectMetricsMutationVariables = {slug: string}
+
+    /**
+ * @summary Refresh project metrics from its data source
+ */
+export const useRefreshProjectMetrics = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshProjectMetrics>>, TError,RefreshProjectMetricsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refreshProjectMetrics>>,
+        TError,
+        RefreshProjectMetricsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRefreshProjectMetricsMutationOptions(options));
+    }
+
+export const getListProjectMetricsUrl = (slug: string,) => {
+
+
+
+
+  return `/api/projects/${slug}/metrics`
+}
+
+/**
+ * @summary Get the latest project metric snapshots
+ */
+export const listProjectMetrics = async (slug: string, options?: Parameters<typeof customFetch>[1]): Promise<ProjectMetricsResponse> => {
+
+  return customFetch<ProjectMetricsResponse>(getListProjectMetricsUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectMetricsQueryKey = (slug: string,) => {
+    return [
+    `/api/projects/${slug}/metrics`
+    ] as const;
+    }
+
+
+export const getListProjectMetricsQueryOptions = <TData = Awaited<ReturnType<typeof listProjectMetrics>>, TError = ErrorType<Error>>(slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectMetrics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectMetricsQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectMetrics>>> = ({ signal }) => listProjectMetrics(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: slug !== null && slug !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectMetrics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProjectMetricsQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectMetrics>>>
+export type ListProjectMetricsQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Get the latest project metric snapshots
+ */
+
+export function useListProjectMetrics<TData = Awaited<ReturnType<typeof listProjectMetrics>>, TError = ErrorType<Error>>(
+ slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectMetrics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProjectMetricsQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

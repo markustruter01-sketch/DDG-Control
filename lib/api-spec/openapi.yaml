@@ -20,6 +20,8 @@ tags:
     description: Task operations
   - name: goals
     description: Goal operations
+  - name: metrics
+    description: Project metric operations
 paths:
   /healthz:
     get:
@@ -411,6 +413,72 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /projects/{slug}/metrics/refresh:
+    post:
+      operationId: refreshProjectMetrics
+      tags: [metrics]
+      summary: Refresh project metrics from its data source
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Saved metric snapshots
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMetricsResponse"
+        "400":
+          description: No data source is configured for this project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: The metrics data source returned an error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: The metrics data source is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /projects/{slug}/metrics:
+    get:
+      operationId: listProjectMetrics
+      tags: [metrics]
+      summary: Get the latest project metric snapshots
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Latest metric snapshot for each available metric
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMetricsResponse"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   schemas:
     LoginInput:
@@ -656,4 +724,32 @@ components:
         target_date:
           type: ["string", "null"]
           format: date
+    ProjectMetricsResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/ProjectMetric"
+    ProjectMetric:
+      type: object
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+        value:
+          type: integer
+        unit:
+          type: string
+        label:
+          type: string
+        source:
+          type: string
+        captured_at:
+          type: string
+          format: date-time
+      required:
+        - key
+        - value
+        - unit
+        - label
+        - source
+        - captured_at
 

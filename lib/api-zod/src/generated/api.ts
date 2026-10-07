@@ -310,3 +310,39 @@ export const UpdateGoalResponse = zod.object({
 })
 
 
+/**
+ * @summary Refresh project metrics from its data source
+ */
+export const RefreshProjectMetricsParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const RefreshProjectMetricsResponseItem = zod.object({
+  "key": zod.string(),
+  "value": zod.number().int(),
+  "unit": zod.string(),
+  "label": zod.string(),
+  "source": zod.string(),
+  "captured_at": zod.coerce.date()
+})
+export const RefreshProjectMetricsResponse = zod.array(RefreshProjectMetricsResponseItem)
+
+
+/**
+ * @summary Get the latest project metric snapshots
+ */
+export const ListProjectMetricsParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const ListProjectMetricsResponseItem = zod.object({
+  "key": zod.string(),
+  "value": zod.number().int(),
+  "unit": zod.string(),
+  "label": zod.string(),
+  "source": zod.string(),
+  "captured_at": zod.coerce.date()
+})
+export const ListProjectMetricsResponse = zod.array(ListProjectMetricsResponseItem)
+
+
