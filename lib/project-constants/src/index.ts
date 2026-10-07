@@ -8,6 +8,16 @@ export const TASK_STATUSES = [
   "blocked",
 ] as const;
 
+export type TaskStatus = (typeof TASK_STATUSES)[number];
+
+export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
+  planned: "Planned",
+  in_progress: "In progress",
+  needs_approval: "Needs approval",
+  done: "Done",
+  blocked: "Blocked",
+};
+
 export const MEMBER_KINDS = ["human", "agent"] as const;
 
 export const PROJECT_TABS = [
