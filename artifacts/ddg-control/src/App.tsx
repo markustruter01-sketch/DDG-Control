@@ -304,18 +304,20 @@ function formatFinanceCents(value: number): string {
 }
 
 function FinanceKpiCard({
+  testId,
   label,
   value,
   detail,
   negative = false,
 }: {
+  testId: string;
   label: string;
   value: string;
   detail: string;
   negative?: boolean;
 }) {
   return (
-    <article className="finance-kpi-card">
+    <article className="finance-kpi-card" data-testid={testId}>
       <p className="finance-kpi-label">{label}</p>
       <p className={`finance-kpi-value${negative ? ' finance-kpi-value-negative' : ''}`}>{value}</p>
       <p className="finance-kpi-detail">{detail}</p>
@@ -350,35 +352,40 @@ function FinanceSummaryBar({
     <section className="finance-summary" aria-label="Company-wide key figures" data-testid="finance-summary">
       <div className="finance-kpi-grid">
         <FinanceKpiCard
+          testId="finance-kpi-profit"
           label="Profit · last 30 days"
           value={summary ? formatFinanceCents(summary.profit_30d_cents) : placeholder}
           detail={`Revenue ${summary ? formatFigure(summary.revenue_30d_cents, 'aud_cents') : placeholder}`}
           negative={Boolean(summary && summary.profit_30d_cents < 0)}
         />
         <FinanceKpiCard
+          testId="finance-kpi-debt"
           label="Debt"
           value={summary ? formatFigure(summary.debt_cents, 'aud_cents') : placeholder}
           detail=" "
         />
         <FinanceKpiCard
+          testId="finance-kpi-expenses"
           label="Expected expenses · next month"
           value={summary ? formatFigure(summary.expected_expenses_next_month_cents, 'aud_cents') : placeholder}
           detail=" "
         />
         <FinanceKpiCard
+          testId="finance-kpi-expected-profit"
           label="Expected profit · next month"
           value={summary ? formatFinanceCents(summary.expected_profit_next_month_cents) : placeholder}
           detail={`Expected revenue ${summary ? formatFigure(summary.expected_revenue_next_month_cents, 'aud_cents') : placeholder} · estimate`}
           negative={Boolean(summary && summary.expected_profit_next_month_cents < 0)}
         />
         <FinanceKpiCard
+          testId="finance-kpi-customers"
           label="Customers · paid in last 30 days"
           value={customerCount}
           detail="Cattle Dog Coffee only"
         />
       </div>
       {isLoading && <p className="finance-summary-state" role="status">Loading company figures…</p>}
-      {error && (
+      {error != null && (
         <div className="finance-summary-state finance-summary-error" role="alert">
           <span>{serverErrorText(error, 'Unable to load company figures.')}</span>
           <button className="retry-button" type="button" onClick={onRetry}>Retry</button>
@@ -793,7 +800,7 @@ function FinanceDebtsSection({ projects }: { projects: Project[] }) {
           Add debt
         </button>
       </div>
-      {error && <p className="finance-form-error" role="alert">{error}</p>}
+      {error && !isEditorOpen && <p className="finance-form-error" role="alert">{error}</p>}
       {debtsQuery.isLoading ? (
         <p className="task-state-message" role="status">Loading debts…</p>
       ) : debtsQuery.isError ? (
@@ -834,6 +841,7 @@ function FinanceDebtsSection({ projects }: { projects: Project[] }) {
             Note <span className="task-field-optional">(optional)</span>
             <textarea rows={2} maxLength={300} value={draft.note} onChange={(event) => setDraft({ ...draft, note: event.target.value })} />
           </label>
+          {error && <p className="finance-form-error" role="alert">{error}</p>}
           <div className="task-form-actions">
             <button className="task-primary-button" type="submit" disabled={isSaving}>
               {isSaving ? 'Saving…' : editingId === null ? 'Add debt' : 'Save changes'}
@@ -967,7 +975,7 @@ function FinanceExpensesSection({ projects }: { projects: Project[] }) {
           Add expense
         </button>
       </div>
-      {error && <p className="finance-form-error" role="alert">{error}</p>}
+      {error && !isEditorOpen && <p className="finance-form-error" role="alert">{error}</p>}
       {expensesQuery.isLoading ? (
         <p className="task-state-message" role="status">Loading expenses…</p>
       ) : expensesQuery.isError ? (
@@ -1155,7 +1163,7 @@ function FinanceRevenueSection({ projects }: { projects: Project[] }) {
           Add revenue
         </button>
       </div>
-      {error && <p className="finance-form-error" role="alert">{error}</p>}
+      {error && !isEditorOpen && <p className="finance-form-error" role="alert">{error}</p>}
       {revenueQuery.isLoading ? (
         <p className="task-state-message" role="status">Loading revenue…</p>
       ) : revenueQuery.isError ? (
