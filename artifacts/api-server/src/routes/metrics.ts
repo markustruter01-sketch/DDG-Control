@@ -423,7 +423,13 @@ router.get(
       };
     });
 
-    res.json(ListProjectDailySalesResponse.parse(response));
+    const validated = ListProjectDailySalesResponse.parse(response);
+    res.json(
+      validated.map((row) => ({
+        ...row,
+        day: row.day.toISOString().slice(0, 10),
+      })),
+    );
   },
 );
 

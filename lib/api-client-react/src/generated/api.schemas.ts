@@ -5,8 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export type ListProjectMetricHistoryParams = string;
-
 export interface InboundPendingDecision {
   id: number;
   project_slug: string;
@@ -551,8 +549,6 @@ export interface LatestAgentProjectUpdate {
   previous: LatestAgentProjectUpdatePrevious | null;
 }
 
-export type MetricHistoryKeyParameter = ListProjectMetricHistoryParams;
-
 export type GetProject404 = {
   error: 'not found';
 };
@@ -566,7 +562,7 @@ export type UpdateProject404 = {
 };
 
 export type ListProjectMetricHistoryParams = {
-key: MetricHistoryKeyParameter;
+key: string;
 };
 
 export type ListDecisionsParams = {

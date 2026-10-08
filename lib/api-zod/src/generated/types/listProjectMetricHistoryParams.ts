@@ -5,10 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { MetricHistoryKeyParameter } from './metricHistoryKeyParameter';
-
-export type ListProjectMetricHistoryParams = string;
 
 export type ListProjectMetricHistoryParams = {
-key: MetricHistoryKeyParameter;
+key: string;
 };

@@ -48,7 +48,6 @@ export * from './listProjectMetricHistoryParams';
 export * from './loginInput';
 export * from './loginResult';
 export * from './member';
-export * from './metricHistoryKeyParameter';
 export * from './metricHistoryResponse';
 export * from './metricHistoryRow';
 export * from './ollieHistoryResponse';
