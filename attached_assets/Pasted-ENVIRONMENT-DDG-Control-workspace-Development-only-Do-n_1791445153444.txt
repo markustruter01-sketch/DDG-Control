@@ -1,0 +1,58 @@
+ENVIRONMENT
+DDG Control workspace. Development only. Do not publish. Make NO xAI requests.
+
+GOAL
+Let Ollie in Cursor add expenses and revenue entries through the inbound API (create only), with protection against duplicates, and include the finance summary in the inbound state.
+
+DONE WHEN
+- POST /api/inbound/finance/expenses and POST /api/inbound/finance/revenue create entries using the same validation as the logged-in finance routes.
+- An optional idempotency_key (1 to 64 characters) is unique per table. Sending the same key again returns 200 with the existing row and creates nothing.
+- GET /api/inbound/state also returns "finance": the computeFinanceSummary() result.
+- There are no inbound edit or delete routes for finance.
+- The logged-in finance routes behave exactly as before.
+- After cleanup, the counts match the "before" snapshot.
+- Codegen exits with code 0. `pnpm run typecheck` passes.
+
+SCOPE
+- lib/db/src/schema/finance.ts
+- artifacts/api-server/src/routes/finance.ts (extract the shared create logic only)
+- artifacts/api-server/src/routes/inbound.ts
+- lib/api-spec/openapi.yaml
+- Files that codegen rewrites. List every one.
+
+DO NOT
+- Do not print, log or store OLLIE_INBOUND_KEY.
+- Do not add inbound routes for debts, or any inbound PATCH or DELETE.
+- Do not change the summary maths or the logged-in finance routes' responses.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Schema: add idempotency_key to expenses and to revenue_entries: text, may be null, 1 to 64 characters, unique when not null. Run `pnpm --filter @workspace/db run push` and show the output.
+
+2. In finance.ts, move the expense-create and revenue-create validation and insert into exported functions, createExpense(input) and createRevenue(input). Have the existing POST routes call them. Their responses must not change.
+   The logged-in routes do not accept idempotency_key. Reject it with 400, as now.
+
+3. In inbound.ts, using the existing inbound key check:
+   a) POST /api/inbound/finance/expenses, with the same body as the logged-in expense create, plus an optional idempotency_key. If a row with that key exists, return 200 with that row and insert nothing. Otherwise call createExpense and return 201.
+   b) POST /api/inbound/finance/revenue: the same pattern with createRevenue.
+   c) GET /api/inbound/state adds "finance": computeFinanceSummary().
+   Update openapi.yaml, run codegen and show the exit code. Restart the API server.
+
+4. Test with curl against the development server, using the key from the environment without printing it. Show the HTTP code and body of each. Record the ids.
+   a) Show the "before" counts for expenses and revenue_entries, and GET /api/finance/summary.
+   b) Inbound expense: "Inbound test", Company, one_off, 1500, today, idempotency_key "test-exp-1". Expect 201.
+   c) The same request again. Expect 200 with the same id, and the count unchanged.
+   d) Inbound revenue: "Inbound rev", cattle-dog-coffee, 2500, today, idempotency_key "test-rev-1". Expect 201.
+   e) No key. Expect 401. An extra field "x". Expect 400. Amount 0. Expect 400.
+   f) A logged-in POST /api/finance/expenses that includes idempotency_key. Expect 400.
+   g) GET /api/inbound/state. Show the "finance" object reflecting −1500 and +2500.
+
+5. Cleanup, in one transaction, deleting only the recorded ids: 1 expense and 1 revenue entry, with exact counts, otherwise roll back. Show that the counts and the summary equal the "before" values.
+   Run `pnpm run typecheck`. Report every file touched, and the final request shapes of the two new routes.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.

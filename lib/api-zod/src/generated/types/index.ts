@@ -42,6 +42,8 @@ export * from './inboundDecisionByIdInputOutcome';
 export * from './inboundDecisionCreateInput';
 export * from './inboundDecisionCreateInputOutcome';
 export * from './inboundDecisionInput';
+export * from './inboundFinanceExpenseCreateInput';
+export * from './inboundFinanceRevenueCreateInput';
 export * from './inboundNoteInput';
 export * from './inboundNoteInputKind';
 export * from './inboundNoteInputSeverity';

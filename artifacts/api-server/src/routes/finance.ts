@@ -41,6 +41,9 @@ import {
 
 const router: IRouter = Router();
 type ExpenseKind = (typeof EXPENSE_KINDS)[number];
+type FinanceCreateResult<T> =
+  | { status: 200 | 201; data: T }
+  | { status: 400 | 500; error: string };
 
 const DEBT_FIELDS = ["project_slug", "name", "balance_cents", "note"] as const;
 const EXPENSE_FIELDS = [
@@ -523,39 +526,69 @@ router.get("/finance/expenses", async (_req, res): Promise<void> => {
   res.json(response);
 });
 
-router.post("/finance/expenses", async (req, res): Promise<void> => {
-  const body = requestBody(req, res, EXPENSE_FIELDS, [
+export async function createExpense(
+  input: unknown,
+  idempotencyKey?: string,
+): Promise<FinanceCreateResult<ReturnType<typeof toApiExpense>>> {
+  const getExisting = async () => {
+    if (idempotencyKey === undefined) return null;
+    const [existing] = await db
+      .select({
+        id: expensesTable.id,
+        project_slug: projectsTable.slug,
+        name: expensesTable.name,
+        kind: expensesTable.kind,
+        amount_cents: expensesTable.amount_cents,
+        spent_on: expensesTable.spent_on,
+        active: expensesTable.active,
+        note: expensesTable.note,
+        created_at: expensesTable.created_at,
+        updated_at: expensesTable.updated_at,
+      })
+      .from(expensesTable)
+      .leftJoin(projectsTable, eq(expensesTable.project_id, projectsTable.id))
+      .where(eq(expensesTable.idempotency_key, idempotencyKey))
+      .limit(1);
+    return existing ? toApiExpense(existing) : null;
+  };
+
+  const existing = await getExisting();
+  if (existing) {
+    CreateFinanceExpenseResponse.parse(existing);
+    return { status: 200, data: existing };
+  }
+
+  const body = requestBodyRecord(input);
+  if (!body) return { status: 400, error: "request body must be an object" };
+  const unknownFieldError = getUnknownFieldError(body, EXPENSE_FIELDS);
+  if (unknownFieldError) return { status: 400, error: unknownFieldError };
+  const requiredFieldError = getMissingRequiredFieldError(body, [
     "project_slug",
     "name",
     "kind",
     "amount_cents",
     "spent_on",
   ]);
-  if (!body) return;
+  if (requiredFieldError) return { status: 400, error: requiredFieldError };
 
   const name = validateName(body.name);
   if ("error" in name) {
-    res.status(400).json({ error: name.error });
-    return;
+    return { status: 400, error: name.error };
   }
   if (!expenseKindIsValid(body.kind)) {
-    res.status(400).json({ error: "invalid expense kind" });
-    return;
+    return { status: 400, error: "invalid expense kind" };
   }
   const amount = validateCents(body.amount_cents, "amount_cents", 1);
   if ("error" in amount) {
-    res.status(400).json({ error: amount.error });
-    return;
+    return { status: 400, error: amount.error };
   }
   const spentOn = validateCalendarDate(body.spent_on, "spent_on");
   if ("error" in spentOn) {
-    res.status(400).json({ error: spentOn.error });
-    return;
+    return { status: 400, error: spentOn.error };
   }
   const dateError = validateExpenseDatePair(body.kind, spentOn.value);
   if (dateError) {
-    res.status(400).json({ error: dateError });
-    return;
+    return { status: 400, error: dateError };
   }
   const active =
     body.active === undefined
@@ -564,18 +597,15 @@ router.post("/finance/expenses", async (req, res): Promise<void> => {
         ? body.active
         : null;
   if (active === null) {
-    res.status(400).json({ error: "active must be a boolean" });
-    return;
+    return { status: 400, error: "active must be a boolean" };
   }
   const note = validateNote(body.note ?? null);
   if ("error" in note) {
-    res.status(400).json({ error: note.error });
-    return;
+    return { status: 400, error: note.error };
   }
   const project = await resolveProjectReference(body.project_slug);
   if ("error" in project) {
-    res.status(400).json({ error: project.error });
-    return;
+    return { status: 400, error: project.error };
   }
 
   const normalizedBody = {
@@ -588,32 +618,54 @@ router.post("/finance/expenses", async (req, res): Promise<void> => {
   };
   const parsedBody = CreateFinanceExpenseBody.safeParse(normalizedBody);
   if (!parsedBody.success) {
-    res.status(400).json({ error: parsedBody.error.message });
-    return;
+    return { status: 400, error: parsedBody.error.message };
   }
 
-  const [created] = await db
-    .insert(expensesTable)
-    .values({
-      project_id: project.value.project_id,
-      name: name.value,
-      kind: body.kind,
-      amount_cents: BigInt(amount.value),
-      spent_on: spentOn.value,
-      active,
-      note: note.value,
-    })
-    .returning();
+  const values = {
+    project_id: project.value.project_id,
+    name: name.value,
+    kind: body.kind,
+    amount_cents: BigInt(amount.value),
+    spent_on: spentOn.value,
+    active,
+    note: note.value,
+    idempotency_key: idempotencyKey ?? null,
+  };
+  let created: typeof expensesTable.$inferSelect | undefined;
+  if (idempotencyKey === undefined) {
+    [created] = await db.insert(expensesTable).values(values).returning();
+  } else {
+    [created] = await db
+      .insert(expensesTable)
+      .values(values)
+      .onConflictDoNothing({ target: expensesTable.idempotency_key })
+      .returning();
+  }
+  if (!created && idempotencyKey !== undefined) {
+    const conflictRow = await getExisting();
+    if (conflictRow) {
+      CreateFinanceExpenseResponse.parse(conflictRow);
+      return { status: 200, data: conflictRow };
+    }
+  }
   if (!created) {
-    res.status(500).json({ error: "unable to create expense" });
-    return;
+    return { status: 500, error: "unable to create expense" };
   }
   const response = toApiExpense({
     ...created,
     project_slug: project.value.project_slug,
   });
   CreateFinanceExpenseResponse.parse(response);
-  res.status(201).json(response);
+  return { status: 201, data: response };
+}
+
+router.post("/finance/expenses", async (req, res): Promise<void> => {
+  const result = await createExpense(req.body);
+  if ("error" in result) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  res.status(result.status).json(result.data);
 });
 
 router.patch("/finance/expenses/:id", async (req, res): Promise<void> => {

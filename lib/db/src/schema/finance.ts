@@ -10,6 +10,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
 import { projectsTable } from "./projects";
 
@@ -50,6 +51,7 @@ export const expensesTable = pgTable(
     spent_on: date("spent_on", { mode: "string" }),
     active: boolean("active").notNull().default(true),
     note: text("note"),
+    idempotency_key: text("idempotency_key"),
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -71,6 +73,11 @@ export const expensesTable = pgTable(
       "expenses_note_max_length_check",
       sql`${table.note} IS NULL OR char_length(${table.note}) <= 300`,
     ),
+    check(
+      "expenses_idempotency_key_length_check",
+      sql`${table.idempotency_key} IS NULL OR char_length(${table.idempotency_key}) BETWEEN 1 AND 64`,
+    ),
+    unique("expenses_idempotency_key_unique").on(table.idempotency_key),
   ],
 );
 
@@ -83,6 +90,7 @@ export const revenueEntriesTable = pgTable(
     amount_cents: bigint("amount_cents", { mode: "bigint" }).notNull(),
     received_on: date("received_on", { mode: "string" }).notNull(),
     note: text("note"),
+    idempotency_key: text("idempotency_key"),
     created_at: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => [
@@ -97,6 +105,13 @@ export const revenueEntriesTable = pgTable(
     check(
       "revenue_entries_note_max_length_check",
       sql`${table.note} IS NULL OR char_length(${table.note}) <= 300`,
+    ),
+    check(
+      "revenue_entries_idempotency_key_length_check",
+      sql`${table.idempotency_key} IS NULL OR char_length(${table.idempotency_key}) BETWEEN 1 AND 64`,
+    ),
+    unique("revenue_entries_idempotency_key_unique").on(
+      table.idempotency_key,
     ),
   ],
 );

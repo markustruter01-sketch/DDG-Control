@@ -1182,6 +1182,94 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /inbound/finance/expenses:
+    post:
+      operationId: createInboundFinanceExpense
+      tags: [inbound]
+      summary: Create an expense from the inbound API
+      security:
+        - InboundBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InboundFinanceExpenseCreateInput"
+      responses:
+        "200":
+          description: Existing expense returned for the idempotency key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceExpense"
+        "201":
+          description: Expense created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceExpense"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid inbound key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Inbound key is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /inbound/finance/revenue:
+    post:
+      operationId: createInboundFinanceRevenue
+      tags: [inbound]
+      summary: Create a revenue entry from the inbound API
+      security:
+        - InboundBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InboundFinanceRevenueCreateInput"
+      responses:
+        "200":
+          description: Existing revenue entry returned for the idempotency key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceRevenue"
+        "201":
+          description: Revenue entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceRevenue"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid inbound key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Inbound key is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /inbound/decisions:
     post:
       operationId: postInboundDecision
@@ -1347,7 +1435,68 @@ components:
           type: array
           items:
             type: string
-      required: [pending_decisions, tasks, project_slugs, member_names]
+        finance:
+          $ref: "#/components/schemas/FinanceSummaryResponse"
+      required: [pending_decisions, tasks, project_slugs, member_names, finance]
+    InboundFinanceExpenseCreateInput:
+      type: object
+      additionalProperties: false
+      properties:
+        project_slug:
+          type: ["string", "null"]
+          description: Null represents Company.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        kind:
+          type: string
+          description: Must be one of EXPENSE_KINDS from the shared project constants.
+        amount_cents:
+          type: integer
+          format: int64
+          minimum: 1
+        spent_on:
+          type: ["string", "null"]
+          format: date
+          description: Required and non-null for one_off; null for recurring_monthly.
+        active:
+          type: boolean
+          default: true
+        note:
+          type: ["string", "null"]
+          maxLength: 300
+        idempotency_key:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required: [project_slug, name, kind, amount_cents, spent_on]
+    InboundFinanceRevenueCreateInput:
+      type: object
+      additionalProperties: false
+      properties:
+        project_slug:
+          type: ["string", "null"]
+          description: Null represents Company.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        amount_cents:
+          type: integer
+          format: int64
+          minimum: 1
+        received_on:
+          type: string
+          format: date
+        note:
+          type: ["string", "null"]
+          maxLength: 300
+        idempotency_key:
+          type: string
+          minLength: 1
+          maxLength: 64
+      required: [project_slug, name, amount_cents, received_on]
     InboundPendingDecision:
       type: object
       additionalProperties: false

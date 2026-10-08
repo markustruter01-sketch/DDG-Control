@@ -1021,6 +1021,20 @@ export const DeclineDecisionResponse = zod.object({
 /**
  * @summary Read pending decisions, open tasks, projects, and members
  */
+export const getInboundStateResponseFinanceRevenue30dCentsMin = 0;
+
+export const getInboundStateResponseFinanceExpenses30dCentsMin = 0;
+
+export const getInboundStateResponseFinanceDebtCentsMin = 0;
+
+export const getInboundStateResponseFinanceExpectedExpensesNextMonthCentsMin = 0;
+
+export const getInboundStateResponseFinanceExpectedRevenueNextMonthCentsMin = 0;
+
+export const getInboundStateResponseFinanceCustomersMin = 0;
+
+
+
 export const GetInboundStateResponse = zod.object({
   "pending_decisions": zod.array(zod.object({
   "id": zod.number().int(),
@@ -1037,7 +1051,103 @@ export const GetInboundStateResponse = zod.object({
   "due_date": zod.coerce.date().nullable()
 })),
   "project_slugs": zod.array(zod.string()),
-  "member_names": zod.array(zod.string())
+  "member_names": zod.array(zod.string()),
+  "finance": zod.object({
+  "profit_30d_cents": zod.number().int(),
+  "revenue_30d_cents": zod.number().int().min(getInboundStateResponseFinanceRevenue30dCentsMin),
+  "expenses_30d_cents": zod.number().int().min(getInboundStateResponseFinanceExpenses30dCentsMin),
+  "debt_cents": zod.number().int().min(getInboundStateResponseFinanceDebtCentsMin),
+  "expected_expenses_next_month_cents": zod.number().int().min(getInboundStateResponseFinanceExpectedExpensesNextMonthCentsMin),
+  "expected_revenue_next_month_cents": zod.number().int().min(getInboundStateResponseFinanceExpectedRevenueNextMonthCentsMin),
+  "expected_profit_next_month_cents": zod.number().int(),
+  "customers": zod.number().int().min(getInboundStateResponseFinanceCustomersMin).nullable(),
+  "ventures_without_revenue_source": zod.array(zod.string()),
+  "notes": zod.array(zod.string())
+})
+})
+
+
+/**
+ * @summary Create an expense from the inbound API
+ */
+export const createInboundFinanceExpenseBodyNameMax = 100;
+
+
+export const createInboundFinanceExpenseBodyActiveDefault = true;
+export const createInboundFinanceExpenseBodyNoteMax = 300;
+
+export const createInboundFinanceExpenseBodyIdempotencyKeyMax = 64;
+
+
+
+export const CreateInboundFinanceExpenseBody = zod.object({
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(createInboundFinanceExpenseBodyNameMax),
+  "kind": zod.string().describe('Must be one of EXPENSE_KINDS from the shared project constants.'),
+  "amount_cents": zod.number().int().min(1),
+  "spent_on": zod.coerce.date().nullable().describe('Required and non-null for one_off; null for recurring_monthly.'),
+  "active": zod.boolean().default(createInboundFinanceExpenseBodyActiveDefault),
+  "note": zod.string().max(createInboundFinanceExpenseBodyNoteMax).nullish(),
+  "idempotency_key": zod.string().min(1).max(createInboundFinanceExpenseBodyIdempotencyKeyMax).optional()
+})
+
+export const createInboundFinanceExpenseResponseNameMax = 100;
+
+
+export const createInboundFinanceExpenseResponseNoteMax = 300;
+
+
+
+export const CreateInboundFinanceExpenseResponse = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(createInboundFinanceExpenseResponseNameMax),
+  "kind": zod.string().describe('Must be one of EXPENSE_KINDS from the shared project constants.'),
+  "amount_cents": zod.number().int().min(1),
+  "spent_on": zod.coerce.date().nullable(),
+  "active": zod.boolean(),
+  "note": zod.string().max(createInboundFinanceExpenseResponseNoteMax).nullable(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary Create a revenue entry from the inbound API
+ */
+export const createInboundFinanceRevenueBodyNameMax = 100;
+
+
+export const createInboundFinanceRevenueBodyNoteMax = 300;
+
+export const createInboundFinanceRevenueBodyIdempotencyKeyMax = 64;
+
+
+
+export const CreateInboundFinanceRevenueBody = zod.object({
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(createInboundFinanceRevenueBodyNameMax),
+  "amount_cents": zod.number().int().min(1),
+  "received_on": zod.coerce.date(),
+  "note": zod.string().max(createInboundFinanceRevenueBodyNoteMax).nullish(),
+  "idempotency_key": zod.string().min(1).max(createInboundFinanceRevenueBodyIdempotencyKeyMax).optional()
+})
+
+export const createInboundFinanceRevenueResponseNameMax = 100;
+
+
+export const createInboundFinanceRevenueResponseNoteMax = 300;
+
+
+
+export const CreateInboundFinanceRevenueResponse = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(createInboundFinanceRevenueResponseNameMax),
+  "amount_cents": zod.number().int().min(1),
+  "received_on": zod.coerce.date(),
+  "note": zod.string().max(createInboundFinanceRevenueResponseNoteMax).nullable(),
+  "created_at": zod.coerce.date()
 })
 
 

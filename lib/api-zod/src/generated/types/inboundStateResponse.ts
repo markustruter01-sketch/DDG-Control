@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { FinanceSummaryResponse } from './financeSummaryResponse';
 import type { InboundOpenTask } from './inboundOpenTask';
 import type { InboundPendingDecision } from './inboundPendingDecision';
 
@@ -13,4 +14,5 @@ export interface InboundStateResponse {
   tasks: InboundOpenTask[];
   project_slugs: string[];
   member_names: string[];
+  finance: FinanceSummaryResponse;
 }
