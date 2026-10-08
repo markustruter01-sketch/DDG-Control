@@ -44,26 +44,28 @@ import {
 
 const router: IRouter = Router();
 
-const requireInboundKey: RequestHandler = (req, res, next): void => {
-  const configuredKey = process.env.OLLIE_INBOUND_KEY;
-  if (!configuredKey) {
-    res.status(503).json({ error: "inbound not configured" });
-    return;
-  }
+export function requireInboundKey(envVarName: string): RequestHandler {
+  return (req, res, next): void => {
+    const configuredKey = process.env[envVarName];
+    if (!configuredKey) {
+      res.status(503).json({ error: "inbound not configured" });
+      return;
+    }
 
-  const authorization = req.get("authorization") ?? "";
-  const token = /^Bearer\s+(.+)$/i.exec(authorization)?.[1] ?? "";
-  const expectedHash = createHash("sha256").update(configuredKey).digest();
-  const tokenHash = createHash("sha256").update(token).digest();
-  if (!token || !timingSafeEqual(expectedHash, tokenHash)) {
-    res.status(401).json({ error: "unauthorised" });
-    return;
-  }
+    const authorization = req.get("authorization") ?? "";
+    const token = /^Bearer\s+(.+)$/i.exec(authorization)?.[1] ?? "";
+    const expectedHash = createHash("sha256").update(configuredKey).digest();
+    const tokenHash = createHash("sha256").update(token).digest();
+    if (!token || !timingSafeEqual(expectedHash, tokenHash)) {
+      res.status(401).json({ error: "unauthorised" });
+      return;
+    }
 
-  next();
-};
+    next();
+  };
+}
 
-router.use("/inbound", requireInboundKey);
+router.use("/inbound", requireInboundKey("OLLIE_INBOUND_KEY"));
 
 function toApiDecision<T extends {
   created_at: Date | null;

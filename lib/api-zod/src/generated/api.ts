@@ -1255,3 +1255,116 @@ export const PostInboundNoteResponse = zod.object({
 })
 
 
+/**
+ * @summary Store a trading fleet snapshot
+ */
+export const postInboundFleetBodyBotsItemBotIdMax = 64;
+
+export const postInboundFleetBodyBotsItemEquityUsdMin = 0;
+
+export const postInboundFleetBodyBotsItemStartingUsdMin = 0;
+
+export const postInboundFleetBodyBotsItemOpenPositionsMin = 0;
+
+export const postInboundFleetBodyBotsMax = 20;
+
+export const postInboundFleetBodyErrorsItemMax = 300;
+
+export const postInboundFleetBodyErrorsMax = 20;
+
+
+
+export const PostInboundFleetBody = zod.object({
+  "generated_at": zod.coerce.date(),
+  "mode": zod.enum(['paper', 'live', 'mixed']),
+  "bots": zod.array(zod.object({
+  "bot_id": zod.string().min(1).max(postInboundFleetBodyBotsItemBotIdMax),
+  "equity_usd": zod.number().min(postInboundFleetBodyBotsItemEquityUsdMin),
+  "starting_usd": zod.number().min(postInboundFleetBodyBotsItemStartingUsdMin),
+  "cash_usd": zod.number().nullable(),
+  "pnl_usd": zod.number(),
+  "open_positions": zod.number().int().min(postInboundFleetBodyBotsItemOpenPositionsMin),
+  "last_updated": zod.coerce.date().nullable(),
+  "stale": zod.boolean(),
+  "paused": zod.boolean()
+})).min(1).max(postInboundFleetBodyBotsMax),
+  "errors": zod.array(zod.string().max(postInboundFleetBodyErrorsItemMax)).max(postInboundFleetBodyErrorsMax)
+})
+
+export const PostInboundFleetResponse = zod.object({
+  "id": zod.number().int(),
+  "generated_at": zod.coerce.date(),
+  "received_at": zod.coerce.date(),
+  "mode": zod.enum(['paper', 'live', 'mixed']),
+  "total_equity_cents": zod.number().int(),
+  "total_starting_cents": zod.number().int(),
+  "total_pnl_cents": zod.number().int(),
+  "open_positions": zod.number().int(),
+  "stale_bots": zod.number().int(),
+  "paused_bots": zod.number().int(),
+  "errors": zod.array(zod.string()),
+  "bots": zod.array(zod.object({
+  "id": zod.number().int(),
+  "snapshot_id": zod.number().int(),
+  "bot_id": zod.string(),
+  "equity_cents": zod.number().int(),
+  "starting_cents": zod.number().int(),
+  "cash_cents": zod.number().int().nullable(),
+  "pnl_cents": zod.number().int(),
+  "open_positions": zod.number().int(),
+  "last_updated": zod.coerce.date().nullable(),
+  "stale": zod.boolean(),
+  "paused": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Get the latest trading fleet snapshot
+ */
+export const GetProjectFinanceFleetLatestResponse = zod.union([zod.object({
+  "empty": zod.boolean()
+}),zod.object({
+  "id": zod.number().int(),
+  "generated_at": zod.coerce.date(),
+  "received_at": zod.coerce.date(),
+  "mode": zod.enum(['paper', 'live', 'mixed']),
+  "total_equity_cents": zod.number().int(),
+  "total_starting_cents": zod.number().int(),
+  "total_pnl_cents": zod.number().int(),
+  "open_positions": zod.number().int(),
+  "stale_bots": zod.number().int(),
+  "paused_bots": zod.number().int(),
+  "errors": zod.array(zod.string()),
+  "bots": zod.array(zod.object({
+  "id": zod.number().int(),
+  "snapshot_id": zod.number().int(),
+  "bot_id": zod.string(),
+  "equity_cents": zod.number().int(),
+  "starting_cents": zod.number().int(),
+  "cash_cents": zod.number().int().nullable(),
+  "pnl_cents": zod.number().int(),
+  "open_positions": zod.number().int(),
+  "last_updated": zod.coerce.date().nullable(),
+  "stale": zod.boolean(),
+  "paused": zod.boolean()
+})),
+  "peak_equity_cents": zod.number().int(),
+  "drawdown_pct": zod.number(),
+  "age_minutes": zod.number().int(),
+  "stale": zod.boolean(),
+  "currency": zod.enum(['USD'])
+})])
+
+
+/**
+ * @summary Get daily fleet totals for the last 30 Brisbane days
+ */
+export const GetProjectFinanceFleetHistoryResponseItem = zod.object({
+  "day": zod.coerce.date(),
+  "total_equity_cents": zod.number().int(),
+  "total_pnl_cents": zod.number().int()
+})
+export const GetProjectFinanceFleetHistoryResponse = zod.array(GetProjectFinanceFleetHistoryResponseItem)
+
+

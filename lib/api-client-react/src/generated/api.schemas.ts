@@ -883,6 +883,141 @@ export interface FinanceDeleteResponse {
   ok: boolean;
 }
 
+export type FleetSnapshotInputMode = typeof FleetSnapshotInputMode[keyof typeof FleetSnapshotInputMode];
+
+
+export const FleetSnapshotInputMode = {
+  paper: 'paper',
+  live: 'live',
+  mixed: 'mixed',
+} as const;
+
+export interface FleetBotInput {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  bot_id: string;
+  /** @minimum 0 */
+  equity_usd: number;
+  /** @minimum 0 */
+  starting_usd: number;
+  /** @nullable */
+  cash_usd: number | null;
+  pnl_usd: number;
+  /** @minimum 0 */
+  open_positions: number;
+  /** @nullable */
+  last_updated: string | null;
+  stale: boolean;
+  paused: boolean;
+}
+
+export interface FleetSnapshotInput {
+  generated_at: string;
+  mode: FleetSnapshotInputMode;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  bots: FleetBotInput[];
+  /**
+     * @maxItems 20
+     * @items.maxLength 300
+     */
+  errors: string[];
+}
+
+export interface FleetBotSnapshot {
+  id: number;
+  snapshot_id: number;
+  bot_id: string;
+  equity_cents: number;
+  starting_cents: number;
+  /** @nullable */
+  cash_cents: number | null;
+  pnl_cents: number;
+  open_positions: number;
+  /** @nullable */
+  last_updated: string | null;
+  stale: boolean;
+  paused: boolean;
+}
+
+export type FleetSnapshotResponseMode = typeof FleetSnapshotResponseMode[keyof typeof FleetSnapshotResponseMode];
+
+
+export const FleetSnapshotResponseMode = {
+  paper: 'paper',
+  live: 'live',
+  mixed: 'mixed',
+} as const;
+
+export interface FleetSnapshotResponse {
+  id: number;
+  generated_at: string;
+  received_at: string;
+  mode: FleetSnapshotResponseMode;
+  total_equity_cents: number;
+  total_starting_cents: number;
+  total_pnl_cents: number;
+  open_positions: number;
+  stale_bots: number;
+  paused_bots: number;
+  errors: string[];
+  bots: FleetBotSnapshot[];
+}
+
+export interface FleetLatestEmptyResponse {
+  empty: boolean;
+}
+
+export type FleetLatestSnapshotResponseMode = typeof FleetLatestSnapshotResponseMode[keyof typeof FleetLatestSnapshotResponseMode];
+
+
+export const FleetLatestSnapshotResponseMode = {
+  paper: 'paper',
+  live: 'live',
+  mixed: 'mixed',
+} as const;
+
+export type FleetLatestSnapshotResponseCurrency = typeof FleetLatestSnapshotResponseCurrency[keyof typeof FleetLatestSnapshotResponseCurrency];
+
+
+export const FleetLatestSnapshotResponseCurrency = {
+  USD: 'USD',
+} as const;
+
+export interface FleetLatestSnapshotResponse {
+  id: number;
+  generated_at: string;
+  received_at: string;
+  mode: FleetLatestSnapshotResponseMode;
+  total_equity_cents: number;
+  total_starting_cents: number;
+  total_pnl_cents: number;
+  open_positions: number;
+  stale_bots: number;
+  paused_bots: number;
+  errors: string[];
+  bots: FleetBotSnapshot[];
+  peak_equity_cents: number;
+  drawdown_pct: number;
+  age_minutes: number;
+  stale: boolean;
+  currency: FleetLatestSnapshotResponseCurrency;
+}
+
+export type FleetLatestResponse = FleetLatestEmptyResponse | FleetLatestSnapshotResponse;
+
+export interface FleetHistoryDay {
+  day: string;
+  total_equity_cents: number;
+  total_pnl_cents: number;
+}
+
+export type FleetHistoryResponse = FleetHistoryDay[];
+
 export type GetProject404 = {
   error: 'not found';
 };

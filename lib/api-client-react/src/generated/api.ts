@@ -41,6 +41,10 @@ import type {
   FinanceRevenueListResponse,
   FinanceRevenuePatch,
   FinanceSummaryResponse,
+  FleetHistoryResponse,
+  FleetLatestResponse,
+  FleetSnapshotInput,
+  FleetSnapshotResponse,
   GetProject404,
   Goal,
   GoalInput,
@@ -3880,4 +3884,246 @@ export const usePostInboundNote = <TError = ErrorType<Error>,
       > => {
       return useMutation(getPostInboundNoteMutationOptions(options));
     }
+
+export const getPostInboundFleetUrl = () => {
+
+
+
+
+  return `/api/inbound/fleet`
+}
+
+/**
+ * @summary Store a trading fleet snapshot
+ */
+export const postInboundFleet = async (fleetSnapshotInput: FleetSnapshotInput, options?: Parameters<typeof customFetch>[1]): Promise<FleetSnapshotResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<FleetSnapshotResponse>(getPostInboundFleetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fleetSnapshotInput)
+  }
+);}
+
+
+
+
+
+export const getPostInboundFleetMutationKey = () => ['postInboundFleet'] as const;
+
+export const getPostInboundFleetMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInboundFleet>>, TError,PostInboundFleetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postInboundFleet>>, TError,PostInboundFleetMutationVariables, TContext> => {
+
+const mutationKey = getPostInboundFleetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postInboundFleet>>, PostInboundFleetMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  postInboundFleet(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostInboundFleetMutationResult = NonNullable<Awaited<ReturnType<typeof postInboundFleet>>>
+    export type PostInboundFleetMutationBody = BodyType<FleetSnapshotInput>
+    export type PostInboundFleetMutationError = ErrorType<Error>
+    export type PostInboundFleetMutationVariables = {data: BodyType<FleetSnapshotInput>}
+
+    /**
+ * @summary Store a trading fleet snapshot
+ */
+export const usePostInboundFleet = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInboundFleet>>, TError,PostInboundFleetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postInboundFleet>>,
+        TError,
+        PostInboundFleetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPostInboundFleetMutationOptions(options));
+    }
+
+export const getGetProjectFinanceFleetLatestUrl = () => {
+
+
+
+
+  return `/api/projects/finance/fleet/latest`
+}
+
+/**
+ * @summary Get the latest trading fleet snapshot
+ */
+export const getProjectFinanceFleetLatest = async ( options?: Parameters<typeof customFetch>[1]): Promise<FleetLatestResponse> => {
+
+  return customFetch<FleetLatestResponse>(getGetProjectFinanceFleetLatestUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectFinanceFleetLatestQueryKey = () => {
+    return [
+    `/api/projects/finance/fleet/latest`
+    ] as const;
+    }
+
+
+export const getGetProjectFinanceFleetLatestQueryOptions = <TData = Awaited<ReturnType<typeof getProjectFinanceFleetLatest>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectFinanceFleetLatest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectFinanceFleetLatestQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectFinanceFleetLatest>>> = ({ signal }) => getProjectFinanceFleetLatest({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectFinanceFleetLatest>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProjectFinanceFleetLatestQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectFinanceFleetLatest>>>
+export type GetProjectFinanceFleetLatestQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the latest trading fleet snapshot
+ */
+
+export function useGetProjectFinanceFleetLatest<TData = Awaited<ReturnType<typeof getProjectFinanceFleetLatest>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectFinanceFleetLatest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProjectFinanceFleetLatestQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetProjectFinanceFleetHistoryUrl = () => {
+
+
+
+
+  return `/api/projects/finance/fleet/history`
+}
+
+/**
+ * @summary Get daily fleet totals for the last 30 Brisbane days
+ */
+export const getProjectFinanceFleetHistory = async ( options?: Parameters<typeof customFetch>[1]): Promise<FleetHistoryResponse> => {
+
+  return customFetch<FleetHistoryResponse>(getGetProjectFinanceFleetHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectFinanceFleetHistoryQueryKey = () => {
+    return [
+    `/api/projects/finance/fleet/history`
+    ] as const;
+    }
+
+
+export const getGetProjectFinanceFleetHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getProjectFinanceFleetHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectFinanceFleetHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectFinanceFleetHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectFinanceFleetHistory>>> = ({ signal }) => getProjectFinanceFleetHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectFinanceFleetHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProjectFinanceFleetHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectFinanceFleetHistory>>>
+export type GetProjectFinanceFleetHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get daily fleet totals for the last 30 Brisbane days
+ */
+
+export function useGetProjectFinanceFleetHistory<TData = Awaited<ReturnType<typeof getProjectFinanceFleetHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectFinanceFleetHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProjectFinanceFleetHistoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

@@ -34,6 +34,8 @@ export const STATUS_LIGHTS = ["green", "amber", "red"] as const;
 
 export const AGENT_RUN_STATUSES = ["running", "ok", "invalid", "error"] as const;
 
+export const FLEET_MODES = ["paper", "live", "mixed"] as const;
+
 export const PRIORITY_CALLS = [
   "accelerate",
   "maintain",

@@ -24,3 +24,4 @@ export * from "./auth";
 export * from "./metrics";
 export * from "./agents";
 export * from "./finance";
+export * from "./fleet";

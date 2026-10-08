@@ -1409,6 +1409,74 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /inbound/fleet:
+    post:
+      operationId: postInboundFleet
+      tags: [inbound]
+      summary: Store a trading fleet snapshot
+      security:
+        - InboundBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FleetSnapshotInput"
+      responses:
+        "200":
+          description: Existing snapshot returned for the generated_at value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FleetSnapshotResponse"
+        "201":
+          description: Snapshot created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FleetSnapshotResponse"
+        "400":
+          description: Invalid snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid fleet inbound key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Fleet inbound key is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /projects/finance/fleet/latest:
+    get:
+      operationId: getProjectFinanceFleetLatest
+      tags: [finance]
+      summary: Get the latest trading fleet snapshot
+      responses:
+        "200":
+          description: Latest snapshot, or an empty result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FleetLatestResponse"
+  /projects/finance/fleet/history:
+    get:
+      operationId: getProjectFinanceFleetHistory
+      tags: [finance]
+      summary: Get daily fleet totals for the last 30 Brisbane days
+      responses:
+        "200":
+          description: Latest snapshot of each day, oldest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FleetHistoryResponse"
 components:
   securitySchemes:
     InboundBearerAuth:
@@ -2554,4 +2622,256 @@ components:
         - customers
         - ventures_without_revenue_source
         - notes
+    FleetSnapshotInput:
+      type: object
+      additionalProperties: false
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        mode:
+          type: string
+          enum: [paper, live, mixed]
+        bots:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/FleetBotInput"
+        errors:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 300
+      required: [generated_at, mode, bots, errors]
+    FleetBotInput:
+      type: object
+      additionalProperties: false
+      properties:
+        bot_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        equity_usd:
+          type: number
+          minimum: 0
+        starting_usd:
+          type: number
+          minimum: 0
+        cash_usd:
+          type: ["number", "null"]
+        pnl_usd:
+          type: number
+        open_positions:
+          type: integer
+          minimum: 0
+        last_updated:
+          type: ["string", "null"]
+          format: date-time
+        stale:
+          type: boolean
+        paused:
+          type: boolean
+      required:
+        - bot_id
+        - equity_usd
+        - starting_usd
+        - cash_usd
+        - pnl_usd
+        - open_positions
+        - last_updated
+        - stale
+        - paused
+    FleetBotSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        snapshot_id:
+          type: integer
+        bot_id:
+          type: string
+        equity_cents:
+          type: integer
+          format: int64
+        starting_cents:
+          type: integer
+          format: int64
+        cash_cents:
+          type: ["integer", "null"]
+          format: int64
+        pnl_cents:
+          type: integer
+          format: int64
+        open_positions:
+          type: integer
+        last_updated:
+          type: ["string", "null"]
+          format: date-time
+        stale:
+          type: boolean
+        paused:
+          type: boolean
+      required:
+        - id
+        - snapshot_id
+        - bot_id
+        - equity_cents
+        - starting_cents
+        - cash_cents
+        - pnl_cents
+        - open_positions
+        - last_updated
+        - stale
+        - paused
+    FleetSnapshotResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        generated_at:
+          type: string
+          format: date-time
+        received_at:
+          type: string
+          format: date-time
+        mode:
+          type: string
+          enum: [paper, live, mixed]
+        total_equity_cents:
+          type: integer
+          format: int64
+        total_starting_cents:
+          type: integer
+          format: int64
+        total_pnl_cents:
+          type: integer
+          format: int64
+        open_positions:
+          type: integer
+        stale_bots:
+          type: integer
+        paused_bots:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+        bots:
+          type: array
+          items:
+            $ref: "#/components/schemas/FleetBotSnapshot"
+      required:
+        - id
+        - generated_at
+        - received_at
+        - mode
+        - total_equity_cents
+        - total_starting_cents
+        - total_pnl_cents
+        - open_positions
+        - stale_bots
+        - paused_bots
+        - errors
+        - bots
+    FleetLatestEmptyResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        empty:
+          type: boolean
+      required: [empty]
+    FleetLatestSnapshotResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        generated_at:
+          type: string
+          format: date-time
+        received_at:
+          type: string
+          format: date-time
+        mode:
+          type: string
+          enum: [paper, live, mixed]
+        total_equity_cents:
+          type: integer
+          format: int64
+        total_starting_cents:
+          type: integer
+          format: int64
+        total_pnl_cents:
+          type: integer
+          format: int64
+        open_positions:
+          type: integer
+        stale_bots:
+          type: integer
+        paused_bots:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+        bots:
+          type: array
+          items:
+            $ref: "#/components/schemas/FleetBotSnapshot"
+        peak_equity_cents:
+          type: integer
+          format: int64
+        drawdown_pct:
+          type: number
+        age_minutes:
+          type: integer
+        stale:
+          type: boolean
+        currency:
+          type: string
+          enum: [USD]
+      required:
+        - id
+        - generated_at
+        - received_at
+        - mode
+        - total_equity_cents
+        - total_starting_cents
+        - total_pnl_cents
+        - open_positions
+        - stale_bots
+        - paused_bots
+        - errors
+        - bots
+        - peak_equity_cents
+        - drawdown_pct
+        - age_minutes
+        - stale
+        - currency
+    FleetLatestResponse:
+      oneOf:
+        - $ref: "#/components/schemas/FleetLatestEmptyResponse"
+        - $ref: "#/components/schemas/FleetLatestSnapshotResponse"
+    FleetHistoryDay:
+      type: object
+      additionalProperties: false
+      properties:
+        day:
+          type: string
+          format: date
+        total_equity_cents:
+          type: integer
+          format: int64
+        total_pnl_cents:
+          type: integer
+          format: int64
+      required: [day, total_equity_cents, total_pnl_cents]
+    FleetHistoryResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/FleetHistoryDay"
 

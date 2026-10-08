@@ -1,0 +1,122 @@
+ENVIRONMENT
+DDG Control workspace. Development only. Do not publish. Make NO xAI requests. Do not contact Quant Terminal (DDG - Finance) or any broker.
+
+GOAL
+Add a receiver for hourly trading-fleet snapshots, pushed by the DDG - Finance app with its own key, plus read routes for the latest snapshot and history. Fleet money is in USD and from paper accounts, and is never mixed into company finance.
+
+DONE WHEN
+- POST /api/inbound/fleet accepts only "Authorization: Bearer <FLEET_INBOUND_KEY>". OLLIE_INBOUND_KEY gets 401 here. A missing env var returns 503.
+- A valid snapshot is stored. Resending the same generated_at returns 200 with the existing snapshot and stores nothing new.
+- GET /api/projects/finance/fleet/latest returns the latest snapshot with bots, totals, drawdown from peak, age in minutes and a stale flag.
+- GET /api/projects/finance/fleet/history returns daily totals for the last 30 Brisbane days.
+- Ollie's existing inbound routes behave exactly as before. computeFinanceSummary is unchanged.
+- After cleanup, the counts match the "before" snapshot.
+- Codegen exits with code 0. `pnpm run typecheck` passes.
+
+SCOPE
+- lib/project-constants/src/index.ts
+- lib/db/src/schema/fleet.ts (new)
+- lib/db/src/schema/index.ts
+- artifacts/api-server/src/routes/inbound.ts (generalise the key check only)
+- artifacts/api-server/src/routes/fleet.ts (new)
+- artifacts/api-server/src/routes/index.ts
+- lib/api-spec/openapi.yaml
+- Files that codegen rewrites. List every one.
+
+DO NOT
+- Do not print, log or store FLEET_INBOUND_KEY or OLLIE_INBOUND_KEY.
+- Do not add fleet values to computeFinanceSummary or the home top bar.
+- Do not change Ollie's inbound routes' behaviour.
+- Do not build any frontend.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Report whether FLEET_INBOUND_KEY is set, and its length, without printing it. If it is missing, stop here.
+
+2. Constants: add FLEET_MODES = ["paper", "live", "mixed"].
+
+3. Create lib/db/src/schema/fleet.ts (exported from the schema index), with two tables.
+
+   fleet_snapshots:
+   - id
+   - generated_at: timestamp, not null, unique
+   - mode: checked against FLEET_MODES
+   - total_equity_cents: bigint
+   - total_starting_cents: bigint
+   - total_pnl_cents: bigint
+   - open_positions: integer
+   - stale_bots: integer
+   - paused_bots: integer
+   - errors: jsonb, default []
+   - received_at: default now
+
+   fleet_bot_snapshots:
+   - id
+   - snapshot_id: references fleet_snapshots, not null
+   - bot_id: text, 1 to 64 characters
+   - equity_cents: bigint
+   - starting_cents: bigint
+   - cash_cents: bigint, may be null
+   - pnl_cents: bigint
+   - open_positions: integer, 0 or more
+   - last_updated: timestamp, may be null
+   - stale: boolean
+   - paused: boolean
+
+   Run `pnpm --filter @workspace/db run push` and show the output.
+
+4. In inbound.ts, change the key check into one function, requireInboundKey(envVarName), used by Ollie's routes (with OLLIE_INBOUND_KEY) and by the fleet route (with FLEET_INBOUND_KEY). Ollie's responses must not change.
+
+5. POST /api/inbound/fleet (in fleet.ts, protected by requireInboundKey("FLEET_INBOUND_KEY")). The body allows no extra fields:
+   {
+     "generated_at": ISO timestamp,
+     "mode": one of FLEET_MODES,
+     "bots": an array of 1 to 20 items, each with:
+        bot_id: string
+        equity_usd: number, 0 or more
+        starting_usd: number, 0 or more
+        cash_usd: number or null
+        pnl_usd: number
+        open_positions: whole number, 0 or more
+        last_updated: ISO timestamp or null
+        stale: boolean
+        paused: boolean
+     "errors": an array of at most 20 strings, each at most 300 characters
+   }
+   - Convert USD to cents with Math.round(value × 100) once, at this boundary.
+   - Compute the totals server-side from the bots.
+   - Insert in one transaction.
+   - If generated_at already exists, return 200 with the existing snapshot. A new snapshot returns 201.
+
+6. Login-protected read routes:
+   a) GET /api/projects/finance/fleet/latest returns:
+      - the newest snapshot with its bots
+      - total_equity_cents, total_pnl_cents, open_positions, stale_bots, paused_bots, mode, generated_at, errors
+      - peak_equity_cents: the highest total_equity_cents across all snapshots
+      - drawdown_pct: (peak − latest) ÷ peak × 100, to 2 decimals, or 0 if peak is 0
+      - age_minutes since generated_at
+      - stale: true if age_minutes is above 120
+      - currency: "USD"
+      If there are no snapshots, return 200 {"empty": true}.
+   b) GET /api/projects/finance/fleet/history returns, for the last 30 Brisbane days, the last snapshot of each day: [{day, total_equity_cents, total_pnl_cents}], oldest first. Days with no snapshot are left out.
+   Update openapi.yaml, run codegen and show the exit code. Restart the API server.
+
+7. Test with curl against the development server, using keys from the environment without printing them. Show the HTTP code and body of each. Record the ids.
+   a) Show the "before" counts of both tables, and GET /api/finance/summary.
+   b) POST a snapshot with mode "paper" and 2 bots: "test_bot_a" (equity 1000.50, starting 1000, pnl 0.50, 1 position) and "test_bot_b" (equity 990, starting 1000, pnl −10, 0 positions, paused true). Expect 201, with total_equity_cents 199050.
+   c) The same body again. Expect 200, with the counts unchanged.
+   d) A second snapshot one hour later, with test_bot_a equity 1010. Expect 201.
+   e) GET latest. Expect peak 200000, and drawdown calculated against it. GET history.
+   f) No key: expect 401. OLLIE_INBOUND_KEY on this route: expect 401. An extra field "x": expect 400. 21 bots: expect 400.
+   g) GET /api/inbound/state with OLLIE_INBOUND_KEY. Expect 200, as before.
+   h) GET /api/finance/summary. Expect it to be byte-identical to (a).
+
+8. Cleanup, in one transaction, deleting only the recorded ids: the bot rows first, then the 2 snapshots, with exact counts, otherwise roll back. Show that the counts equal the "before" counts.
+   Run `pnpm run typecheck`. Report every file touched, and the exact final request shape of POST /api/inbound/fleet.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
