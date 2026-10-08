@@ -1,0 +1,63 @@
+ENVIRONMENT
+DDG Control workspace. Development only. Do not publish. Make NO xAI requests.
+
+GOAL
+Show the 5 company-wide key figures as a large top bar on the home page, and add a Finances page to manage debts, expenses and manual revenue.
+
+DONE WHEN
+- Home shows a top bar above the 4 tiles with 5 large figures, in this order:
+  1. "Profit · last 30 days", with "Revenue $X" in small text under it
+  2. "Debt"
+  3. "Expected expenses · next month"
+  4. "Expected profit · next month", with "Expected revenue $X · estimate" under it
+  5. "Customers · paid in last 30 days", with "Cattle Dog Coffee only" under it
+  Negative figures show a minus sign in the theme's warning colour. If ventures_without_revenue_source is not empty, a small line reads "Partial: no revenue data for <project names>". The summary's notes show as small footnotes.
+- A header link "Finances" opens /finances, with Debts, Expenses and Revenue sections. Each lists entries and lets me add, edit and delete them. Delete asks for confirmation.
+- Amounts are typed in dollars (for example 12.34) and saved as exact cents (1234).
+- After any change, the lists and the top bar refresh.
+- Works at 402 px width, in day and night mode. `pnpm run typecheck` passes.
+
+SCOPE
+- artifacts/ddg-control/src/App.tsx
+- artifacts/ddg-control/src/ddg.css
+
+DO NOT
+- Do not change any API route, OpenAPI spec, database schema or constants.
+- Do not use floating-point maths to convert dollars to cents. Validate against ^\d+(\.\d{1,2})?$ and convert with string or integer maths.
+- Do not show any figure that does not come from GET /api/finance/summary or the finance list routes.
+- Do not change any other page's behaviour.
+- Do not add, remove or upgrade packages.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Add one helper, dollarsToCents(string), using the validation and integer maths described above. Invalid input shows "Enter an amount like 12.34". Reuse the existing aud_cents formatter for display, adding a minus sign for negative values.
+
+2. Home top bar:
+   - Load GET /api/finance/summary with the generated hook.
+   - Lay out the 5 figure cards as described in DONE WHEN: large number, small label. 5 across on wide screens; 2 per row on phone, with the 5th card full width.
+   - Map ventures_without_revenue_source slugs to project names for the "Partial" line.
+   - If customers is null, show "–".
+
+3. Add the header link "Finances" and the /finances page, with 3 sections. Each section has a list and an "Add" form, and each row has Edit and Delete.
+   - Venture dropdown: "Company" (sends null) plus the 4 projects.
+   - Debts: name, balance in dollars, venture, note.
+   - Expenses: name, kind ("Monthly recurring" or "One-off"), amount in dollars, venture, and a date that shows only for one-off. For recurring rows, add an active on/off toggle.
+   - Revenue: name, amount, venture, date received.
+   - Show the server's error text on failure.
+   - After any change, refresh that list and the summary.
+   Empty sections read "Nothing added yet".
+
+4. Test at 402 px width, in day and night mode. Do not save screenshots in the workspace.
+   a) Show the "before" row counts for debts, expenses and revenue_entries.
+   b) Screenshot the home top bar.
+   c) Through the /finances page, add a one-off expense: "UI test", Company, 12.34, today. Show from the database that amount_cents = 1234. Screenshot the updated top bar.
+   d) Through the page, try amount "12.345". Screenshot the error, and confirm nothing was saved.
+   e) Delete "UI test" through the page. Show that the counts equal the "before" counts.
+
+5. Run `pnpm run typecheck`. Report every file touched.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
