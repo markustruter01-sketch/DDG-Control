@@ -503,6 +503,402 @@ export const ListLatestAgentUpdatesResponse = zod.array(ListLatestAgentUpdatesRe
 
 
 /**
+ * @summary List debts
+ */
+export const listFinanceDebtsResponseNameMax = 100;
+
+export const listFinanceDebtsResponseBalanceCentsMin = 0;
+
+export const listFinanceDebtsResponseNoteMax = 300;
+
+
+
+export const ListFinanceDebtsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(listFinanceDebtsResponseNameMax),
+  "balance_cents": zod.number().int().min(listFinanceDebtsResponseBalanceCentsMin),
+  "note": zod.string().max(listFinanceDebtsResponseNoteMax).nullable(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+export const ListFinanceDebtsResponse = zod.array(ListFinanceDebtsResponseItem)
+
+
+/**
+ * @summary Create a debt
+ */
+export const createFinanceDebtBodyNameMax = 100;
+
+export const createFinanceDebtBodyBalanceCentsMin = 0;
+
+export const createFinanceDebtBodyNoteMax = 300;
+
+
+
+export const CreateFinanceDebtBody = zod.object({
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(createFinanceDebtBodyNameMax),
+  "balance_cents": zod.number().int().min(createFinanceDebtBodyBalanceCentsMin),
+  "note": zod.string().max(createFinanceDebtBodyNoteMax).nullish()
+})
+
+export const createFinanceDebtResponseNameMax = 100;
+
+export const createFinanceDebtResponseBalanceCentsMin = 0;
+
+export const createFinanceDebtResponseNoteMax = 300;
+
+
+
+export const CreateFinanceDebtResponse = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(createFinanceDebtResponseNameMax),
+  "balance_cents": zod.number().int().min(createFinanceDebtResponseBalanceCentsMin),
+  "note": zod.string().max(createFinanceDebtResponseNoteMax).nullable(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a debt
+ */
+
+
+
+export const UpdateFinanceDebtParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const updateFinanceDebtBodyNameMax = 100;
+
+export const updateFinanceDebtBodyBalanceCentsMin = 0;
+
+export const updateFinanceDebtBodyNoteMax = 300;
+
+
+
+export const UpdateFinanceDebtBody = zod.object({
+  "project_slug": zod.string().nullish().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(updateFinanceDebtBodyNameMax).optional(),
+  "balance_cents": zod.number().int().min(updateFinanceDebtBodyBalanceCentsMin).optional(),
+  "note": zod.string().max(updateFinanceDebtBodyNoteMax).nullish()
+})
+
+export const updateFinanceDebtResponseNameMax = 100;
+
+export const updateFinanceDebtResponseBalanceCentsMin = 0;
+
+export const updateFinanceDebtResponseNoteMax = 300;
+
+
+
+export const UpdateFinanceDebtResponse = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(updateFinanceDebtResponseNameMax),
+  "balance_cents": zod.number().int().min(updateFinanceDebtResponseBalanceCentsMin),
+  "note": zod.string().max(updateFinanceDebtResponseNoteMax).nullable(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a debt
+ */
+
+
+
+export const DeleteFinanceDebtParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const DeleteFinanceDebtResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary List expenses
+ */
+export const listFinanceExpensesResponseNameMax = 100;
+
+
+export const listFinanceExpensesResponseNoteMax = 300;
+
+
+
+export const ListFinanceExpensesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(listFinanceExpensesResponseNameMax),
+  "kind": zod.string().describe('Must be one of EXPENSE_KINDS from the shared project constants.'),
+  "amount_cents": zod.number().int().min(1),
+  "spent_on": zod.coerce.date().nullable(),
+  "active": zod.boolean(),
+  "note": zod.string().max(listFinanceExpensesResponseNoteMax).nullable(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+export const ListFinanceExpensesResponse = zod.array(ListFinanceExpensesResponseItem)
+
+
+/**
+ * @summary Create an expense
+ */
+export const createFinanceExpenseBodyNameMax = 100;
+
+
+export const createFinanceExpenseBodyActiveDefault = true;
+export const createFinanceExpenseBodyNoteMax = 300;
+
+
+
+export const CreateFinanceExpenseBody = zod.object({
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(createFinanceExpenseBodyNameMax),
+  "kind": zod.string().describe('Must be one of EXPENSE_KINDS from the shared project constants.'),
+  "amount_cents": zod.number().int().min(1),
+  "spent_on": zod.coerce.date().nullable().describe('Required and non-null for one_off; null for recurring_monthly.'),
+  "active": zod.boolean().default(createFinanceExpenseBodyActiveDefault),
+  "note": zod.string().max(createFinanceExpenseBodyNoteMax).nullish()
+})
+
+export const createFinanceExpenseResponseNameMax = 100;
+
+
+export const createFinanceExpenseResponseNoteMax = 300;
+
+
+
+export const CreateFinanceExpenseResponse = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(createFinanceExpenseResponseNameMax),
+  "kind": zod.string().describe('Must be one of EXPENSE_KINDS from the shared project constants.'),
+  "amount_cents": zod.number().int().min(1),
+  "spent_on": zod.coerce.date().nullable(),
+  "active": zod.boolean(),
+  "note": zod.string().max(createFinanceExpenseResponseNoteMax).nullable(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update an expense
+ */
+
+
+
+export const UpdateFinanceExpenseParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const updateFinanceExpenseBodyNameMax = 100;
+
+
+export const updateFinanceExpenseBodyNoteMax = 300;
+
+
+
+export const UpdateFinanceExpenseBody = zod.object({
+  "project_slug": zod.string().nullish().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(updateFinanceExpenseBodyNameMax).optional(),
+  "kind": zod.string().optional().describe('Must be one of EXPENSE_KINDS from the shared project constants.'),
+  "amount_cents": zod.number().int().min(1).optional(),
+  "spent_on": zod.coerce.date().nullish(),
+  "active": zod.boolean().optional(),
+  "note": zod.string().max(updateFinanceExpenseBodyNoteMax).nullish()
+})
+
+export const updateFinanceExpenseResponseNameMax = 100;
+
+
+export const updateFinanceExpenseResponseNoteMax = 300;
+
+
+
+export const UpdateFinanceExpenseResponse = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(updateFinanceExpenseResponseNameMax),
+  "kind": zod.string().describe('Must be one of EXPENSE_KINDS from the shared project constants.'),
+  "amount_cents": zod.number().int().min(1),
+  "spent_on": zod.coerce.date().nullable(),
+  "active": zod.boolean(),
+  "note": zod.string().max(updateFinanceExpenseResponseNoteMax).nullable(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete an expense
+ */
+
+
+
+export const DeleteFinanceExpenseParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const DeleteFinanceExpenseResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary List manual revenue entries
+ */
+export const listFinanceRevenueResponseNameMax = 100;
+
+
+export const listFinanceRevenueResponseNoteMax = 300;
+
+
+
+export const ListFinanceRevenueResponseItem = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(listFinanceRevenueResponseNameMax),
+  "amount_cents": zod.number().int().min(1),
+  "received_on": zod.coerce.date(),
+  "note": zod.string().max(listFinanceRevenueResponseNoteMax).nullable(),
+  "created_at": zod.coerce.date()
+})
+export const ListFinanceRevenueResponse = zod.array(ListFinanceRevenueResponseItem)
+
+
+/**
+ * @summary Create a manual revenue entry
+ */
+export const createFinanceRevenueBodyNameMax = 100;
+
+
+export const createFinanceRevenueBodyNoteMax = 300;
+
+
+
+export const CreateFinanceRevenueBody = zod.object({
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(createFinanceRevenueBodyNameMax),
+  "amount_cents": zod.number().int().min(1),
+  "received_on": zod.coerce.date(),
+  "note": zod.string().max(createFinanceRevenueBodyNoteMax).nullish()
+})
+
+export const createFinanceRevenueResponseNameMax = 100;
+
+
+export const createFinanceRevenueResponseNoteMax = 300;
+
+
+
+export const CreateFinanceRevenueResponse = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(createFinanceRevenueResponseNameMax),
+  "amount_cents": zod.number().int().min(1),
+  "received_on": zod.coerce.date(),
+  "note": zod.string().max(createFinanceRevenueResponseNoteMax).nullable(),
+  "created_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a manual revenue entry
+ */
+
+
+
+export const UpdateFinanceRevenueParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const updateFinanceRevenueBodyNameMax = 100;
+
+
+export const updateFinanceRevenueBodyNoteMax = 300;
+
+
+
+export const UpdateFinanceRevenueBody = zod.object({
+  "project_slug": zod.string().nullish().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(updateFinanceRevenueBodyNameMax).optional(),
+  "amount_cents": zod.number().int().min(1).optional(),
+  "received_on": zod.coerce.date().optional(),
+  "note": zod.string().max(updateFinanceRevenueBodyNoteMax).nullish()
+})
+
+export const updateFinanceRevenueResponseNameMax = 100;
+
+
+export const updateFinanceRevenueResponseNoteMax = 300;
+
+
+
+export const UpdateFinanceRevenueResponse = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string().nullable().describe('Null represents Company.'),
+  "name": zod.string().min(1).max(updateFinanceRevenueResponseNameMax),
+  "amount_cents": zod.number().int().min(1),
+  "received_on": zod.coerce.date(),
+  "note": zod.string().max(updateFinanceRevenueResponseNoteMax).nullable(),
+  "created_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a manual revenue entry
+ */
+
+
+
+export const DeleteFinanceRevenueParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const DeleteFinanceRevenueResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Get combined finance summary
+ */
+export const getFinanceSummaryResponseRevenue30dCentsMin = 0;
+
+export const getFinanceSummaryResponseExpenses30dCentsMin = 0;
+
+export const getFinanceSummaryResponseDebtCentsMin = 0;
+
+export const getFinanceSummaryResponseExpectedExpensesNextMonthCentsMin = 0;
+
+export const getFinanceSummaryResponseExpectedRevenueNextMonthCentsMin = 0;
+
+export const getFinanceSummaryResponseCustomersMin = 0;
+
+
+
+export const GetFinanceSummaryResponse = zod.object({
+  "profit_30d_cents": zod.number().int(),
+  "revenue_30d_cents": zod.number().int().min(getFinanceSummaryResponseRevenue30dCentsMin),
+  "expenses_30d_cents": zod.number().int().min(getFinanceSummaryResponseExpenses30dCentsMin),
+  "debt_cents": zod.number().int().min(getFinanceSummaryResponseDebtCentsMin),
+  "expected_expenses_next_month_cents": zod.number().int().min(getFinanceSummaryResponseExpectedExpensesNextMonthCentsMin),
+  "expected_revenue_next_month_cents": zod.number().int().min(getFinanceSummaryResponseExpectedRevenueNextMonthCentsMin),
+  "expected_profit_next_month_cents": zod.number().int(),
+  "customers": zod.number().int().min(getFinanceSummaryResponseCustomersMin).nullable(),
+  "ventures_without_revenue_source": zod.array(zod.string()),
+  "notes": zod.array(zod.string())
+})
+
+
+/**
  * @summary List decisions by status
  */
 export const ListDecisionsQueryParams = zod.object({

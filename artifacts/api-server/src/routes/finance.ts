@@ -1,0 +1,1100 @@
+import {
+  CreateFinanceDebtBody,
+  CreateFinanceDebtResponse,
+  CreateFinanceExpenseBody,
+  CreateFinanceExpenseResponse,
+  CreateFinanceRevenueBody,
+  CreateFinanceRevenueResponse,
+  DeleteFinanceDebtResponse,
+  DeleteFinanceExpenseResponse,
+  DeleteFinanceRevenueResponse,
+  GetFinanceSummaryResponse,
+  ListFinanceDebtsResponse,
+  ListFinanceExpensesResponse,
+  ListFinanceRevenueResponse,
+  UpdateFinanceDebtBody,
+  UpdateFinanceDebtResponse,
+  UpdateFinanceExpenseBody,
+  UpdateFinanceExpenseResponse,
+  UpdateFinanceRevenueBody,
+  UpdateFinanceRevenueResponse,
+} from "@workspace/api-zod";
+import {
+  db,
+  debtsTable,
+  expensesTable,
+  metricSnapshotsTable,
+  projectsTable,
+  revenueEntriesTable,
+} from "@workspace/db";
+import { EXPENSE_KINDS } from "@workspace/project-constants";
+import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { Router, type IRouter, type Request, type Response } from "express";
+import {
+  getMissingRequiredFieldError,
+  getUnknownFieldError,
+  isCalendarDate,
+  requestBodyRecord,
+  validateCalendarDate,
+  type ValidationResult,
+} from "./validation";
+
+const router: IRouter = Router();
+type ExpenseKind = (typeof EXPENSE_KINDS)[number];
+
+const DEBT_FIELDS = ["project_slug", "name", "balance_cents", "note"] as const;
+const EXPENSE_FIELDS = [
+  "project_slug",
+  "name",
+  "kind",
+  "amount_cents",
+  "spent_on",
+  "active",
+  "note",
+] as const;
+const REVENUE_FIELDS = [
+  "project_slug",
+  "name",
+  "amount_cents",
+  "received_on",
+  "note",
+] as const;
+
+const FINANCE_SUMMARY_NOTES = [
+  "Recurring monthly costs count in full in the last 30 days.",
+  "Next-month revenue is an estimate based on the last 30 days.",
+] as const;
+
+type ProjectReference = {
+  project_id: number | null;
+  project_slug: string | null;
+};
+
+type ApiFinanceRow = {
+  id: number;
+  project_slug: string | null;
+  name: string;
+  note: string | null;
+  created_at: Date;
+};
+
+type ApiDebtRow = ApiFinanceRow & {
+  balance_cents: bigint;
+  updated_at: Date;
+};
+
+type ApiExpenseRow = ApiFinanceRow & {
+  kind: string;
+  amount_cents: bigint;
+  spent_on: string | null;
+  active: boolean;
+  updated_at: Date;
+};
+
+type ApiRevenueRow = ApiFinanceRow & {
+  amount_cents: bigint;
+  received_on: string;
+};
+
+function requestBody(
+  req: Request,
+  res: Response,
+  allowedFields: readonly string[],
+  requiredFields: readonly string[],
+  isPatch = false,
+): Record<string, unknown> | null {
+  const body = requestBodyRecord(req.body);
+  if (!body) {
+    res.status(400).json({ error: "request body must be an object" });
+    return null;
+  }
+
+  const unknownFieldError = getUnknownFieldError(body, allowedFields);
+  if (unknownFieldError) {
+    res.status(400).json({ error: unknownFieldError });
+    return null;
+  }
+
+  if (isPatch && Object.keys(body).length === 0) {
+    res.status(400).json({ error: "nothing to update" });
+    return null;
+  }
+
+  const requiredFieldError = getMissingRequiredFieldError(body, requiredFields);
+  if (requiredFieldError) {
+    res.status(400).json({ error: requiredFieldError });
+    return null;
+  }
+
+  return body;
+}
+
+function parseFinanceId(
+  rawId: string | string[] | undefined,
+): number | null {
+  const value = Array.isArray(rawId) ? rawId[0] : rawId;
+  if (!value || !/^[1-9]\d*$/.test(value)) {
+    return null;
+  }
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id <= 2_147_483_647 ? id : null;
+}
+
+function validateName(value: unknown): ValidationResult<string> {
+  if (typeof value !== "string") {
+    return { error: "name must be a string" };
+  }
+  const name = value.trim();
+  const length = Array.from(name).length;
+  if (length < 1 || length > 100) {
+    return { error: "name must be 1 to 100 characters after trimming" };
+  }
+  return { value: name };
+}
+
+function validateNote(value: unknown): ValidationResult<string | null> {
+  if (value !== null && typeof value !== "string") {
+    return { error: "note must be a string or null" };
+  }
+  if (typeof value === "string" && Array.from(value).length > 300) {
+    return { error: "note must not exceed 300 characters" };
+  }
+  return { value: value as string | null };
+}
+
+function validateCents(
+  value: unknown,
+  fieldName: string,
+  minimum: number,
+): ValidationResult<number> {
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value < minimum
+  ) {
+    return {
+      error: `${fieldName} must be a whole number of cents greater than or equal to ${minimum}`,
+    };
+  }
+  return { value };
+}
+
+function validateRequiredDate(
+  value: unknown,
+  fieldName: string,
+): ValidationResult<string> {
+  const dateValue = validateCalendarDate(value, fieldName);
+  if ("error" in dateValue) {
+    return { error: dateValue.error };
+  }
+  if (dateValue.value === null) {
+    return { error: `${fieldName} is required` };
+  }
+  return { value: dateValue.value };
+}
+
+async function resolveProjectReference(
+  value: unknown,
+): Promise<ValidationResult<ProjectReference>> {
+  if (value === null) {
+    return { value: { project_id: null, project_slug: null } };
+  }
+  if (typeof value !== "string") {
+    return { error: "project_slug must be a string or null" };
+  }
+
+  const [project] = await db
+    .select({ id: projectsTable.id, slug: projectsTable.slug })
+    .from(projectsTable)
+    .where(eq(projectsTable.slug, value))
+    .limit(1);
+  if (!project) {
+    return { error: "unknown project" };
+  }
+
+  return {
+    value: { project_id: project.id, project_slug: project.slug },
+  };
+}
+
+function expenseKindIsValid(value: unknown): value is ExpenseKind {
+  return (
+    typeof value === "string" &&
+    EXPENSE_KINDS.includes(value as ExpenseKind)
+  );
+}
+
+function validateExpenseDatePair(
+  kind: ExpenseKind,
+  spentOn: string | null,
+): string | null {
+  if (kind === "one_off" && spentOn === null) {
+    return "spent_on is required for one_off expenses";
+  }
+  if (kind === "recurring_monthly" && spentOn !== null) {
+    return "spent_on must be null for recurring_monthly expenses";
+  }
+  return null;
+}
+
+function apiCents(value: bigint, fieldName: string): number {
+  const numberValue = Number(value);
+  if (!Number.isSafeInteger(numberValue)) {
+    throw new Error(`${fieldName} exceeds the safe integer range`);
+  }
+  return numberValue;
+}
+
+function toApiDebt(row: ApiDebtRow) {
+  return {
+    id: row.id,
+    project_slug: row.project_slug,
+    name: row.name,
+    balance_cents: apiCents(row.balance_cents, "balance_cents"),
+    note: row.note,
+    created_at: row.created_at.toISOString(),
+    updated_at: row.updated_at.toISOString(),
+  };
+}
+
+function toApiExpense(row: ApiExpenseRow) {
+  return {
+    id: row.id,
+    project_slug: row.project_slug,
+    name: row.name,
+    kind: row.kind,
+    amount_cents: apiCents(row.amount_cents, "amount_cents"),
+    spent_on: row.spent_on,
+    active: row.active,
+    note: row.note,
+    created_at: row.created_at.toISOString(),
+    updated_at: row.updated_at.toISOString(),
+  };
+}
+
+function toApiRevenue(row: ApiRevenueRow) {
+  return {
+    id: row.id,
+    project_slug: row.project_slug,
+    name: row.name,
+    amount_cents: apiCents(row.amount_cents, "amount_cents"),
+    received_on: row.received_on,
+    note: row.note,
+    created_at: row.created_at.toISOString(),
+  };
+}
+
+function brisbaneDate(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Australia/Brisbane",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function subtractCalendarDays(dateOnly: string, days: number): string {
+  const [year, month, day] = dateOnly.split("-").map(Number);
+  return new Date(Date.UTC(year!, month! - 1, day! - days))
+    .toISOString()
+    .slice(0, 10);
+}
+
+function sumBigInts(values: readonly bigint[]): bigint {
+  return values.reduce((total, value) => total + value, 0n);
+}
+
+function safeMetricInteger(value: number, fieldName: string): number {
+  if (!Number.isSafeInteger(value)) {
+    throw new Error(`${fieldName} exceeds the safe integer range`);
+  }
+  return value;
+}
+
+router.get("/finance/debts", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select({
+      id: debtsTable.id,
+      project_id: debtsTable.project_id,
+      project_slug: projectsTable.slug,
+      name: debtsTable.name,
+      balance_cents: debtsTable.balance_cents,
+      note: debtsTable.note,
+      created_at: debtsTable.created_at,
+      updated_at: debtsTable.updated_at,
+    })
+    .from(debtsTable)
+    .leftJoin(projectsTable, eq(debtsTable.project_id, projectsTable.id))
+    .orderBy(asc(debtsTable.id));
+  const response = rows.map(toApiDebt);
+  ListFinanceDebtsResponse.parse(response);
+  res.json(response);
+});
+
+router.post("/finance/debts", async (req, res): Promise<void> => {
+  const body = requestBody(req, res, DEBT_FIELDS, [
+    "project_slug",
+    "name",
+    "balance_cents",
+  ]);
+  if (!body) return;
+
+  const name = validateName(body.name);
+  if ("error" in name) {
+    res.status(400).json({ error: name.error });
+    return;
+  }
+  const balance = validateCents(body.balance_cents, "balance_cents", 0);
+  if ("error" in balance) {
+    res.status(400).json({ error: balance.error });
+    return;
+  }
+  const note = validateNote(body.note ?? null);
+  if ("error" in note) {
+    res.status(400).json({ error: note.error });
+    return;
+  }
+  const project = await resolveProjectReference(body.project_slug);
+  if ("error" in project) {
+    res.status(400).json({ error: project.error });
+    return;
+  }
+
+  const parsedBody = CreateFinanceDebtBody.safeParse({
+    ...body,
+    name: name.value,
+    balance_cents: balance.value,
+    note: note.value,
+  });
+  if (!parsedBody.success) {
+    res.status(400).json({ error: parsedBody.error.message });
+    return;
+  }
+
+  const [created] = await db
+    .insert(debtsTable)
+    .values({
+      project_id: project.value.project_id,
+      name: name.value,
+      balance_cents: BigInt(balance.value),
+      note: note.value,
+    })
+    .returning();
+  if (!created) {
+    res.status(500).json({ error: "unable to create debt" });
+    return;
+  }
+
+  const response = toApiDebt({
+    ...created,
+    project_slug: project.value.project_slug,
+  });
+  CreateFinanceDebtResponse.parse(response);
+  res.status(201).json(response);
+});
+
+router.patch("/finance/debts/:id", async (req, res): Promise<void> => {
+  const id = parseFinanceId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "invalid finance entry id" });
+    return;
+  }
+
+  const [existing] = await db
+    .select({
+      id: debtsTable.id,
+      project_id: debtsTable.project_id,
+      project_slug: projectsTable.slug,
+      name: debtsTable.name,
+      balance_cents: debtsTable.balance_cents,
+      note: debtsTable.note,
+      created_at: debtsTable.created_at,
+      updated_at: debtsTable.updated_at,
+    })
+    .from(debtsTable)
+    .leftJoin(projectsTable, eq(debtsTable.project_id, projectsTable.id))
+    .where(eq(debtsTable.id, id))
+    .limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+
+  const body = requestBody(req, res, DEBT_FIELDS, [], true);
+  if (!body) return;
+  const fields: Partial<typeof debtsTable.$inferInsert> = {};
+  let projectSlug = existing.project_slug;
+  const normalizedBody = { ...body };
+
+  if (Object.hasOwn(body, "project_slug")) {
+    const project = await resolveProjectReference(body.project_slug);
+    if ("error" in project) {
+      res.status(400).json({ error: project.error });
+      return;
+    }
+    fields.project_id = project.value.project_id;
+    projectSlug = project.value.project_slug;
+  }
+  if (Object.hasOwn(body, "name")) {
+    const name = validateName(body.name);
+    if ("error" in name) {
+      res.status(400).json({ error: name.error });
+      return;
+    }
+    fields.name = name.value;
+    normalizedBody.name = name.value;
+  }
+  if (Object.hasOwn(body, "balance_cents")) {
+    const balance = validateCents(body.balance_cents, "balance_cents", 0);
+    if ("error" in balance) {
+      res.status(400).json({ error: balance.error });
+      return;
+    }
+    fields.balance_cents = BigInt(balance.value);
+    normalizedBody.balance_cents = balance.value;
+  }
+  if (Object.hasOwn(body, "note")) {
+    const note = validateNote(body.note);
+    if ("error" in note) {
+      res.status(400).json({ error: note.error });
+      return;
+    }
+    fields.note = note.value;
+  }
+
+  const parsedBody = UpdateFinanceDebtBody.safeParse(normalizedBody);
+  if (!parsedBody.success) {
+    res.status(400).json({ error: parsedBody.error.message });
+    return;
+  }
+  const [updated] = await db
+    .update(debtsTable)
+    .set({ ...fields, updated_at: new Date() })
+    .where(eq(debtsTable.id, id))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  const response = toApiDebt({ ...updated, project_slug: projectSlug });
+  UpdateFinanceDebtResponse.parse(response);
+  res.json(response);
+});
+
+router.delete("/finance/debts/:id", async (req, res): Promise<void> => {
+  const id = parseFinanceId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "invalid finance entry id" });
+    return;
+  }
+  const deleted = await db
+    .delete(debtsTable)
+    .where(eq(debtsTable.id, id))
+    .returning({ id: debtsTable.id });
+  if (deleted.length === 0) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  res.json(DeleteFinanceDebtResponse.parse({ ok: true }));
+});
+
+router.get("/finance/expenses", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select({
+      id: expensesTable.id,
+      project_id: expensesTable.project_id,
+      project_slug: projectsTable.slug,
+      name: expensesTable.name,
+      kind: expensesTable.kind,
+      amount_cents: expensesTable.amount_cents,
+      spent_on: expensesTable.spent_on,
+      active: expensesTable.active,
+      note: expensesTable.note,
+      created_at: expensesTable.created_at,
+      updated_at: expensesTable.updated_at,
+    })
+    .from(expensesTable)
+    .leftJoin(projectsTable, eq(expensesTable.project_id, projectsTable.id))
+    .orderBy(asc(expensesTable.id));
+  const response = rows.map(toApiExpense);
+  ListFinanceExpensesResponse.parse(response);
+  res.json(response);
+});
+
+router.post("/finance/expenses", async (req, res): Promise<void> => {
+  const body = requestBody(req, res, EXPENSE_FIELDS, [
+    "project_slug",
+    "name",
+    "kind",
+    "amount_cents",
+    "spent_on",
+  ]);
+  if (!body) return;
+
+  const name = validateName(body.name);
+  if ("error" in name) {
+    res.status(400).json({ error: name.error });
+    return;
+  }
+  if (!expenseKindIsValid(body.kind)) {
+    res.status(400).json({ error: "invalid expense kind" });
+    return;
+  }
+  const amount = validateCents(body.amount_cents, "amount_cents", 1);
+  if ("error" in amount) {
+    res.status(400).json({ error: amount.error });
+    return;
+  }
+  const spentOn = validateCalendarDate(body.spent_on, "spent_on");
+  if ("error" in spentOn) {
+    res.status(400).json({ error: spentOn.error });
+    return;
+  }
+  const dateError = validateExpenseDatePair(body.kind, spentOn.value);
+  if (dateError) {
+    res.status(400).json({ error: dateError });
+    return;
+  }
+  const active =
+    body.active === undefined
+      ? true
+      : typeof body.active === "boolean"
+        ? body.active
+        : null;
+  if (active === null) {
+    res.status(400).json({ error: "active must be a boolean" });
+    return;
+  }
+  const note = validateNote(body.note ?? null);
+  if ("error" in note) {
+    res.status(400).json({ error: note.error });
+    return;
+  }
+  const project = await resolveProjectReference(body.project_slug);
+  if ("error" in project) {
+    res.status(400).json({ error: project.error });
+    return;
+  }
+
+  const normalizedBody = {
+    ...body,
+    name: name.value,
+    amount_cents: amount.value,
+    spent_on: spentOn.value,
+    active,
+    note: note.value,
+  };
+  const parsedBody = CreateFinanceExpenseBody.safeParse(normalizedBody);
+  if (!parsedBody.success) {
+    res.status(400).json({ error: parsedBody.error.message });
+    return;
+  }
+
+  const [created] = await db
+    .insert(expensesTable)
+    .values({
+      project_id: project.value.project_id,
+      name: name.value,
+      kind: body.kind,
+      amount_cents: BigInt(amount.value),
+      spent_on: spentOn.value,
+      active,
+      note: note.value,
+    })
+    .returning();
+  if (!created) {
+    res.status(500).json({ error: "unable to create expense" });
+    return;
+  }
+  const response = toApiExpense({
+    ...created,
+    project_slug: project.value.project_slug,
+  });
+  CreateFinanceExpenseResponse.parse(response);
+  res.status(201).json(response);
+});
+
+router.patch("/finance/expenses/:id", async (req, res): Promise<void> => {
+  const id = parseFinanceId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "invalid finance entry id" });
+    return;
+  }
+  const [existing] = await db
+    .select({
+      id: expensesTable.id,
+      project_id: expensesTable.project_id,
+      project_slug: projectsTable.slug,
+      name: expensesTable.name,
+      kind: expensesTable.kind,
+      amount_cents: expensesTable.amount_cents,
+      spent_on: expensesTable.spent_on,
+      active: expensesTable.active,
+      note: expensesTable.note,
+      created_at: expensesTable.created_at,
+      updated_at: expensesTable.updated_at,
+    })
+    .from(expensesTable)
+    .leftJoin(projectsTable, eq(expensesTable.project_id, projectsTable.id))
+    .where(eq(expensesTable.id, id))
+    .limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  const body = requestBody(req, res, EXPENSE_FIELDS, [], true);
+  if (!body) return;
+
+  const fields: Partial<typeof expensesTable.$inferInsert> = {};
+  const normalizedBody = { ...body };
+  let projectSlug = existing.project_slug;
+  let kind: ExpenseKind = existing.kind as ExpenseKind;
+  let spentOn = existing.spent_on;
+
+  if (Object.hasOwn(body, "project_slug")) {
+    const project = await resolveProjectReference(body.project_slug);
+    if ("error" in project) {
+      res.status(400).json({ error: project.error });
+      return;
+    }
+    fields.project_id = project.value.project_id;
+    projectSlug = project.value.project_slug;
+  }
+  if (Object.hasOwn(body, "name")) {
+    const name = validateName(body.name);
+    if ("error" in name) {
+      res.status(400).json({ error: name.error });
+      return;
+    }
+    fields.name = name.value;
+    normalizedBody.name = name.value;
+  }
+  if (Object.hasOwn(body, "kind")) {
+    if (!expenseKindIsValid(body.kind)) {
+      res.status(400).json({ error: "invalid expense kind" });
+      return;
+    }
+    kind = body.kind;
+    fields.kind = kind;
+  }
+  if (Object.hasOwn(body, "amount_cents")) {
+    const amount = validateCents(body.amount_cents, "amount_cents", 1);
+    if ("error" in amount) {
+      res.status(400).json({ error: amount.error });
+      return;
+    }
+    fields.amount_cents = BigInt(amount.value);
+    normalizedBody.amount_cents = amount.value;
+  }
+  if (Object.hasOwn(body, "spent_on")) {
+    const validatedDate = validateCalendarDate(body.spent_on, "spent_on");
+    if ("error" in validatedDate) {
+      res.status(400).json({ error: validatedDate.error });
+      return;
+    }
+    spentOn = validatedDate.value;
+    fields.spent_on = spentOn;
+  }
+  const dateError = validateExpenseDatePair(kind, spentOn);
+  if (dateError) {
+    res.status(400).json({ error: dateError });
+    return;
+  }
+  if (Object.hasOwn(body, "active")) {
+    if (typeof body.active !== "boolean") {
+      res.status(400).json({ error: "active must be a boolean" });
+      return;
+    }
+    fields.active = body.active;
+  }
+  if (Object.hasOwn(body, "note")) {
+    const note = validateNote(body.note);
+    if ("error" in note) {
+      res.status(400).json({ error: note.error });
+      return;
+    }
+    fields.note = note.value;
+  }
+
+  const parsedBody = UpdateFinanceExpenseBody.safeParse(normalizedBody);
+  if (!parsedBody.success) {
+    res.status(400).json({ error: parsedBody.error.message });
+    return;
+  }
+  const [updated] = await db
+    .update(expensesTable)
+    .set({ ...fields, updated_at: new Date() })
+    .where(eq(expensesTable.id, id))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  const response = toApiExpense({ ...updated, project_slug: projectSlug });
+  UpdateFinanceExpenseResponse.parse(response);
+  res.json(response);
+});
+
+router.delete("/finance/expenses/:id", async (req, res): Promise<void> => {
+  const id = parseFinanceId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "invalid finance entry id" });
+    return;
+  }
+  const deleted = await db
+    .delete(expensesTable)
+    .where(eq(expensesTable.id, id))
+    .returning({ id: expensesTable.id });
+  if (deleted.length === 0) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  res.json(DeleteFinanceExpenseResponse.parse({ ok: true }));
+});
+
+router.get("/finance/revenue", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select({
+      id: revenueEntriesTable.id,
+      project_id: revenueEntriesTable.project_id,
+      project_slug: projectsTable.slug,
+      name: revenueEntriesTable.name,
+      amount_cents: revenueEntriesTable.amount_cents,
+      received_on: revenueEntriesTable.received_on,
+      note: revenueEntriesTable.note,
+      created_at: revenueEntriesTable.created_at,
+    })
+    .from(revenueEntriesTable)
+    .leftJoin(
+      projectsTable,
+      eq(revenueEntriesTable.project_id, projectsTable.id),
+    )
+    .orderBy(asc(revenueEntriesTable.id));
+  const response = rows.map(toApiRevenue);
+  ListFinanceRevenueResponse.parse(response);
+  res.json(response);
+});
+
+router.post("/finance/revenue", async (req, res): Promise<void> => {
+  const body = requestBody(req, res, REVENUE_FIELDS, [
+    "project_slug",
+    "name",
+    "amount_cents",
+    "received_on",
+  ]);
+  if (!body) return;
+  const name = validateName(body.name);
+  if ("error" in name) {
+    res.status(400).json({ error: name.error });
+    return;
+  }
+  const amount = validateCents(body.amount_cents, "amount_cents", 1);
+  if ("error" in amount) {
+    res.status(400).json({ error: amount.error });
+    return;
+  }
+  const receivedOn = validateRequiredDate(body.received_on, "received_on");
+  if ("error" in receivedOn) {
+    res.status(400).json({ error: receivedOn.error });
+    return;
+  }
+  const note = validateNote(body.note ?? null);
+  if ("error" in note) {
+    res.status(400).json({ error: note.error });
+    return;
+  }
+  const project = await resolveProjectReference(body.project_slug);
+  if ("error" in project) {
+    res.status(400).json({ error: project.error });
+    return;
+  }
+  const normalizedBody = {
+    ...body,
+    name: name.value,
+    amount_cents: amount.value,
+    received_on: receivedOn.value,
+    note: note.value,
+  };
+  const parsedBody = CreateFinanceRevenueBody.safeParse(normalizedBody);
+  if (!parsedBody.success) {
+    res.status(400).json({ error: parsedBody.error.message });
+    return;
+  }
+
+  const [created] = await db
+    .insert(revenueEntriesTable)
+    .values({
+      project_id: project.value.project_id,
+      name: name.value,
+      amount_cents: BigInt(amount.value),
+      received_on: receivedOn.value,
+      note: note.value,
+    })
+    .returning();
+  if (!created) {
+    res.status(500).json({ error: "unable to create revenue entry" });
+    return;
+  }
+  const response = toApiRevenue({
+    ...created,
+    project_slug: project.value.project_slug,
+  });
+  CreateFinanceRevenueResponse.parse(response);
+  res.status(201).json(response);
+});
+
+router.patch("/finance/revenue/:id", async (req, res): Promise<void> => {
+  const id = parseFinanceId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "invalid finance entry id" });
+    return;
+  }
+  const [existing] = await db
+    .select({
+      id: revenueEntriesTable.id,
+      project_id: revenueEntriesTable.project_id,
+      project_slug: projectsTable.slug,
+      name: revenueEntriesTable.name,
+      amount_cents: revenueEntriesTable.amount_cents,
+      received_on: revenueEntriesTable.received_on,
+      note: revenueEntriesTable.note,
+      created_at: revenueEntriesTable.created_at,
+    })
+    .from(revenueEntriesTable)
+    .leftJoin(
+      projectsTable,
+      eq(revenueEntriesTable.project_id, projectsTable.id),
+    )
+    .where(eq(revenueEntriesTable.id, id))
+    .limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  const body = requestBody(req, res, REVENUE_FIELDS, [], true);
+  if (!body) return;
+
+  const fields: Partial<typeof revenueEntriesTable.$inferInsert> = {};
+  const normalizedBody = { ...body };
+  let projectSlug = existing.project_slug;
+  if (Object.hasOwn(body, "project_slug")) {
+    const project = await resolveProjectReference(body.project_slug);
+    if ("error" in project) {
+      res.status(400).json({ error: project.error });
+      return;
+    }
+    fields.project_id = project.value.project_id;
+    projectSlug = project.value.project_slug;
+  }
+  if (Object.hasOwn(body, "name")) {
+    const name = validateName(body.name);
+    if ("error" in name) {
+      res.status(400).json({ error: name.error });
+      return;
+    }
+    fields.name = name.value;
+    normalizedBody.name = name.value;
+  }
+  if (Object.hasOwn(body, "amount_cents")) {
+    const amount = validateCents(body.amount_cents, "amount_cents", 1);
+    if ("error" in amount) {
+      res.status(400).json({ error: amount.error });
+      return;
+    }
+    fields.amount_cents = BigInt(amount.value);
+    normalizedBody.amount_cents = amount.value;
+  }
+  if (Object.hasOwn(body, "received_on")) {
+    const receivedOn = validateRequiredDate(body.received_on, "received_on");
+    if ("error" in receivedOn) {
+      res.status(400).json({ error: receivedOn.error });
+      return;
+    }
+    fields.received_on = receivedOn.value;
+    normalizedBody.received_on = receivedOn.value;
+  }
+  if (Object.hasOwn(body, "note")) {
+    const note = validateNote(body.note);
+    if ("error" in note) {
+      res.status(400).json({ error: note.error });
+      return;
+    }
+    fields.note = note.value;
+  }
+
+  const parsedBody = UpdateFinanceRevenueBody.safeParse(normalizedBody);
+  if (!parsedBody.success) {
+    res.status(400).json({ error: parsedBody.error.message });
+    return;
+  }
+  const [updated] = await db
+    .update(revenueEntriesTable)
+    .set(fields)
+    .where(eq(revenueEntriesTable.id, id))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  const response = toApiRevenue({ ...updated, project_slug: projectSlug });
+  UpdateFinanceRevenueResponse.parse(response);
+  res.json(response);
+});
+
+router.delete("/finance/revenue/:id", async (req, res): Promise<void> => {
+  const id = parseFinanceId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "invalid finance entry id" });
+    return;
+  }
+  const deleted = await db
+    .delete(revenueEntriesTable)
+    .where(eq(revenueEntriesTable.id, id))
+    .returning({ id: revenueEntriesTable.id });
+  if (deleted.length === 0) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  res.json(DeleteFinanceRevenueResponse.parse({ ok: true }));
+});
+
+router.get("/finance/summary", async (_req, res): Promise<void> => {
+  const today = brisbaneDate(new Date());
+  const startDate = subtractCalendarDays(today, 29);
+
+  const [projects, debtRows, recurringExpenseRows, oneOffExpenseRows, revenueRows] =
+    await Promise.all([
+      db
+        .select({ id: projectsTable.id, slug: projectsTable.slug })
+        .from(projectsTable)
+        .orderBy(asc(projectsTable.sort_order)),
+      db.select({ balance_cents: debtsTable.balance_cents }).from(debtsTable),
+      db
+        .select({ amount_cents: expensesTable.amount_cents })
+        .from(expensesTable)
+        .where(
+          and(
+            eq(expensesTable.kind, "recurring_monthly"),
+            eq(expensesTable.active, true),
+          ),
+        ),
+      db
+        .select({ amount_cents: expensesTable.amount_cents })
+        .from(expensesTable)
+        .where(
+          and(
+            eq(expensesTable.kind, "one_off"),
+            gte(expensesTable.spent_on, startDate),
+            lte(expensesTable.spent_on, today),
+          ),
+        ),
+      db
+        .select({
+          project_id: revenueEntriesTable.project_id,
+          amount_cents: revenueEntriesTable.amount_cents,
+        })
+        .from(revenueEntriesTable)
+        .where(
+          and(
+            gte(revenueEntriesTable.received_on, startDate),
+            lte(revenueEntriesTable.received_on, today),
+          ),
+        ),
+    ]);
+
+  const coffeeProject = projects.find(
+    (project) => project.slug === "cattle-dog-coffee",
+  );
+  const metricRows = coffeeProject
+    ? await db
+        .select({
+          id: metricSnapshotsTable.id,
+          key: metricSnapshotsTable.key,
+          value: metricSnapshotsTable.value,
+          captured_at: metricSnapshotsTable.captured_at,
+        })
+        .from(metricSnapshotsTable)
+        .where(
+          and(
+            eq(metricSnapshotsTable.project_id, coffeeProject.id),
+            inArray(metricSnapshotsTable.key, ["sales_30d", "customers_30d"]),
+          ),
+        )
+        .orderBy(desc(metricSnapshotsTable.captured_at), desc(metricSnapshotsTable.id))
+    : [];
+  const latestMetrics = new Map<string, number>();
+  for (const row of metricRows) {
+    if (!latestMetrics.has(row.key)) {
+      latestMetrics.set(row.key, row.value);
+    }
+  }
+
+  const stripeCentsValue = latestMetrics.get("sales_30d") ?? 0;
+  if (!Number.isSafeInteger(stripeCentsValue)) {
+    throw new Error("sales_30d exceeds the safe integer range");
+  }
+  const stripeCents = BigInt(stripeCentsValue);
+  const manualRevenueCents = sumBigInts(
+    revenueRows.map((row) => row.amount_cents),
+  );
+  const recurringMonthlyCents = sumBigInts(
+    recurringExpenseRows.map((row) => row.amount_cents),
+  );
+  const oneOff30dCents = sumBigInts(
+    oneOffExpenseRows.map((row) => row.amount_cents),
+  );
+  const revenue30dCents = stripeCents + manualRevenueCents;
+  const expenses30dCents = recurringMonthlyCents + oneOff30dCents;
+  const profit30dCents = revenue30dCents - expenses30dCents;
+  const debtCents = sumBigInts(debtRows.map((row) => row.balance_cents));
+
+  const projectRevenueIds = new Set(
+    revenueRows.flatMap((row) =>
+      row.project_id === null ? [] : [row.project_id],
+    ),
+  );
+  const venturesWithoutRevenueSource = projects
+    .filter(
+      (project) =>
+        project.slug !== "cattle-dog-coffee" &&
+        !projectRevenueIds.has(project.id),
+    )
+    .map((project) => project.slug);
+
+  const customersValue = latestMetrics.get("customers_30d");
+  const customers =
+    customersValue === undefined
+      ? null
+      : safeMetricInteger(customersValue, "customers_30d");
+  const expectedExpenses = recurringMonthlyCents;
+  const expectedRevenue = revenue30dCents;
+  const expectedProfit = expectedRevenue - expectedExpenses;
+
+  res.json(
+    GetFinanceSummaryResponse.parse({
+      profit_30d_cents: apiCents(profit30dCents, "profit_30d_cents"),
+      revenue_30d_cents: apiCents(revenue30dCents, "revenue_30d_cents"),
+      expenses_30d_cents: apiCents(expenses30dCents, "expenses_30d_cents"),
+      debt_cents: apiCents(debtCents, "debt_cents"),
+      expected_expenses_next_month_cents: apiCents(
+        expectedExpenses,
+        "expected_expenses_next_month_cents",
+      ),
+      expected_revenue_next_month_cents: apiCents(
+        expectedRevenue,
+        "expected_revenue_next_month_cents",
+      ),
+      expected_profit_next_month_cents: apiCents(
+        expectedProfit,
+        "expected_profit_next_month_cents",
+      ),
+      customers,
+      ventures_without_revenue_source: venturesWithoutRevenueSource,
+      notes: FINANCE_SUMMARY_NOTES,
+    }),
+  );
+});
+
+export default router;

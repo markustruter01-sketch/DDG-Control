@@ -582,6 +582,247 @@ export interface LatestAgentProjectUpdate {
   previous: LatestAgentProjectUpdatePrevious | null;
 }
 
+export interface FinanceDebt {
+  id: number;
+  /**
+     * Null represents Company.
+     * @nullable
+     */
+  project_slug: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /** @minimum 0 */
+  balance_cents: number;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FinanceDebtListResponse = FinanceDebt[];
+
+export interface FinanceDebtCreate {
+  /**
+     * Null represents Company.
+     * @nullable
+     */
+  project_slug: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /** @minimum 0 */
+  balance_cents: number;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export interface FinanceDebtPatch {
+  /**
+     * Null represents Company.
+     * @nullable
+     */
+  project_slug?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name?: string;
+  /** @minimum 0 */
+  balance_cents?: number;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export interface FinanceExpense {
+  id: number;
+  /**
+     * Null represents Company.
+     * @nullable
+     */
+  project_slug: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /** Must be one of EXPENSE_KINDS from the shared project constants. */
+  kind: string;
+  /** @minimum 1 */
+  amount_cents: number;
+  /** @nullable */
+  spent_on: string | null;
+  active: boolean;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FinanceExpenseListResponse = FinanceExpense[];
+
+export interface FinanceExpenseCreate {
+  /**
+     * Null represents Company.
+     * @nullable
+     */
+  project_slug: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /** Must be one of EXPENSE_KINDS from the shared project constants. */
+  kind: string;
+  /** @minimum 1 */
+  amount_cents: number;
+  /**
+     * Required and non-null for one_off; null for recurring_monthly.
+     * @nullable
+     */
+  spent_on: string | null;
+  active?: boolean;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export interface FinanceExpensePatch {
+  /**
+     * Null represents Company.
+     * @nullable
+     */
+  project_slug?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name?: string;
+  /** Must be one of EXPENSE_KINDS from the shared project constants. */
+  kind?: string;
+  /** @minimum 1 */
+  amount_cents?: number;
+  /** @nullable */
+  spent_on?: string | null;
+  active?: boolean;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export interface FinanceRevenue {
+  id: number;
+  /**
+     * Null represents Company.
+     * @nullable
+     */
+  project_slug: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /** @minimum 1 */
+  amount_cents: number;
+  received_on: string;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  note: string | null;
+  created_at: string;
+}
+
+export type FinanceRevenueListResponse = FinanceRevenue[];
+
+export interface FinanceRevenueCreate {
+  /**
+     * Null represents Company.
+     * @nullable
+     */
+  project_slug: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /** @minimum 1 */
+  amount_cents: number;
+  received_on: string;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export interface FinanceRevenuePatch {
+  /**
+     * Null represents Company.
+     * @nullable
+     */
+  project_slug?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name?: string;
+  /** @minimum 1 */
+  amount_cents?: number;
+  received_on?: string;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export interface FinanceDeleteResponse {
+  ok: boolean;
+}
+
+export interface FinanceSummaryResponse {
+  profit_30d_cents: number;
+  /** @minimum 0 */
+  revenue_30d_cents: number;
+  /** @minimum 0 */
+  expenses_30d_cents: number;
+  /** @minimum 0 */
+  debt_cents: number;
+  /** @minimum 0 */
+  expected_expenses_next_month_cents: number;
+  /** @minimum 0 */
+  expected_revenue_next_month_cents: number;
+  expected_profit_next_month_cents: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  customers: number | null;
+  ventures_without_revenue_source: string[];
+  notes: string[];
+}
+
 export type GetProject404 = {
   error: 'not found';
 };

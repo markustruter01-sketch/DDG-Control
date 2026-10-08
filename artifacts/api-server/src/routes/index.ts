@@ -8,6 +8,7 @@ import metricsRouter from "./metrics";
 import agentsRouter from "./agents";
 import decisionsRouter from "./decisions";
 import inboundRouter from "./inbound";
+import financeRouter from "./finance";
 
 const router: IRouter = Router();
 
@@ -21,5 +22,6 @@ router.use(metricsRouter);
 router.use(agentsRouter);
 router.use(decisionsRouter);
 router.use(inboundRouter);
+router.use(financeRouter);
 
 export default router;
