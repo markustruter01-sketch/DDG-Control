@@ -304,9 +304,7 @@ function Sparkline({ rows }: { rows: DailySalesRow[] }) {
 }
 
 function formatFinanceCents(value: number): string {
-  return value < 0
-    ? `−${formatFigure(Math.abs(value), 'aud_cents')}`
-    : formatFigure(value, 'aud_cents');
+  return formatCurrencyCents(value, 'AUD');
 }
 
 function FinanceKpiCard({
@@ -526,11 +524,9 @@ function Home() {
               const financeHeadline = project.slug === 'finance'
                 ? fleetLatestQuery.isError
                   ? 'No data yet'
-                  : fleet?.stale
-                    ? `Stale — no update for ${fleet.age_minutes} min`
-                    : fleet?.mode === 'paper'
-                      ? `${formatFigure(fleet.total_equity_cents, 'usd_cents')} · Fleet value (paper)`
-                      : 'No data yet'
+                  : fleet?.mode === 'paper'
+                    ? `${formatFigure(fleet.total_equity_cents, 'usd_cents')} · Fleet value (paper)`
+                    : 'No data yet'
                 : null;
               const dailySales = project.slug === coffeeSlug ? (coffeeSalesQuery.data ?? []) : [];
               return (
@@ -571,6 +567,11 @@ function Home() {
                           ? `${formatFigure(headlineMetric.value, headlineMetric.unit)} · ${headlineMetric.label}`
                           : 'No data yet'}
                     </p>
+                    {project.slug === 'finance' && fleet?.stale && (
+                      <p className="tile-fact fleet-tile-stale" role="status">
+                        Stale — no update for {fleet.age_minutes} min
+                      </p>
+                    )}
                     {project.slug === coffeeSlug && <Sparkline rows={dailySales} />}
                     <p className="tile-fact">
                       <strong>Next action:</strong> {latestUpdate?.next_action ?? 'No data yet'}
@@ -1489,21 +1490,25 @@ function formatBrisbaneDateTime(value: string | null): string {
     : brisbaneDateTimeFormatter.format(date);
 }
 
-function formatFigure(value: number, unit: string): string {
-  if (unit === 'aud_cents') {
-    return new Intl.NumberFormat('en-AU', {
+function formatCurrencyCents(value: number, currency: 'AUD' | 'USD'): string {
+  const absoluteValue = Math.abs(value) / 100;
+  const formatted = currency === 'AUD'
+    ? new Intl.NumberFormat('en-AU', {
       style: 'currency',
-      currency: 'AUD',
+      currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value / 100);
-  }
-  if (unit === 'usd_cents') {
-    return `US$${new Intl.NumberFormat('en-US', {
+    }).format(absoluteValue)
+    : `US$${new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value / 100)}`;
-  }
+    }).format(absoluteValue)}`;
+  return value < 0 ? `−${formatted}` : formatted;
+}
+
+function formatFigure(value: number, unit: string): string {
+  if (unit === 'aud_cents') return formatCurrencyCents(value, 'AUD');
+  if (unit === 'usd_cents') return formatCurrencyCents(value, 'USD');
   return new Intl.NumberFormat('en-AU', { maximumFractionDigits: 0 }).format(value);
 }
 
@@ -2401,8 +2406,12 @@ function FinanceFleetWorkspace() {
     <div className="fleet-workspace" data-testid="workspace-finance-fleet">
       <header className="fleet-toolbar">
         <div className="fleet-mode-line">
-          <span className={`fleet-mode fleet-mode-${latest.mode}`}>{latest.mode} mode</span>
-          <span className="fleet-updated">Updated {formatBrisbaneDateTime(latest.generated_at)} Brisbane time · {latest.age_minutes} min ago</span>
+          <span className={`fleet-mode fleet-mode-${latest.mode}`}>
+            {latest.mode === 'paper' ? 'PAPER — practice money' : latest.mode.toUpperCase()}
+          </span>
+          <span className="fleet-updated">
+            Updated {formatBrisbaneDateTime(latest.generated_at)} ({latest.age_minutes} min ago)
+          </span>
         </div>
         {latest.stale && <p className="fleet-stale-warning" role="status">Stale — no update for {latest.age_minutes} min</p>}
       </header>
@@ -2415,8 +2424,8 @@ function FinanceFleetWorkspace() {
         </article>
         <div className="fleet-metric-grid">
           <article className="fleet-metric-card">
-            <span className="fleet-metric-label">P&amp;L</span>
-            <strong className={pnlPositive ? 'fleet-positive' : 'fleet-negative'}>{formatFinanceUsdCents(latest.total_pnl_cents)}</strong>
+            <span className="fleet-metric-label">Total P&amp;L</span>
+            <strong className={pnlPositive ? 'fleet-positive' : 'fleet-negative'}>{formatFigure(latest.total_pnl_cents, 'usd_cents')}</strong>
           </article>
           <article className="fleet-metric-card"><span className="fleet-metric-label">Drawdown</span><strong>{latest.drawdown_pct.toFixed(2)}%</strong></article>
           <article className="fleet-metric-card"><span className="fleet-metric-label">Peak equity</span><strong>{formatFigure(latest.peak_equity_cents, 'usd_cents')}</strong></article>
@@ -2485,7 +2494,7 @@ function FinanceFleetWorkspace() {
                     <tr key={bot.id} data-testid={`row-fleet-bot-${bot.bot_id}`}>
                       <th scope="row">{bot.bot_id}</th>
                       <td>{formatFigure(bot.equity_cents, 'usd_cents')}</td>
-                      <td className={bot.pnl_cents >= 0 ? 'fleet-positive' : 'fleet-negative'}>{formatFinanceUsdCents(bot.pnl_cents)}</td>
+                      <td className={bot.pnl_cents >= 0 ? 'fleet-positive' : 'fleet-negative'}>{formatFigure(bot.pnl_cents, 'usd_cents')}</td>
                       <td className={pnlPercent === null ? '' : pnlPercent >= 0 ? 'fleet-positive' : 'fleet-negative'}>{pnlPercent === null ? '—' : `${pnlPercent.toFixed(2)}%`}</td>
                       <td>{formatFigure(bot.open_positions, 'count')}</td>
                       <td><span className={`fleet-bot-status fleet-bot-${status.toLowerCase()}`}>{status}</span></td>
@@ -2499,12 +2508,6 @@ function FinanceFleetWorkspace() {
       </section>
     </div>
   );
-}
-
-function formatFinanceUsdCents(value: number): string {
-  return value < 0
-    ? `−${formatFigure(Math.abs(value), 'usd_cents')}`
-    : formatFigure(value, 'usd_cents');
 }
 
 function CustomerWorkspace({ slug }: { slug: string }) {

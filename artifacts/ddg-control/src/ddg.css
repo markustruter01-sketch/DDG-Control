@@ -183,6 +183,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 .tile-facts { display: grid; gap: 9px; margin-top: auto; padding-top: 30px; }
 .tile-fact { margin: 0; color: hsl(var(--muted-foreground)); font-size: 12px; line-height: 1.5; }
 .tile-fact strong { color: hsl(var(--foreground)); font-weight: 600; }
+.fleet-tile-stale { color: #dfbd76; font-weight: 650; }
+[data-theme="day"] .fleet-tile-stale { color: #8a5d00; }
 .skeleton {
   height: 186px; border: 1px solid hsl(var(--border)); border-radius: 10px;
   background: hsl(var(--muted)); animation: shimmer 1.3s ease-in-out infinite alternate;
@@ -632,6 +634,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   background: hsl(var(--accent) / .13); color: hsl(var(--accent)); font: 600 10px/1 var(--app-font-mono);
   letter-spacing: .05em; text-transform: uppercase;
 }
+.fleet-mode-paper { letter-spacing: 0; text-transform: none; }
 .fleet-mode-live { background: rgba(219, 105, 96, .14); color: #e7978e; }
 .fleet-mode-mixed { background: rgba(216, 173, 88, .14); color: #dfbd76; }
 .fleet-updated { color: hsl(var(--muted-foreground)); font-size: 11px; line-height: 1.5; }
