@@ -14,6 +14,11 @@ import {
   getListDecisionsQueryKey,
   getListLatestAgentUpdatesQueryKey,
   getListProjectGoalsQueryKey,
+  getListProjectMetricsQueryKey,
+  getListProjectDailySalesQueryKey,
+  getListProjectMetricHistoryQueryKey,
+  getListProjectOllieHistoryQueryKey,
+  getListProjectNotesQueryKey,
   getListMembersQueryKey,
   getListProjectTasksQueryKey,
   getListProjectsQueryKey,
@@ -23,8 +28,6 @@ import {
   useGetSession,
   useLogin,
   useLogout,
-  useApproveDecision,
-  useDeclineDecision,
   useListDecisions,
   useListProjectGoals,
   useListMembers,
@@ -32,6 +35,12 @@ import {
   useListLatestAgentUpdates,
   useListProjectTasks,
   useListProjects,
+  useListProjectMetrics,
+  useListProjectDailySales,
+  useListProjectMetricHistory,
+  useListProjectOllieHistory,
+  useListProjectNotes,
+  useRefreshProjectMetrics,
   useRunOllie,
   useUpdateGoal,
   useUpdateTask,
@@ -46,6 +55,11 @@ import {
   type Task,
   type TaskInput,
   type TaskUpdate,
+  type ProjectMetric,
+  type DailySalesRow,
+  type MetricHistoryRow,
+  type OllieHistoryRow,
+  type ProjectNote,
 } from '@workspace/api-client-react';
 import {
   GOAL_STATUSES,
@@ -56,10 +70,23 @@ import {
   PRINCIPLES,
   TASK_STATUSES,
   TASK_STATUS_LABELS,
+  METRIC_DEFINITIONS,
+  PROJECT_HEADLINE_METRIC,
   type GoalStatus,
   type ProjectStatus,
   type TaskStatus,
 } from '@workspace/project-constants';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from 'recharts';
 import {
   Link,
   Route,
@@ -231,6 +258,19 @@ function Header({ showLogout = true }: { showLogout?: boolean }) {
   );
 }
 
+function Sparkline({ rows }: { rows: DailySalesRow[] }) {
+  if (rows.length < 2) return null;
+  const values = rows.map((row) => row.sales_cents);
+  const low = Math.min(...values);
+  const range = Math.max(1, Math.max(...values) - low);
+  const points = values.map((value, index) => {
+    const x = (index / (values.length - 1)) * 100;
+    const y = 26 - ((value - low) / range) * 22;
+    return `${x},${y}`;
+  }).join(' ');
+  return <svg className="tile-sparkline" viewBox="0 0 100 28" role="img" aria-label="Daily sales trend"><polyline points={points} /></svg>;
+}
+
 function Home() {
   const projectsQuery = useListProjects({
     query: { queryKey: getListProjectsQueryKey() },
@@ -245,6 +285,13 @@ function Home() {
     { status: 'pending' },
     { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } },
   );
+  const coffeeSlug = 'cattle-dog-coffee';
+  const coffeeMetricsQuery = useListProjectMetrics(coffeeSlug, {
+    query: { queryKey: getListProjectMetricsQueryKey(coffeeSlug) },
+  });
+  const coffeeSalesQuery = useListProjectDailySales(coffeeSlug, {
+    query: { queryKey: getListProjectDailySalesQueryKey(coffeeSlug) },
+  });
   const backgroundStyle = {
     '--home-background': `url("${import.meta.env.BASE_URL}dashboard-background.jpg")`,
   } as CSSProperties;
@@ -310,6 +357,11 @@ function Home() {
               const latestUpdate = agentUpdatesQuery.data?.find(
                 (update) => update.project_slug === project.slug,
               );
+              const headlineKey = PROJECT_HEADLINE_METRIC[project.slug as keyof typeof PROJECT_HEADLINE_METRIC];
+              const headlineMetric = headlineKey
+                ? coffeeMetricsQuery.data?.find((metric) => metric.key === headlineKey)
+                : undefined;
+              const dailySales = project.slug === coffeeSlug ? (coffeeSalesQuery.data ?? []) : [];
               return (
                 <Link
                   key={project.id}
@@ -340,7 +392,13 @@ function Home() {
                     </div>
                   </div>
                   <div className="tile-facts">
-                    <p className="tile-fact"><strong>Headline:</strong> No data yet</p>
+                    <p className="tile-fact">
+                      <strong>Headline:</strong>{' '}
+                      {headlineMetric
+                        ? `${formatFigure(headlineMetric.value, headlineMetric.unit)} · ${headlineMetric.label}`
+                        : 'No data yet'}
+                    </p>
+                    {project.slug === coffeeSlug && <Sparkline rows={dailySales} />}
                     <p className="tile-fact">
                       <strong>Next action:</strong> {latestUpdate?.next_action ?? 'No data yet'}
                     </p>
@@ -638,6 +696,18 @@ function formatBrisbaneDateTime(value: string | null): string {
   return Number.isNaN(date.getTime())
     ? 'Date unavailable'
     : brisbaneDateTimeFormatter.format(date);
+}
+
+function formatFigure(value: number, unit: string): string {
+  if (unit === 'aud_cents') {
+    return new Intl.NumberFormat('en-AU', {
+      style: 'currency',
+      currency: 'AUD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value / 100);
+  }
+  return new Intl.NumberFormat('en-AU', { maximumFractionDigits: 0 }).format(value);
 }
 
 function TaskEditorForm({
@@ -1377,6 +1447,260 @@ function ProjectGoals({ slug }: { slug: string }) {
   );
 }
 
+function MetricValue({ metric }: { metric?: ProjectMetric }) {
+  return <>{metric ? formatFigure(metric.value, metric.unit) : 'No data yet'}</>;
+}
+
+function ChartFrame({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="data-chart-panel">
+      <h3 className="todo-group-title">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function RevenueWorkspace({ slug }: { slug: string }) {
+  const isCoffee = slug === 'cattle-dog-coffee';
+  const metricsQuery = useListProjectMetrics(slug, {
+    query: { queryKey: getListProjectMetricsQueryKey(slug), enabled: isCoffee },
+  });
+  const dailySalesQuery = useListProjectDailySales(slug, {
+    query: { queryKey: getListProjectDailySalesQueryKey(slug), enabled: isCoffee },
+  });
+  const historyParams = { key: 'sales_30d' };
+  const historyQuery = useListProjectMetricHistory(slug, historyParams, {
+    query: { queryKey: getListProjectMetricHistoryQueryKey(slug, historyParams), enabled: isCoffee },
+  });
+  const refreshMutation = useRefreshProjectMetrics();
+  const refresh = async () => {
+    try {
+      await refreshMutation.mutateAsync({ slug });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: getListProjectMetricsQueryKey(slug) }),
+        queryClient.invalidateQueries({ queryKey: getListProjectDailySalesQueryKey(slug) }),
+        queryClient.invalidateQueries({ queryKey: getListProjectMetricHistoryQueryKey(slug, historyParams) }),
+      ]);
+    } catch {
+      // Server response is rendered below.
+    }
+  };
+  const metrics = metricsQuery.data ?? [];
+  const historyRows: MetricHistoryRow[] = [...(historyQuery.data ?? [])]
+    .sort((a, b) => a.captured_at.localeCompare(b.captured_at));
+  const latestMetric = metrics.reduce<ProjectMetric | undefined>((latest, metric) => (
+    !latest || new Date(metric.captured_at).getTime() > new Date(latest.captured_at).getTime()
+      ? metric
+      : latest
+  ), undefined);
+  if (!isCoffee) return <p className="data-empty">No data source yet</p>;
+
+  return (
+    <div className="data-workspace">
+      <div className="data-toolbar">
+        {latestMetric && <p className="data-updated">Updated {formatBrisbaneDateTime(latestMetric.captured_at)}</p>}
+        <button className="task-secondary-button" type="button" disabled={refreshMutation.isPending} onClick={() => void refresh()} data-testid="button-refresh-project-metrics">
+          {refreshMutation.isPending ? 'Refreshing…' : 'Refresh'}
+        </button>
+      </div>
+      {refreshMutation.isError && <p className="data-error" role="alert">{serverErrorText(refreshMutation.error, 'Unable to refresh metrics.')}</p>}
+      {metricsQuery.isLoading ? <p className="task-state-message" role="status">Loading metrics…</p> : metricsQuery.isError ? (
+        <div className="task-query-error" role="alert"><p>{serverErrorText(metricsQuery.error, 'Unable to load metrics.')}</p><button className="task-secondary-button" type="button" onClick={() => void metricsQuery.refetch()}>Retry</button></div>
+      ) : (
+        <div className="metric-grid">
+          {Object.entries(METRIC_DEFINITIONS).map(([key, definition]) => {
+            const metric = metrics.find((entry) => entry.key === key);
+            return <article className="metric-card" key={key}><span>{definition.label}</span><strong><MetricValue metric={metric} /></strong></article>;
+          })}
+        </div>
+      )}
+      <div className="chart-grid">
+        <ChartFrame title="Daily sales · last 30 days">
+          {dailySalesQuery.isLoading ? <p className="task-state-message">Loading daily sales…</p> : dailySalesQuery.isError ? (
+            <p className="data-error" role="alert">{serverErrorText(dailySalesQuery.error, 'Unable to load daily sales.')}</p>
+          ) : (dailySalesQuery.data?.length ?? 0) === 0 ? <p className="data-empty">No data yet</p> : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={dailySalesQuery.data} margin={{ top: 10, right: 4, bottom: 0, left: 0 }}>
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 4" />
+                <XAxis dataKey="day" tickFormatter={(day: string) => formatDueDate(day)} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" minTickGap={25} />
+                <YAxis tickFormatter={(value: number) => formatFigure(value, 'aud_cents')} width={60} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" />
+                <Tooltip formatter={(value: number) => formatFigure(value, 'aud_cents')} labelFormatter={(day: string) => formatDueDate(day)} contentStyle={{ background: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} />
+                <Bar dataKey="sales_cents" name="Sales" fill="hsl(var(--chart-1))" fillOpacity={0.88} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </ChartFrame>
+        <ChartFrame title="Sales, last 30 days · history">
+          {historyQuery.isLoading ? <p className="task-state-message">Loading sales history…</p> : historyQuery.isError ? (
+            <p className="data-error" role="alert">{serverErrorText(historyQuery.error, 'Unable to load sales history.')}</p>
+          ) : historyRows.length === 0 ? <p className="data-empty">No data yet</p> : (
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={historyRows} margin={{ top: 10, right: 8, bottom: 0, left: 0 }}>
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 4" />
+                <XAxis dataKey="captured_at" tickFormatter={(value: string) => formatDueDate(value.slice(0, 10))} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" minTickGap={24} />
+                <YAxis tickFormatter={(value: number) => formatFigure(value, 'aud_cents')} width={60} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" />
+                <Tooltip formatter={(value: number) => formatFigure(value, 'aud_cents')} labelFormatter={(value: string) => formatBrisbaneDateTime(value)} contentStyle={{ background: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} />
+                <Line dataKey="value" name="Sales" type="monotone" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </ChartFrame>
+      </div>
+    </div>
+  );
+}
+
+function CustomerWorkspace({ slug }: { slug: string }) {
+  const isCoffee = slug === 'cattle-dog-coffee';
+  const query = useListProjectMetrics(slug, {
+    query: { queryKey: getListProjectMetricsQueryKey(slug), enabled: isCoffee },
+  });
+  if (!isCoffee) return <p className="data-empty">No customer data source yet</p>;
+  if (query.isLoading) return <p className="task-state-message" role="status">Loading customer metrics…</p>;
+  if (query.isError) return <div className="task-query-error" role="alert"><p>{serverErrorText(query.error, 'Unable to load customer metrics.')}</p><button className="task-secondary-button" type="button" onClick={() => void query.refetch()}>Retry</button></div>;
+  const metrics = query.data ?? [];
+  const customers = metrics.find((metric) => metric.key === 'customers_30d');
+  const repeat = metrics.find((metric) => metric.key === 'repeat_customers_30d');
+  const repeatRate = customers && repeat && customers.value > 0
+    ? `${Math.round((repeat.value / customers.value) * 100)}%`
+    : customers?.value === 0 ? '–' : 'No data yet';
+  return (
+    <div className="metric-grid customer-metrics">
+      <article className="metric-card"><span>Customers, last 30 days</span><strong><MetricValue metric={customers} /></strong></article>
+      <article className="metric-card"><span>Repeat customers, last 30 days</span><strong><MetricValue metric={repeat} /></strong></article>
+      <article className="metric-card"><span>Repeat rate</span><strong>{repeatRate}</strong></article>
+    </div>
+  );
+}
+
+function OllieTimeline({ rows, loading, error }: { rows: OllieHistoryRow[]; loading: boolean; error: unknown }) {
+  if (loading) return <p className="task-state-message" role="status">Loading Ollie status history…</p>;
+  if (error) return <p className="data-error" role="alert">{serverErrorText(error, 'Unable to load Ollie status history.')}</p>;
+  if (!rows.length) return <p className="data-empty">No status history yet</p>;
+  return (
+    <ol className="status-timeline">
+      {rows.map((row, index) => (
+        <li key={`${row.created_at}-${index}`}>
+          <span className={`agent-light-dot agent-light-${row.status_light}`} aria-label={`${row.status_light} status`} />
+          <span className="timeline-status">{row.status_light}</span>
+          {row.priority && <span className={`priority-chip priority-${row.priority}`}>{row.priority}</span>}
+          <time>{formatBrisbaneDateTime(row.created_at)}</time>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function TaskStatusChart({ tasks, loading, error }: { tasks: Task[]; loading: boolean; error: unknown }) {
+  if (loading) return <p className="task-state-message" role="status">Loading task status…</p>;
+  if (error) return <p className="data-error" role="alert">{serverErrorText(error, 'Unable to load project tasks.')}</p>;
+  const counts = tasks.reduce<Record<string, number>>((result, task) => {
+    result[task.status] = (result[task.status] ?? 0) + 1;
+    return result;
+  }, {});
+  const data = Object.entries(counts).map(([status, count]) => ({ status: TASK_STATUS_LABELS[status as TaskStatus] ?? status, count }));
+  if (!data.length) return <p className="data-empty">No tasks yet</p>;
+  return (
+    <ResponsiveContainer width="100%" height={210}>
+      <BarChart data={data} margin={{ top: 8, right: 6, bottom: 0, left: 0 }}>
+        <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 4" />
+        <XAxis dataKey="status" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" />
+        <YAxis allowDecimals={false} width={28} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" />
+        <Tooltip contentStyle={{ background: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} />
+        <Bar dataKey="count" name="Tasks" fill="hsl(var(--chart-3))" fillOpacity={0.88} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+function OverviewWorkspace({ slug }: { slug: string }) {
+  const history = useListProjectOllieHistory(slug, { query: { queryKey: getListProjectOllieHistoryQueryKey(slug) } });
+  const tasks = useListProjectTasks(slug, { query: { queryKey: getListProjectTasksQueryKey(slug) } });
+  return (
+    <div className="overview-data">
+      <section className="agent-latest-box">
+        <h2 className="todo-group-title">Ollie status history</h2>
+        <OllieTimeline rows={history.data ?? []} loading={history.isLoading} error={history.error} />
+      </section>
+      <ChartFrame title="Project tasks by status">
+        <TaskStatusChart tasks={tasks.data ?? []} loading={tasks.isLoading} error={tasks.error} />
+      </ChartFrame>
+    </div>
+  );
+}
+
+function AgentActivityWorkspace({ slug }: { slug: string }) {
+  const history = useListProjectOllieHistory(slug, { query: { queryKey: getListProjectOllieHistoryQueryKey(slug) } });
+  const notes = useListProjectNotes(slug, { query: { queryKey: getListProjectNotesQueryKey(slug) } });
+  const pending = useListDecisions({ status: 'pending' }, { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } });
+  const approved = useListDecisions({ status: 'approved' }, { query: { queryKey: getListDecisionsQueryKey({ status: 'approved' }) } });
+  const declined = useListDecisions({ status: 'declined' }, { query: { queryKey: getListDecisionsQueryKey({ status: 'declined' }) } });
+  const decisions = [...(pending.data ?? []), ...(approved.data ?? []), ...(declined.data ?? [])]
+    .filter((decision) => decision.project_slug === slug)
+    .sort((a, b) => (b.decided_at ?? b.created_at ?? '').localeCompare(a.decided_at ?? a.created_at ?? ''));
+  const decisionsError = pending.error ?? approved.error ?? declined.error;
+  const decisionsLoading = pending.isLoading || approved.isLoading || declined.isLoading;
+  const sourceLabel = (source: string) => source === 'ollie_daily' ? 'Ollie daily' : source === 'cursor' ? 'Cursor' : source;
+  return (
+    <div className="activity-columns">
+      <section className="agent-latest-box"><h2 className="todo-group-title">Ollie history</h2><OllieTimeline rows={history.data ?? []} loading={history.isLoading} error={history.error} /></section>
+      <section className="activity-panel">
+        <h2 className="todo-group-title">Project decisions</h2>
+        {decisionsLoading ? <p className="task-state-message">Loading decisions…</p> : decisionsError ? <p className="data-error" role="alert">{serverErrorText(decisionsError, 'Unable to load decisions.')}</p> : decisions.length === 0 ? <p className="data-empty">No decisions yet</p> : (
+          <div className="activity-list">{decisions.map((decision) => <article className="activity-entry" key={decision.id}>
+            <div className="activity-entry-head"><strong>{decision.title}</strong><span className={`history-status history-status-${decision.status}`}>{decision.status}</span></div>
+            <p>{decision.recommendation}</p><div className="activity-meta"><span>Source: {sourceLabel(decision.source)}</span><span>Decided via: {decision.decided_via ?? 'Not recorded'}</span><time>{formatBrisbaneDateTime(decision.decided_at ?? decision.created_at)}</time></div>
+          </article>)}</div>
+        )}
+      </section>
+      <section className="activity-panel">
+        <h2 className="todo-group-title">Project notes</h2>
+        {notes.isLoading ? <p className="task-state-message">Loading project notes…</p> : notes.isError ? <p className="data-error" role="alert">{serverErrorText(notes.error, 'Unable to load project notes.')}</p> : (notes.data?.length ?? 0) === 0 ? <p className="data-empty">No notes yet</p> : (
+          <div className="activity-list">{(notes.data ?? []).map((note: ProjectNote) => <article className="activity-entry" key={note.id}>
+            <div className="activity-entry-head"><span>{note.kind}</span><span className={`risk-severity severity-${note.severity}`}>{note.severity}</span></div>
+            <p>{note.text}</p><time>{formatBrisbaneDateTime(note.created_at)}</time>
+          </article>)}</div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function NextActionWorkspace({ slug }: { slug: string }) {
+  const updates = useListLatestAgentUpdates({ query: { queryKey: getListLatestAgentUpdatesQueryKey(), staleTime: 60_000 } });
+  const tasksQuery = useListProjectTasks(slug, { query: { queryKey: getListProjectTasksQueryKey(slug) } });
+  const pendingQuery = useListDecisions({ status: 'pending' }, { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } });
+  const update = updates.data?.find((entry) => entry.project_slug === slug);
+  const tasks = (tasksQuery.data ?? []).filter((task) => task.status !== 'done').sort((a, b) => {
+    if (!a.due_date && !b.due_date) return 0;
+    if (!a.due_date) return 1;
+    if (!b.due_date) return -1;
+    return a.due_date.localeCompare(b.due_date);
+  }).slice(0, 3);
+  const decisions = (pendingQuery.data ?? []).filter((decision) => decision.project_slug === slug);
+  return (
+    <div className="next-action-workspace">
+      <section className="next-action-feature">
+        <p className="eyebrow">Ollie’s latest recommendation</p>
+        {updates.isLoading ? <p className="task-state-message">Loading next action…</p> : updates.isError ? <p className="data-error" role="alert">{serverErrorText(updates.error, 'Unable to load Ollie’s recommendation.')}</p> : <h2>{update?.next_action ?? 'No next action yet'}</h2>}
+        {update?.created_at && <time>{formatBrisbaneDateTime(update.created_at)}</time>}
+      </section>
+      <section className="activity-panel">
+        <h2 className="todo-group-title">Pending decisions</h2>
+        {pendingQuery.isLoading ? <p className="task-state-message">Loading decisions…</p> : pendingQuery.isError ? <p className="data-error" role="alert">{serverErrorText(pendingQuery.error, 'Unable to load decisions.')}</p> : decisions.length ? <div className="activity-list">{decisions.map((decision) => <article className="activity-entry" key={decision.id}><strong>{decision.title}</strong><p>{decision.recommendation}</p><span className="decision-count">{sourceLabelForDecision(decision.source)}</span></article>)}</div> : <p className="data-empty">No pending decisions</p>}
+      </section>
+      <section className="activity-panel">
+        <h2 className="todo-group-title">Upcoming tasks</h2>
+        {tasksQuery.isLoading ? <p className="task-state-message">Loading tasks…</p> : tasksQuery.isError ? <p className="data-error" role="alert">{serverErrorText(tasksQuery.error, 'Unable to load project tasks.')}</p> : tasks.length ? <div className="activity-list">{tasks.map((task) => <article className="activity-entry" key={task.id}><strong>{task.title}</strong><div className="activity-meta"><span>{TASK_STATUS_LABELS[task.status as TaskStatus] ?? task.status}</span><span>{task.due_date ? `Due ${formatDueDate(task.due_date)}` : 'Undated'}</span></div></article>)}</div> : <p className="data-empty">No open tasks</p>}
+      </section>
+    </div>
+  );
+}
+
+function sourceLabelForDecision(source: string): string {
+  return source === 'ollie_daily' ? 'Ollie daily' : source === 'cursor' ? 'Cursor' : source;
+}
+
 function DecisionsPage() {
   const pendingQuery = useListDecisions(
     { status: 'pending' },
@@ -1393,34 +1717,8 @@ function DecisionsPage() {
   const projectsQuery = useListProjects({
     query: { queryKey: getListProjectsQueryKey() },
   });
-  const client = useQueryClient();
-  const [notes, setNotes] = useState<Record<number, string>>({});
   const pending = pendingQuery.data ?? [];
   const projectNames = new Map((projectsQuery.data ?? []).map((project) => [project.slug, project.name]));
-  const refreshDecisionData = async (decisionId: number) => {
-    const affected = pending.find((decision) => decision.id === decisionId);
-    const refreshes = [
-      client.invalidateQueries({ queryKey: getListDecisionsQueryKey({ status: 'pending' }) }),
-      client.invalidateQueries({ queryKey: getListDecisionsQueryKey({ status: 'approved' }) }),
-      client.invalidateQueries({ queryKey: getListDecisionsQueryKey({ status: 'declined' }) }),
-    ];
-    if (affected) {
-      refreshes.push(client.invalidateQueries({
-        queryKey: getListProjectTasksQueryKey(affected.project_slug),
-      }));
-    }
-    await Promise.all(refreshes);
-  };
-  const approveMutation = useApproveDecision({
-    mutation: {
-      onSuccess: async (_decision, variables) => refreshDecisionData(variables.id),
-    },
-  });
-  const declineMutation = useDeclineDecision({
-    mutation: {
-      onSuccess: async (_decision, variables) => refreshDecisionData(variables.id),
-    },
-  });
   const sortedHistory: DecisionWithNames[] = [
     ...(approvedQuery.data ?? []),
     ...(declinedQuery.data ?? []),
@@ -1429,23 +1727,6 @@ function DecisionsPage() {
     const bTime = b.decided_at ? new Date(b.decided_at).getTime() : 0;
     return bTime - aTime;
   });
-  const decide = async (decision: DecisionWithNames, action: 'approve' | 'decline') => {
-    const body = { note: (notes[decision.id] ?? '').trim() || undefined };
-    try {
-      if (action === 'approve') {
-        await approveMutation.mutateAsync({ id: decision.id, data: body });
-      } else {
-        await declineMutation.mutateAsync({ id: decision.id, data: body });
-      }
-      setNotes((current) => {
-        const next = { ...current };
-        delete next[decision.id];
-        return next;
-      });
-    } catch {
-      // The server error is shown on the corresponding pending recommendation.
-    }
-  };
   const isLoading = pendingQuery.isLoading || approvedQuery.isLoading || declinedQuery.isLoading;
   const queryError = pendingQuery.error ?? approvedQuery.error ?? declinedQuery.error;
 
@@ -1458,6 +1739,7 @@ function DecisionsPage() {
           <p className="eyebrow">Review queue</p>
           <h1 className="detail-title">Decisions</h1>
           <p className="detail-description">Ollie’s recommendations, ready for your call.</p>
+          <p className="cursor-decision-cta">Decide with Ollie in Cursor</p>
         </div>
 
         <section className="decision-section" aria-labelledby="pending-decisions-title">
@@ -1478,15 +1760,7 @@ function DecisionsPage() {
             <p className="decision-empty" data-testid="status-no-decisions">No decisions waiting</p>
           ) : (
             <div className="decision-list" data-testid="list-pending-decisions">
-              {pending.map((decision) => {
-                const isApproving = approveMutation.isPending && approveMutation.variables?.id === decision.id;
-                const isDeclining = declineMutation.isPending && declineMutation.variables?.id === decision.id;
-                const actionError = approveMutation.variables?.id === decision.id && approveMutation.isError
-                  ? approveMutation.error
-                  : declineMutation.variables?.id === decision.id && declineMutation.isError
-                    ? declineMutation.error
-                    : null;
-                return (
+              {pending.map((decision) => (
                   <article className="decision-card" key={decision.id} data-testid={`card-decision-${decision.id}`}>
                     <div className="decision-card-top">
                       <div>
@@ -1497,51 +1771,19 @@ function DecisionsPage() {
                     </div>
                     <p className="decision-recommendation">{decision.recommendation}</p>
                     <dl className="decision-facts">
-                      <div><dt>Cost</dt><dd>{decision.cost_estimate_aud == null ? 'Cost unknown' : `$${decision.cost_estimate_aud} est.`}</dd></div>
+                      <div><dt>Cost</dt><dd>{decision.cost_estimate_aud == null ? 'Cost unknown' : `${new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(decision.cost_estimate_aud)} est.`}</dd></div>
                       <div><dt>Risk</dt><dd>{decision.risk}</dd></div>
                       <div><dt>Confidence</dt><dd>{decision.confidence}</dd></div>
                       <div><dt>Owner</dt><dd>{decision.owner_name}</dd></div>
                       <div><dt>Due</dt><dd>{decision.due_date ? formatDueDate(decision.due_date) : 'Date unavailable'}</dd></div>
                     </dl>
-                    <label className="decision-note">
-                      <span>Review note <span className="task-field-optional">(optional)</span></span>
-                      <input
-                        type="text"
-                        maxLength={500}
-                        value={notes[decision.id] ?? ''}
-                        onChange={(event) => setNotes((current) => ({ ...current, [decision.id]: event.target.value }))}
-                        placeholder="Add context for this call"
-                        data-testid={`input-decision-note-${decision.id}`}
-                      />
-                    </label>
-                    {actionError && (
-                      <p className="decision-error" role="alert" data-testid={`error-decision-${decision.id}`}>
-                        {serverErrorText(actionError, 'Unable to update this decision.')}
-                      </p>
-                    )}
-                    <div className="decision-actions">
-                      <button
-                        className="decision-approve"
-                        type="button"
-                        disabled={approveMutation.isPending || declineMutation.isPending}
-                        onClick={() => void decide(decision, 'approve')}
-                        data-testid={`button-approve-decision-${decision.id}`}
-                      >
-                        {isApproving ? 'Approving…' : 'Approve'}
-                      </button>
-                      <button
-                        className="decision-decline"
-                        type="button"
-                        disabled={approveMutation.isPending || declineMutation.isPending}
-                        onClick={() => void decide(decision, 'decline')}
-                        data-testid={`button-decline-decision-${decision.id}`}
-                      >
-                        {isDeclining ? 'Declining…' : 'Decline'}
-                      </button>
+                    <div className="decision-origin">
+                      <span>Source: {sourceLabelForDecision(decision.source)}</span>
+                      <span>Decided via: {decision.decided_via ?? 'Not recorded'}</span>
                     </div>
+                    {decision.note && <p className="history-note">{decision.note}</p>}
                   </article>
-                );
-              })}
+                ))}
             </div>
           )}
         </section>
@@ -1563,6 +1805,7 @@ function DecisionsPage() {
                     <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
                     <h3>{decision.title}</h3>
                     {decision.note && <p className="history-note">{decision.note}</p>}
+                    <p className="history-note">Source: {sourceLabelForDecision(decision.source)} · Decided via: {decision.decided_via ?? 'Not recorded'}</p>
                   </div>
                   <div className="history-decision-meta">
                     <span className={`history-status history-status-${decision.status}`}>{decision.status}</span>
@@ -1951,7 +2194,7 @@ function ProjectDetail() {
           ))}
         </div>
         <section
-          className={`tab-panel${activeTab === 'To-do' ? ' todo-tab-panel' : activeTab === 'Overview & Goals' ? ' goal-tab-panel' : ''}`}
+          className={`tab-panel${activeTab === 'To-do' ? ' todo-tab-panel' : activeTab === 'Overview & Goals' ? ' goal-tab-panel' : ' data-tab-panel'}`}
           role="tabpanel"
           id="project-tab-panel"
           aria-labelledby={`tab-${activeTab}`}
@@ -1960,8 +2203,16 @@ function ProjectDetail() {
           {activeTab === 'To-do'
             ? <ProjectTodo slug={project.slug} />
             : activeTab === 'Overview & Goals'
-              ? <ProjectGoals slug={project.slug} />
-              : 'Not built yet'}
+              ? <><ProjectGoals slug={project.slug} /><OverviewWorkspace slug={project.slug} /></>
+              : activeTab === 'Customers'
+                ? <CustomerWorkspace slug={project.slug} />
+                : activeTab === 'Revenue & Subscriptions'
+                  ? <RevenueWorkspace slug={project.slug} />
+                  : activeTab === 'Marketing'
+                    ? <p className="data-empty">No marketing data source connected yet. Connect a source (for example site analytics or an ad account) to fill this tab.</p>
+                    : activeTab === 'Agent Activity'
+                      ? <AgentActivityWorkspace slug={project.slug} />
+                      : <NextActionWorkspace slug={project.slug} />}
         </section>
       </main>
     </div>
