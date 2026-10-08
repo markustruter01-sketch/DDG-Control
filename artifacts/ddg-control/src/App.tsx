@@ -10,6 +10,8 @@ import {
 import { ErrorBoundary } from '@/components/error-boundary';
 import {
   getGetFinanceSummaryQueryKey,
+  getGetProjectFinanceFleetHistoryQueryKey,
+  getGetProjectFinanceFleetLatestQueryKey,
   getGetProjectQueryKey,
   getGetSessionQueryKey,
   getListFinanceDebtsQueryKey,
@@ -36,6 +38,8 @@ import {
   useDeleteFinanceExpense,
   useDeleteFinanceRevenue,
   useGetFinanceSummary,
+  useGetProjectFinanceFleetHistory,
+  useGetProjectFinanceFleetLatest,
   useGetProject,
   useGetSession,
   useLogin,
@@ -67,6 +71,8 @@ import {
   type FinanceExpense,
   type FinanceRevenue,
   type FinanceSummaryResponse,
+  type FleetHistoryResponse,
+  type FleetLatestSnapshotResponse,
   type Goal,
   type GoalInput,
   type GoalUpdate,
@@ -425,6 +431,12 @@ function Home() {
       staleTime: 60_000,
     },
   });
+  const fleetLatestQuery = useGetProjectFinanceFleetLatest({
+    query: {
+      queryKey: getGetProjectFinanceFleetLatestQueryKey(),
+      staleTime: 60_000,
+    },
+  });
   const coffeeSlug = 'cattle-dog-coffee';
   const coffeeMetricsQuery = useListProjectMetrics(coffeeSlug, {
     query: { queryKey: getListProjectMetricsQueryKey(coffeeSlug) },
@@ -508,6 +520,18 @@ function Home() {
               const headlineMetric = headlineKey
                 ? coffeeMetricsQuery.data?.find((metric) => metric.key === headlineKey)
                 : undefined;
+              const fleet = fleetLatestQuery.data && !('empty' in fleetLatestQuery.data)
+                ? fleetLatestQuery.data
+                : undefined;
+              const financeHeadline = project.slug === 'finance'
+                ? fleetLatestQuery.isError
+                  ? 'No data yet'
+                  : fleet?.stale
+                    ? `Stale — no update for ${fleet.age_minutes} min`
+                    : fleet?.mode === 'paper'
+                      ? `${formatFigure(fleet.total_equity_cents, 'usd_cents')} · Fleet value (paper)`
+                      : 'No data yet'
+                : null;
               const dailySales = project.slug === coffeeSlug ? (coffeeSalesQuery.data ?? []) : [];
               return (
                 <Link
@@ -541,9 +565,11 @@ function Home() {
                   <div className="tile-facts">
                     <p className="tile-fact">
                       <strong>Headline:</strong>{' '}
-                      {headlineMetric
-                        ? `${formatFigure(headlineMetric.value, headlineMetric.unit)} · ${headlineMetric.label}`
-                        : 'No data yet'}
+                      {project.slug === 'finance'
+                        ? financeHeadline
+                        : headlineMetric
+                          ? `${formatFigure(headlineMetric.value, headlineMetric.unit)} · ${headlineMetric.label}`
+                          : 'No data yet'}
                     </p>
                     {project.slug === coffeeSlug && <Sparkline rows={dailySales} />}
                     <p className="tile-fact">
@@ -1472,6 +1498,12 @@ function formatFigure(value: number, unit: string): string {
       maximumFractionDigits: 2,
     }).format(value / 100);
   }
+  if (unit === 'usd_cents') {
+    return `US$${new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value / 100)}`;
+  }
   return new Intl.NumberFormat('en-AU', { maximumFractionDigits: 0 }).format(value);
 }
 
@@ -2315,6 +2347,166 @@ function RevenueWorkspace({ slug }: { slug: string }) {
   );
 }
 
+function FinanceFleetWorkspace() {
+  const latestQuery = useGetProjectFinanceFleetLatest({
+    query: {
+      queryKey: getGetProjectFinanceFleetLatestQueryKey(),
+      staleTime: 30_000,
+      refetchOnWindowFocus: true,
+    },
+  });
+  const historyQuery = useGetProjectFinanceFleetHistory({
+    query: {
+      queryKey: getGetProjectFinanceFleetHistoryQueryKey(),
+      staleTime: 60_000,
+      refetchOnWindowFocus: true,
+    },
+  });
+  const latest: FleetLatestSnapshotResponse | undefined = latestQuery.data && !('empty' in latestQuery.data)
+    ? latestQuery.data
+    : undefined;
+  const history: FleetHistoryResponse = historyQuery.data ?? [];
+
+  if (latestQuery.isLoading) {
+    return (
+      <div className="fleet-state" role="status" aria-label="Loading trading fleet">
+        <span className="skeleton loading-line" />
+        <span className="skeleton fleet-loading-block" />
+        <p>Loading trading fleet…</p>
+      </div>
+    );
+  }
+  if (latestQuery.isError) {
+    return (
+      <div className="fleet-state fleet-error" role="alert">
+        <h3>Unable to load the trading fleet.</h3>
+        <p>{serverErrorText(latestQuery.error, 'The latest snapshot could not be retrieved.')}</p>
+        <button className="task-secondary-button" type="button" onClick={() => void latestQuery.refetch()} data-testid="button-retry-fleet">
+          Retry
+        </button>
+      </div>
+    );
+  }
+  if (!latest) {
+    return (
+      <div className="fleet-state fleet-empty" data-testid="status-fleet-empty">
+        <span className="fleet-empty-mark" aria-hidden="true">—</span>
+        <div><h3>No fleet snapshot yet</h3><p>Trading fleet data will appear here after the first snapshot is received.</p></div>
+      </div>
+    );
+  }
+
+  const pnlPositive = latest.total_pnl_cents >= 0;
+  return (
+    <div className="fleet-workspace" data-testid="workspace-finance-fleet">
+      <header className="fleet-toolbar">
+        <div className="fleet-mode-line">
+          <span className={`fleet-mode fleet-mode-${latest.mode}`}>{latest.mode} mode</span>
+          <span className="fleet-updated">Updated {formatBrisbaneDateTime(latest.generated_at)} Brisbane time · {latest.age_minutes} min ago</span>
+        </div>
+        {latest.stale && <p className="fleet-stale-warning" role="status">Stale — no update for {latest.age_minutes} min</p>}
+      </header>
+
+      <section className="fleet-overview" aria-label="Fleet summary">
+        <article className="fleet-equity-card">
+          <span className="fleet-metric-label">Total equity</span>
+          <strong>{formatFigure(latest.total_equity_cents, 'usd_cents')}</strong>
+          <span className="fleet-equity-note">Paper portfolio value</span>
+        </article>
+        <div className="fleet-metric-grid">
+          <article className="fleet-metric-card">
+            <span className="fleet-metric-label">P&amp;L</span>
+            <strong className={pnlPositive ? 'fleet-positive' : 'fleet-negative'}>{formatFinanceUsdCents(latest.total_pnl_cents)}</strong>
+          </article>
+          <article className="fleet-metric-card"><span className="fleet-metric-label">Drawdown</span><strong>{latest.drawdown_pct.toFixed(2)}%</strong></article>
+          <article className="fleet-metric-card"><span className="fleet-metric-label">Peak equity</span><strong>{formatFigure(latest.peak_equity_cents, 'usd_cents')}</strong></article>
+          <article className="fleet-metric-card"><span className="fleet-metric-label">Open positions</span><strong>{formatFigure(latest.open_positions, 'count')}</strong></article>
+          <article className="fleet-metric-card"><span className="fleet-metric-label">Paused bots</span><strong>{formatFigure(latest.paused_bots, 'count')}</strong></article>
+        </div>
+      </section>
+
+      <div className="fleet-dashboard-grid">
+        <ChartFrame title="Equity · last 30 days">
+          {historyQuery.isLoading ? (
+            <div className="fleet-chart-skeleton" role="status"><span className="skeleton loading-line" /><span className="skeleton fleet-chart-placeholder" /></div>
+          ) : historyQuery.isError ? (
+            <div className="task-query-error" role="alert">
+              <p>{serverErrorText(historyQuery.error, 'Unable to load fleet history.')}</p>
+              <button className="task-secondary-button" type="button" onClick={() => void historyQuery.refetch()}>Retry history</button>
+            </div>
+          ) : history.length === 0 ? (
+            <p className="data-empty">No equity history yet</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={history} margin={{ top: 12, right: 12, bottom: 0, left: 3 }}>
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 4" />
+                <XAxis dataKey="day" tickFormatter={(day: string) => formatDueDate(day)} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" minTickGap={26} />
+                <YAxis tickFormatter={(value: number) => formatFigure(value, 'usd_cents')} width={82} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" />
+                <Tooltip
+                  formatter={(value: number) => formatFigure(value, 'usd_cents')}
+                  labelFormatter={(day: string) => formatDueDate(day)}
+                  contentStyle={{ background: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                />
+                <Line dataKey="total_equity_cents" name="Equity" type="monotone" stroke="hsl(var(--chart-1))" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </ChartFrame>
+
+        <section className="fleet-errors-panel" aria-labelledby="fleet-errors-title">
+          <div className="fleet-panel-heading">
+            <h3 id="fleet-errors-title">Snapshot errors</h3>
+            <span>{latest.errors.length}</span>
+          </div>
+          {latest.errors.length ? (
+            <ul className="fleet-error-list">{latest.errors.map((message, index) => <li key={`${message}-${index}`}>{message}</li>)}</ul>
+          ) : (
+            <p className="fleet-no-errors">No reported errors</p>
+          )}
+        </section>
+      </div>
+
+      <section className="fleet-bots-panel" aria-labelledby="fleet-bots-title">
+        <div className="fleet-panel-heading">
+          <div><p className="eyebrow">Portfolio detail</p><h3 id="fleet-bots-title">Bots</h3></div>
+          <span>{latest.bots.length} tracked</span>
+        </div>
+        {latest.bots.length === 0 ? (
+          <p className="data-empty">No bots in this snapshot</p>
+        ) : (
+          <div className="fleet-table-scroll">
+            <table className="fleet-table">
+              <thead><tr><th scope="col">Bot</th><th scope="col">Equity</th><th scope="col">P&amp;L</th><th scope="col">P&amp;L %</th><th scope="col">Positions</th><th scope="col">Status</th></tr></thead>
+              <tbody>
+                {latest.bots.map((bot) => {
+                  const pnlPercent = bot.starting_cents > 0 ? (bot.pnl_cents / bot.starting_cents) * 100 : null;
+                  const status = bot.paused ? 'Paused' : bot.stale ? 'Stale' : 'Running';
+                  return (
+                    <tr key={bot.id} data-testid={`row-fleet-bot-${bot.bot_id}`}>
+                      <th scope="row">{bot.bot_id}</th>
+                      <td>{formatFigure(bot.equity_cents, 'usd_cents')}</td>
+                      <td className={bot.pnl_cents >= 0 ? 'fleet-positive' : 'fleet-negative'}>{formatFinanceUsdCents(bot.pnl_cents)}</td>
+                      <td className={pnlPercent === null ? '' : pnlPercent >= 0 ? 'fleet-positive' : 'fleet-negative'}>{pnlPercent === null ? '—' : `${pnlPercent.toFixed(2)}%`}</td>
+                      <td>{formatFigure(bot.open_positions, 'count')}</td>
+                      <td><span className={`fleet-bot-status fleet-bot-${status.toLowerCase()}`}>{status}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function formatFinanceUsdCents(value: number): string {
+  return value < 0
+    ? `−${formatFigure(Math.abs(value), 'usd_cents')}`
+    : formatFigure(value, 'usd_cents');
+}
+
 function CustomerWorkspace({ slug }: { slug: string }) {
   const isCoffee = slug === 'cattle-dog-coffee';
   const query = useListProjectMetrics(slug, {
@@ -2970,9 +3162,13 @@ function ProjectDetail() {
             : activeTab === 'Overview & Goals'
               ? <><ProjectGoals slug={project.slug} /><OverviewWorkspace slug={project.slug} /></>
               : activeTab === 'Customers'
-                ? <CustomerWorkspace slug={project.slug} />
+                ? project.slug === 'finance'
+                  ? <p className="data-empty">Not applicable — trading fleet</p>
+                  : <CustomerWorkspace slug={project.slug} />
                 : activeTab === 'Revenue & Subscriptions'
-                  ? <RevenueWorkspace slug={project.slug} />
+                  ? project.slug === 'finance'
+                    ? <FinanceFleetWorkspace />
+                    : <RevenueWorkspace slug={project.slug} />
                   : activeTab === 'Marketing'
                     ? <p className="data-empty">No marketing data source connected yet. Connect a source (for example site analytics or an ad account) to fill this tab.</p>
                     : activeTab === 'Agent Activity'

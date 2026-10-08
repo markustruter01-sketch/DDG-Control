@@ -118,6 +118,10 @@ router.post(
       res.status(400).json({ error: "generated_at must be an ISO timestamp" });
       return;
     }
+    if (Date.parse(body.generated_at) > Date.now() + 5 * 60 * 1000) {
+      res.status(400).json({ error: "generated_at is in the future" });
+      return;
+    }
     if (Array.isArray(body.bots)) {
       for (const rawBot of body.bots) {
         const bot = requestBodyRecord(rawBot);

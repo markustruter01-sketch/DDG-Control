@@ -1,0 +1,59 @@
+ENVIRONMENT
+DDG Control workspace. Development only. Do not publish. Make NO xAI requests. Do not contact DDG - Finance or any broker.
+
+GOAL
+Show the trading fleet on the DDG - Finance project screens and its home tile, clearly marked as USD paper money, and reject snapshots dated in the future.
+
+DONE WHEN
+- POST /api/inbound/fleet returns 400 {"error":"generated_at is in the future"} when generated_at is more than 5 minutes ahead of server time.
+- The home tile for finance shows "Headline: US$<total equity> · Fleet value (paper)". If the latest snapshot is stale, it adds "Stale — no update for <n> min". With no snapshots, it shows "No data yet".
+- The finance Revenue & Subscriptions tab shows:
+  - a mode badge ("PAPER — practice money" for paper; "LIVE" or "MIXED" otherwise)
+  - total equity, total P&L, drawdown % from peak, peak equity, open positions, paused bots
+  - "Updated <Brisbane time> (<n> min ago)", and a stale warning when stale
+  - a per-bot table: bot, equity, P&L, P&L %, positions, status (paused or stale)
+  - a 30-day total equity line chart
+  - any errors as a list
+- The finance Customers tab says "Not applicable — trading fleet".
+- Fleet numbers never appear in the home top bar or the finance summary.
+- Works at 402 px width, in day and night mode. `pnpm run typecheck` passes.
+
+SCOPE
+- artifacts/api-server/src/routes/fleet.ts (the future-date check only)
+- artifacts/ddg-control/src/App.tsx
+- artifacts/ddg-control/src/ddg.css
+- lib/project-constants/src/index.ts (only if needed for the headline)
+
+DO NOT
+- Do not change computeFinanceSummary, the top bar, or any other project's tabs.
+- Do not show any fleet number in AUD or mix it with company figures.
+- Do not change the inbound key checks or the fleet storage format.
+- Do not add, remove or upgrade packages.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. In fleet.ts, reject generated_at more than 5 minutes after the server's current time, with 400 {"error":"generated_at is in the future"}. Restart the API server.
+
+2. In App.tsx, extend the existing money formatter to take a currency: "AUD" stays as it is now; "USD" shows "US$" with 2 decimals. Use one formatter for both.
+
+3. Build the finance home headline and the tabs described in DONE WHEN, using the generated hooks for GET /api/projects/finance/fleet/latest and /history.
+   - P&L % = pnl ÷ starting × 100, to 2 decimals; show "–" when starting is 0.
+   - Drawdown comes from the API's drawdown_pct.
+   - Charts use the theme's colour variables.
+
+4. Test against the development server, using FLEET_INBOUND_KEY from the environment without printing it. Record the ids.
+   a) Show the "before" counts of fleet_snapshots and fleet_bot_snapshots, and GET /api/finance/summary.
+   b) POST a snapshot dated now minus 1 day, and another dated now minus 1 minute: mode "paper", 2 bots "test_bot_a" and "test_bot_b", with different equity values.
+   c) POST one dated now plus 1 hour. Expect 400.
+   d) Screenshot at 402 px, in day and night mode: the home page (finance tile), the finance Revenue tab, and the finance Customers tab.
+   e) GET /api/finance/summary. Show it is byte-identical to (a).
+   f) Cleanup, in one transaction, deleting only the recorded ids: bot rows first, then snapshots, with exact counts, otherwise roll back. Show that the counts equal the "before" counts.
+   Do not save screenshots in the workspace.
+
+5. Run `pnpm run typecheck`. Report every file touched.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
