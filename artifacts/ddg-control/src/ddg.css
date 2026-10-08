@@ -1217,3 +1217,142 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 @media (max-width: 699px) {
   .home-shell { background-position: center top; }
 }
+
+/* Compact layouts for the Finance and Coffee project pages only. */
+@media (min-width: 700px) {
+  .detail-main[data-project-slug="finance"],
+  .detail-main[data-project-slug="cattle-dog-coffee"] {
+    padding: 22px 0 32px;
+  }
+
+  .detail-main[data-project-slug="finance"] .detail-heading,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .detail-heading {
+    margin-top: 20px;
+    padding-bottom: 16px;
+  }
+
+  .detail-main[data-project-slug="finance"] .detail-description,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .detail-description {
+    margin-top: 10px;
+  }
+
+  .detail-main[data-project-slug="finance"] .project-heading-actions,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .project-heading-actions {
+    margin-top: 12px;
+  }
+
+  .detail-main[data-project-slug="finance"] .tab-list,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .tab-list {
+    margin-top: 14px;
+  }
+
+  .detail-main[data-project-slug="finance"] .tab-button,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .tab-button {
+    padding: 9px 12px 8px;
+  }
+
+  .detail-main[data-project-slug="finance"] .tab-panel,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .tab-panel {
+    margin-top: 12px;
+  }
+
+  .detail-main[data-project-slug="finance"] .tab-panel.goal-tab-panel,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .tab-panel.goal-tab-panel {
+    display: grid;
+    grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+    align-items: start;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .detail-main[data-project-slug="finance"] .goal-workspace,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .goal-workspace,
+  .detail-main[data-project-slug="finance"] .overview-data,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .overview-data {
+    gap: 10px;
+    margin-top: 0;
+  }
+
+  .detail-main[data-project-slug="finance"] .overview-data,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .overview-data {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-main[data-project-slug="finance"] .agent-latest-box,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .agent-latest-box,
+  .detail-main[data-project-slug="finance"] .data-chart-panel,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .data-chart-panel {
+    padding: 12px;
+  }
+
+  .detail-main[data-project-slug="finance"] .agent-latest-box,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .agent-latest-box {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 699px) {
+  .detail-main[data-project-slug="finance"],
+  .detail-main[data-project-slug="cattle-dog-coffee"] {
+    padding: 20px 0 36px;
+  }
+
+  .detail-main[data-project-slug="finance"] .detail-heading,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .detail-heading {
+    margin-top: 24px;
+    padding-bottom: 14px;
+  }
+
+  .detail-main[data-project-slug="finance"] .detail-description,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .detail-description {
+    margin-top: 10px;
+  }
+
+  .detail-main[data-project-slug="finance"] .project-heading-actions,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .project-heading-actions {
+    margin-top: 12px;
+  }
+
+  .detail-main[data-project-slug="finance"] .tab-list,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .tab-list {
+    flex-wrap: wrap;
+    overflow: visible;
+    gap: 3px;
+    margin-top: 16px;
+  }
+
+  .detail-main[data-project-slug="finance"] .tab-button,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .tab-button {
+    flex: 1 1 calc(33.333% - 3px);
+    min-width: 0;
+    padding: 9px 6px 8px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .detail-main[data-project-slug="finance"] .tab-panel.goal-tab-panel,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .tab-panel.goal-tab-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 10px;
+  }
+
+  .detail-main[data-project-slug="finance"] .goal-workspace,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .goal-workspace,
+  .detail-main[data-project-slug="finance"] .overview-data,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .overview-data {
+    gap: 12px;
+    margin-top: 0;
+  }
+
+  .detail-main[data-project-slug="finance"] .agent-latest-box,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .agent-latest-box,
+  .detail-main[data-project-slug="finance"] .data-chart-panel,
+  .detail-main[data-project-slug="cattle-dog-coffee"] .data-chart-panel {
+    padding: 12px;
+  }
+}

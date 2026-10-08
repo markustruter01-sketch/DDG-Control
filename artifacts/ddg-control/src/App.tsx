@@ -3017,7 +3017,7 @@ function ProjectDetail() {
   return (
     <div className="app-shell">
       <Header />
-      <main className="page-wrap detail-main">
+      <main className="page-wrap detail-main" data-project-slug={project.slug}>
         <Link className="back-link" href="/" data-testid="link-home">← Home</Link>
         <section className="detail-heading">
           <div className="detail-title-row">
