@@ -48,6 +48,7 @@ import type {
   OllieRunRequest,
   Project,
   ProjectMetricsResponse,
+  ProjectNotesResponse,
   ProjectUpdateRequest,
   SessionResult,
   Task,
@@ -1618,6 +1619,83 @@ export function useListProjectOllieHistory<TData = Awaited<ReturnType<typeof lis
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListProjectOllieHistoryQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListProjectNotesUrl = (slug: string,) => {
+
+
+
+
+  return `/api/projects/${slug}/notes`
+}
+
+/**
+ * @summary List a project's inbound notes
+ */
+export const listProjectNotes = async (slug: string, options?: Parameters<typeof customFetch>[1]): Promise<ProjectNotesResponse> => {
+
+  return customFetch<ProjectNotesResponse>(getListProjectNotesUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectNotesQueryKey = (slug: string,) => {
+    return [
+    `/api/projects/${slug}/notes`
+    ] as const;
+    }
+
+
+export const getListProjectNotesQueryOptions = <TData = Awaited<ReturnType<typeof listProjectNotes>>, TError = ErrorType<Error>>(slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectNotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectNotesQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectNotes>>> = ({ signal }) => listProjectNotes(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: slug !== null && slug !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectNotes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProjectNotesQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectNotes>>>
+export type ListProjectNotesQueryError = ErrorType<Error>
+
+
+/**
+ * @summary List a project's inbound notes
+ */
+
+export function useListProjectNotes<TData = Awaited<ReturnType<typeof listProjectNotes>>, TError = ErrorType<Error>>(
+ slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectNotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProjectNotesQueryOptions(slug,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

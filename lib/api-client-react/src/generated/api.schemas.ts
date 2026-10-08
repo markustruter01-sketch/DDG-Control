@@ -360,6 +360,17 @@ export interface OllieHistoryRow {
 
 export type OllieHistoryResponse = OllieHistoryRow[];
 
+export interface ProjectNote {
+  id: number;
+  kind: string;
+  severity: string;
+  text: string;
+  /** @nullable */
+  created_at: string | null;
+}
+
+export type ProjectNotesResponse = ProjectNote[];
+
 export interface OllieRunRequest {
   force?: boolean;
 }
@@ -401,12 +412,34 @@ export interface Decision {
   created_at: string | null;
 }
 
+export type DecisionWithNamesSource = typeof DecisionWithNamesSource[keyof typeof DecisionWithNamesSource];
+
+
+export const DecisionWithNamesSource = {
+  ollie_daily: 'ollie_daily',
+  cursor: 'cursor',
+} as const;
+
+/**
+ * @nullable
+ */
+export type DecisionWithNamesDecidedVia = typeof DecisionWithNamesDecidedVia[keyof typeof DecisionWithNamesDecidedVia] | null;
+
+
+export const DecisionWithNamesDecidedVia = {
+  dashboard: 'dashboard',
+  cursor: 'cursor',
+} as const;
+
 export interface DecisionWithNames {
   id: number;
   /** @nullable */
   run_id: number | null;
   project_id: number;
   project_slug: string;
+  source: DecisionWithNamesSource;
+  /** @nullable */
+  decided_via: DecisionWithNamesDecidedVia;
   title: string;
   recommendation: string;
   /**

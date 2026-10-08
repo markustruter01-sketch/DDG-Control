@@ -179,6 +179,8 @@ router.get("/decisions", async (req, res): Promise<void> => {
       run_id: decisionsTable.run_id,
       project_id: decisionsTable.project_id,
       project_slug: projectsTable.slug,
+      source: decisionsTable.source,
+      decided_via: decisionsTable.decided_via,
       title: decisionsTable.title,
       recommendation: decisionsTable.recommendation,
       cost_estimate_aud: decisionsTable.cost_estimate_aud,

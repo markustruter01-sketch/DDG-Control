@@ -113,6 +113,10 @@ export const METRIC_DEFINITIONS = {
   repeat_customers_30d: { unit: "count", label: "Repeat customers, last 30 days" },
 } as const;
 
+export const PROJECT_HEADLINE_METRIC = {
+  "cattle-dog-coffee": "sales_30d",
+} as const satisfies Record<string, keyof typeof METRIC_DEFINITIONS>;
+
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 export type ProjectTab = (typeof PROJECT_TABS)[number];
 export type MetricKey = keyof typeof METRIC_DEFINITIONS;

@@ -5,6 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DecisionWithNamesDecidedVia } from './decisionWithNamesDecidedVia';
+import type { DecisionWithNamesSource } from './decisionWithNamesSource';
 
 export interface DecisionWithNames {
   id: number;
@@ -12,6 +14,9 @@ export interface DecisionWithNames {
   run_id: number | null;
   project_id: number;
   project_slug: string;
+  source: DecisionWithNamesSource;
+  /** @nullable */
+  decided_via: DecisionWithNamesDecidedVia;
   title: string;
   recommendation: string;
   /**

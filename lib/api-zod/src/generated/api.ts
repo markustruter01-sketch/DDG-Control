@@ -405,6 +405,23 @@ export const ListProjectOllieHistoryResponse = zod.array(ListProjectOllieHistory
 
 
 /**
+ * @summary List a project's inbound notes
+ */
+export const ListProjectNotesParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const ListProjectNotesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.string(),
+  "severity": zod.string(),
+  "text": zod.string(),
+  "created_at": zod.coerce.date().nullable()
+})
+export const ListProjectNotesResponse = zod.array(ListProjectNotesResponseItem)
+
+
+/**
  * @summary Run Ollie's daily dashboard report
  */
 export const RunOllieBody = zod.object({
@@ -501,6 +518,8 @@ export const ListDecisionsResponseItem = zod.object({
   "run_id": zod.number().int().nullable(),
   "project_id": zod.number().int(),
   "project_slug": zod.string(),
+  "source": zod.enum(['ollie_daily', 'cursor']),
+  "decided_via": zod.union([zod.literal('dashboard'),zod.literal('cursor'),zod.literal(null)]).nullable(),
   "title": zod.string(),
   "recommendation": zod.string(),
   "cost_estimate_aud": zod.number().int().min(listDecisionsResponseCostEstimateAudMin).nullable(),

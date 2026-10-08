@@ -1,13 +1,18 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { ListLatestAgentUpdatesResponse } from "@workspace/api-zod";
+import {
+  ListLatestAgentUpdatesResponse,
+  ListProjectNotesParams,
+  ListProjectNotesResponse,
+} from "@workspace/api-zod";
 import {
   agentProjectUpdatesTable,
   agentRunsTable,
   db,
+  inboundNotesTable,
   membersTable,
   projectsTable,
 } from "@workspace/db";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { runOllie } from "../agents/ollie";
 
@@ -28,6 +33,49 @@ export function convertStoredRisks(risks: unknown): LatestUpdateRisk[] {
       : (risk as LatestUpdateRisk),
   );
 }
+
+router.get("/projects/:slug/notes", async (req, res): Promise<void> => {
+  const params = ListProjectNotesParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "invalid project slug" });
+    return;
+  }
+
+  const [project] = await db
+    .select({ id: projectsTable.id })
+    .from(projectsTable)
+    .where(eq(projectsTable.slug, params.data.slug))
+    .limit(1);
+  if (!project) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+
+  const notes = await db
+    .select({
+      id: inboundNotesTable.id,
+      kind: inboundNotesTable.kind,
+      severity: inboundNotesTable.severity,
+      text: inboundNotesTable.text,
+      created_at: inboundNotesTable.created_at,
+    })
+    .from(inboundNotesTable)
+    .where(eq(inboundNotesTable.project_id, project.id))
+    .orderBy(
+      sql`${inboundNotesTable.created_at} DESC NULLS LAST`,
+      desc(inboundNotesTable.id),
+    )
+    .limit(50);
+
+  res.json(
+    ListProjectNotesResponse.parse(
+      notes.map((note) => ({
+        ...note,
+        created_at: note.created_at?.toISOString() ?? null,
+      })),
+    ),
+  );
+});
 
 router.post("/agents/ollie/cron", async (req, res): Promise<void> => {
   const cronSecret = process.env.CRON_SECRET;

@@ -566,6 +566,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /projects/{slug}/notes:
+    get:
+      operationId: listProjectNotes
+      tags: [projects]
+      summary: List a project's inbound notes
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project notes, newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectNotesResponse"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /agents/ollie/run:
     post:
       operationId: runOllie
@@ -1404,6 +1428,26 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/OllieHistoryRow"
+    ProjectNotesResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/ProjectNote"
+    ProjectNote:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+        severity:
+          type: string
+        text:
+          type: string
+        created_at:
+          type: ["string", "null"]
+          format: date-time
+      required: [id, kind, severity, text, created_at]
     OllieHistoryRow:
       type: object
       additionalProperties: false
@@ -1501,6 +1545,12 @@ components:
           type: integer
         project_slug:
           type: string
+        source:
+          type: string
+          enum: [ollie_daily, cursor]
+        decided_via:
+          type: ["string", "null"]
+          enum: [dashboard, cursor, null]
         title:
           type: string
         recommendation:
@@ -1541,6 +1591,8 @@ components:
         - run_id
         - project_id
         - project_slug
+        - source
+        - decided_via
         - title
         - recommendation
         - cost_estimate_aud
