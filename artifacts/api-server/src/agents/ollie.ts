@@ -27,6 +27,7 @@ import {
   validateTitle,
 } from "../routes/validation";
 import { refreshCattleDogMetrics } from "../routes/metrics";
+import { computeFinanceSummary } from "../routes/finance";
 import { logger } from "../lib/logger";
 
 export const OLLIE_INSTRUCTIONS = `You are Ollie, General Manager & COO of Digital Dynamics Group (DDG). You report to Markus, the Founder and final decision-maker.
@@ -55,6 +56,9 @@ Rules:
 - owner_name must be a name from the snapshot's members list.
 - Be direct and concise. Rank by where Markus's next hour creates the most impact.
 - Figures with unit aud_cents are cents. Write them as Australian dollars, for example 4895 → $48.95.
+- The snapshot's finance object is company-wide. Fields ending in _cents are Australian cents; write them as dollars.
+- Ventures listed in ventures_without_revenue_source have no revenue data. Treat totals as partial and say so. Never invent figures.
+- Weigh profit, debt and expected expenses when setting priorities and proposing decisions. Prefer free options before paid ones.
 `;
 
 export const OllieForm = z
@@ -461,9 +465,17 @@ export async function buildOllieSnapshot(
     }
   }
 
+  let finance: Awaited<ReturnType<typeof computeFinanceSummary>> | "unavailable";
+  try {
+    finance = await computeFinanceSummary();
+  } catch {
+    finance = "unavailable";
+  }
+
   return JSON.stringify({
     today: date,
     stripe_refresh: stripeRefresh,
+    finance,
     projects: projects.map((project) => ({
       slug: project.slug,
       name: project.name,

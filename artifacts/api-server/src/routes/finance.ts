@@ -960,7 +960,7 @@ router.delete("/finance/revenue/:id", async (req, res): Promise<void> => {
   res.json(DeleteFinanceRevenueResponse.parse({ ok: true }));
 });
 
-router.get("/finance/summary", async (_req, res): Promise<void> => {
+export async function computeFinanceSummary() {
   const today = brisbaneDate(new Date());
   const startDate = subtractCalendarDays(today, 29);
 
@@ -1072,29 +1072,31 @@ router.get("/finance/summary", async (_req, res): Promise<void> => {
   const expectedRevenue = revenue30dCents;
   const expectedProfit = expectedRevenue - expectedExpenses;
 
-  res.json(
-    GetFinanceSummaryResponse.parse({
-      profit_30d_cents: apiCents(profit30dCents, "profit_30d_cents"),
-      revenue_30d_cents: apiCents(revenue30dCents, "revenue_30d_cents"),
-      expenses_30d_cents: apiCents(expenses30dCents, "expenses_30d_cents"),
-      debt_cents: apiCents(debtCents, "debt_cents"),
-      expected_expenses_next_month_cents: apiCents(
-        expectedExpenses,
-        "expected_expenses_next_month_cents",
-      ),
-      expected_revenue_next_month_cents: apiCents(
-        expectedRevenue,
-        "expected_revenue_next_month_cents",
-      ),
-      expected_profit_next_month_cents: apiCents(
-        expectedProfit,
-        "expected_profit_next_month_cents",
-      ),
-      customers,
-      ventures_without_revenue_source: venturesWithoutRevenueSource,
-      notes: FINANCE_SUMMARY_NOTES,
-    }),
-  );
+  return GetFinanceSummaryResponse.parse({
+    profit_30d_cents: apiCents(profit30dCents, "profit_30d_cents"),
+    revenue_30d_cents: apiCents(revenue30dCents, "revenue_30d_cents"),
+    expenses_30d_cents: apiCents(expenses30dCents, "expenses_30d_cents"),
+    debt_cents: apiCents(debtCents, "debt_cents"),
+    expected_expenses_next_month_cents: apiCents(
+      expectedExpenses,
+      "expected_expenses_next_month_cents",
+    ),
+    expected_revenue_next_month_cents: apiCents(
+      expectedRevenue,
+      "expected_revenue_next_month_cents",
+    ),
+    expected_profit_next_month_cents: apiCents(
+      expectedProfit,
+      "expected_profit_next_month_cents",
+    ),
+    customers,
+    ventures_without_revenue_source: venturesWithoutRevenueSource,
+    notes: FINANCE_SUMMARY_NOTES,
+  });
+}
+
+router.get("/finance/summary", async (_req, res): Promise<void> => {
+  res.json(await computeFinanceSummary());
 });
 
 export default router;
