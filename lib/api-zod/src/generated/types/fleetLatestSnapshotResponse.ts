@@ -8,6 +8,7 @@
 import type { FleetBotSnapshot } from './fleetBotSnapshot';
 import type { FleetLatestSnapshotResponseCurrency } from './fleetLatestSnapshotResponseCurrency';
 import type { FleetLatestSnapshotResponseMode } from './fleetLatestSnapshotResponseMode';
+import type { FleetSnapshotDetail } from './fleetSnapshotDetail';
 
 export interface FleetLatestSnapshotResponse {
   id: number;
@@ -27,4 +28,5 @@ export interface FleetLatestSnapshotResponse {
   age_minutes: number;
   stale: boolean;
   currency: FleetLatestSnapshotResponseCurrency;
+  detail: FleetSnapshotDetail | null;
 }

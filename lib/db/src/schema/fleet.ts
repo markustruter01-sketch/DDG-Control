@@ -75,5 +75,14 @@ export const fleetBotSnapshotsTable = pgTable(
   ],
 );
 
+export const fleetSnapshotDetailsTable = pgTable("fleet_snapshot_details", {
+  snapshot_id: integer("snapshot_id")
+    .notNull()
+    .unique()
+    .references(() => fleetSnapshotsTable.id),
+  detail: jsonb("detail").notNull(),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
 export type FleetSnapshot = typeof fleetSnapshotsTable.$inferSelect;
 export type FleetBotSnapshot = typeof fleetBotSnapshotsTable.$inferSelect;

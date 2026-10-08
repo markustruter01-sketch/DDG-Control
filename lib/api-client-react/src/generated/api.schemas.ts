@@ -55,12 +55,165 @@ export interface FinanceSummaryResponse {
   notes: string[];
 }
 
+export type FleetTradingSnapshotCurrency = typeof FleetTradingSnapshotCurrency[keyof typeof FleetTradingSnapshotCurrency];
+
+
+export const FleetTradingSnapshotCurrency = {
+  USD: 'USD',
+} as const;
+
+export type FleetTradingSnapshotMode = typeof FleetTradingSnapshotMode[keyof typeof FleetTradingSnapshotMode];
+
+
+export const FleetTradingSnapshotMode = {
+  paper: 'paper',
+  live: 'live',
+  mixed: 'mixed',
+} as const;
+
+export type FleetBotMetadataAccountMode = typeof FleetBotMetadataAccountMode[keyof typeof FleetBotMetadataAccountMode];
+
+
+export const FleetBotMetadataAccountMode = {
+  paper: 'paper',
+  live: 'live',
+} as const;
+
+export interface FleetBotMetadata {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  bot_id: string;
+  /** @maxLength 100 */
+  strategy: string;
+  /** @maxLength 30 */
+  broker: string;
+  account_mode: FleetBotMetadataAccountMode;
+  /** @maxLength 20 */
+  registry_status: string;
+  /**
+     * @maxItems 60
+     * @items.maxLength 20
+     */
+  instruments: string[];
+}
+
+export type FleetPositionDetailSource = typeof FleetPositionDetailSource[keyof typeof FleetPositionDetailSource];
+
+
+export const FleetPositionDetailSource = {
+  ledger: 'ledger',
+  broker: 'broker',
+} as const;
+
+export interface FleetPositionDetail {
+  bot_id: string;
+  /** @maxLength 20 */
+  symbol: string;
+  qty: number;
+  /** @nullable */
+  entry_price: number | null;
+  /** @nullable */
+  stop_price: number | null;
+  /** @nullable */
+  has_broker_stop: boolean | null;
+  source: FleetPositionDetailSource;
+}
+
+export interface FleetIncidentDetail {
+  ts: string;
+  /** @maxLength 60 */
+  component: string;
+  /** @maxLength 20 */
+  severity: string;
+  /** @maxLength 300 */
+  message: string;
+  /** @nullable */
+  bot_id: string | null;
+  resolved: boolean;
+}
+
+export interface FleetKillSwitchTrigger {
+  /** @nullable */
+  bot_id: string | null;
+  /** @nullable */
+  symbol: string | null;
+  /** @maxLength 60 */
+  kind: string;
+  /** @maxLength 300 */
+  detail: string;
+}
+
+export interface FleetKillSwitchDetail {
+  /** @maxLength 30 */
+  mode: string;
+  would_trip: boolean;
+  /** @maxItems 50 */
+  triggers: FleetKillSwitchTrigger[];
+}
+
+export interface FleetReconciliationDetail {
+  /** @nullable */
+  last_run: string | null;
+  /** @nullable */
+  clean: boolean | null;
+  /**
+     * @maxItems 50
+     * @items.maxLength 300
+     */
+  flags: string[];
+}
+
+export interface FleetRunnerDetail {
+  /** @maxLength 30 */
+  status: string;
+  /** @nullable */
+  last_heartbeat: string | null;
+}
+
+export interface FleetVersionDetail {
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  running: string | null;
+  /** @nullable */
+  matches_latest: boolean | null;
+}
+
+export interface FleetSnapshotDetail {
+  /** @maxItems 20 */
+  bots_meta: FleetBotMetadata[];
+  /** @maxItems 200 */
+  positions: FleetPositionDetail[];
+  /** @maxItems 50 */
+  incidents: FleetIncidentDetail[];
+  kill_switch: FleetKillSwitchDetail | null;
+  reconciliation: FleetReconciliationDetail | null;
+  runner: FleetRunnerDetail | null;
+  version: FleetVersionDetail | null;
+}
+
+export interface FleetTradingSnapshot {
+  currency: FleetTradingSnapshotCurrency;
+  mode: FleetTradingSnapshotMode;
+  total_equity: number;
+  total_pnl: number;
+  drawdown_pct: number;
+  peak_equity: number;
+  stale: boolean;
+  age_minutes: number;
+  detail: FleetSnapshotDetail | null;
+}
+
 export interface InboundStateResponse {
   pending_decisions: InboundPendingDecision[];
   tasks: InboundOpenTask[];
   project_slugs: string[];
   member_names: string[];
   finance: FinanceSummaryResponse;
+  trading: FleetTradingSnapshot | 'unavailable';
 }
 
 export interface InboundFinanceExpenseCreateInput {
@@ -926,6 +1079,7 @@ export interface FleetSnapshotInput {
      * @items.maxLength 300
      */
   errors: string[];
+  detail?: FleetSnapshotDetail;
 }
 
 export interface FleetBotSnapshot {
@@ -970,6 +1124,8 @@ export interface FleetSnapshotResponse {
 
 export interface FleetLatestEmptyResponse {
   empty: boolean;
+  /** @nullable */
+  detail: null;
 }
 
 export type FleetLatestSnapshotResponseMode = typeof FleetLatestSnapshotResponseMode[keyof typeof FleetLatestSnapshotResponseMode];
@@ -1006,6 +1162,7 @@ export interface FleetLatestSnapshotResponse {
   age_minutes: number;
   stale: boolean;
   currency: FleetLatestSnapshotResponseCurrency;
+  detail: FleetSnapshotDetail | null;
 }
 
 export type FleetLatestResponse = FleetLatestEmptyResponse | FleetLatestSnapshotResponse;

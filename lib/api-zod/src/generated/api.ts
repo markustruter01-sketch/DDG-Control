@@ -1033,6 +1033,48 @@ export const getInboundStateResponseFinanceExpectedRevenueNextMonthCentsMin = 0;
 
 export const getInboundStateResponseFinanceCustomersMin = 0;
 
+export const getInboundStateResponseTradingOneDetailOneBotsMetaItemBotIdMax = 64;
+
+export const getInboundStateResponseTradingOneDetailOneBotsMetaItemStrategyMax = 100;
+
+export const getInboundStateResponseTradingOneDetailOneBotsMetaItemBrokerMax = 30;
+
+export const getInboundStateResponseTradingOneDetailOneBotsMetaItemRegistryStatusMax = 20;
+
+export const getInboundStateResponseTradingOneDetailOneBotsMetaItemInstrumentsItemMax = 20;
+
+export const getInboundStateResponseTradingOneDetailOneBotsMetaItemInstrumentsMax = 60;
+
+export const getInboundStateResponseTradingOneDetailOneBotsMetaMax = 20;
+
+export const getInboundStateResponseTradingOneDetailOnePositionsItemSymbolMax = 20;
+
+export const getInboundStateResponseTradingOneDetailOnePositionsMax = 200;
+
+export const getInboundStateResponseTradingOneDetailOneIncidentsItemComponentMax = 60;
+
+export const getInboundStateResponseTradingOneDetailOneIncidentsItemSeverityMax = 20;
+
+export const getInboundStateResponseTradingOneDetailOneIncidentsItemMessageMax = 300;
+
+export const getInboundStateResponseTradingOneDetailOneIncidentsMax = 50;
+
+export const getInboundStateResponseTradingOneDetailOneKillSwitchOneModeMax = 30;
+
+export const getInboundStateResponseTradingOneDetailOneKillSwitchOneTriggersItemKindMax = 60;
+
+export const getInboundStateResponseTradingOneDetailOneKillSwitchOneTriggersItemDetailMax = 300;
+
+export const getInboundStateResponseTradingOneDetailOneKillSwitchOneTriggersMax = 50;
+
+export const getInboundStateResponseTradingOneDetailOneReconciliationOneFlagsItemMax = 300;
+
+export const getInboundStateResponseTradingOneDetailOneReconciliationOneFlagsMax = 50;
+
+export const getInboundStateResponseTradingOneDetailOneRunnerOneStatusMax = 30;
+
+export const getInboundStateResponseTradingOneDetailOneVersionOneRunningMax = 40;
+
 
 
 export const GetInboundStateResponse = zod.object({
@@ -1063,7 +1105,67 @@ export const GetInboundStateResponse = zod.object({
   "customers": zod.number().int().min(getInboundStateResponseFinanceCustomersMin).nullable(),
   "ventures_without_revenue_source": zod.array(zod.string()),
   "notes": zod.array(zod.string())
-})
+}),
+  "trading": zod.union([zod.object({
+  "currency": zod.enum(['USD']),
+  "mode": zod.enum(['paper', 'live', 'mixed']),
+  "total_equity": zod.number().int(),
+  "total_pnl": zod.number().int(),
+  "drawdown_pct": zod.number(),
+  "peak_equity": zod.number().int(),
+  "stale": zod.boolean(),
+  "age_minutes": zod.number().int(),
+  "detail": zod.union([zod.object({
+  "bots_meta": zod.array(zod.object({
+  "bot_id": zod.string().min(1).max(getInboundStateResponseTradingOneDetailOneBotsMetaItemBotIdMax),
+  "strategy": zod.string().max(getInboundStateResponseTradingOneDetailOneBotsMetaItemStrategyMax),
+  "broker": zod.string().max(getInboundStateResponseTradingOneDetailOneBotsMetaItemBrokerMax),
+  "account_mode": zod.enum(['paper', 'live']),
+  "registry_status": zod.string().max(getInboundStateResponseTradingOneDetailOneBotsMetaItemRegistryStatusMax),
+  "instruments": zod.array(zod.string().max(getInboundStateResponseTradingOneDetailOneBotsMetaItemInstrumentsItemMax)).max(getInboundStateResponseTradingOneDetailOneBotsMetaItemInstrumentsMax)
+})).max(getInboundStateResponseTradingOneDetailOneBotsMetaMax),
+  "positions": zod.array(zod.object({
+  "bot_id": zod.string(),
+  "symbol": zod.string().max(getInboundStateResponseTradingOneDetailOnePositionsItemSymbolMax),
+  "qty": zod.number(),
+  "entry_price": zod.number().nullable(),
+  "stop_price": zod.number().nullable(),
+  "has_broker_stop": zod.boolean().nullable(),
+  "source": zod.enum(['ledger', 'broker'])
+})).max(getInboundStateResponseTradingOneDetailOnePositionsMax),
+  "incidents": zod.array(zod.object({
+  "ts": zod.coerce.date(),
+  "component": zod.string().max(getInboundStateResponseTradingOneDetailOneIncidentsItemComponentMax),
+  "severity": zod.string().max(getInboundStateResponseTradingOneDetailOneIncidentsItemSeverityMax),
+  "message": zod.string().max(getInboundStateResponseTradingOneDetailOneIncidentsItemMessageMax),
+  "bot_id": zod.string().nullable(),
+  "resolved": zod.boolean()
+})).max(getInboundStateResponseTradingOneDetailOneIncidentsMax),
+  "kill_switch": zod.union([zod.object({
+  "mode": zod.string().max(getInboundStateResponseTradingOneDetailOneKillSwitchOneModeMax),
+  "would_trip": zod.boolean(),
+  "triggers": zod.array(zod.object({
+  "bot_id": zod.string().nullable(),
+  "symbol": zod.string().nullable(),
+  "kind": zod.string().max(getInboundStateResponseTradingOneDetailOneKillSwitchOneTriggersItemKindMax),
+  "detail": zod.string().max(getInboundStateResponseTradingOneDetailOneKillSwitchOneTriggersItemDetailMax)
+})).max(getInboundStateResponseTradingOneDetailOneKillSwitchOneTriggersMax)
+}),zod.null()]),
+  "reconciliation": zod.union([zod.object({
+  "last_run": zod.coerce.date().nullable(),
+  "clean": zod.boolean().nullable(),
+  "flags": zod.array(zod.string().max(getInboundStateResponseTradingOneDetailOneReconciliationOneFlagsItemMax)).max(getInboundStateResponseTradingOneDetailOneReconciliationOneFlagsMax)
+}),zod.null()]),
+  "runner": zod.union([zod.object({
+  "status": zod.string().max(getInboundStateResponseTradingOneDetailOneRunnerOneStatusMax),
+  "last_heartbeat": zod.coerce.date().nullable()
+}),zod.null()]),
+  "version": zod.union([zod.object({
+  "running": zod.string().max(getInboundStateResponseTradingOneDetailOneVersionOneRunningMax).nullable(),
+  "matches_latest": zod.boolean().nullable()
+}),zod.null()])
+}),zod.null()])
+}),zod.enum(['unavailable'])])
 })
 
 
@@ -1272,6 +1374,48 @@ export const postInboundFleetBodyErrorsItemMax = 300;
 
 export const postInboundFleetBodyErrorsMax = 20;
 
+export const postInboundFleetBodyDetailBotsMetaItemBotIdMax = 64;
+
+export const postInboundFleetBodyDetailBotsMetaItemStrategyMax = 100;
+
+export const postInboundFleetBodyDetailBotsMetaItemBrokerMax = 30;
+
+export const postInboundFleetBodyDetailBotsMetaItemRegistryStatusMax = 20;
+
+export const postInboundFleetBodyDetailBotsMetaItemInstrumentsItemMax = 20;
+
+export const postInboundFleetBodyDetailBotsMetaItemInstrumentsMax = 60;
+
+export const postInboundFleetBodyDetailBotsMetaMax = 20;
+
+export const postInboundFleetBodyDetailPositionsItemSymbolMax = 20;
+
+export const postInboundFleetBodyDetailPositionsMax = 200;
+
+export const postInboundFleetBodyDetailIncidentsItemComponentMax = 60;
+
+export const postInboundFleetBodyDetailIncidentsItemSeverityMax = 20;
+
+export const postInboundFleetBodyDetailIncidentsItemMessageMax = 300;
+
+export const postInboundFleetBodyDetailIncidentsMax = 50;
+
+export const postInboundFleetBodyDetailKillSwitchOneModeMax = 30;
+
+export const postInboundFleetBodyDetailKillSwitchOneTriggersItemKindMax = 60;
+
+export const postInboundFleetBodyDetailKillSwitchOneTriggersItemDetailMax = 300;
+
+export const postInboundFleetBodyDetailKillSwitchOneTriggersMax = 50;
+
+export const postInboundFleetBodyDetailReconciliationOneFlagsItemMax = 300;
+
+export const postInboundFleetBodyDetailReconciliationOneFlagsMax = 50;
+
+export const postInboundFleetBodyDetailRunnerOneStatusMax = 30;
+
+export const postInboundFleetBodyDetailVersionOneRunningMax = 40;
+
 
 
 export const PostInboundFleetBody = zod.object({
@@ -1288,7 +1432,57 @@ export const PostInboundFleetBody = zod.object({
   "stale": zod.boolean(),
   "paused": zod.boolean()
 })).min(1).max(postInboundFleetBodyBotsMax),
-  "errors": zod.array(zod.string().max(postInboundFleetBodyErrorsItemMax)).max(postInboundFleetBodyErrorsMax)
+  "errors": zod.array(zod.string().max(postInboundFleetBodyErrorsItemMax)).max(postInboundFleetBodyErrorsMax),
+  "detail": zod.object({
+  "bots_meta": zod.array(zod.object({
+  "bot_id": zod.string().min(1).max(postInboundFleetBodyDetailBotsMetaItemBotIdMax),
+  "strategy": zod.string().max(postInboundFleetBodyDetailBotsMetaItemStrategyMax),
+  "broker": zod.string().max(postInboundFleetBodyDetailBotsMetaItemBrokerMax),
+  "account_mode": zod.enum(['paper', 'live']),
+  "registry_status": zod.string().max(postInboundFleetBodyDetailBotsMetaItemRegistryStatusMax),
+  "instruments": zod.array(zod.string().max(postInboundFleetBodyDetailBotsMetaItemInstrumentsItemMax)).max(postInboundFleetBodyDetailBotsMetaItemInstrumentsMax)
+})).max(postInboundFleetBodyDetailBotsMetaMax),
+  "positions": zod.array(zod.object({
+  "bot_id": zod.string(),
+  "symbol": zod.string().max(postInboundFleetBodyDetailPositionsItemSymbolMax),
+  "qty": zod.number(),
+  "entry_price": zod.number().nullable(),
+  "stop_price": zod.number().nullable(),
+  "has_broker_stop": zod.boolean().nullable(),
+  "source": zod.enum(['ledger', 'broker'])
+})).max(postInboundFleetBodyDetailPositionsMax),
+  "incidents": zod.array(zod.object({
+  "ts": zod.coerce.date(),
+  "component": zod.string().max(postInboundFleetBodyDetailIncidentsItemComponentMax),
+  "severity": zod.string().max(postInboundFleetBodyDetailIncidentsItemSeverityMax),
+  "message": zod.string().max(postInboundFleetBodyDetailIncidentsItemMessageMax),
+  "bot_id": zod.string().nullable(),
+  "resolved": zod.boolean()
+})).max(postInboundFleetBodyDetailIncidentsMax),
+  "kill_switch": zod.union([zod.object({
+  "mode": zod.string().max(postInboundFleetBodyDetailKillSwitchOneModeMax),
+  "would_trip": zod.boolean(),
+  "triggers": zod.array(zod.object({
+  "bot_id": zod.string().nullable(),
+  "symbol": zod.string().nullable(),
+  "kind": zod.string().max(postInboundFleetBodyDetailKillSwitchOneTriggersItemKindMax),
+  "detail": zod.string().max(postInboundFleetBodyDetailKillSwitchOneTriggersItemDetailMax)
+})).max(postInboundFleetBodyDetailKillSwitchOneTriggersMax)
+}),zod.null()]),
+  "reconciliation": zod.union([zod.object({
+  "last_run": zod.coerce.date().nullable(),
+  "clean": zod.boolean().nullable(),
+  "flags": zod.array(zod.string().max(postInboundFleetBodyDetailReconciliationOneFlagsItemMax)).max(postInboundFleetBodyDetailReconciliationOneFlagsMax)
+}),zod.null()]),
+  "runner": zod.union([zod.object({
+  "status": zod.string().max(postInboundFleetBodyDetailRunnerOneStatusMax),
+  "last_heartbeat": zod.coerce.date().nullable()
+}),zod.null()]),
+  "version": zod.union([zod.object({
+  "running": zod.string().max(postInboundFleetBodyDetailVersionOneRunningMax).nullable(),
+  "matches_latest": zod.boolean().nullable()
+}),zod.null()])
+}).optional()
 })
 
 export const PostInboundFleetResponse = zod.object({
@@ -1322,8 +1516,53 @@ export const PostInboundFleetResponse = zod.object({
 /**
  * @summary Get the latest trading fleet snapshot
  */
+export const getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemBotIdMax = 64;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemStrategyMax = 100;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemBrokerMax = 30;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemRegistryStatusMax = 20;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemInstrumentsItemMax = 20;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemInstrumentsMax = 60;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaMax = 20;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOnePositionsItemSymbolMax = 20;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOnePositionsMax = 200;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneIncidentsItemComponentMax = 60;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneIncidentsItemSeverityMax = 20;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneIncidentsItemMessageMax = 300;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneIncidentsMax = 50;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneKillSwitchOneModeMax = 30;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneKillSwitchOneTriggersItemKindMax = 60;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneKillSwitchOneTriggersItemDetailMax = 300;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneKillSwitchOneTriggersMax = 50;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneReconciliationOneFlagsItemMax = 300;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneReconciliationOneFlagsMax = 50;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneRunnerOneStatusMax = 30;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneVersionOneRunningMax = 40;
+
+
+
 export const GetProjectFinanceFleetLatestResponse = zod.union([zod.object({
-  "empty": zod.boolean()
+  "empty": zod.boolean(),
+  "detail": zod.null()
 }),zod.object({
   "id": zod.number().int(),
   "generated_at": zod.coerce.date(),
@@ -1353,7 +1592,57 @@ export const GetProjectFinanceFleetLatestResponse = zod.union([zod.object({
   "drawdown_pct": zod.number(),
   "age_minutes": zod.number().int(),
   "stale": zod.boolean(),
-  "currency": zod.enum(['USD'])
+  "currency": zod.enum(['USD']),
+  "detail": zod.union([zod.object({
+  "bots_meta": zod.array(zod.object({
+  "bot_id": zod.string().min(1).max(getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemBotIdMax),
+  "strategy": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemStrategyMax),
+  "broker": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemBrokerMax),
+  "account_mode": zod.enum(['paper', 'live']),
+  "registry_status": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemRegistryStatusMax),
+  "instruments": zod.array(zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemInstrumentsItemMax)).max(getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaItemInstrumentsMax)
+})).max(getProjectFinanceFleetLatestResponseTwoDetailOneBotsMetaMax),
+  "positions": zod.array(zod.object({
+  "bot_id": zod.string(),
+  "symbol": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOnePositionsItemSymbolMax),
+  "qty": zod.number(),
+  "entry_price": zod.number().nullable(),
+  "stop_price": zod.number().nullable(),
+  "has_broker_stop": zod.boolean().nullable(),
+  "source": zod.enum(['ledger', 'broker'])
+})).max(getProjectFinanceFleetLatestResponseTwoDetailOnePositionsMax),
+  "incidents": zod.array(zod.object({
+  "ts": zod.coerce.date(),
+  "component": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneIncidentsItemComponentMax),
+  "severity": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneIncidentsItemSeverityMax),
+  "message": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneIncidentsItemMessageMax),
+  "bot_id": zod.string().nullable(),
+  "resolved": zod.boolean()
+})).max(getProjectFinanceFleetLatestResponseTwoDetailOneIncidentsMax),
+  "kill_switch": zod.union([zod.object({
+  "mode": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneKillSwitchOneModeMax),
+  "would_trip": zod.boolean(),
+  "triggers": zod.array(zod.object({
+  "bot_id": zod.string().nullable(),
+  "symbol": zod.string().nullable(),
+  "kind": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneKillSwitchOneTriggersItemKindMax),
+  "detail": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneKillSwitchOneTriggersItemDetailMax)
+})).max(getProjectFinanceFleetLatestResponseTwoDetailOneKillSwitchOneTriggersMax)
+}),zod.null()]),
+  "reconciliation": zod.union([zod.object({
+  "last_run": zod.coerce.date().nullable(),
+  "clean": zod.boolean().nullable(),
+  "flags": zod.array(zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneReconciliationOneFlagsItemMax)).max(getProjectFinanceFleetLatestResponseTwoDetailOneReconciliationOneFlagsMax)
+}),zod.null()]),
+  "runner": zod.union([zod.object({
+  "status": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneRunnerOneStatusMax),
+  "last_heartbeat": zod.coerce.date().nullable()
+}),zod.null()]),
+  "version": zod.union([zod.object({
+  "running": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneVersionOneRunningMax).nullable(),
+  "matches_latest": zod.boolean().nullable()
+}),zod.null()])
+}),zod.null()])
 })])
 
 

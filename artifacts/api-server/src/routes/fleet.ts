@@ -7,6 +7,7 @@ import {
 import {
   db,
   fleetBotSnapshotsTable,
+  fleetSnapshotDetailsTable,
   fleetSnapshotsTable,
   type FleetBotSnapshot,
   type FleetSnapshot,
@@ -18,7 +19,7 @@ import { getUnknownFieldError, requestBodyRecord } from "./validation";
 
 const router: IRouter = Router();
 
-const topLevelFields = ["generated_at", "mode", "bots", "errors"] as const;
+const topLevelFields = ["generated_at", "mode", "bots", "errors", "detail"] as const;
 const botFields = [
   "bot_id",
   "equity_usd",
@@ -30,6 +31,45 @@ const botFields = [
   "stale",
   "paused",
 ] as const;
+const detailFields = [
+  "bots_meta",
+  "positions",
+  "incidents",
+  "kill_switch",
+  "reconciliation",
+  "runner",
+  "version",
+] as const;
+const botMetadataFields = [
+  "bot_id",
+  "strategy",
+  "broker",
+  "account_mode",
+  "registry_status",
+  "instruments",
+] as const;
+const positionDetailFields = [
+  "bot_id",
+  "symbol",
+  "qty",
+  "entry_price",
+  "stop_price",
+  "has_broker_stop",
+  "source",
+] as const;
+const incidentDetailFields = [
+  "ts",
+  "component",
+  "severity",
+  "message",
+  "bot_id",
+  "resolved",
+] as const;
+const killSwitchFields = ["mode", "would_trip", "triggers"] as const;
+const killSwitchTriggerFields = ["bot_id", "symbol", "kind", "detail"] as const;
+const reconciliationFields = ["last_run", "clean", "flags"] as const;
+const runnerFields = ["status", "last_heartbeat"] as const;
+const versionFields = ["running", "matches_latest"] as const;
 
 function isIsoTimestamp(value: unknown): value is string {
   return (
@@ -39,6 +79,131 @@ function isIsoTimestamp(value: unknown): value is string {
     ) &&
     Number.isFinite(Date.parse(value))
   );
+}
+
+function nestedUnknownFieldError(
+  value: unknown,
+  fields: readonly string[],
+  path: string,
+): string | undefined {
+  const record = requestBodyRecord(value);
+  if (!record) {
+    return undefined;
+  }
+  const error = getUnknownFieldError(record, fields);
+  return error ? `${path}: ${error}` : undefined;
+}
+
+function arrayItemUnknownFieldError(
+  items: unknown,
+  fields: readonly string[],
+  path: string,
+): string | undefined {
+  if (!Array.isArray(items)) {
+    return undefined;
+  }
+  for (const [index, item] of items.entries()) {
+    const error = nestedUnknownFieldError(item, fields, `${path}[${index}]`);
+    if (error) {
+      return error;
+    }
+  }
+  return undefined;
+}
+
+function getFleetDetailUnknownFieldError(value: unknown): string | undefined {
+  const detail = requestBodyRecord(value);
+  if (!detail) {
+    return undefined;
+  }
+  const detailError = getUnknownFieldError(detail, detailFields);
+  if (detailError) {
+    return `detail: ${detailError}`;
+  }
+
+  const arrayChecks = [
+    ["bots_meta", botMetadataFields],
+    ["positions", positionDetailFields],
+    ["incidents", incidentDetailFields],
+  ] as const;
+  for (const [field, fields] of arrayChecks) {
+    const error = arrayItemUnknownFieldError(
+      detail[field],
+      fields,
+      `detail.${field}`,
+    );
+    if (error) {
+      return error;
+    }
+  }
+
+  const killSwitch = requestBodyRecord(detail.kill_switch);
+  const killSwitchError = nestedUnknownFieldError(
+    killSwitch,
+    killSwitchFields,
+    "detail.kill_switch",
+  );
+  if (killSwitchError) {
+    return killSwitchError;
+  }
+  if (killSwitch) {
+    const triggerError = arrayItemUnknownFieldError(
+      killSwitch.triggers,
+      killSwitchTriggerFields,
+      "detail.kill_switch.triggers",
+    );
+    if (triggerError) {
+      return triggerError;
+    }
+  }
+
+  for (const [field, fields] of [
+    ["reconciliation", reconciliationFields],
+    ["runner", runnerFields],
+    ["version", versionFields],
+  ] as const) {
+    const error = nestedUnknownFieldError(
+      detail[field],
+      fields,
+      `detail.${field}`,
+    );
+    if (error) {
+      return error;
+    }
+  }
+  return undefined;
+}
+
+function getFleetDetailTimestampError(value: unknown): string | undefined {
+  const detail = requestBodyRecord(value);
+  if (!detail) {
+    return undefined;
+  }
+  if (Array.isArray(detail.incidents)) {
+    for (const [index, value] of detail.incidents.entries()) {
+      const incident = requestBodyRecord(value);
+      if (incident && !isIsoTimestamp(incident.ts)) {
+        return `detail.incidents[${index}].ts must be an ISO timestamp`;
+      }
+    }
+  }
+  const reconciliation = requestBodyRecord(detail.reconciliation);
+  if (
+    reconciliation &&
+    reconciliation.last_run !== null &&
+    !isIsoTimestamp(reconciliation.last_run)
+  ) {
+    return "detail.reconciliation.last_run must be an ISO timestamp or null";
+  }
+  const runner = requestBodyRecord(detail.runner);
+  if (
+    runner &&
+    runner.last_heartbeat !== null &&
+    !isIsoTimestamp(runner.last_heartbeat)
+  ) {
+    return "detail.runner.last_heartbeat must be an ISO timestamp or null";
+  }
+  return undefined;
 }
 
 function usdToCents(value: number): number {
@@ -140,6 +305,17 @@ router.post(
           return;
         }
       }
+    }
+
+    const detailUnknownFieldError = getFleetDetailUnknownFieldError(body.detail);
+    if (detailUnknownFieldError) {
+      res.status(400).json({ error: detailUnknownFieldError });
+      return;
+    }
+    const detailTimestampError = getFleetDetailTimestampError(body.detail);
+    if (detailTimestampError) {
+      res.status(400).json({ error: detailTimestampError });
+      return;
     }
 
     const parsed = PostInboundFleetBody.safeParse(body);
@@ -244,6 +420,12 @@ router.post(
           })),
         )
         .returning();
+      if (parsed.data.detail !== undefined) {
+        await tx.insert(fleetSnapshotDetailsTable).values({
+          snapshot_id: snapshot.id,
+          detail: parsed.data.detail,
+        });
+      }
       return { status: 201 as const, snapshot, bots };
     });
 
@@ -264,7 +446,12 @@ router.get(
       .limit(1);
 
     if (!snapshot) {
-      res.json(GetProjectFinanceFleetLatestResponse.parse({ empty: true }));
+      res.json(
+        GetProjectFinanceFleetLatestResponse.parse({
+          empty: true,
+          detail: null,
+        }),
+      );
       return;
     }
 
@@ -279,6 +466,11 @@ router.get(
       .from(fleetBotSnapshotsTable)
       .where(eq(fleetBotSnapshotsTable.snapshot_id, snapshot.id))
       .orderBy(asc(fleetBotSnapshotsTable.id));
+    const [detailRow] = await db
+      .select({ detail: fleetSnapshotDetailsTable.detail })
+      .from(fleetSnapshotDetailsTable)
+      .where(eq(fleetSnapshotDetailsTable.snapshot_id, snapshot.id))
+      .limit(1);
     const ageMinutes = Math.floor(
       (Date.now() - snapshot.generated_at.getTime()) / 60_000,
     );
@@ -295,6 +487,7 @@ router.get(
 
     const response = GetProjectFinanceFleetLatestResponse.parse({
       ...toApiSnapshot(snapshot, bots),
+      detail: detailRow?.detail ?? null,
       peak_equity_cents: peakEquityCents,
       drawdown_pct: drawdownPct,
       age_minutes: ageMinutes,

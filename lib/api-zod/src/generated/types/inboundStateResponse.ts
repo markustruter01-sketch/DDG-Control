@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { FinanceSummaryResponse } from './financeSummaryResponse';
+import type { FleetTradingSnapshot } from './fleetTradingSnapshot';
 import type { InboundOpenTask } from './inboundOpenTask';
 import type { InboundPendingDecision } from './inboundPendingDecision';
 
@@ -15,4 +16,5 @@ export interface InboundStateResponse {
   project_slugs: string[];
   member_names: string[];
   finance: FinanceSummaryResponse;
+  trading: FleetTradingSnapshot | 'unavailable';
 }

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { FleetBotInput } from './fleetBotInput';
+import type { FleetSnapshotDetail } from './fleetSnapshotDetail';
 import type { FleetSnapshotInputMode } from './fleetSnapshotInputMode';
 
 export interface FleetSnapshotInput {
@@ -21,4 +22,5 @@ export interface FleetSnapshotInput {
      * @items.maxLength 300
      */
   errors: string[];
+  detail?: FleetSnapshotDetail;
 }

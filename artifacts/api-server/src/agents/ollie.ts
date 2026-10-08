@@ -3,6 +3,8 @@ import {
   agentRunsTable,
   db,
   decisionsTable,
+  fleetSnapshotDetailsTable,
+  fleetSnapshotsTable,
   goalsTable,
   membersTable,
   metricSnapshotsTable,
@@ -19,7 +21,7 @@ import {
   STATUS_LIGHTS,
   type MetricKey,
 } from "@workspace/project-constants";
-import { and, desc, eq, gte, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   isCalendarDate,
@@ -59,6 +61,9 @@ Rules:
 - The snapshot's finance object is company-wide. Fields ending in _cents are Australian cents; write them as dollars.
 - Ventures listed in ventures_without_revenue_source have no revenue data. Treat totals as partial and say so. Never invent figures.
 - Weigh profit, debt and expected expenses when setting priorities and proposing decisions. Prefer free options before paid ones.
+- The snapshot's trading object is the DDG - Finance trading fleet. It is US dollars, in cents, and practice (paper) money unless mode says live. It is never company revenue.
+- Trading is high-sensitivity. You may recommend reviews or fixes, but never recommend placing, changing or cancelling a specific trade or order.
+- Treat these as risks: positions with has_broker_stop false or null, kill_switch would_trip true, reconciliation flags, unresolved incidents, a stale snapshot, a runner that is not healthy, and a version that does not match.
 `;
 
 export const OllieForm = z
@@ -465,6 +470,13 @@ export async function buildOllieSnapshot(
     }
   }
 
+  let trading: Awaited<ReturnType<typeof getTradingSnapshot>> | "unavailable";
+  try {
+    trading = await getTradingSnapshot();
+  } catch {
+    trading = "unavailable";
+  }
+
   let finance: Awaited<ReturnType<typeof computeFinanceSummary>> | "unavailable";
   try {
     finance = await computeFinanceSummary();
@@ -476,6 +488,7 @@ export async function buildOllieSnapshot(
     today: date,
     stripe_refresh: stripeRefresh,
     finance,
+    trading,
     projects: projects.map((project) => ({
       slug: project.slug,
       name: project.name,
@@ -522,6 +535,53 @@ export async function buildOllieSnapshot(
         : [];
     }),
   });
+}
+
+export async function getTradingSnapshot() {
+  const [snapshot] = await db
+    .select()
+    .from(fleetSnapshotsTable)
+    .orderBy(desc(fleetSnapshotsTable.generated_at))
+    .limit(1);
+  if (!snapshot) {
+    throw new Error("No fleet snapshot available");
+  }
+
+  const [peakRow] = await db
+    .select({
+      peak_equity: sql<number>`coalesce(max(${fleetSnapshotsTable.total_equity_cents}), 0)::double precision`,
+    })
+    .from(fleetSnapshotsTable);
+  const peakEquity = peakRow?.peak_equity ?? 0;
+  const ageMinutes = Math.floor(
+    (Date.now() - snapshot.generated_at.getTime()) / 60_000,
+  );
+  const drawdownPct =
+    peakEquity === 0
+      ? 0
+      : Number(
+          (
+            ((peakEquity - snapshot.total_equity_cents) / peakEquity) *
+            100
+          ).toFixed(2),
+        );
+  const [detailRow] = await db
+    .select({ detail: fleetSnapshotDetailsTable.detail })
+    .from(fleetSnapshotDetailsTable)
+    .where(eq(fleetSnapshotDetailsTable.snapshot_id, snapshot.id))
+    .limit(1);
+
+  return {
+    currency: "USD" as const,
+    mode: snapshot.mode,
+    total_equity: snapshot.total_equity_cents,
+    total_pnl: snapshot.total_pnl_cents,
+    drawdown_pct: drawdownPct,
+    peak_equity: peakEquity,
+    stale: ageMinutes > 120,
+    age_minutes: ageMinutes,
+    detail: detailRow?.detail ?? null,
+  };
 }
 
 function serializeAgentRun(run: AgentRunRow): SerializedAgentRun {

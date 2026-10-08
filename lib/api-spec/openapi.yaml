@@ -1505,7 +1505,18 @@ components:
             type: string
         finance:
           $ref: "#/components/schemas/FinanceSummaryResponse"
-      required: [pending_decisions, tasks, project_slugs, member_names, finance]
+        trading:
+          oneOf:
+            - $ref: "#/components/schemas/FleetTradingSnapshot"
+            - type: string
+              enum: [unavailable]
+      required:
+        - pending_decisions
+        - tasks
+        - project_slugs
+        - member_names
+        - finance
+        - trading
     InboundFinanceExpenseCreateInput:
       type: object
       additionalProperties: false
@@ -2644,7 +2655,201 @@ components:
           items:
             type: string
             maxLength: 300
+        detail:
+          $ref: "#/components/schemas/FleetSnapshotDetail"
       required: [generated_at, mode, bots, errors]
+    FleetSnapshotDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        bots_meta:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/FleetBotMetadata"
+        positions:
+          type: array
+          maxItems: 200
+          items:
+            $ref: "#/components/schemas/FleetPositionDetail"
+        incidents:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/FleetIncidentDetail"
+        kill_switch:
+          oneOf:
+            - $ref: "#/components/schemas/FleetKillSwitchDetail"
+            - type: "null"
+        reconciliation:
+          oneOf:
+            - $ref: "#/components/schemas/FleetReconciliationDetail"
+            - type: "null"
+        runner:
+          oneOf:
+            - $ref: "#/components/schemas/FleetRunnerDetail"
+            - type: "null"
+        version:
+          oneOf:
+            - $ref: "#/components/schemas/FleetVersionDetail"
+            - type: "null"
+      required:
+        - bots_meta
+        - positions
+        - incidents
+        - kill_switch
+        - reconciliation
+        - runner
+        - version
+    FleetBotMetadata:
+      type: object
+      additionalProperties: false
+      properties:
+        bot_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        strategy:
+          type: string
+          maxLength: 100
+        broker:
+          type: string
+          maxLength: 30
+        account_mode:
+          type: string
+          enum: [paper, live]
+        registry_status:
+          type: string
+          maxLength: 20
+        instruments:
+          type: array
+          maxItems: 60
+          items:
+            type: string
+            maxLength: 20
+      required:
+        - bot_id
+        - strategy
+        - broker
+        - account_mode
+        - registry_status
+        - instruments
+    FleetPositionDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        bot_id:
+          type: string
+        symbol:
+          type: string
+          maxLength: 20
+        qty:
+          type: number
+        entry_price:
+          type: ["number", "null"]
+        stop_price:
+          type: ["number", "null"]
+        has_broker_stop:
+          type: ["boolean", "null"]
+        source:
+          type: string
+          enum: [ledger, broker]
+      required:
+        - bot_id
+        - symbol
+        - qty
+        - entry_price
+        - stop_price
+        - has_broker_stop
+        - source
+    FleetIncidentDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        ts:
+          type: string
+          format: date-time
+        component:
+          type: string
+          maxLength: 60
+        severity:
+          type: string
+          maxLength: 20
+        message:
+          type: string
+          maxLength: 300
+        bot_id:
+          type: ["string", "null"]
+        resolved:
+          type: boolean
+      required: [ts, component, severity, message, bot_id, resolved]
+    FleetKillSwitchDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        mode:
+          type: string
+          maxLength: 30
+        would_trip:
+          type: boolean
+        triggers:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/FleetKillSwitchTrigger"
+      required: [mode, would_trip, triggers]
+    FleetKillSwitchTrigger:
+      type: object
+      additionalProperties: false
+      properties:
+        bot_id:
+          type: ["string", "null"]
+        symbol:
+          type: ["string", "null"]
+        kind:
+          type: string
+          maxLength: 60
+        detail:
+          type: string
+          maxLength: 300
+      required: [bot_id, symbol, kind, detail]
+    FleetReconciliationDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        last_run:
+          type: ["string", "null"]
+          format: date-time
+        clean:
+          type: ["boolean", "null"]
+        flags:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            maxLength: 300
+      required: [last_run, clean, flags]
+    FleetRunnerDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          maxLength: 30
+        last_heartbeat:
+          type: ["string", "null"]
+          format: date-time
+      required: [status, last_heartbeat]
+    FleetVersionDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        running:
+          type: ["string", "null"]
+          maxLength: 40
+        matches_latest:
+          type: ["boolean", "null"]
+      required: [running, matches_latest]
     FleetBotInput:
       type: object
       additionalProperties: false
@@ -2783,7 +2988,9 @@ components:
       properties:
         empty:
           type: boolean
-      required: [empty]
+        detail:
+          type: "null"
+      required: [empty, detail]
     FleetLatestSnapshotResponse:
       type: object
       additionalProperties: false
@@ -2834,6 +3041,10 @@ components:
         currency:
           type: string
           enum: [USD]
+        detail:
+          oneOf:
+            - $ref: "#/components/schemas/FleetSnapshotDetail"
+            - type: "null"
       required:
         - id
         - generated_at
@@ -2852,10 +3063,50 @@ components:
         - age_minutes
         - stale
         - currency
+        - detail
     FleetLatestResponse:
       oneOf:
         - $ref: "#/components/schemas/FleetLatestEmptyResponse"
         - $ref: "#/components/schemas/FleetLatestSnapshotResponse"
+    FleetTradingSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        currency:
+          type: string
+          enum: [USD]
+        mode:
+          type: string
+          enum: [paper, live, mixed]
+        total_equity:
+          type: integer
+          format: int64
+        total_pnl:
+          type: integer
+          format: int64
+        drawdown_pct:
+          type: number
+        peak_equity:
+          type: integer
+          format: int64
+        stale:
+          type: boolean
+        age_minutes:
+          type: integer
+        detail:
+          oneOf:
+            - $ref: "#/components/schemas/FleetSnapshotDetail"
+            - type: "null"
+      required:
+        - currency
+        - mode
+        - total_equity
+        - total_pnl
+        - drawdown_pct
+        - peak_equity
+        - stale
+        - age_minutes
+        - detail
     FleetHistoryDay:
       type: object
       additionalProperties: false

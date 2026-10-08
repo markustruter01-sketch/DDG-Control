@@ -30,6 +30,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { desc, eq, ne } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import { decideDecision } from "./decisions";
+import { getTradingSnapshot } from "../agents/ollie";
 import {
   computeFinanceSummary,
   createExpense,
@@ -124,6 +125,12 @@ router.get("/inbound/state", async (_req, res): Promise<void> => {
     .from(membersTable)
     .orderBy(membersTable.id);
   const finance = await computeFinanceSummary();
+  let trading: Awaited<ReturnType<typeof getTradingSnapshot>> | "unavailable";
+  try {
+    trading = await getTradingSnapshot();
+  } catch {
+    trading = "unavailable";
+  }
 
   const response = {
     pending_decisions,
@@ -131,6 +138,7 @@ router.get("/inbound/state", async (_req, res): Promise<void> => {
     project_slugs: projects.map((project) => project.slug),
     member_names: members.map((member) => member.name),
     finance,
+    trading,
   };
   GetInboundStateResponse.parse(response);
   res.status(200).json(response);
