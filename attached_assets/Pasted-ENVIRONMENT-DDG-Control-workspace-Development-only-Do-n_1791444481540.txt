@@ -1,0 +1,49 @@
+ENVIRONMENT
+DDG Control workspace. Development only. Do not publish. Make NO xAI requests.
+
+GOAL
+Give Ollie the company finance summary in his daily snapshot, using the same calculation as the home top bar, and tell him how to use it.
+
+DONE WHEN
+- The summary maths lives in ONE exported function, computeFinanceSummary(), used by both GET /api/finance/summary and Ollie's snapshot.
+- GET /api/finance/summary returns exactly the same JSON before and after the change.
+- Ollie's snapshot contains a "finance" object with the same values as GET /api/finance/summary.
+- OLLIE_INSTRUCTIONS includes the new finance rule, and the built server contains it.
+- No xAI request is made. `pnpm run typecheck` passes.
+
+SCOPE
+- artifacts/api-server/src/routes/finance.ts
+- artifacts/api-server/src/agents/ollie.ts (snapshot and OLLIE_INSTRUCTIONS only)
+
+DO NOT
+- Do not make any xAI request. Do not call runOllie or the run or cron routes.
+- Do not change the summary's maths, fields or response shape.
+- Do not change OllieForm, slotOllieReport or the run guard.
+- Do not publish.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. GET /api/finance/summary and save the raw JSON. This is the "before".
+
+2. In finance.ts, move the summary calculation into an exported function, computeFinanceSummary(), and have the route return its result. Change no maths.
+   Restart the API server. GET /api/finance/summary again, and show that it is byte-identical to the "before".
+
+3. In ollie.ts, add to the snapshot "finance": the result of computeFinanceSummary(). If it throws, use "finance": "unavailable" and continue.
+
+4. In OLLIE_INSTRUCTIONS, add these lines to the end of the Rules list:
+   - "The snapshot's finance object is company-wide. Fields ending in _cents are Australian cents; write them as dollars."
+   - "Ventures listed in ventures_without_revenue_source have no revenue data. Treat totals as partial and say so. Never invent figures."
+   - "Weigh profit, debt and expected expenses when setting priorities and proposing decisions. Prefer free options before paid ones."
+
+5. Rebuild the API server. Show the output of:
+   `grep -c "ventures_without_revenue_source have no revenue data" artifacts/api-server/dist/index.mjs`
+   Expect 1 or more.
+
+6. From the scripts package, call only the pre-run part (the refresh plus the snapshot build), not the xAI call. Show the snapshot's "finance" object, and confirm it equals the GET /api/finance/summary response field by field. Confirm from the logs that no xAI request was made.
+
+7. Run `pnpm run typecheck`. Report every file touched.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.

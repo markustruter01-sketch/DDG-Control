@@ -104,9 +104,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 }
 .home-shell {
   background-color: hsl(var(--background));
-  background-image:
-    linear-gradient(180deg, rgba(8, 12, 15, .46), rgba(8, 12, 15, .72)),
-    var(--home-background);
+  background-image: var(--home-background);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -780,9 +778,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 
 :root[data-theme='day'] .home-shell {
   background-color: hsl(var(--background));
-  background-image:
-    linear-gradient(180deg, rgba(250, 248, 241, .12), rgba(250, 248, 241, .28)),
-    var(--home-background);
+  background-image: var(--home-background);
 }
 :root[data-theme='day'] .home-shell .project-tile {
   background-color: rgba(255, 255, 255, .78);
@@ -1104,4 +1100,45 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   .finance-section-heading h2 { font-size: 18px; }
   .finance-entry { padding: 11px; }
   .finance-entry-amount { font-size: 12px; }
+}
+
+@media (min-width: 700px) {
+  .home-shell {
+    background-attachment: fixed;
+    background-position: center 82%;
+  }
+  .home-shell .dev-auth-banner { min-height: 20px; padding: 2px 12px; }
+  .home-shell .topbar { height: 50px; }
+  .home-shell .home-main { padding: 12px 0 52px; }
+  .home-shell .home-main > .eyebrow { margin-bottom: 5px; }
+  .home-shell .home-title { font-size: clamp(38px, 4.3vw, 54px); }
+  .home-shell .finance-summary { gap: 5px; margin: 4px 0 6px; padding: 8px; }
+  .home-shell .finance-kpi-card { min-height: 74px; gap: 4px; padding: 8px; }
+  .home-shell .finance-kpi-label { min-height: 0; font-size: 8px; line-height: 1.2; }
+  .home-shell .finance-kpi-value { font-size: clamp(16px, 1.8vw, 22px); }
+  .home-shell .finance-kpi-detail { min-height: 0; font-size: 9px; line-height: 1.2; }
+  .home-shell .finance-partial-line { font-size: 9px; line-height: 1.25; }
+  .home-shell .finance-summary-notes { gap: 2px; font-size: 8px; line-height: 1.25; }
+  .home-shell .decisions-waiting { margin-top: 8px; padding: 8px 11px; }
+  .home-shell .section-rule { margin: 5px 0; }
+  .home-shell .project-grid { gap: 10px; }
+  .home-shell .project-tile { min-height: 112px; padding: 13px 18px 12px; }
+  .home-shell .tile-name { font-size: 18px; }
+  .home-shell .tile-facts { gap: 4px; padding-top: 8px; }
+  .home-shell .tile-fact { font-size: 11px; line-height: 1.3; }
+}
+
+@media (min-width: 900px) {
+  .home-shell .finance-kpi-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+}
+
+:root:not([data-theme='day']) .home-shell .home-title,
+:root:not([data-theme='day']) .home-shell .eyebrow,
+:root:not([data-theme='day']) .home-shell .section-rule,
+:root:not([data-theme='day']) .home-shell .brand {
+  text-shadow: 0 1px 5px rgba(0, 0, 0, .55);
+}
+
+@media (max-width: 699px) {
+  .home-shell { background-position: center top; }
 }
