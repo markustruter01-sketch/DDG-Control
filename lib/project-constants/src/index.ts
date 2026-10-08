@@ -50,6 +50,8 @@ export const DECISION_SOURCES = ["ollie_daily", "cursor"] as const;
 
 export const NOTE_KINDS = ["risk", "incident", "update"] as const;
 
+export const EXPENSE_KINDS = ["recurring_monthly", "one_off"] as const;
+
 export const ORG_CHART = [
   { name: "Markus", role: "Founder", group: "founder" },
   { name: "Ollie", role: "General Manager & COO", group: "gm" },

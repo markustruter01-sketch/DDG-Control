@@ -1,0 +1,125 @@
+ENVIRONMENT
+DDG Control workspace. Development only. Do not publish. Make NO xAI requests.
+
+GOAL
+Add a simple finance ledger (debts, expenses, manual revenue) and one summary endpoint that calculates the 5 top-bar numbers, combined across all ventures.
+
+DONE WHEN
+- Debts, expenses and revenue entries can each be listed, created, edited and deleted while logged in.
+- GET /api/finance/summary returns:
+  - profit_30d_cents
+  - revenue_30d_cents
+  - expenses_30d_cents
+  - debt_cents
+  - expected_expenses_next_month_cents
+  - expected_revenue_next_month_cents
+  - expected_profit_next_month_cents
+  - customers
+  - ventures_without_revenue_source
+  All values match hand-calculated test amounts exactly.
+- After cleanup, the counts match the "before" snapshot.
+- Codegen exits with code 0. `pnpm run typecheck` passes.
+
+SCOPE
+- lib/project-constants/src/index.ts
+- lib/db/src/schema/finance.ts (new)
+- lib/db/src/schema/index.ts
+- artifacts/api-server/src/routes/finance.ts (new)
+- artifacts/api-server/src/routes/index.ts
+- lib/api-spec/openapi.yaml
+- Files that codegen rewrites. List every one.
+
+DO NOT
+- Do not add these routes to /api/inbound/*. Agents get no access to the ledger yet.
+- Do not change the metrics, Stripe, Ollie, decisions or inbound code.
+- Do not use floating-point numbers for money. Use integer cents everywhere.
+- Do not build any frontend.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Constants: add EXPENSE_KINDS = ["recurring_monthly", "one_off"].
+
+2. Create lib/db/src/schema/finance.ts, exported from the schema index. In every table, project_id may be null, and null means "Company".
+
+   debts:
+   - id
+   - project_id
+   - name: text, 1 to 100 characters
+   - balance_cents: bigint, 0 or more
+   - note: text, may be null, at most 300 characters
+   - created_at, updated_at
+
+   expenses:
+   - id
+   - project_id
+   - name
+   - kind: checked against EXPENSE_KINDS
+   - amount_cents: bigint, above 0
+   - spent_on: date, required when kind is "one_off", null when "recurring_monthly"
+   - active: boolean, default true
+   - note
+   - created_at, updated_at
+
+   revenue_entries:
+   - id
+   - project_id
+   - name
+   - amount_cents: bigint, above 0
+   - received_on: date, not null
+   - note
+   - created_at
+
+   Add database checks for every rule above. Run `pnpm --filter @workspace/db run push` and show the output.
+
+3. Routes, with normal login protection, in finance.ts:
+   - GET, POST, PATCH /:id and DELETE /:id for /api/finance/debts, /api/finance/expenses and /api/finance/revenue.
+   - Bodies use project_slug (or null for Company) instead of project_id.
+   - Validate everything in code: trimmed names, the shared date checks, whole-number cents, no extra fields (400), unknown project (400), unknown id (404).
+
+4. GET /api/finance/summary. Use Brisbane dates. "Last 30 days" means the last 30 Brisbane days including today.
+   - stripe_cents = the latest sales_30d snapshot for cattle-dog-coffee, or 0 if there is none.
+   - manual_revenue_30d = the sum of revenue_entries received in the last 30 days.
+   - revenue_30d_cents = stripe_cents + manual_revenue_30d.
+   - recurring_monthly = the sum of amount_cents for active "recurring_monthly" expenses.
+   - one_off_30d = the sum of "one_off" expenses spent in the last 30 days.
+   - expenses_30d_cents = one_off_30d + recurring_monthly.
+   - profit_30d_cents = revenue_30d_cents − expenses_30d_cents (may be negative).
+   - debt_cents = the sum of debts balance_cents.
+   - expected_expenses_next_month_cents = recurring_monthly.
+   - expected_revenue_next_month_cents = revenue_30d_cents (an estimate).
+   - expected_profit_next_month_cents = expected_revenue_next_month_cents − expected_expenses_next_month_cents.
+   - customers = the latest customers_30d snapshot for cattle-dog-coffee, or null if there is none.
+   - ventures_without_revenue_source = the slugs of projects that have no Stripe source and no revenue_entries in the last 30 days.
+   Also return "notes": ["Recurring monthly costs count in full in the last 30 days.", "Next-month revenue is an estimate based on the last 30 days."].
+   Update openapi.yaml, run codegen and show the exit code. Restart the API server.
+
+5. Test with curl against the development server. Show the HTTP code and body of each. Record every id created.
+   a) Show "before" counts for all 3 tables, and GET summary (the "before" summary).
+   b) Create:
+      - debt "Test loan", Company, 100000 cents
+      - expense "Test sub", hypest, recurring_monthly, 2000
+      - expense "Test one-off", Company, one_off, 5000, spent today
+      - expense "Old one-off", Company, one_off, 7000, spent 40 days ago
+      - revenue "Test sale", gods-eye-view, 3000, received today
+   c) GET summary. Show that each value equals the "before" value plus exactly:
+      - debt +100000
+      - recurring +2000 (so expected expenses +2000)
+      - expenses_30d +7000 (2000 + 5000; the 40-day-old one is excluded)
+      - revenue_30d +3000
+      - profit_30d −4000
+      - expected profit −2000+3000 = +1000
+      - gods-eye-view no longer listed in ventures_without_revenue_source
+   d) Invalid cases, expect 400 for each: an expense with amount 0; a one_off with no spent_on; a recurring_monthly with a spent_on; project_slug "nope"; an extra field "x".
+   e) PATCH "Test sub" to active false. Show that expected expenses drop by 2000.
+   f) DELETE debt id 999999. Expect 404.
+
+6. Cleanup, in one transaction, deleting only the recorded ids: 1 debt, 4 expenses, 1 revenue entry. Each count must match exactly; otherwise roll back.
+   Show that the counts and the summary equal the "before" values.
+   Run `pnpm run typecheck`. Report every file touched, and the final request and response shapes.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.

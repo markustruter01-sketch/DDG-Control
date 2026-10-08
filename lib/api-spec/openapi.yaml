@@ -26,6 +26,8 @@ tags:
     description: Agent run operations
   - name: inbound
     description: Key-protected inbound operations for Cursor
+  - name: finance
+    description: Finance ledger operations
 paths:
   /healthz:
     get:
@@ -684,6 +686,363 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/LatestAgentProjectUpdate"
+  /finance/debts:
+    get:
+      operationId: listFinanceDebts
+      tags: [finance]
+      summary: List debts
+      responses:
+        "200":
+          description: Debt ledger entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceDebtListResponse"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createFinanceDebt
+      tags: [finance]
+      summary: Create a debt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinanceDebtCreate"
+      responses:
+        "201":
+          description: Debt created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceDebt"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /finance/debts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    patch:
+      operationId: updateFinanceDebt
+      tags: [finance]
+      summary: Update a debt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinanceDebtPatch"
+      responses:
+        "200":
+          description: Debt updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceDebt"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Debt not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteFinanceDebt
+      tags: [finance]
+      summary: Delete a debt
+      responses:
+        "200":
+          description: Debt deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceDeleteResponse"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Debt not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /finance/expenses:
+    get:
+      operationId: listFinanceExpenses
+      tags: [finance]
+      summary: List expenses
+      responses:
+        "200":
+          description: Expense ledger entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceExpenseListResponse"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createFinanceExpense
+      tags: [finance]
+      summary: Create an expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinanceExpenseCreate"
+      responses:
+        "201":
+          description: Expense created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceExpense"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /finance/expenses/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    patch:
+      operationId: updateFinanceExpense
+      tags: [finance]
+      summary: Update an expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinanceExpensePatch"
+      responses:
+        "200":
+          description: Expense updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceExpense"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Expense not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteFinanceExpense
+      tags: [finance]
+      summary: Delete an expense
+      responses:
+        "200":
+          description: Expense deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceDeleteResponse"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Expense not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /finance/revenue:
+    get:
+      operationId: listFinanceRevenue
+      tags: [finance]
+      summary: List manual revenue entries
+      responses:
+        "200":
+          description: Revenue ledger entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceRevenueListResponse"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createFinanceRevenue
+      tags: [finance]
+      summary: Create a manual revenue entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinanceRevenueCreate"
+      responses:
+        "201":
+          description: Revenue entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceRevenue"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /finance/revenue/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    patch:
+      operationId: updateFinanceRevenue
+      tags: [finance]
+      summary: Update a manual revenue entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinanceRevenuePatch"
+      responses:
+        "200":
+          description: Revenue entry updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceRevenue"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Revenue entry not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteFinanceRevenue
+      tags: [finance]
+      summary: Delete a manual revenue entry
+      responses:
+        "200":
+          description: Revenue entry deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceDeleteResponse"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Revenue entry not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /finance/summary:
+    get:
+      operationId: getFinanceSummary
+      tags: [finance]
+      summary: Get combined finance summary
+      responses:
+        "200":
+          description: Combined finance summary in integer cents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceSummaryResponse"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /decisions:
     get:
       operationId: listDecisions
@@ -1748,4 +2107,302 @@ components:
           type: ["string", "null"]
           description: Must be one of LEVELS from the shared project constants, or null for legacy risks.
       required: [text, severity]
+    FinanceDebt:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        project_slug:
+          type: ["string", "null"]
+          description: Null represents Company.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        balance_cents:
+          type: integer
+          format: int64
+          minimum: 0
+        note:
+          type: ["string", "null"]
+          maxLength: 300
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, project_slug, name, balance_cents, note, created_at, updated_at]
+    FinanceDebtListResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/FinanceDebt"
+    FinanceDebtCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        project_slug:
+          type: ["string", "null"]
+          description: Null represents Company.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        balance_cents:
+          type: integer
+          format: int64
+          minimum: 0
+        note:
+          type: ["string", "null"]
+          maxLength: 300
+      required: [project_slug, name, balance_cents]
+    FinanceDebtPatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        project_slug:
+          type: ["string", "null"]
+          description: Null represents Company.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        balance_cents:
+          type: integer
+          format: int64
+          minimum: 0
+        note:
+          type: ["string", "null"]
+          maxLength: 300
+    FinanceExpense:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        project_slug:
+          type: ["string", "null"]
+          description: Null represents Company.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        kind:
+          type: string
+          description: Must be one of EXPENSE_KINDS from the shared project constants.
+        amount_cents:
+          type: integer
+          format: int64
+          minimum: 1
+        spent_on:
+          type: ["string", "null"]
+          format: date
+        active:
+          type: boolean
+        note:
+          type: ["string", "null"]
+          maxLength: 300
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, project_slug, name, kind, amount_cents, spent_on, active, note, created_at, updated_at]
+    FinanceExpenseListResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/FinanceExpense"
+    FinanceExpenseCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        project_slug:
+          type: ["string", "null"]
+          description: Null represents Company.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        kind:
+          type: string
+          description: Must be one of EXPENSE_KINDS from the shared project constants.
+        amount_cents:
+          type: integer
+          format: int64
+          minimum: 1
+        spent_on:
+          type: ["string", "null"]
+          format: date
+          description: Required and non-null for one_off; null for recurring_monthly.
+        active:
+          type: boolean
+          default: true
+        note:
+          type: ["string", "null"]
+          maxLength: 300
+      required: [project_slug, name, kind, amount_cents, spent_on]
+    FinanceExpensePatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        project_slug:
+          type: ["string", "null"]
+          description: Null represents Company.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        kind:
+          type: string
+          description: Must be one of EXPENSE_KINDS from the shared project constants.
+        amount_cents:
+          type: integer
+          format: int64
+          minimum: 1
+        spent_on:
+          type: ["string", "null"]
+          format: date
+        active:
+          type: boolean
+        note:
+          type: ["string", "null"]
+          maxLength: 300
+    FinanceRevenue:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        project_slug:
+          type: ["string", "null"]
+          description: Null represents Company.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        amount_cents:
+          type: integer
+          format: int64
+          minimum: 1
+        received_on:
+          type: string
+          format: date
+        note:
+          type: ["string", "null"]
+          maxLength: 300
+        created_at:
+          type: string
+          format: date-time
+      required: [id, project_slug, name, amount_cents, received_on, note, created_at]
+    FinanceRevenueListResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/FinanceRevenue"
+    FinanceRevenueCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        project_slug:
+          type: ["string", "null"]
+          description: Null represents Company.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        amount_cents:
+          type: integer
+          format: int64
+          minimum: 1
+        received_on:
+          type: string
+          format: date
+        note:
+          type: ["string", "null"]
+          maxLength: 300
+      required: [project_slug, name, amount_cents, received_on]
+    FinanceRevenuePatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        project_slug:
+          type: ["string", "null"]
+          description: Null represents Company.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        amount_cents:
+          type: integer
+          format: int64
+          minimum: 1
+        received_on:
+          type: string
+          format: date
+        note:
+          type: ["string", "null"]
+          maxLength: 300
+    FinanceDeleteResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        ok:
+          type: boolean
+      required: [ok]
+    FinanceSummaryResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        profit_30d_cents:
+          type: integer
+          format: int64
+        revenue_30d_cents:
+          type: integer
+          format: int64
+          minimum: 0
+        expenses_30d_cents:
+          type: integer
+          format: int64
+          minimum: 0
+        debt_cents:
+          type: integer
+          format: int64
+          minimum: 0
+        expected_expenses_next_month_cents:
+          type: integer
+          format: int64
+          minimum: 0
+        expected_revenue_next_month_cents:
+          type: integer
+          format: int64
+          minimum: 0
+        expected_profit_next_month_cents:
+          type: integer
+          format: int64
+        customers:
+          type: ["integer", "null"]
+          minimum: 0
+        ventures_without_revenue_source:
+          type: array
+          items:
+            type: string
+        notes:
+          type: array
+          items:
+            type: string
+      required:
+        - profit_30d_cents
+        - revenue_30d_cents
+        - expenses_30d_cents
+        - debt_cents
+        - expected_expenses_next_month_cents
+        - expected_revenue_next_month_cents
+        - expected_profit_next_month_cents
+        - customers
+        - ventures_without_revenue_source
+        - notes
 
