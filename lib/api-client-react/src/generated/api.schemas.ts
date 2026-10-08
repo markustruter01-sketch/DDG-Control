@@ -5,6 +5,159 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface InboundPendingDecision {
+  id: number;
+  project_slug: string;
+  title: string;
+  recommendation: string;
+}
+
+export type InboundOpenTaskStatus = typeof InboundOpenTaskStatus[keyof typeof InboundOpenTaskStatus];
+
+
+export const InboundOpenTaskStatus = {
+  planned: 'planned',
+  in_progress: 'in_progress',
+  needs_approval: 'needs_approval',
+  done: 'done',
+  blocked: 'blocked',
+} as const;
+
+export interface InboundOpenTask {
+  id: number;
+  project_slug: string;
+  title: string;
+  status: InboundOpenTaskStatus;
+  owner_name: string;
+  /** @nullable */
+  due_date: string | null;
+}
+
+export interface InboundStateResponse {
+  pending_decisions: InboundPendingDecision[];
+  tasks: InboundOpenTask[];
+  project_slugs: string[];
+  member_names: string[];
+}
+
+export type InboundDecisionByIdInputOutcome = typeof InboundDecisionByIdInputOutcome[keyof typeof InboundDecisionByIdInputOutcome];
+
+
+export const InboundDecisionByIdInputOutcome = {
+  approved: 'approved',
+  declined: 'declined',
+} as const;
+
+export interface InboundDecisionByIdInput {
+  /** @minimum 1 */
+  decision_id: number;
+  outcome: InboundDecisionByIdInputOutcome;
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export type InboundDecisionCreateInputOutcome = typeof InboundDecisionCreateInputOutcome[keyof typeof InboundDecisionCreateInputOutcome];
+
+
+export const InboundDecisionCreateInputOutcome = {
+  approved: 'approved',
+  declined: 'declined',
+} as const;
+
+export interface InboundDecisionCreateInput {
+  project_slug: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  summary: string;
+  owner_name: string;
+  /** @nullable */
+  due_date?: string | null;
+  outcome: InboundDecisionCreateInputOutcome;
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export type InboundDecisionInput = InboundDecisionByIdInput | InboundDecisionCreateInput;
+
+export type InboundTaskStatusInputStatus = typeof InboundTaskStatusInputStatus[keyof typeof InboundTaskStatusInputStatus];
+
+
+export const InboundTaskStatusInputStatus = {
+  planned: 'planned',
+  in_progress: 'in_progress',
+  needs_approval: 'needs_approval',
+  done: 'done',
+  blocked: 'blocked',
+} as const;
+
+export interface InboundTaskStatusInput {
+  status: InboundTaskStatusInputStatus;
+}
+
+export type InboundNoteInputKind = typeof InboundNoteInputKind[keyof typeof InboundNoteInputKind];
+
+
+export const InboundNoteInputKind = {
+  risk: 'risk',
+  incident: 'incident',
+  update: 'update',
+} as const;
+
+export type InboundNoteInputSeverity = typeof InboundNoteInputSeverity[keyof typeof InboundNoteInputSeverity];
+
+
+export const InboundNoteInputSeverity = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface InboundNoteInput {
+  project_slug: string;
+  kind: InboundNoteInputKind;
+  severity: InboundNoteInputSeverity;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  text: string;
+}
+
+export type InboundNoteResponseKind = typeof InboundNoteResponseKind[keyof typeof InboundNoteResponseKind];
+
+
+export const InboundNoteResponseKind = {
+  risk: 'risk',
+  incident: 'incident',
+  update: 'update',
+} as const;
+
+export type InboundNoteResponseSeverity = typeof InboundNoteResponseSeverity[keyof typeof InboundNoteResponseSeverity];
+
+
+export const InboundNoteResponseSeverity = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface InboundNoteResponse {
+  id: number;
+  project_slug: string;
+  kind: InboundNoteResponseKind;
+  severity: InboundNoteResponseSeverity;
+  text: string;
+  /** @nullable */
+  created_at: string | null;
+}
+
 export interface LoginInput {
   password: string;
 }

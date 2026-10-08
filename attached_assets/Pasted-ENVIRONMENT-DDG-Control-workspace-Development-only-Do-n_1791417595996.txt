@@ -1,0 +1,84 @@
+ENVIRONMENT
+DDG Control workspace. Development only. Do not publish. Make NO xAI requests.
+
+GOAL
+Provide the data the analytics screens need:
+- daily Cattle Dog Coffee sales for the last 30 days
+- customer and repeat-customer counts
+- figure history over time
+- Ollie's update history per project
+- and the 7am run refreshing Stripe before Ollie reads the snapshot.
+
+DONE WHEN
+- The Stripe refresh also saves 30 days of daily totals (Brisbane dates) and two new figures: customers_30d and repeat_customers_30d. No email or customer id is ever stored.
+- GET /api/projects/:slug/daily-sales returns 30 days, oldest first, with missing days as 0.
+- GET /api/projects/:slug/metrics/history?key=<key> returns that figure's snapshots over time.
+- GET /api/projects/:slug/ollie-history returns that project's last 30 Ollie updates (date, status_light, priority).
+- runOllie refreshes Cattle Dog Coffee's Stripe figures before building the snapshot. If the refresh fails, the run continues and the snapshot says "stripe refresh failed".
+- Codegen exits with code 0. `pnpm run typecheck` passes.
+
+SCOPE
+- lib/project-constants/src/index.ts
+- lib/db/src/schema/metrics.ts
+- artifacts/api-server/src/routes/metrics.ts
+- artifacts/api-server/src/agents/ollie.ts (pre-run refresh only)
+- artifacts/api-server/src/routes/agents.ts
+- lib/api-spec/openapi.yaml
+- Files that codegen rewrites. List every one.
+
+DO NOT
+- Do not make any xAI request. Do not call runOllie or the run or cron routes in tests.
+- Do not store any customer name, email, customer id or card detail.
+- Do not call any Stripe endpoint other than GET /v1/charges.
+- Do not change OllieForm, slotOllieReport, the run guard, the decisions or the inbound routes.
+- Do not build any frontend.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not add, remove or upgrade packages.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. In METRIC_DEFINITIONS, add:
+   - customers_30d: unit "count", label "Customers, last 30 days"
+   - repeat_customers_30d: unit "count", label "Repeat customers, last 30 days"
+
+2. In schema metrics.ts, add a daily_sales table:
+   - project_id: references projects
+   - day: date
+   - sales_cents: bigint, not null
+   - orders: integer, not null
+   - updated_at: default now
+   Primary key on (project_id, day).
+   Run `pnpm --filter @workspace/db run push` and show the output.
+
+3. In the refresh route (metrics.ts), using the same kept charges as now:
+   a) Group by the charge's created date in Australia/Brisbane. Upsert one daily_sales row per day in the 30-day window, including days with 0, all inside the existing transaction.
+   b) customers_30d: count distinct buyers over kept charges with a value above 0. Identify a buyer by billing_details.email in lowercase; if there is none, use the customer field; if there is neither, do not count it. repeat_customers_30d: buyers with 2 or more such charges. Count in memory only. Never store or log the identifiers.
+   c) Save the two new figures with the others.
+   Move the refresh logic into one exported function, refreshCattleDogMetrics(), and have the route call it.
+
+4. New routes, with normal login protection. Update openapi.yaml.
+   - GET /api/projects/:slug/daily-sales returns [{day, sales_cents, orders}] for the last 30 Brisbane days, oldest first, filling missing days with 0. Unknown slug: 404.
+   - GET /api/projects/:slug/metrics/history?key=<a METRIC_DEFINITIONS key> returns [{value, captured_at}], oldest first, at most 90 rows. Bad key: 400.
+   - GET /api/projects/:slug/ollie-history returns the last 30 updates, oldest first: [{created_at, status_light, priority}].
+   Run codegen and show the exit code.
+
+5. In ollie.ts, before building the snapshot, call refreshCattleDogMetrics() inside a try/catch. On failure, add "stripe_refresh":"failed" to the snapshot and continue. On success, add "stripe_refresh":"ok". Do not change anything else in runOllie.
+   Restart the API server.
+
+6. Test against the development server. Show the HTTP code and body of each.
+   a) POST /api/projects/cattle-dog-coffee/metrics/refresh. Expect 200 with 6 figures.
+   b) Show the number of daily_sales rows for cattle-dog-coffee, and the days whose sales are above 0.
+   c) GET daily-sales. Expect 30 rows, oldest first.
+   d) GET metrics/history?key=sales_30d. Expect 200. Then key=bogus. Expect 400.
+   e) GET ollie-history for finance. Expect 200.
+   f) From the scripts package, call only the pre-run part (the refresh plus the snapshot build), not the xAI call, and show that the snapshot contains "stripe_refresh":"ok". If it cannot be separated without changing runOllie's behaviour, report that instead.
+   g) Search the logs and the database for any "@" character in stored metric, daily_sales or snapshot data. Expect none.
+   h) Confirm from the logs that no xAI request was made.
+   Keep these rows. They are real data.
+
+7. Run `pnpm run typecheck`. Report every file touched.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.

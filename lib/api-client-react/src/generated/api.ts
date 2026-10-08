@@ -31,6 +31,11 @@ import type {
   GoalInput,
   GoalUpdate,
   HealthStatus,
+  InboundDecisionInput,
+  InboundNoteInput,
+  InboundNoteResponse,
+  InboundStateResponse,
+  InboundTaskStatusInput,
   LatestAgentProjectUpdate,
   ListDecisionsParams,
   LoginInput,
@@ -1954,5 +1959,347 @@ export const useDeclineDecision = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getDeclineDecisionMutationOptions(options));
+    }
+
+export const getGetInboundStateUrl = () => {
+
+
+
+
+  return `/api/inbound/state`
+}
+
+/**
+ * @summary Read pending decisions, open tasks, projects, and members
+ */
+export const getInboundState = async ( options?: Parameters<typeof customFetch>[1]): Promise<InboundStateResponse> => {
+
+  return customFetch<InboundStateResponse>(getGetInboundStateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInboundStateQueryKey = () => {
+    return [
+    `/api/inbound/state`
+    ] as const;
+    }
+
+
+export const getGetInboundStateQueryOptions = <TData = Awaited<ReturnType<typeof getInboundState>>, TError = ErrorType<Error>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInboundState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInboundStateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInboundState>>> = ({ signal }) => getInboundState({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInboundState>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInboundStateQueryResult = NonNullable<Awaited<ReturnType<typeof getInboundState>>>
+export type GetInboundStateQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Read pending decisions, open tasks, projects, and members
+ */
+
+export function useGetInboundState<TData = Awaited<ReturnType<typeof getInboundState>>, TError = ErrorType<Error>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInboundState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInboundStateQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPostInboundDecisionUrl = () => {
+
+
+
+
+  return `/api/inbound/decisions`
+}
+
+/**
+ * @summary Record or decide a decision from Cursor
+ */
+export const postInboundDecision = async (inboundDecisionInput: InboundDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<Decision> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Decision>(getPostInboundDecisionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(inboundDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getPostInboundDecisionMutationKey = () => ['postInboundDecision'] as const;
+
+export const getPostInboundDecisionMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInboundDecision>>, TError,PostInboundDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postInboundDecision>>, TError,PostInboundDecisionMutationVariables, TContext> => {
+
+const mutationKey = getPostInboundDecisionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postInboundDecision>>, PostInboundDecisionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  postInboundDecision(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostInboundDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof postInboundDecision>>>
+    export type PostInboundDecisionMutationBody = BodyType<InboundDecisionInput>
+    export type PostInboundDecisionMutationError = ErrorType<Error>
+    export type PostInboundDecisionMutationVariables = {data: BodyType<InboundDecisionInput>}
+
+    /**
+ * @summary Record or decide a decision from Cursor
+ */
+export const usePostInboundDecision = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInboundDecision>>, TError,PostInboundDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postInboundDecision>>,
+        TError,
+        PostInboundDecisionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPostInboundDecisionMutationOptions(options));
+    }
+
+export const getPostInboundTaskStatusUrl = (id: number,) => {
+
+
+
+
+  return `/api/inbound/tasks/${id}/status`
+}
+
+/**
+ * @summary Update a task status from Cursor
+ */
+export const postInboundTaskStatus = async (id: number,
+    inboundTaskStatusInput: InboundTaskStatusInput, options?: Parameters<typeof customFetch>[1]): Promise<Task> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Task>(getPostInboundTaskStatusUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(inboundTaskStatusInput)
+  }
+);}
+
+
+
+
+
+export const getPostInboundTaskStatusMutationKey = () => ['postInboundTaskStatus'] as const;
+
+export const getPostInboundTaskStatusMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInboundTaskStatus>>, TError,PostInboundTaskStatusMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postInboundTaskStatus>>, TError,PostInboundTaskStatusMutationVariables, TContext> => {
+
+const mutationKey = getPostInboundTaskStatusMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postInboundTaskStatus>>, PostInboundTaskStatusMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  postInboundTaskStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostInboundTaskStatusMutationResult = NonNullable<Awaited<ReturnType<typeof postInboundTaskStatus>>>
+    export type PostInboundTaskStatusMutationBody = BodyType<InboundTaskStatusInput>
+    export type PostInboundTaskStatusMutationError = ErrorType<Error>
+    export type PostInboundTaskStatusMutationVariables = {id: number;data: BodyType<InboundTaskStatusInput>}
+
+    /**
+ * @summary Update a task status from Cursor
+ */
+export const usePostInboundTaskStatus = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInboundTaskStatus>>, TError,PostInboundTaskStatusMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postInboundTaskStatus>>,
+        TError,
+        PostInboundTaskStatusMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPostInboundTaskStatusMutationOptions(options));
+    }
+
+export const getPostInboundNoteUrl = () => {
+
+
+
+
+  return `/api/inbound/notes`
+}
+
+/**
+ * @summary Post a risk, incident, or update note
+ */
+export const postInboundNote = async (inboundNoteInput: InboundNoteInput, options?: Parameters<typeof customFetch>[1]): Promise<InboundNoteResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<InboundNoteResponse>(getPostInboundNoteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(inboundNoteInput)
+  }
+);}
+
+
+
+
+
+export const getPostInboundNoteMutationKey = () => ['postInboundNote'] as const;
+
+export const getPostInboundNoteMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInboundNote>>, TError,PostInboundNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postInboundNote>>, TError,PostInboundNoteMutationVariables, TContext> => {
+
+const mutationKey = getPostInboundNoteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postInboundNote>>, PostInboundNoteMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  postInboundNote(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostInboundNoteMutationResult = NonNullable<Awaited<ReturnType<typeof postInboundNote>>>
+    export type PostInboundNoteMutationBody = BodyType<InboundNoteInput>
+    export type PostInboundNoteMutationError = ErrorType<Error>
+    export type PostInboundNoteMutationVariables = {data: BodyType<InboundNoteInput>}
+
+    /**
+ * @summary Post a risk, incident, or update note
+ */
+export const usePostInboundNote = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInboundNote>>, TError,PostInboundNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postInboundNote>>,
+        TError,
+        PostInboundNoteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPostInboundNoteMutationOptions(options));
     }
 

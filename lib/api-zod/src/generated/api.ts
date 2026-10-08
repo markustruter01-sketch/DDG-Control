@@ -555,3 +555,130 @@ export const DeclineDecisionResponse = zod.object({
 })
 
 
+/**
+ * @summary Read pending decisions, open tasks, projects, and members
+ */
+export const GetInboundStateResponse = zod.object({
+  "pending_decisions": zod.array(zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string(),
+  "title": zod.string(),
+  "recommendation": zod.string()
+})),
+  "tasks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string(),
+  "title": zod.string(),
+  "status": zod.enum(['planned', 'in_progress', 'needs_approval', 'done', 'blocked']),
+  "owner_name": zod.string(),
+  "due_date": zod.coerce.date().nullable()
+})),
+  "project_slugs": zod.array(zod.string()),
+  "member_names": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Record or decide a decision from Cursor
+ */
+
+export const postInboundDecisionBodyOneNoteMax = 500;
+
+export const postInboundDecisionBodyTwoTitleMax = 200;
+
+export const postInboundDecisionBodyTwoSummaryMax = 300;
+
+export const postInboundDecisionBodyTwoNoteMax = 500;
+
+
+
+export const PostInboundDecisionBody = zod.union([zod.object({
+  "decision_id": zod.number().int().min(1),
+  "outcome": zod.enum(['approved', 'declined']),
+  "note": zod.string().max(postInboundDecisionBodyOneNoteMax).optional()
+}),zod.object({
+  "project_slug": zod.string(),
+  "title": zod.string().min(1).max(postInboundDecisionBodyTwoTitleMax),
+  "summary": zod.string().min(1).max(postInboundDecisionBodyTwoSummaryMax),
+  "owner_name": zod.string(),
+  "due_date": zod.coerce.date().nullish(),
+  "outcome": zod.enum(['approved', 'declined']),
+  "note": zod.string().max(postInboundDecisionBodyTwoNoteMax).optional()
+})])
+
+export const postInboundDecisionResponseCostEstimateAudMin = 0;
+
+
+
+export const PostInboundDecisionResponse = zod.object({
+  "id": zod.number().int(),
+  "run_id": zod.number().int().nullable(),
+  "project_id": zod.number().int(),
+  "title": zod.string(),
+  "recommendation": zod.string(),
+  "cost_estimate_aud": zod.number().int().min(postInboundDecisionResponseCostEstimateAudMin).nullable(),
+  "risk": zod.string(),
+  "urgency": zod.string().describe('Must be one of LEVELS from the shared project constants.'),
+  "confidence": zod.string().describe('Must be one of LEVELS from the shared project constants.'),
+  "owner_id": zod.number().int(),
+  "due_date": zod.coerce.date().nullable(),
+  "status": zod.string().describe('Must be one of DECISION_STATUSES from the shared project constants.'),
+  "note": zod.string().nullable(),
+  "decided_at": zod.coerce.date().nullable(),
+  "task_id": zod.number().int().nullable(),
+  "created_at": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Update a task status from Cursor
+ */
+
+
+
+export const PostInboundTaskStatusParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const PostInboundTaskStatusBody = zod.object({
+  "status": zod.enum(['planned', 'in_progress', 'needs_approval', 'done', 'blocked'])
+})
+
+export const PostInboundTaskStatusResponse = zod.object({
+  "id": zod.number().int(),
+  "project_id": zod.number().int(),
+  "title": zod.string(),
+  "notes": zod.string().nullable(),
+  "status": zod.string().describe('Must be one of TASK_STATUSES from the shared project constants.'),
+  "owner_id": zod.number().int(),
+  "due_date": zod.coerce.date().nullable(),
+  "completed_at": zod.coerce.date().nullable(),
+  "created_at": zod.coerce.date().nullable(),
+  "updated_at": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Post a risk, incident, or update note
+ */
+export const postInboundNoteBodyTextMax = 300;
+
+
+
+export const PostInboundNoteBody = zod.object({
+  "project_slug": zod.string(),
+  "kind": zod.enum(['risk', 'incident', 'update']),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "text": zod.string().min(1).max(postInboundNoteBodyTextMax)
+})
+
+export const PostInboundNoteResponse = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string(),
+  "kind": zod.enum(['risk', 'incident', 'update']),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "text": zod.string(),
+  "created_at": zod.coerce.date().nullable()
+})
+
+

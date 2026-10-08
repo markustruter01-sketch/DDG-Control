@@ -24,6 +24,8 @@ tags:
     description: Project metric operations
   - name: agents
     description: Agent run operations
+  - name: inbound
+    description: Key-protected inbound operations for Cursor
 paths:
   /healthz:
     get:
@@ -688,8 +690,319 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /inbound/state:
+    get:
+      operationId: getInboundState
+      tags: [inbound]
+      summary: Read pending decisions, open tasks, projects, and members
+      security:
+        - InboundBearerAuth: []
+      responses:
+        "200":
+          description: Current state for Ollie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InboundStateResponse"
+        "401":
+          description: Missing or invalid inbound key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Inbound key is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /inbound/decisions:
+    post:
+      operationId: postInboundDecision
+      tags: [inbound]
+      summary: Record or decide a decision from Cursor
+      security:
+        - InboundBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InboundDecisionInput"
+      responses:
+        "200":
+          description: Recorded and decided decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decision"
+        "400":
+          description: Invalid request, project, owner, title, or date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid inbound key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Decision not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Decision is not pending
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Inbound key is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /inbound/tasks/{id}/status:
+    post:
+      operationId: postInboundTaskStatus
+      tags: [inbound]
+      summary: Update a task status from Cursor
+      security:
+        - InboundBearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InboundTaskStatusInput"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Invalid task id or status body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid inbound key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Inbound key is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /inbound/notes:
+    post:
+      operationId: postInboundNote
+      tags: [inbound]
+      summary: Post a risk, incident, or update note
+      security:
+        - InboundBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InboundNoteInput"
+      responses:
+        "200":
+          description: Stored note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InboundNoteResponse"
+        "400":
+          description: Invalid request or unknown project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid inbound key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Inbound key is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
+  securitySchemes:
+    InboundBearerAuth:
+      type: http
+      scheme: bearer
   schemas:
+    InboundStateResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        pending_decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/InboundPendingDecision"
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/InboundOpenTask"
+        project_slugs:
+          type: array
+          items:
+            type: string
+        member_names:
+          type: array
+          items:
+            type: string
+      required: [pending_decisions, tasks, project_slugs, member_names]
+    InboundPendingDecision:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        project_slug:
+          type: string
+        title:
+          type: string
+        recommendation:
+          type: string
+      required: [id, project_slug, title, recommendation]
+    InboundOpenTask:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        project_slug:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum: [planned, in_progress, needs_approval, done, blocked]
+        owner_name:
+          type: string
+        due_date:
+          type: ["string", "null"]
+          format: date
+      required: [id, project_slug, title, status, owner_name, due_date]
+    InboundDecisionInput:
+      oneOf:
+        - $ref: "#/components/schemas/InboundDecisionByIdInput"
+        - $ref: "#/components/schemas/InboundDecisionCreateInput"
+    InboundDecisionByIdInput:
+      type: object
+      additionalProperties: false
+      properties:
+        decision_id:
+          type: integer
+          minimum: 1
+        outcome:
+          type: string
+          enum: [approved, declined]
+        note:
+          type: string
+          maxLength: 500
+      required: [decision_id, outcome]
+    InboundDecisionCreateInput:
+      type: object
+      additionalProperties: false
+      properties:
+        project_slug:
+          type: string
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 300
+        owner_name:
+          type: string
+        due_date:
+          type: ["string", "null"]
+          format: date
+        outcome:
+          type: string
+          enum: [approved, declined]
+        note:
+          type: string
+          maxLength: 500
+      required: [project_slug, title, summary, owner_name, outcome]
+    InboundTaskStatusInput:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [planned, in_progress, needs_approval, done, blocked]
+      required: [status]
+    InboundNoteInput:
+      type: object
+      additionalProperties: false
+      properties:
+        project_slug:
+          type: string
+        kind:
+          type: string
+          enum: [risk, incident, update]
+        severity:
+          type: string
+          enum: [low, medium, high]
+        text:
+          type: string
+          minLength: 1
+          maxLength: 300
+      required: [project_slug, kind, severity, text]
+    InboundNoteResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        project_slug:
+          type: string
+        kind:
+          type: string
+          enum: [risk, incident, update]
+        severity:
+          type: string
+          enum: [low, medium, high]
+        text:
+          type: string
+        created_at:
+          type: ["string", "null"]
+          format: date-time
+      required: [id, project_slug, kind, severity, text, created_at]
     LoginInput:
       type: object
       additionalProperties: false

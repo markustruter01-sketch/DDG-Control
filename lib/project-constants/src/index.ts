@@ -46,6 +46,10 @@ export const LEVELS = ["low", "medium", "high"] as const;
 
 export const DECISION_STATUSES = ["pending", "approved", "declined"] as const;
 
+export const DECISION_SOURCES = ["ollie_daily", "cursor"] as const;
+
+export const NOTE_KINDS = ["risk", "incident", "update"] as const;
+
 export const ORG_CHART = [
   { name: "Markus", role: "Founder", group: "founder" },
   { name: "Ollie", role: "General Manager & COO", group: "gm" },
@@ -105,6 +109,8 @@ export const METRIC_DEFINITIONS = {
   sales_30d: { unit: "aud_cents", label: "Sales, last 30 days" },
   orders_7d: { unit: "count", label: "Orders, last 7 days" },
   orders_30d: { unit: "count", label: "Orders, last 30 days" },
+  customers_30d: { unit: "count", label: "Customers, last 30 days" },
+  repeat_customers_30d: { unit: "count", label: "Repeat customers, last 30 days" },
 } as const;
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];

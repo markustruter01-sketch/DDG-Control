@@ -1,7 +1,9 @@
 import {
   AGENT_RUN_STATUSES,
+  DECISION_SOURCES,
   DECISION_STATUSES,
   LEVELS,
+  NOTE_KINDS,
   PRIORITY_CALLS,
   STATUS_LIGHTS,
 } from "@workspace/project-constants";
@@ -96,6 +98,8 @@ export const decisionsTable = pgTable(
     project_id: integer("project_id")
       .notNull()
       .references(() => projectsTable.id),
+    source: text("source").notNull().default(DECISION_SOURCES[0]),
+    decided_via: text("decided_via"),
     title: text("title").notNull(),
     recommendation: text("recommendation").notNull(),
     cost_estimate_aud: integer("cost_estimate_aud"),
@@ -131,6 +135,47 @@ export const decisionsTable = pgTable(
       "decisions_status_check",
       sql`${table.status} IN (${sql.join(
         DECISION_STATUSES.map((status) => sql.raw(`'${status}'`)),
+        sql`, `,
+      )})`,
+    ),
+    check(
+      "decisions_source_check",
+      sql`${table.source} IN (${sql.join(
+        DECISION_SOURCES.map((source) => sql.raw(`'${source}'`)),
+        sql`, `,
+      )})`,
+    ),
+    check(
+      "decisions_decided_via_check",
+      sql`${table.decided_via} IS NULL OR ${table.decided_via} IN ('dashboard', 'cursor')`,
+    ),
+  ],
+);
+
+export const inboundNotesTable = pgTable(
+  "inbound_notes",
+  {
+    id: serial("id").primaryKey(),
+    project_id: integer("project_id")
+      .notNull()
+      .references(() => projectsTable.id),
+    kind: text("kind").notNull(),
+    severity: text("severity").notNull(),
+    text: text("text").notNull(),
+    created_at: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    check(
+      "inbound_notes_kind_check",
+      sql`${table.kind} IN (${sql.join(
+        NOTE_KINDS.map((kind) => sql.raw(`'${kind}'`)),
+        sql`, `,
+      )})`,
+    ),
+    check(
+      "inbound_notes_severity_check",
+      sql`${table.severity} IN (${sql.join(
+        LEVELS.map((level) => sql.raw(`'${level}'`)),
         sql`, `,
       )})`,
     ),

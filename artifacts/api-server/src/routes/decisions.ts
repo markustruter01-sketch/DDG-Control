@@ -68,6 +68,99 @@ function parseActionBody(
   return { note: parsed.data.note ?? null };
 }
 
+type DecisionOutcome = "approved" | "declined";
+type DecisionVia = "dashboard" | "cursor";
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function decideWithinTransaction(
+  tx: DbTransaction,
+  id: number,
+  outcome: DecisionOutcome,
+  note: string | null,
+  decidedVia: DecisionVia,
+) {
+  const [decision] = await tx
+    .select()
+    .from(decisionsTable)
+    .where(eq(decisionsTable.id, id))
+    .limit(1)
+    .for("update");
+
+  if (!decision) {
+    return { kind: "not-found" as const };
+  }
+  if (decision.status !== DECISION_STATUSES[0]) {
+    return { kind: "not-pending" as const };
+  }
+
+  let taskId: number | null = null;
+  if (outcome === "approved") {
+    const [task] = await tx
+      .insert(tasksTable)
+      .values({
+        project_id: decision.project_id,
+        title: decision.title,
+        notes: `Approved decision #${decision.id}: ${decision.recommendation}`,
+        status: TASK_STATUSES[0],
+        owner_id: decision.owner_id,
+        due_date: decision.due_date,
+      })
+      .returning({ id: tasksTable.id });
+    if (!task) {
+      throw new Error("could not create decision task");
+    }
+    taskId = task.id;
+  }
+
+  const [updated] = await tx
+    .update(decisionsTable)
+    .set({
+      status: outcome,
+      decided_at: new Date(),
+      note,
+      decided_via: decidedVia,
+      ...(taskId === null ? {} : { task_id: taskId }),
+    })
+    .where(eq(decisionsTable.id, id))
+    .returning({
+      id: decisionsTable.id,
+      run_id: decisionsTable.run_id,
+      project_id: decisionsTable.project_id,
+      title: decisionsTable.title,
+      recommendation: decisionsTable.recommendation,
+      cost_estimate_aud: decisionsTable.cost_estimate_aud,
+      risk: decisionsTable.risk,
+      urgency: decisionsTable.urgency,
+      confidence: decisionsTable.confidence,
+      owner_id: decisionsTable.owner_id,
+      due_date: decisionsTable.due_date,
+      status: decisionsTable.status,
+      note: decisionsTable.note,
+      decided_at: decisionsTable.decided_at,
+      task_id: decisionsTable.task_id,
+      created_at: decisionsTable.created_at,
+    });
+  if (!updated) {
+    throw new Error(`could not ${outcome === "approved" ? "approve" : "decline"} decision`);
+  }
+  return { kind: "ok" as const, decision: updated };
+}
+
+export function decideDecision(
+  id: number,
+  outcome: DecisionOutcome,
+  note: string | null,
+  decidedVia: DecisionVia,
+  transaction?: DbTransaction,
+) {
+  if (transaction) {
+    return decideWithinTransaction(transaction, id, outcome, note, decidedVia);
+  }
+  return db.transaction((tx) =>
+    decideWithinTransaction(tx, id, outcome, note, decidedVia),
+  );
+}
+
 router.get("/decisions", async (req, res): Promise<void> => {
   const query = ListDecisionsQueryParams.safeParse(req.query);
   if (
@@ -123,51 +216,12 @@ router.post("/decisions/:id/approve", async (req, res): Promise<void> => {
     return;
   }
 
-  const outcome = await db.transaction(async (tx) => {
-    const [decision] = await tx
-      .select()
-      .from(decisionsTable)
-      .where(eq(decisionsTable.id, id))
-      .limit(1)
-      .for("update");
-
-    if (!decision) {
-      return { kind: "not-found" as const };
-    }
-    if (decision.status !== DECISION_STATUSES[0]) {
-      return { kind: "not-pending" as const };
-    }
-
-    const [task] = await tx
-      .insert(tasksTable)
-      .values({
-        project_id: decision.project_id,
-        title: decision.title,
-        notes: `Approved decision #${decision.id}: ${decision.recommendation}`,
-        status: TASK_STATUSES[0],
-        owner_id: decision.owner_id,
-        due_date: decision.due_date,
-      })
-      .returning({ id: tasksTable.id });
-    if (!task) {
-      throw new Error("could not create decision task");
-    }
-
-    const [updated] = await tx
-      .update(decisionsTable)
-      .set({
-        status: DECISION_STATUSES[1],
-        decided_at: new Date(),
-        note: actionBody.note,
-        task_id: task.id,
-      })
-      .where(eq(decisionsTable.id, id))
-      .returning();
-    if (!updated) {
-      throw new Error("could not approve decision");
-    }
-    return { kind: "ok" as const, decision: updated };
-  });
+  const outcome = await decideDecision(
+    id,
+    DECISION_STATUSES[1],
+    actionBody.note,
+    "dashboard",
+  );
 
   if (outcome.kind === "not-found") {
     res.status(404).json({ error: "not found" });
@@ -193,35 +247,12 @@ router.post("/decisions/:id/decline", async (req, res): Promise<void> => {
     return;
   }
 
-  const outcome = await db.transaction(async (tx) => {
-    const [decision] = await tx
-      .select()
-      .from(decisionsTable)
-      .where(eq(decisionsTable.id, id))
-      .limit(1)
-      .for("update");
-
-    if (!decision) {
-      return { kind: "not-found" as const };
-    }
-    if (decision.status !== DECISION_STATUSES[0]) {
-      return { kind: "not-pending" as const };
-    }
-
-    const [updated] = await tx
-      .update(decisionsTable)
-      .set({
-        status: DECISION_STATUSES[2],
-        decided_at: new Date(),
-        note: actionBody.note,
-      })
-      .where(eq(decisionsTable.id, id))
-      .returning();
-    if (!updated) {
-      throw new Error("could not decline decision");
-    }
-    return { kind: "ok" as const, decision: updated };
-  });
+  const outcome = await decideDecision(
+    id,
+    DECISION_STATUSES[2],
+    actionBody.note,
+    "dashboard",
+  );
 
   if (outcome.kind === "not-found") {
     res.status(404).json({ error: "not found" });

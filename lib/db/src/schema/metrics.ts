@@ -5,6 +5,7 @@ import {
   check,
   index,
   integer,
+  primaryKey,
   pgTable,
   serial,
   text,
@@ -40,4 +41,18 @@ export const metricSnapshotsTable = pgTable(
       table.captured_at,
     ),
   ],
+);
+
+export const dailySalesTable = pgTable(
+  "daily_sales",
+  {
+    project_id: integer("project_id")
+      .notNull()
+      .references(() => projectsTable.id),
+    day: date("day", { mode: "string" }).notNull(),
+    sales_cents: bigint("sales_cents", { mode: "number" }).notNull(),
+    orders: integer("orders").notNull(),
+    updated_at: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.project_id, table.day] })],
 );

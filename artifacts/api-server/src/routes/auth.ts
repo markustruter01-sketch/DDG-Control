@@ -270,9 +270,10 @@ router.get("/session", (req, res): void => {
 });
 
 export const requireAuth: RequestHandler = (req, res, next): void => {
+  const path = req.originalUrl.split("?", 1)[0];
   if (
-    req.method === "POST" &&
-    req.originalUrl.split("?", 1)[0] === "/api/agents/ollie/cron"
+    path.startsWith("/api/inbound/") ||
+    (req.method === "POST" && path === "/api/agents/ollie/cron")
   ) {
     next();
     return;
