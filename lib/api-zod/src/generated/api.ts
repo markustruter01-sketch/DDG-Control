@@ -357,6 +357,54 @@ export const ListProjectMetricsResponse = zod.array(ListProjectMetricsResponseIt
 
 
 /**
+ * @summary Get the latest 30 Brisbane calendar days of sales
+ */
+export const ListProjectDailySalesParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const ListProjectDailySalesResponseItem = zod.object({
+  "day": zod.coerce.date(),
+  "sales_cents": zod.number().int(),
+  "orders": zod.number().int()
+})
+export const ListProjectDailySalesResponse = zod.array(ListProjectDailySalesResponseItem)
+
+
+/**
+ * @summary Get the latest 90 snapshots for one metric
+ */
+export const ListProjectMetricHistoryParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const ListProjectMetricHistoryQueryParams = zod.object({
+  "key": zod.coerce.string()
+})
+
+export const ListProjectMetricHistoryResponseItem = zod.object({
+  "value": zod.number().int(),
+  "captured_at": zod.coerce.date()
+})
+export const ListProjectMetricHistoryResponse = zod.array(ListProjectMetricHistoryResponseItem)
+
+
+/**
+ * @summary Get the latest 30 Ollie updates for a project
+ */
+export const ListProjectOllieHistoryParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const ListProjectOllieHistoryResponseItem = zod.object({
+  "created_at": zod.coerce.date().nullable(),
+  "status_light": zod.string(),
+  "priority": zod.string().nullable()
+})
+export const ListProjectOllieHistoryResponse = zod.array(ListProjectOllieHistoryResponseItem)
+
+
+/**
  * @summary Run Ollie's daily dashboard report
  */
 export const RunOllieBody = zod.object({

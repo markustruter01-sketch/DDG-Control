@@ -26,6 +26,7 @@ import {
   validateCalendarDate,
   validateTitle,
 } from "../routes/validation";
+import { refreshCattleDogMetrics } from "../routes/metrics";
 import { logger } from "../lib/logger";
 
 export const OLLIE_INSTRUCTIONS = `You are Ollie, General Manager & COO of Digital Dynamics Group (DDG). You report to Markus, the Founder and final decision-maker.
@@ -328,10 +329,11 @@ function redactSnapshotText(value: string | null, apiKey: string): string | null
   return safeValue;
 }
 
-async function buildOllieSnapshot(
+export async function buildOllieSnapshot(
   date: string,
   ollieMemberId: number,
   apiKey: string,
+  stripeRefresh: "ok" | "failed",
 ): Promise<string> {
   const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
   const [
@@ -461,6 +463,7 @@ async function buildOllieSnapshot(
 
   return JSON.stringify({
     today: date,
+    stripe_refresh: stripeRefresh,
     projects: projects.map((project) => ({
       slug: project.slug,
       name: project.name,
@@ -630,8 +633,20 @@ export async function runOllie(
     }
 
     let snapshot: string;
+    let stripeRefresh: "ok" | "failed" = "ok";
     try {
-      snapshot = await buildOllieSnapshot(today, ollieMember.id, apiKey);
+      await refreshCattleDogMetrics();
+    } catch {
+      stripeRefresh = "failed";
+      logger.warn({ runId: run.id }, "ollie-stripe-refresh-failed");
+    }
+    try {
+      snapshot = await buildOllieSnapshot(
+        today,
+        ollieMember.id,
+        apiKey,
+        stripeRefresh,
+      );
     } catch {
       await setRunError(run.id, "could not build Ollie snapshot");
       return getRunOutcome(run.id);

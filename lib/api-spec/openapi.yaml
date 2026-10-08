@@ -483,6 +483,89 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /projects/{slug}/daily-sales:
+    get:
+      operationId: listProjectDailySales
+      tags: [metrics]
+      summary: Get the latest 30 Brisbane calendar days of sales
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Daily sales totals, oldest day first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailySalesResponse"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /projects/{slug}/metrics/history:
+    get:
+      operationId: listProjectMetricHistory
+      tags: [metrics]
+      summary: Get the latest 90 snapshots for one metric
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Metric history, oldest snapshot first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricHistoryResponse"
+        "400":
+          description: Invalid metric key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /projects/{slug}/ollie-history:
+    get:
+      operationId: listProjectOllieHistory
+      tags: [agents]
+      summary: Get the latest 30 Ollie updates for a project
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ollie update history, oldest update first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OllieHistoryResponse"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /agents/ollie/run:
     post:
       operationId: runOllie
@@ -1286,6 +1369,53 @@ components:
         - label
         - source
         - captured_at
+    DailySalesResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/DailySalesRow"
+    DailySalesRow:
+      type: object
+      additionalProperties: false
+      properties:
+        day:
+          type: string
+          format: date
+        sales_cents:
+          type: integer
+          format: int64
+        orders:
+          type: integer
+      required: [day, sales_cents, orders]
+    MetricHistoryResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/MetricHistoryRow"
+    MetricHistoryRow:
+      type: object
+      additionalProperties: false
+      properties:
+        value:
+          type: integer
+        captured_at:
+          type: string
+          format: date-time
+      required: [value, captured_at]
+    OllieHistoryResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/OllieHistoryRow"
+    OllieHistoryRow:
+      type: object
+      additionalProperties: false
+      properties:
+        created_at:
+          type: ["string", "null"]
+          format: date-time
+        status_light:
+          type: string
+        priority:
+          type: ["string", "null"]
+      required: [created_at, status_light, priority]
     OllieRunRequest:
       type: object
       additionalProperties: false

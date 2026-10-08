@@ -1,4 +1,7 @@
 import {
+  ListProjectDailySalesResponse,
+  ListProjectMetricHistoryResponse,
+  ListProjectOllieHistoryResponse,
   ListProjectMetricsResponse,
   RefreshProjectMetricsResponse,
 } from "@workspace/api-zod";
@@ -384,6 +387,134 @@ export async function refreshCattleDogMetrics() {
   });
   return inserted.map(toApiMetric);
 }
+
+router.get(
+  "/projects/:slug/daily-sales",
+  async (req, res): Promise<void> => {
+    const projectId = await findProjectId(req.params.slug);
+    if (projectId === null) {
+      res.status(404).json({ error: "not found" });
+      return;
+    }
+
+    const days = lastBrisbaneSalesDays();
+    const rows = await db
+      .select({
+        day: dailySalesTable.day,
+        sales_cents: dailySalesTable.sales_cents,
+        orders: dailySalesTable.orders,
+      })
+      .from(dailySalesTable)
+      .where(
+        and(
+          eq(dailySalesTable.project_id, projectId),
+          gte(dailySalesTable.day, days[0]!),
+          lte(dailySalesTable.day, days[days.length - 1]!),
+        ),
+      )
+      .orderBy(asc(dailySalesTable.day));
+    const byDay = new Map(rows.map((row) => [row.day, row]));
+    const response = days.map((day) => {
+      const row = byDay.get(day);
+      return {
+        day,
+        sales_cents: row?.sales_cents ?? 0,
+        orders: row?.orders ?? 0,
+      };
+    });
+
+    res.json(ListProjectDailySalesResponse.parse(response));
+  },
+);
+
+router.get(
+  "/projects/:slug/metrics/history",
+  async (req, res): Promise<void> => {
+    const projectId = await findProjectId(req.params.slug);
+    if (projectId === null) {
+      res.status(404).json({ error: "not found" });
+      return;
+    }
+    const key =
+      typeof req.query.key === "string" ? req.query.key : undefined;
+    if (!key || !METRIC_DEFINITIONS[key as MetricKey]) {
+      res.status(400).json({ error: "invalid metric key" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        value: metricSnapshotsTable.value,
+        captured_at: metricSnapshotsTable.captured_at,
+        id: metricSnapshotsTable.id,
+      })
+      .from(metricSnapshotsTable)
+      .where(
+        and(
+          eq(metricSnapshotsTable.project_id, projectId),
+          eq(metricSnapshotsTable.key, key),
+        ),
+      )
+      .orderBy(
+        desc(metricSnapshotsTable.captured_at),
+        desc(metricSnapshotsTable.id),
+      )
+      .limit(90);
+    const response = rows
+      .reverse()
+      .map(({ value, captured_at }) => ({
+        value,
+        captured_at: captured_at.toISOString(),
+      }));
+
+    res.json(ListProjectMetricHistoryResponse.parse(response));
+  },
+);
+
+router.get(
+  "/projects/:slug/ollie-history",
+  async (req, res): Promise<void> => {
+    const projectId = await findProjectId(req.params.slug);
+    if (projectId === null) {
+      res.status(404).json({ error: "not found" });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        id: agentProjectUpdatesTable.id,
+        created_at: agentProjectUpdatesTable.created_at,
+        status_light: agentProjectUpdatesTable.status_light,
+        priority: agentProjectUpdatesTable.priority,
+      })
+      .from(agentProjectUpdatesTable)
+      .innerJoin(
+        agentRunsTable,
+        eq(agentProjectUpdatesTable.run_id, agentRunsTable.id),
+      )
+      .innerJoin(membersTable, eq(agentRunsTable.member_id, membersTable.id))
+      .where(
+        and(
+          eq(agentProjectUpdatesTable.project_id, projectId),
+          eq(membersTable.name, "Ollie"),
+        ),
+      )
+      .orderBy(
+        sql`${agentProjectUpdatesTable.created_at} DESC NULLS LAST`,
+        desc(agentProjectUpdatesTable.id),
+      )
+      .limit(30);
+    const response = rows
+      .reverse()
+      .map(({ created_at, status_light, priority }) => ({
+        created_at: created_at?.toISOString() ?? null,
+        status_light,
+        priority,
+      }));
+
+    res.json(ListProjectOllieHistoryResponse.parse(response));
+  },
+);
 
 router.post(
   "/projects/:slug/metrics/refresh",

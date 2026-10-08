@@ -22,6 +22,7 @@ import type {
 import type {
   AgentRun,
   AgentRunWithMember,
+  DailySalesResponse,
   Decision,
   DecisionActionBody,
   DecisionWithNames,
@@ -38,9 +39,12 @@ import type {
   InboundTaskStatusInput,
   LatestAgentProjectUpdate,
   ListDecisionsParams,
+  ListProjectMetricHistoryParams,
   LoginInput,
   LoginResult,
   Member,
+  MetricHistoryResponse,
+  OllieHistoryResponse,
   OllieRunRequest,
   Project,
   ProjectMetricsResponse,
@@ -1371,6 +1375,249 @@ export function useListProjectMetrics<TData = Awaited<ReturnType<typeof listProj
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListProjectMetricsQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListProjectDailySalesUrl = (slug: string,) => {
+
+
+
+
+  return `/api/projects/${slug}/daily-sales`
+}
+
+/**
+ * @summary Get the latest 30 Brisbane calendar days of sales
+ */
+export const listProjectDailySales = async (slug: string, options?: Parameters<typeof customFetch>[1]): Promise<DailySalesResponse> => {
+
+  return customFetch<DailySalesResponse>(getListProjectDailySalesUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectDailySalesQueryKey = (slug: string,) => {
+    return [
+    `/api/projects/${slug}/daily-sales`
+    ] as const;
+    }
+
+
+export const getListProjectDailySalesQueryOptions = <TData = Awaited<ReturnType<typeof listProjectDailySales>>, TError = ErrorType<Error>>(slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectDailySales>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectDailySalesQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectDailySales>>> = ({ signal }) => listProjectDailySales(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: slug !== null && slug !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectDailySales>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProjectDailySalesQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectDailySales>>>
+export type ListProjectDailySalesQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Get the latest 30 Brisbane calendar days of sales
+ */
+
+export function useListProjectDailySales<TData = Awaited<ReturnType<typeof listProjectDailySales>>, TError = ErrorType<Error>>(
+ slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectDailySales>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProjectDailySalesQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListProjectMetricHistoryUrl = (slug: string,
+    params: ListProjectMetricHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/projects/${slug}/metrics/history?${stringifiedParams}` : `/api/projects/${slug}/metrics/history`
+}
+
+/**
+ * @summary Get the latest 90 snapshots for one metric
+ */
+export const listProjectMetricHistory = async (slug: string,
+    params: ListProjectMetricHistoryParams, options?: Parameters<typeof customFetch>[1]): Promise<MetricHistoryResponse> => {
+
+  return customFetch<MetricHistoryResponse>(getListProjectMetricHistoryUrl(slug,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectMetricHistoryQueryKey = (slug: string,
+    params?: ListProjectMetricHistoryParams,) => {
+    return [
+    `/api/projects/${slug}/metrics/history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListProjectMetricHistoryQueryOptions = <TData = Awaited<ReturnType<typeof listProjectMetricHistory>>, TError = ErrorType<Error>>(slug: string,
+    params: ListProjectMetricHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectMetricHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectMetricHistoryQueryKey(slug,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectMetricHistory>>> = ({ signal }) => listProjectMetricHistory(slug,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: slug !== null && slug !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectMetricHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProjectMetricHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectMetricHistory>>>
+export type ListProjectMetricHistoryQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Get the latest 90 snapshots for one metric
+ */
+
+export function useListProjectMetricHistory<TData = Awaited<ReturnType<typeof listProjectMetricHistory>>, TError = ErrorType<Error>>(
+ slug: string,
+    params: ListProjectMetricHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectMetricHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProjectMetricHistoryQueryOptions(slug,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListProjectOllieHistoryUrl = (slug: string,) => {
+
+
+
+
+  return `/api/projects/${slug}/ollie-history`
+}
+
+/**
+ * @summary Get the latest 30 Ollie updates for a project
+ */
+export const listProjectOllieHistory = async (slug: string, options?: Parameters<typeof customFetch>[1]): Promise<OllieHistoryResponse> => {
+
+  return customFetch<OllieHistoryResponse>(getListProjectOllieHistoryUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProjectOllieHistoryQueryKey = (slug: string,) => {
+    return [
+    `/api/projects/${slug}/ollie-history`
+    ] as const;
+    }
+
+
+export const getListProjectOllieHistoryQueryOptions = <TData = Awaited<ReturnType<typeof listProjectOllieHistory>>, TError = ErrorType<Error>>(slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectOllieHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProjectOllieHistoryQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjectOllieHistory>>> = ({ signal }) => listProjectOllieHistory(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: slug !== null && slug !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProjectOllieHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProjectOllieHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof listProjectOllieHistory>>>
+export type ListProjectOllieHistoryQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Get the latest 30 Ollie updates for a project
+ */
+
+export function useListProjectOllieHistory<TData = Awaited<ReturnType<typeof listProjectOllieHistory>>, TError = ErrorType<Error>>(
+ slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProjectOllieHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProjectOllieHistoryQueryOptions(slug,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -5,6 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type ListProjectMetricHistoryParams = string;
+
 export interface InboundPendingDecision {
   id: number;
   project_slug: string;
@@ -335,6 +337,31 @@ export interface ProjectMetric {
 
 export type ProjectMetricsResponse = ProjectMetric[];
 
+export interface DailySalesRow {
+  day: string;
+  sales_cents: number;
+  orders: number;
+}
+
+export type DailySalesResponse = DailySalesRow[];
+
+export interface MetricHistoryRow {
+  value: number;
+  captured_at: string;
+}
+
+export type MetricHistoryResponse = MetricHistoryRow[];
+
+export interface OllieHistoryRow {
+  /** @nullable */
+  created_at: string | null;
+  status_light: string;
+  /** @nullable */
+  priority: string | null;
+}
+
+export type OllieHistoryResponse = OllieHistoryRow[];
+
 export interface OllieRunRequest {
   force?: boolean;
 }
@@ -524,6 +551,8 @@ export interface LatestAgentProjectUpdate {
   previous: LatestAgentProjectUpdatePrevious | null;
 }
 
+export type MetricHistoryKeyParameter = ListProjectMetricHistoryParams;
+
 export type GetProject404 = {
   error: 'not found';
 };
@@ -534,6 +563,10 @@ export type UpdateProject400 = {
 
 export type UpdateProject404 = {
   error: 'not found';
+};
+
+export type ListProjectMetricHistoryParams = {
+key: MetricHistoryKeyParameter;
 };
 
 export type ListDecisionsParams = {
