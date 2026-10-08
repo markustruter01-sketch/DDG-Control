@@ -1,0 +1,76 @@
+ENVIRONMENT
+DDG Control workspace. Development only. Do not publish. Make NO xAI requests.
+
+GOAL
+Fill every project tab with real data and charts, make the Decisions page read-only (decisions are now made with Ollie in Cursor), and show Cursor-Ollie's notes.
+
+DONE WHEN
+- Revenue (cattle-dog-coffee): the 6 figures, a 30-day daily sales bar chart, a sales_30d trend line, "Updated <Brisbane time>" and a working Refresh button. Other projects show "No data source yet".
+- Customers (cattle-dog-coffee): customers_30d, repeat_customers_30d and repeat rate %. Other projects show "No customer data source yet".
+- Overview & Goals: the existing content, plus a status-light timeline from ollie-history and a bar chart of task counts by status.
+- Agent Activity: the Ollie history list, this project's decisions (all statuses, with source and decided_via), and Cursor notes (kind, severity, text, time).
+- Next Best Action: Ollie's latest next_action shown large, this project's pending decisions, and the 3 open tasks with the earliest due dates.
+- Marketing: "No marketing data source connected yet. Connect a source (for example site analytics or an ad account) to fill this tab." No charts and no fake numbers.
+- /decisions: no Approve or Decline buttons and no note box. It shows source ("Ollie daily" or "Cursor") and decided_via, with the line "Decide with Ollie in Cursor".
+- Home: the Cattle Dog Coffee tile shows "Headline: <sales_30d> · Sales, last 30 days" and a small 30-day sales sparkline.
+- Every chart is readable in both day and night mode.
+- Codegen exits with code 0. `pnpm run typecheck` passes.
+
+SCOPE
+- lib/api-spec/openapi.yaml
+- artifacts/api-server/src/routes/agents.ts (notes read route only)
+- artifacts/ddg-control/src/App.tsx
+- artifacts/ddg-control/src/ddg.css
+- lib/project-constants/src/index.ts (PROJECT_HEADLINE_METRIC only)
+- Files that codegen rewrites. List every one.
+
+DO NOT
+- Do not make any xAI request.
+- Do not change any existing API route's behaviour, the database schema, OllieForm, or the inbound, decisions or run routes.
+- Do not show any number that does not come from the API.
+- Do not add, remove or upgrade packages. Use recharts only if it is already in artifacts/ddg-control/package.json.
+- Do not change the day/night toggle, login, To-do, Organisation or Drive link behaviour.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Show whether recharts is listed in artifacts/ddg-control/package.json, and its version. If it is not, stop here and report.
+
+2. Add GET /api/projects/:slug/notes (normal login protection). It returns that project's inbound_notes, newest first, at most 50: [{id, kind, severity, text, created_at}]. Unknown slug: 404. Update openapi.yaml, run codegen and show the exit code. Restart the API server.
+
+3. Add PROJECT_HEADLINE_METRIC = { "cattle-dog-coffee": "sales_30d" } to the constants, typed to METRIC_DEFINITIONS keys.
+   In App.tsx, add ONE top-level figure formatter:
+   - "aud_cents" shows as en-AU dollars, for example "$48.95"
+   - "count" shows as a whole number
+   Reuse the existing Brisbane timestamp and date formatters.
+
+4. Build each tab as described in DONE WHEN, using the generated hooks for these existing routes:
+   - metrics
+   - metrics/history
+   - daily-sales
+   - ollie-history
+   - agent-updates/latest
+   - decisions
+   - tasks
+   - goals
+   - the new notes route
+   Details:
+   - Refresh: calls POST /api/projects/cattle-dog-coffee/metrics/refresh. While running it is disabled and shows "Refreshing…". On error, show the server's text. On success, refresh the figures, the daily sales, the history and the home headline.
+   - Repeat rate % = repeat_customers_30d ÷ customers_30d × 100, rounded to a whole number. Show "–" when customers_30d is 0.
+   - Charts use the theme's colour variables, so they work in day and night mode.
+   - Every empty state uses plain text, never zeros made to look like data.
+
+5. /decisions: remove the Approve and Decline buttons and the note box. Add the source label and decided_via. Add the line "Decide with Ollie in Cursor" at the top. Keep the pending count in the header link.
+
+6. Test at 402 px width, in both day and night mode. Do not save screenshots in the workspace.
+   a) Screenshot every tab for cattle-dog-coffee, and the Revenue, Customers and Marketing tabs for hypest.
+   b) Tap Refresh once (a read-only Stripe call), and screenshot the updated time.
+   c) Record the inbound_notes count. POST one note through /api/inbound/notes (cattle-dog-coffee, update, low, "UI test note"), using the key from the environment without printing it. Screenshot it on Agent Activity. Then delete only that note in one transaction, with exactly 1 row deleted, otherwise roll back. Show that the count is back to the recorded value.
+   d) Screenshot /decisions showing no action buttons.
+
+7. Run `pnpm run typecheck`. Report every file touched.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.
