@@ -1,4 +1,6 @@
 import {
+  CreateInboundFinanceExpenseBody,
+  CreateInboundFinanceRevenueBody,
   GetInboundStateResponse,
   PostInboundDecisionBody,
   PostInboundDecisionResponse,
@@ -28,6 +30,11 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { desc, eq, ne } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import { decideDecision } from "./decisions";
+import {
+  computeFinanceSummary,
+  createExpense,
+  createRevenue,
+} from "./finance";
 import {
   getUnknownFieldError,
   requestBodyRecord,
@@ -114,15 +121,61 @@ router.get("/inbound/state", async (_req, res): Promise<void> => {
     .select({ name: membersTable.name })
     .from(membersTable)
     .orderBy(membersTable.id);
+  const finance = await computeFinanceSummary();
 
   const response = {
     pending_decisions,
     tasks,
     project_slugs: projects.map((project) => project.slug),
     member_names: members.map((member) => member.name),
+    finance,
   };
   GetInboundStateResponse.parse(response);
   res.status(200).json(response);
+});
+
+router.post("/inbound/finance/expenses", async (req, res): Promise<void> => {
+  const parsed = CreateInboundFinanceExpenseBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const input = requestBodyRecord(req.body);
+  if (!input) {
+    res.status(400).json({ error: "request body must be an object" });
+    return;
+  }
+  delete input.idempotency_key;
+  const idempotencyKey = parsed.data.idempotency_key;
+  const result = await createExpense(input, idempotencyKey);
+  if ("error" in result) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  res.status(result.status).json(result.data);
+});
+
+router.post("/inbound/finance/revenue", async (req, res): Promise<void> => {
+  const parsed = CreateInboundFinanceRevenueBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const input = requestBodyRecord(req.body);
+  if (!input) {
+    res.status(400).json({ error: "request body must be an object" });
+    return;
+  }
+  delete input.idempotency_key;
+  const idempotencyKey = parsed.data.idempotency_key;
+  const result = await createRevenue(input, idempotencyKey);
+  if ("error" in result) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  res.status(result.status).json(result.data);
 });
 
 router.post("/inbound/decisions", async (req, res): Promise<void> => {

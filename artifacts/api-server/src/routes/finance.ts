@@ -829,38 +829,69 @@ router.get("/finance/revenue", async (_req, res): Promise<void> => {
   res.json(response);
 });
 
-router.post("/finance/revenue", async (req, res): Promise<void> => {
-  const body = requestBody(req, res, REVENUE_FIELDS, [
+export async function createRevenue(
+  input: unknown,
+  idempotencyKey?: string,
+): Promise<FinanceCreateResult<ReturnType<typeof toApiRevenue>>> {
+  const getExisting = async () => {
+    if (idempotencyKey === undefined) return null;
+    const [existing] = await db
+      .select({
+        id: revenueEntriesTable.id,
+        project_slug: projectsTable.slug,
+        name: revenueEntriesTable.name,
+        amount_cents: revenueEntriesTable.amount_cents,
+        received_on: revenueEntriesTable.received_on,
+        note: revenueEntriesTable.note,
+        created_at: revenueEntriesTable.created_at,
+      })
+      .from(revenueEntriesTable)
+      .leftJoin(
+        projectsTable,
+        eq(revenueEntriesTable.project_id, projectsTable.id),
+      )
+      .where(eq(revenueEntriesTable.idempotency_key, idempotencyKey))
+      .limit(1);
+    return existing ? toApiRevenue(existing) : null;
+  };
+
+  const existing = await getExisting();
+  if (existing) {
+    CreateFinanceRevenueResponse.parse(existing);
+    return { status: 200, data: existing };
+  }
+
+  const body = requestBodyRecord(input);
+  if (!body) return { status: 400, error: "request body must be an object" };
+  const unknownFieldError = getUnknownFieldError(body, REVENUE_FIELDS);
+  if (unknownFieldError) return { status: 400, error: unknownFieldError };
+  const requiredFieldError = getMissingRequiredFieldError(body, [
     "project_slug",
     "name",
     "amount_cents",
     "received_on",
   ]);
-  if (!body) return;
+  if (requiredFieldError) return { status: 400, error: requiredFieldError };
+
   const name = validateName(body.name);
   if ("error" in name) {
-    res.status(400).json({ error: name.error });
-    return;
+    return { status: 400, error: name.error };
   }
   const amount = validateCents(body.amount_cents, "amount_cents", 1);
   if ("error" in amount) {
-    res.status(400).json({ error: amount.error });
-    return;
+    return { status: 400, error: amount.error };
   }
   const receivedOn = validateRequiredDate(body.received_on, "received_on");
   if ("error" in receivedOn) {
-    res.status(400).json({ error: receivedOn.error });
-    return;
+    return { status: 400, error: receivedOn.error };
   }
   const note = validateNote(body.note ?? null);
   if ("error" in note) {
-    res.status(400).json({ error: note.error });
-    return;
+    return { status: 400, error: note.error };
   }
   const project = await resolveProjectReference(body.project_slug);
   if ("error" in project) {
-    res.status(400).json({ error: project.error });
-    return;
+    return { status: 400, error: project.error };
   }
   const normalizedBody = {
     ...body,
@@ -871,30 +902,52 @@ router.post("/finance/revenue", async (req, res): Promise<void> => {
   };
   const parsedBody = CreateFinanceRevenueBody.safeParse(normalizedBody);
   if (!parsedBody.success) {
-    res.status(400).json({ error: parsedBody.error.message });
-    return;
+    return { status: 400, error: parsedBody.error.message };
   }
 
-  const [created] = await db
-    .insert(revenueEntriesTable)
-    .values({
-      project_id: project.value.project_id,
-      name: name.value,
-      amount_cents: BigInt(amount.value),
-      received_on: receivedOn.value,
-      note: note.value,
-    })
-    .returning();
+  const values = {
+    project_id: project.value.project_id,
+    name: name.value,
+    amount_cents: BigInt(amount.value),
+    received_on: receivedOn.value,
+    note: note.value,
+    idempotency_key: idempotencyKey ?? null,
+  };
+  let created: typeof revenueEntriesTable.$inferSelect | undefined;
+  if (idempotencyKey === undefined) {
+    [created] = await db.insert(revenueEntriesTable).values(values).returning();
+  } else {
+    [created] = await db
+      .insert(revenueEntriesTable)
+      .values(values)
+      .onConflictDoNothing({ target: revenueEntriesTable.idempotency_key })
+      .returning();
+  }
+  if (!created && idempotencyKey !== undefined) {
+    const conflictRow = await getExisting();
+    if (conflictRow) {
+      CreateFinanceRevenueResponse.parse(conflictRow);
+      return { status: 200, data: conflictRow };
+    }
+  }
   if (!created) {
-    res.status(500).json({ error: "unable to create revenue entry" });
-    return;
+    return { status: 500, error: "unable to create revenue entry" };
   }
   const response = toApiRevenue({
     ...created,
     project_slug: project.value.project_slug,
   });
   CreateFinanceRevenueResponse.parse(response);
-  res.status(201).json(response);
+  return { status: 201, data: response };
+}
+
+router.post("/finance/revenue", async (req, res): Promise<void> => {
+  const result = await createRevenue(req.body);
+  if ("error" in result) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  res.status(result.status).json(result.data);
 });
 
 router.patch("/finance/revenue/:id", async (req, res): Promise<void> => {
