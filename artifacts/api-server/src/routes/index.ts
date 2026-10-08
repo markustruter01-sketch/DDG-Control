@@ -7,6 +7,7 @@ import goalsRouter from "./goals";
 import metricsRouter from "./metrics";
 import agentsRouter from "./agents";
 import decisionsRouter from "./decisions";
+import fleetRouter from "./fleet";
 import inboundRouter from "./inbound";
 import financeRouter from "./finance";
 
@@ -21,6 +22,7 @@ router.use(goalsRouter);
 router.use(metricsRouter);
 router.use(agentsRouter);
 router.use(decisionsRouter);
+router.use(fleetRouter);
 router.use(inboundRouter);
 router.use(financeRouter);
 
