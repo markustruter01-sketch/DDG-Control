@@ -1,0 +1,53 @@
+ENVIRONMENT
+Quant Terminal workspace. READ-ONLY RECON. Change nothing, anywhere.
+
+GOAL
+Report what fleet and bot data already exists, so a read-only status feed for the DDG Control dashboard can be designed.
+
+DONE WHEN
+Every question in STEPS is answered with raw evidence (file paths and line numbers, or command output), or marked UNKNOWN with the reason.
+
+SCOPE
+Read only: code, config, and the published /trading-api/version endpoint.
+
+DO NOT
+- Do not edit, create or delete any file, setting, secret or database row.
+- Do not restart any workflow, and do not deploy or publish.
+- Do not call any broker API. Do not place, modify or cancel any order or stop.
+- Do not run any database query against production. Read the schema from code only.
+- Do not print any secret, key or account number. Names and "set/missing" only.
+
+STEPS
+1. Running code:
+   - Call GET <published URL>/trading-api/version and show the raw response.
+   - Show the current repository commit (`git log -1 --oneline`).
+   - State whether they match, or UNKNOWN.
+
+2. Bots: from code and config, list every bot with:
+   - name
+   - broker
+   - paper or live
+   - active, paused or retired
+   - instruments traded
+   Include the Forex bot: which broker it uses, and whether it is live yet.
+
+3. Existing HTTP routes that return fleet or bot data (equity, P&L, positions, stops, incidents): give for each the path, how it is protected, and the response field names. Show the file and line numbers.
+
+4. Database: name the production and development database hosts (host names only). From the schema code, list the tables holding bots, equity snapshots, positions, orders, stops and incidents, with their columns.
+
+5. Does a fleet equity snapshot table or job exist? Show the evidence.
+
+6. Is there any stored record that would support a "days since last incident" or "naked positions" count? Show the evidence, or write UNKNOWN.
+
+7. Report only, no build: for each of these fields, say whether it can be read from existing data today, and from where, or whether it is MISSING:
+   - fleet equity
+   - per-bot equity
+   - day P&L
+   - drawdown from peak
+   - open positions count
+   - positions without a stop
+   - last trade time
+   - bot status
+   - deploy version
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running or reading something, and the command or file for each.
