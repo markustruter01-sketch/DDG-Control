@@ -1,0 +1,41 @@
+PROMPT ID: 18b
+
+ENVIRONMENT
+Replit: DDG Control. ONE approved PRODUCTION database change (step 2). Everything else is read-only. Do not deploy, publish or restart. No Stripe or xAI calls.
+
+GOAL
+Widen the production metric_snapshots_key_check constraint to the 6 keys development already uses, so the Cattle Dog Coffee refresh stops failing. Then report any other CHECK constraints where production differs from development.
+
+DONE WHEN
+- The production constraint definition exactly equals the development definition:
+  CHECK ((key = ANY (ARRAY['sales_7d'::text, 'sales_30d'::text, 'orders_7d'::text, 'orders_30d'::text, 'customers_30d'::text, 'repeat_customers_30d'::text])))
+- A full list of CHECK constraints that differ between production and development is reported. No others are changed.
+
+DO NOT
+- Do not change any other constraint, table, column or row.
+- Do not call the refresh route, Stripe or xAI.
+- Do not publish, deploy or restart.
+- Do not change any file.
+
+STEPS
+1. Read the production constraint:
+   SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'metric_snapshots_key_check';
+   It must exactly equal:
+   CHECK ((key = ANY (ARRAY['sales_7d'::text, 'sales_30d'::text, 'orders_7d'::text, 'orders_30d'::text])))
+   Also confirm SELECT COUNT(*) FROM metric_snapshots returns 0.
+   If either does not match, stop here and report.
+
+2. In ONE production transaction:
+   BEGIN;
+   ALTER TABLE metric_snapshots DROP CONSTRAINT metric_snapshots_key_check;
+   ALTER TABLE metric_snapshots ADD CONSTRAINT metric_snapshots_key_check CHECK (key IN ('sales_7d','sales_30d','orders_7d','orders_30d','customers_30d','repeat_customers_30d'));
+   COMMIT;
+   If any statement fails, ROLLBACK and report.
+
+3. Re-read the production constraint definition. Show that it now exactly equals the development definition.
+
+4. Read-only: list every CHECK constraint (table, constraint name, definition) in both production and development, and show only the ones whose definitions differ, or that exist in only one of the two. Change nothing.
+
+5. Rollback (for the record, do not run it): the step 2 statements with the original 4 keys, safe only while no rows use customers_30d or repeat_customers_30d.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified, and the command for each.
