@@ -713,8 +713,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 .fleet-incident-meta strong { color: hsl(var(--foreground)); font-weight: 700; text-transform: capitalize; }
 .fleet-detail-table { table-layout: fixed; font-size: 10px; }
 .fleet-detail-table th, .fleet-detail-table td { padding: 9px 6px; white-space: normal; overflow-wrap: anywhere; }
-.fleet-detail-table .fleet-bot-id { white-space: nowrap; }
-.fleet-bot-id { white-space: nowrap; }
+.fleet-detail-table .fleet-bot-id { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+.fleet-bot-id { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
 .fleet-near-zero-note { margin: 0 0 8px; color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.35; }
 .fleet-detail-table thead th { font-size: 8px; }
 .fleet-detail-table tbody th { font-size: 10px; }
