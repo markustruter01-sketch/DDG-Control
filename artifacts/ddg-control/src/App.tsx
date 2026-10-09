@@ -10,6 +10,7 @@ import {
 import { ErrorBoundary } from '@/components/error-boundary';
 import {
   getGetFinanceSummaryQueryKey,
+  getGetCattleDogCoffeeProfitQueryKey,
   getGetProjectFinanceFleetHistoryQueryKey,
   getGetProjectFinanceFleetLatestQueryKey,
   getGetProjectQueryKey,
@@ -38,6 +39,7 @@ import {
   useDeleteFinanceExpense,
   useDeleteFinanceRevenue,
   useGetFinanceSummary,
+  useGetCattleDogCoffeeProfit,
   useGetProjectFinanceFleetHistory,
   useGetProjectFinanceFleetLatest,
   useGetProject,
@@ -2264,6 +2266,12 @@ function ChartFrame({ title, children }: { title: string; children: ReactNode })
 
 function RevenueWorkspace({ slug }: { slug: string }) {
   const isCoffee = slug === 'cattle-dog-coffee';
+  const profitQuery = useGetCattleDogCoffeeProfit({
+    query: {
+      queryKey: getGetCattleDogCoffeeProfitQueryKey(),
+      enabled: isCoffee,
+    },
+  });
   const metricsQuery = useListProjectMetrics(slug, {
     query: { queryKey: getListProjectMetricsQueryKey(slug), enabled: isCoffee },
   });
@@ -2282,6 +2290,7 @@ function RevenueWorkspace({ slug }: { slug: string }) {
         queryClient.invalidateQueries({ queryKey: getListProjectMetricsQueryKey(slug) }),
         queryClient.invalidateQueries({ queryKey: getListProjectDailySalesQueryKey(slug) }),
         queryClient.invalidateQueries({ queryKey: getListProjectMetricHistoryQueryKey(slug, historyParams) }),
+        queryClient.invalidateQueries({ queryKey: getGetCattleDogCoffeeProfitQueryKey() }),
       ]);
     } catch {
       // Server response is rendered below.
@@ -2354,6 +2363,95 @@ function RevenueWorkspace({ slug }: { slug: string }) {
           )}
         </ChartFrame>
       </div>
+      <section className="profit-loss-card data-chart-panel" aria-labelledby="profit-loss-title" data-testid="card-profit-loss">
+        <h3 className="todo-group-title" id="profit-loss-title">Profit &amp; loss</h3>
+        {profitQuery.isLoading ? (
+          <p className="task-state-message" role="status" data-testid="status-profit-loss-loading">Loading…</p>
+        ) : profitQuery.isError ? (
+          <p className="data-error" role="alert" data-testid="error-profit-loss">
+            {serverErrorText(profitQuery.error, 'Unable to load profit summary.')}
+          </p>
+        ) : profitQuery.data ? (
+          <>
+            <div className="profit-loss-table-wrap">
+              <table className="profit-loss-table">
+                <thead>
+                  <tr>
+                    <th scope="col" aria-label="Metric"></th>
+                    <th scope="col">Last 30 days</th>
+                    <th scope="col">All time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Orders</th>
+                    <td>{new Intl.NumberFormat('en-AU').format(profitQuery.data.last30d.orderCount)}</td>
+                    <td>{new Intl.NumberFormat('en-AU').format(profitQuery.data.allTime.orderCount)}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Sales incl. shipping</th>
+                    <td>{formatCurrencyCents(profitQuery.data.last30d.grossRevenueCents, 'AUD')}</td>
+                    <td>{formatCurrencyCents(profitQuery.data.allTime.grossRevenueCents, 'AUD')}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee</th>
+                    <td>{profitQuery.data.last30d.estimatedCoffeeCostCents === null ? '—' : <><span aria-hidden="true">{profitQuery.data.last30d.estimatedCoffeeCostCents > 0 ? '−' : ''}</span>{formatCurrencyCents(profitQuery.data.last30d.estimatedCoffeeCostCents, 'AUD')}</>}</td>
+                    <td>{profitQuery.data.allTime.estimatedCoffeeCostCents === null ? '—' : <><span aria-hidden="true">{profitQuery.data.allTime.estimatedCoffeeCostCents > 0 ? '−' : ''}</span>{formatCurrencyCents(profitQuery.data.allTime.estimatedCoffeeCostCents, 'AUD')}</>}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Bags &amp; labels</th>
+                    <td><span aria-hidden="true">{profitQuery.data.last30d.estimatedBagCostCents > 0 ? '−' : ''}</span>{formatCurrencyCents(profitQuery.data.last30d.estimatedBagCostCents, 'AUD')}</td>
+                    <td><span aria-hidden="true">{profitQuery.data.allTime.estimatedBagCostCents > 0 ? '−' : ''}</span>{formatCurrencyCents(profitQuery.data.allTime.estimatedBagCostCents, 'AUD')}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Satchels</th>
+                    <td><span aria-hidden="true">{profitQuery.data.last30d.estimatedSatchelCostCents > 0 ? '−' : ''}</span>{formatCurrencyCents(profitQuery.data.last30d.estimatedSatchelCostCents, 'AUD')}</td>
+                    <td><span aria-hidden="true">{profitQuery.data.allTime.estimatedSatchelCostCents > 0 ? '−' : ''}</span>{formatCurrencyCents(profitQuery.data.allTime.estimatedSatchelCostCents, 'AUD')}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Stripe fees, estimated</th>
+                    <td><span aria-hidden="true">{profitQuery.data.last30d.estimatedStripeFeeCents > 0 ? '−' : ''}</span>{formatCurrencyCents(profitQuery.data.last30d.estimatedStripeFeeCents, 'AUD')}</td>
+                    <td><span aria-hidden="true">{profitQuery.data.allTime.estimatedStripeFeeCents > 0 ? '−' : ''}</span>{formatCurrencyCents(profitQuery.data.allTime.estimatedStripeFeeCents, 'AUD')}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RSPCA, $1 per bag</th>
+                    {[profitQuery.data.last30d, profitQuery.data.allTime].map((period, index) => (
+                      <td key={index}>
+                        <span aria-hidden="true">{period.charityCents > 0 ? '−' : ''}</span>
+                        {formatCurrencyCents(period.charityCents, 'AUD')}
+                        <small className="profit-loss-bag-count">{new Intl.NumberFormat('en-AU').format(period.bagCount)} bags</small>
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="profit-loss-net-row">
+                    <th scope="row">Net profit</th>
+                    {[profitQuery.data.last30d, profitQuery.data.allTime].map((period, index) => (
+                      <td key={index}>
+                        <strong className={period.netProfitCents !== null && period.netProfitCents < 0 ? 'profit-loss-net-negative' : undefined}>
+                          {period.netProfitCents === null ? '—' : formatCurrencyCents(period.netProfitCents, 'AUD')}
+                        </strong>
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {profitQuery.data.last30d.netProfitCents === null && (
+              <p className="profit-loss-warning" role="status" data-testid="warning-profit-loss-missing-cost">
+                Missing coffee cost for: {profitQuery.data.last30d.missingUnitCostProducts.join(', ')}
+              </p>
+            )}
+            {profitQuery.data.allTime.netProfitCents === null && (
+              <p className="profit-loss-warning" role="status" data-testid="warning-profit-loss-missing-cost-all-time">
+                Missing coffee cost for: {profitQuery.data.allTime.missingUnitCostProducts.join(', ')}
+              </p>
+            )}
+            <p className="profit-loss-footnote" data-testid="text-profit-loss-source">
+              Includes in-person sales. Stripe fees are estimated. Source: Cattle Dog Coffee store, updated {formatBrisbaneDateTime(profitQuery.data.generatedAt)}.
+            </p>
+          </>
+        ) : null}
+      </section>
     </div>
   );
 }
