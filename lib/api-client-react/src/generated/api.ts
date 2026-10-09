@@ -22,6 +22,7 @@ import type {
 import type {
   AgentRun,
   AgentRunWithMember,
+  CattleDogCoffeeProfitResponse,
   DailySalesResponse,
   Decision,
   DecisionActionBody,
@@ -1396,6 +1397,83 @@ export function useListProjectMetrics<TData = Awaited<ReturnType<typeof listProj
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListProjectMetricsQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCattleDogCoffeeProfitUrl = () => {
+
+
+
+
+  return `/api/projects/cattle-dog-coffee/profit`
+}
+
+/**
+ * @summary Get the live Cattle Dog Coffee profit summary
+ */
+export const getCattleDogCoffeeProfit = async ( options?: Parameters<typeof customFetch>[1]): Promise<CattleDogCoffeeProfitResponse> => {
+
+  return customFetch<CattleDogCoffeeProfitResponse>(getGetCattleDogCoffeeProfitUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCattleDogCoffeeProfitQueryKey = () => {
+    return [
+    `/api/projects/cattle-dog-coffee/profit`
+    ] as const;
+    }
+
+
+export const getGetCattleDogCoffeeProfitQueryOptions = <TData = Awaited<ReturnType<typeof getCattleDogCoffeeProfit>>, TError = ErrorType<Error>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCattleDogCoffeeProfit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCattleDogCoffeeProfitQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCattleDogCoffeeProfit>>> = ({ signal }) => getCattleDogCoffeeProfit({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCattleDogCoffeeProfit>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCattleDogCoffeeProfitQueryResult = NonNullable<Awaited<ReturnType<typeof getCattleDogCoffeeProfit>>>
+export type GetCattleDogCoffeeProfitQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Get the live Cattle Dog Coffee profit summary
+ */
+
+export function useGetCattleDogCoffeeProfit<TData = Awaited<ReturnType<typeof getCattleDogCoffeeProfit>>, TError = ErrorType<Error>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCattleDogCoffeeProfit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCattleDogCoffeeProfitQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

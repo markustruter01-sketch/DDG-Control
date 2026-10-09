@@ -10,6 +10,8 @@ export * from './agentRun';
 export * from './agentRunStatus';
 export * from './agentRunWithMember';
 export * from './agentRunWithMemberStatus';
+export * from './cattleDogCoffeeProfitPeriod';
+export * from './cattleDogCoffeeProfitResponse';
 export * from './dailySalesResponse';
 export * from './dailySalesRow';
 export * from './decision';

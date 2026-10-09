@@ -485,6 +485,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /projects/cattle-dog-coffee/profit:
+    get:
+      operationId: getCattleDogCoffeeProfit
+      tags: [metrics]
+      summary: Get the live Cattle Dog Coffee profit summary
+      responses:
+        "200":
+          description: Live store profit summary with net profit after charity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CattleDogCoffeeProfitResponse"
+        "502":
+          description: The store returned an error or an invalid response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Store access is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /projects/{slug}/daily-sales:
     get:
       operationId: listProjectDailySales
@@ -2011,6 +2035,64 @@ components:
           type: string
           format: date-time
       required: [value, captured_at]
+    CattleDogCoffeeProfitResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+        last30d:
+          $ref: "#/components/schemas/CattleDogCoffeeProfitPeriod"
+        allTime:
+          $ref: "#/components/schemas/CattleDogCoffeeProfitPeriod"
+      required: [generatedAt, last30d, allTime]
+    CattleDogCoffeeProfitPeriod:
+      type: object
+      additionalProperties: false
+      properties:
+        orderCount:
+          type: integer
+        grossRevenueCents:
+          type: integer
+        coffeeRevenueCents:
+          type: integer
+        shippingCollectedCents:
+          type: integer
+        estimatedCoffeeCostCents:
+          type: ["integer", "null"]
+        estimatedBagCostCents:
+          type: integer
+        estimatedSatchelCostCents:
+          type: integer
+        estimatedStripeFeeCents:
+          type: integer
+        estimatedMarginCents:
+          type: ["integer", "null"]
+        missingUnitCostProducts:
+          type: array
+          items:
+            type: string
+        bagCount:
+          type: integer
+        charityCents:
+          type: integer
+        netProfitCents:
+          type: ["integer", "null"]
+      required:
+        - orderCount
+        - grossRevenueCents
+        - coffeeRevenueCents
+        - shippingCollectedCents
+        - estimatedCoffeeCostCents
+        - estimatedBagCostCents
+        - estimatedSatchelCostCents
+        - estimatedStripeFeeCents
+        - estimatedMarginCents
+        - missingUnitCostProducts
+        - bagCount
+        - charityCents
+        - netProfitCents
     OllieHistoryResponse:
       type: array
       items:

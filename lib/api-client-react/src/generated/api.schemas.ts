@@ -585,6 +585,31 @@ export interface MetricHistoryRow {
 
 export type MetricHistoryResponse = MetricHistoryRow[];
 
+export interface CattleDogCoffeeProfitPeriod {
+  orderCount: number;
+  grossRevenueCents: number;
+  coffeeRevenueCents: number;
+  shippingCollectedCents: number;
+  /** @nullable */
+  estimatedCoffeeCostCents: number | null;
+  estimatedBagCostCents: number;
+  estimatedSatchelCostCents: number;
+  estimatedStripeFeeCents: number;
+  /** @nullable */
+  estimatedMarginCents: number | null;
+  missingUnitCostProducts: string[];
+  bagCount: number;
+  charityCents: number;
+  /** @nullable */
+  netProfitCents: number | null;
+}
+
+export interface CattleDogCoffeeProfitResponse {
+  generatedAt: string;
+  last30d: CattleDogCoffeeProfitPeriod;
+  allTime: CattleDogCoffeeProfitPeriod;
+}
+
 export interface OllieHistoryRow {
   /** @nullable */
   created_at: string | null;

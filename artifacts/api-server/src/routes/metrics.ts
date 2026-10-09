@@ -3,6 +3,7 @@ import {
   ListProjectMetricHistoryResponse,
   ListProjectOllieHistoryResponse,
   ListProjectMetricsResponse,
+  GetCattleDogCoffeeProfitResponse,
   RefreshProjectMetricsResponse,
 } from "@workspace/api-zod";
 import {
@@ -20,14 +21,55 @@ import {
 } from "@workspace/project-constants";
 import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
+import { z } from "zod/v4";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 const DATA_SOURCE_SLUG = "cattle-dog-coffee";
 const STRIPE_CHARGES_URL = "https://api.stripe.com/v1/charges";
+const CDC_STORE_SUMMARY_URL =
+  "https://cattledogcoffee.com.au/api/ddg/summary";
 const THIRTY_DAYS_SECONDS = 30 * 24 * 60 * 60;
 const SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60;
 const DAILY_SALES_DAYS = 30;
+
+const CdcStoreSummarySchema = z
+  .object({
+    orderCount: z.number().int(),
+    grossRevenueCents: z.number().int(),
+    coffeeRevenueCents: z.number().int(),
+    shippingCollectedCents: z.number().int(),
+    estimatedCoffeeCostCents: z.number().int().nullable(),
+    estimatedBagCostCents: z.number().int(),
+    estimatedSatchelCostCents: z.number().int(),
+    estimatedStripeFeeCents: z.number().int(),
+    estimatedMarginCents: z.number().int().nullable(),
+    missingUnitCostProducts: z.array(z.string()),
+    bagCount: z.number().int(),
+    charityCents: z.number().int(),
+  })
+  .strict();
+
+const CdcStoreResponseSchema = z
+  .object({
+    generatedAt: z.string().datetime({ offset: true }),
+    currency: z.literal("aud"),
+    last30d: CdcStoreSummarySchema,
+    allTime: CdcStoreSummarySchema,
+  })
+  .strict();
+
+function addNetProfit(
+  summary: z.infer<typeof CdcStoreSummarySchema>,
+): z.infer<typeof CdcStoreSummarySchema> & { netProfitCents: number | null } {
+  return {
+    ...summary,
+    netProfitCents:
+      summary.estimatedMarginCents === null
+        ? null
+        : summary.estimatedMarginCents - summary.charityCents,
+  };
+}
 
 type StripeCharge = {
   id: string;
@@ -393,6 +435,60 @@ export async function refreshCattleDogMetrics() {
   });
   return inserted.map(toApiMetric);
 }
+
+router.get(
+  "/projects/cattle-dog-coffee/profit",
+  async (_req, res): Promise<void> => {
+    const statsKey = process.env.DDG_STATS_KEY;
+    if (!statsKey) {
+      res.status(503).json({ error: "store not configured" });
+      return;
+    }
+
+    let storeResponse: Response;
+    try {
+      storeResponse = await fetch(CDC_STORE_SUMMARY_URL, {
+        method: "GET",
+        headers: { "x-ddg-key": statsKey },
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch {
+      res.status(502).json({ error: "store error 502" });
+      return;
+    }
+
+    if (storeResponse.status === 401 || storeResponse.status === 403) {
+      res.status(502).json({ error: "store auth failed" });
+      return;
+    }
+    if (!storeResponse.ok) {
+      res.status(502).json({ error: `store error ${storeResponse.status}` });
+      return;
+    }
+
+    let payload: unknown;
+    try {
+      payload = await storeResponse.json();
+    } catch {
+      res.status(502).json({ error: "store bad response" });
+      return;
+    }
+
+    const parsed = CdcStoreResponseSchema.safeParse(payload);
+    if (!parsed.success || parsed.data.currency !== "aud") {
+      res.status(502).json({ error: "store bad response" });
+      return;
+    }
+
+    res.json(
+      GetCattleDogCoffeeProfitResponse.parse({
+        generatedAt: parsed.data.generatedAt,
+        last30d: addNetProfit(parsed.data.last30d),
+        allTime: addNetProfit(parsed.data.allTime),
+      }),
+    );
+  },
+);
 
 router.get(
   "/projects/:slug/daily-sales",

@@ -357,6 +357,44 @@ export const ListProjectMetricsResponse = zod.array(ListProjectMetricsResponseIt
 
 
 /**
+ * @summary Get the live Cattle Dog Coffee profit summary
+ */
+export const GetCattleDogCoffeeProfitResponse = zod.object({
+  "generatedAt": zod.coerce.date(),
+  "last30d": zod.object({
+  "orderCount": zod.number().int(),
+  "grossRevenueCents": zod.number().int(),
+  "coffeeRevenueCents": zod.number().int(),
+  "shippingCollectedCents": zod.number().int(),
+  "estimatedCoffeeCostCents": zod.number().int().nullable(),
+  "estimatedBagCostCents": zod.number().int(),
+  "estimatedSatchelCostCents": zod.number().int(),
+  "estimatedStripeFeeCents": zod.number().int(),
+  "estimatedMarginCents": zod.number().int().nullable(),
+  "missingUnitCostProducts": zod.array(zod.string()),
+  "bagCount": zod.number().int(),
+  "charityCents": zod.number().int(),
+  "netProfitCents": zod.number().int().nullable()
+}),
+  "allTime": zod.object({
+  "orderCount": zod.number().int(),
+  "grossRevenueCents": zod.number().int(),
+  "coffeeRevenueCents": zod.number().int(),
+  "shippingCollectedCents": zod.number().int(),
+  "estimatedCoffeeCostCents": zod.number().int().nullable(),
+  "estimatedBagCostCents": zod.number().int(),
+  "estimatedSatchelCostCents": zod.number().int(),
+  "estimatedStripeFeeCents": zod.number().int(),
+  "estimatedMarginCents": zod.number().int().nullable(),
+  "missingUnitCostProducts": zod.array(zod.string()),
+  "bagCount": zod.number().int(),
+  "charityCents": zod.number().int(),
+  "netProfitCents": zod.number().int().nullable()
+})
+})
+
+
+/**
  * @summary Get the latest 30 Brisbane calendar days of sales
  */
 export const ListProjectDailySalesParams = zod.object({
