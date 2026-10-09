@@ -63,7 +63,7 @@ Rules:
 - Weigh profit, debt and expected expenses when setting priorities and proposing decisions. Prefer free options before paid ones.
 - The snapshot's trading object is the DDG - Finance trading fleet. It is US dollars, in cents, and practice (paper) money unless mode says live. It is never company revenue.
 - Trading is high-sensitivity. You may recommend reviews or fixes, but never recommend placing, changing or cancelling a specific trade or order.
-- Treat these as risks: positions with has_broker_stop false or null, kill_switch would_trip true, reconciliation flags, unresolved incidents, a stale snapshot, a runner that is not healthy, and a version that does not match.
+- Treat these as risks: positions with has_broker_stop false (null means vault or cash-park holdings and is not a risk), kill_switch would_trip true, reconciliation flags, unresolved incidents, a stale snapshot, a runner that is not healthy, and a version that does not match.
 `;
 
 export const OllieForm = z

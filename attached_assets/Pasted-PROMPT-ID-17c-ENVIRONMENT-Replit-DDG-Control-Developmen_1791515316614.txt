@@ -1,0 +1,60 @@
+PROMPT ID: 17c
+
+ENVIRONMENT
+Replit: DDG Control. Development only. Do not publish. Make NO xAI requests. Do not contact DDG - Finance or any broker.
+
+GOAL
+Show the trading detail on the DDG - Finance project screens, and correct Ollie's rule so that a null has_broker_stop (vault or cash-park holdings) is not treated as a risk.
+
+DONE WHEN
+- In OLLIE_INSTRUCTIONS, the text "positions with has_broker_stop false or null" is replaced with "positions with has_broker_stop false (null means vault or cash-park holdings and is not a risk)", and the built server contains the new text.
+- The finance Overview tab shows a "Trading health" box with:
+  - Runner: status and "last heartbeat <n> min ago"
+  - Kill switch: "Not reported yet" when null; otherwise mode, "Would trip: yes/no" and the triggers list
+  - Reconciliation: "Clean" or "Not clean", the last run in Brisbane time, and the flags list
+  - Incidents: "<n> unresolved in last 48h", then the newest 10, each with severity, component, message, time and resolved yes/no
+- The finance Revenue & Subscriptions tab adds, below the per-bot table:
+  - a Positions table (bot, symbol, qty, entry, stop, protected). Protected shows "✅" for true, "❌ No stop" for false, and "—" for null. Rows with false are highlighted in the warning colour.
+  - a Bots list (bot, strategy, broker, paper or live, status, instruments)
+- If there is no snapshot, or detail is null, each section shows "No detail yet".
+- Works at 402 px width, in day and night mode. `pnpm run typecheck` passes.
+
+SCOPE
+- artifacts/api-server/src/agents/ollie.ts (that one instruction line only)
+- artifacts/ddg-control/src/App.tsx
+- artifacts/ddg-control/src/ddg.css
+
+DO NOT
+- Do not change any API route, OpenAPI spec, database schema, or the fleet receiver.
+- Do not change any other project's tabs, the home top bar or computeFinanceSummary.
+- Do not make any xAI request.
+- Do not add, remove or upgrade packages.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. In ollie.ts, make the exact text replacement described in DONE WHEN. Show the line before and after. Rebuild the API server, and show the output of `grep -c "null means vault or cash-park holdings" artifacts/api-server/dist/index.mjs` (expect 1 or more).
+
+2. Build the "Trading health" box and the Positions and Bots sections described in DONE WHEN, using the existing generated hook for GET /api/projects/finance/fleet/latest.
+   - Reuse the existing Brisbane time and USD formatters.
+   - Show quantities as they are, up to 6 decimals.
+
+3. Test against the development server, using FLEET_INBOUND_KEY from the environment without printing it. Record the ids.
+   a) Show the "before" counts of fleet_snapshots, fleet_bot_snapshots and fleet_snapshot_details.
+   b) POST one snapshot dated now minus 1 minute, with mode "paper", 1 bot, and a detail containing:
+      - 2 bots_meta
+      - 3 positions: one with has_broker_stop true, one false, one null
+      - 2 incidents: one resolved, one not
+      - a kill_switch with would_trip true and 1 trigger
+      - a reconciliation with clean false and 2 flags
+      - a runner and a version
+   c) Screenshot at 402 px, in day and night mode: the finance Overview (Trading health) and the finance Revenue tab (Positions and Bots). Do not save screenshots in the workspace.
+   d) Cleanup, in one transaction, deleting only the recorded ids: the detail, then bot rows, then the snapshot, with exact counts, otherwise roll back. Show that the counts equal the "before" counts.
+   e) Screenshot the finance Overview with no data, showing "No detail yet".
+
+4. Run `pnpm run typecheck`. Report every file touched.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.

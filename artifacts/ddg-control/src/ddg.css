@@ -688,14 +688,62 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 .fleet-chart-skeleton { display: grid; gap: 12px; padding-top: 10px; }
 .fleet-chart-placeholder { width: 100%; height: 190px; animation: shimmer 1.3s ease-in-out infinite alternate; }
 .home-shell .tile-fact { overflow-wrap: anywhere; }
+.fleet-detail-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; min-width: 0; }
+.fleet-detail-panel {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 9px;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+}
+.fleet-health-panel { grid-column: 1 / -1; }
+.fleet-detail-panel > .fleet-panel-heading { margin-bottom: 10px; }
+.fleet-detail-panel .fleet-panel-heading h3 { font-size: 14px; }
+.fleet-health-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.fleet-health-item { min-width: 0; padding: 11px; border: 1px solid hsl(var(--border)); border-radius: 7px; background: hsl(var(--muted) / .45); }
+.fleet-health-item h4 { margin: 0 0 8px; color: hsl(var(--muted-foreground)); font: 500 9px/1.3 var(--app-font-mono); letter-spacing: .04em; text-transform: uppercase; }
+.fleet-health-item p { margin: 5px 0 0; color: hsl(var(--foreground)); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.fleet-health-item ul { display: grid; gap: 6px; margin: 7px 0 0; padding-left: 17px; color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.45; overflow-wrap: anywhere; }
+.fleet-incidents-item { grid-column: 1 / -1; }
+.fleet-incident-list { list-style: none; padding: 0 !important; }
+.fleet-incident-list li { display: grid; gap: 5px; padding: 8px 0; border-top: 1px solid hsl(var(--border)); }
+.fleet-incident-list li > p { margin: 0; }
+.fleet-incident-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px 12px; color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.4; }
+.fleet-incident-meta strong { color: hsl(var(--foreground)); font-weight: 700; text-transform: capitalize; }
+.fleet-detail-table { table-layout: fixed; font-size: 10px; }
+.fleet-detail-table th, .fleet-detail-table td { padding: 9px 6px; white-space: normal; overflow-wrap: anywhere; }
+.fleet-detail-table thead th { font-size: 8px; }
+.fleet-detail-table tbody th { font-size: 10px; }
+.fleet-detail-table th:nth-child(1) { width: 17%; }
+.fleet-detail-table th:nth-child(2) { width: 14%; }
+.fleet-detail-table th:nth-child(3) { width: 12%; }
+.fleet-detail-table th:nth-child(4), .fleet-detail-table th:nth-child(5) { width: 17%; }
+.fleet-detail-table th:nth-child(6) { width: 23%; }
+.fleet-bots-meta-table th:nth-child(1) { width: 16%; }
+.fleet-bots-meta-table th:nth-child(2) { width: 17%; }
+.fleet-bots-meta-table th:nth-child(3) { width: 13%; }
+.fleet-bots-meta-table th:nth-child(4) { width: 10%; }
+.fleet-bots-meta-table th:nth-child(5) { width: 15%; }
+.fleet-bots-meta-table th:nth-child(6) { width: 29%; }
+.fleet-position-no-stop > * { background: rgba(216, 173, 88, .14); }
+[data-theme="day"] .fleet-position-no-stop > * { background: rgba(173, 111, 0, .13); }
 @media (max-width: 760px) {
   .fleet-overview { grid-template-columns: 1fr; }
   .fleet-dashboard-grid { grid-template-columns: 1fr; }
+  .fleet-detail-panels { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
   .fleet-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fleet-toolbar { align-items: flex-start; }
   .fleet-table th, .fleet-table td { padding: 10px 8px; }
+  .fleet-detail-panel { padding: 12px; }
+  .fleet-health-grid { grid-template-columns: 1fr; }
+  .fleet-incidents-item { grid-column: auto; }
+  .fleet-detail-table { font-size: 9px; }
+  .fleet-detail-table th, .fleet-detail-table td { padding: 7px 3px; }
+  .fleet-detail-table thead th { font-size: 7px; letter-spacing: 0; }
+  .fleet-detail-table tbody th { font-size: 9px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }

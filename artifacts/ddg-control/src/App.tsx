@@ -2394,9 +2394,12 @@ function FinanceFleetWorkspace() {
   }
   if (!latest) {
     return (
-      <div className="fleet-state fleet-empty" data-testid="status-fleet-empty">
-        <span className="fleet-empty-mark" aria-hidden="true">—</span>
-        <div><h3>No fleet snapshot yet</h3><p>Trading fleet data will appear here after the first snapshot is received.</p></div>
+      <div className="fleet-workspace">
+        <div className="fleet-state fleet-empty" data-testid="status-fleet-empty">
+          <span className="fleet-empty-mark" aria-hidden="true">—</span>
+          <div><h3>No fleet snapshot yet</h3><p>Trading fleet data will appear here after the first snapshot is received.</p></div>
+        </div>
+        <FleetDetailPanels detail={null} />
       </div>
     );
   }
@@ -2506,7 +2509,184 @@ function FinanceFleetWorkspace() {
           </div>
         )}
       </section>
+      <FleetDetailPanels detail={latest.detail} />
     </div>
+  );
+}
+
+function FleetDetailPanels({ detail }: { detail: FleetLatestSnapshotResponse['detail'] }) {
+  return (
+    <div className="fleet-detail-panels">
+      <section className="fleet-detail-panel" aria-labelledby="fleet-positions-title" data-testid="fleet-positions">
+        <div className="fleet-panel-heading">
+          <h3 id="fleet-positions-title">Positions</h3>
+          {detail && <span>{detail.positions.length} reported</span>}
+        </div>
+        {!detail ? (
+          <p className="data-empty">No detail yet</p>
+        ) : detail.positions.length === 0 ? (
+          <p className="data-empty">No positions reported</p>
+        ) : (
+          <div className="fleet-table-scroll">
+            <table className="fleet-table fleet-detail-table">
+              <thead>
+                <tr><th scope="col">Bot</th><th scope="col">Symbol</th><th scope="col">Qty</th><th scope="col">Entry</th><th scope="col">Stop</th><th scope="col">Protected</th></tr>
+              </thead>
+              <tbody>
+                {detail.positions.map((position, index) => (
+                  <tr
+                    key={`${position.bot_id}-${position.symbol}-${index}`}
+                    className={position.has_broker_stop === false ? 'fleet-position-no-stop' : undefined}
+                  >
+                    <th scope="row">{position.bot_id}</th>
+                    <td>{position.symbol}</td>
+                    <td>{new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(position.qty)}</td>
+                    <td>{position.entry_price === null ? '—' : formatFigure(position.entry_price * 100, 'usd_cents')}</td>
+                    <td>{position.stop_price === null ? '—' : formatFigure(position.stop_price * 100, 'usd_cents')}</td>
+                    <td>{position.has_broker_stop === true ? '✅' : position.has_broker_stop === false ? '❌ No stop' : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="fleet-detail-panel" aria-labelledby="fleet-bot-registry-title" data-testid="fleet-bot-registry">
+        <div className="fleet-panel-heading">
+          <h3 id="fleet-bot-registry-title">Bots</h3>
+          {detail && <span>{detail.bots_meta.length} configured</span>}
+        </div>
+        {!detail ? (
+          <p className="data-empty">No detail yet</p>
+        ) : detail.bots_meta.length === 0 ? (
+          <p className="data-empty">No bot metadata reported</p>
+        ) : (
+          <div className="fleet-table-scroll">
+            <table className="fleet-table fleet-detail-table fleet-bots-meta-table">
+              <thead>
+                <tr><th scope="col">Bot</th><th scope="col">Strategy</th><th scope="col">Broker</th><th scope="col">Mode</th><th scope="col">Status</th><th scope="col">Instruments</th></tr>
+              </thead>
+              <tbody>
+                {detail.bots_meta.map((bot, index) => (
+                  <tr key={`${bot.bot_id}-${index}`}>
+                    <th scope="row">{bot.bot_id}</th>
+                    <td>{bot.strategy || '—'}</td>
+                    <td>{bot.broker || '—'}</td>
+                    <td>{bot.account_mode}</td>
+                    <td>{bot.registry_status || '—'}</td>
+                    <td>{bot.instruments.length > 0 ? bot.instruments.join(', ') : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function FinanceTradingHealth() {
+  const latestQuery = useGetProjectFinanceFleetLatest({
+    query: {
+      queryKey: getGetProjectFinanceFleetLatestQueryKey(),
+      staleTime: 30_000,
+      refetchOnWindowFocus: true,
+    },
+  });
+  const latest: FleetLatestSnapshotResponse | undefined = latestQuery.data && !('empty' in latestQuery.data)
+    ? latestQuery.data
+    : undefined;
+  const detail = latest?.detail;
+
+  let healthContent: ReactNode;
+  if (latestQuery.isLoading) {
+    healthContent = <p className="task-state-message" role="status">Loading trading health…</p>;
+  } else if (latestQuery.isError) {
+    healthContent = <p className="data-error" role="alert">{serverErrorText(latestQuery.error, 'Unable to load trading health.')}</p>;
+  } else if (!latest || !detail) {
+    healthContent = <p className="data-empty">No detail yet</p>;
+  } else {
+    const runnerMinutesAgo = detail.runner?.last_heartbeat
+      ? Math.max(0, Math.floor((Date.now() - Date.parse(detail.runner.last_heartbeat)) / 60_000))
+      : null;
+    const incidents = [...detail.incidents].sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts));
+    const unresolvedRecentIncidents = incidents.filter((incident) => (
+      !incident.resolved &&
+      Date.parse(incident.ts) >= Date.now() - 48 * 60 * 60 * 1000 &&
+      Date.parse(incident.ts) <= Date.now()
+    ));
+
+    healthContent = (
+      <div className="fleet-health-grid">
+        <article className="fleet-health-item">
+          <h4>Runner</h4>
+          {detail.runner ? (
+            <>
+              <p>{detail.runner.status}</p>
+              <p>{runnerMinutesAgo === null ? 'Last heartbeat not reported' : `Last heartbeat ${runnerMinutesAgo} min ago`}</p>
+            </>
+          ) : <p>Not reported yet</p>}
+        </article>
+        <article className="fleet-health-item">
+          <h4>Kill switch</h4>
+          {detail.kill_switch ? (
+            <>
+              <p>Mode: {detail.kill_switch.mode}</p>
+              <p>Would trip: {detail.kill_switch.would_trip ? 'yes' : 'no'}</p>
+              {detail.kill_switch.triggers.length > 0 ? (
+                <ul>
+                  {detail.kill_switch.triggers.map((trigger, index) => (
+                    <li key={`${trigger.kind}-${trigger.bot_id ?? ''}-${index}`}>
+                      {trigger.kind}: {trigger.detail}
+                      {(trigger.bot_id || trigger.symbol) && <span> ({[trigger.bot_id, trigger.symbol].filter(Boolean).join(' · ')})</span>}
+                    </li>
+                  ))}
+                </ul>
+              ) : <p>No triggers reported</p>}
+            </>
+          ) : <p>Not reported yet</p>}
+        </article>
+        <article className="fleet-health-item">
+          <h4>Reconciliation</h4>
+          {detail.reconciliation ? (
+            <>
+              <p>{detail.reconciliation.clean === null ? 'Not reported yet' : detail.reconciliation.clean ? 'Clean' : 'Not clean'}</p>
+              <p>Last run: {detail.reconciliation.last_run ? formatBrisbaneDateTime(detail.reconciliation.last_run) : 'Not reported yet'}</p>
+              {detail.reconciliation.flags.length > 0 ? (
+                <ul>{detail.reconciliation.flags.map((flag, index) => <li key={`${flag}-${index}`}>{flag}</li>)}</ul>
+              ) : <p>No flags reported</p>}
+            </>
+          ) : <p>Not reported yet</p>}
+        </article>
+        <article className="fleet-health-item fleet-incidents-item">
+          <h4>Incidents</h4>
+          <p>{unresolvedRecentIncidents.length} unresolved in last 48h</p>
+          {incidents.length > 0 ? (
+            <ul className="fleet-incident-list">
+              {incidents.slice(0, 10).map((incident, index) => (
+                <li key={`${incident.ts}-${incident.component}-${index}`}>
+                  <div className="fleet-incident-meta"><strong>{incident.severity}</strong><span>{incident.component}</span></div>
+                  <p>{incident.message}</p>
+                  <div className="fleet-incident-meta"><time>{formatBrisbaneDateTime(incident.ts)}</time><span>Resolved: {incident.resolved ? 'yes' : 'no'}</span></div>
+                </li>
+              ))}
+            </ul>
+          ) : <p>No incidents reported</p>}
+        </article>
+      </div>
+    );
+  }
+
+  return (
+    <section className="fleet-detail-panel fleet-health-panel" aria-labelledby="fleet-health-title" data-testid="finance-trading-health">
+      <div className="fleet-panel-heading">
+        <h3 id="fleet-health-title">Trading health</h3>
+        {latest && <span>Updated {formatBrisbaneDateTime(latest.generated_at)}</span>}
+      </div>
+      {healthContent}
+    </section>
   );
 }
 
@@ -2578,6 +2758,7 @@ function OverviewWorkspace({ slug }: { slug: string }) {
   const tasks = useListProjectTasks(slug, { query: { queryKey: getListProjectTasksQueryKey(slug) } });
   return (
     <div className="overview-data">
+      {slug === 'finance' && <FinanceTradingHealth />}
       <section className="agent-latest-box">
         <h2 className="todo-group-title">Ollie status history</h2>
         <OllieTimeline rows={history.data ?? []} loading={history.isLoading} error={history.error} />
