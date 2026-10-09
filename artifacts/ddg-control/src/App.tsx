@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useSyncExternalStore, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import {
   MutationCache,
   QueryCache,
@@ -8,13 +8,14 @@ import {
   type QueryKey,
 } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { AuthGate } from '@/components/auth';
+import { ColorModeProvider, Header } from '@/components/header';
 import {
   getGetFinanceSummaryQueryKey,
   getGetCattleDogCoffeeProfitQueryKey,
   getGetProjectFinanceFleetHistoryQueryKey,
   getGetProjectFinanceFleetLatestQueryKey,
   getGetProjectQueryKey,
-  getGetSessionQueryKey,
   getListFinanceDebtsQueryKey,
   getListFinanceExpensesQueryKey,
   getListFinanceRevenueQueryKey,
@@ -43,9 +44,6 @@ import {
   useGetProjectFinanceFleetHistory,
   useGetProjectFinanceFleetLatest,
   useGetProject,
-  useGetSession,
-  useLogin,
-  useLogout,
   useListDecisions,
   useListProjectGoals,
   useListMembers,
@@ -126,49 +124,26 @@ import {
   useLocation,
   Router as WouterRouter,
 } from 'wouter';
+import {
+  handleUnauthorizedError,
+  isNotFound,
+  isUnauthorizedError,
+  serverErrorText,
+} from '@/lib/errors';
+import {
+  centsToDollarInput,
+  currentBrisbaneDate,
+  dollarsToCents,
+  formatBrisbaneDateTime,
+  formatCompletedDate,
+  formatCurrencyCents,
+  formatDueDate,
+  formatFigure,
+  formatFinanceCents,
+} from '@/lib/format';
 import './ddg.css';
 
-let authenticationRequired = false;
-const authenticationListeners = new Set<() => void>();
-
-function setAuthenticationRequired(required: boolean): void {
-  if (authenticationRequired === required) return;
-  authenticationRequired = required;
-  authenticationListeners.forEach((listener) => listener());
-}
-
-function useAuthenticationRequired(): boolean {
-  return useSyncExternalStore(
-    (listener) => {
-      authenticationListeners.add(listener);
-      return () => {
-        authenticationListeners.delete(listener);
-      };
-    },
-    () => authenticationRequired,
-    () => authenticationRequired,
-  );
-}
-
-function isUnauthorizedError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const candidate = error as {
-    status?: number;
-    statusCode?: number;
-    response?: { status?: number };
-  };
-  return candidate.status === 401
-    || candidate.statusCode === 401
-    || candidate.response?.status === 401;
-}
-
-function handleUnauthorizedError(error: unknown): void {
-  if (!isUnauthorizedError(error)) return;
-  queryClient.clear();
-  setAuthenticationRequired(true);
-}
-
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleUnauthorizedError }),
   mutationCache: new MutationCache({ onError: handleUnauthorizedError }),
   defaultOptions: {
@@ -178,119 +153,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-const DevAuthBypassContext = createContext(false);
-
-type ColorMode = 'dark' | 'day';
-
-const ColorModeContext = createContext<{
-  mode: ColorMode;
-  toggleMode: () => void;
-} | null>(null);
-
-function useColorMode() {
-  const colorMode = useContext(ColorModeContext);
-  if (!colorMode) throw new Error('Color mode context is missing');
-  return colorMode;
-}
-
-function ColorModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ColorMode>(() => {
-    try {
-      return window.localStorage.getItem('ddg-control-color-mode') === 'day'
-        ? 'day'
-        : 'dark';
-    } catch {
-      return 'dark';
-    }
-  });
-
-  useEffect(() => {
-    if (mode === 'day') {
-      document.documentElement.dataset.theme = 'day';
-    } else {
-      delete document.documentElement.dataset.theme;
-    }
-
-    try {
-      window.localStorage.setItem('ddg-control-color-mode', mode);
-    } catch {
-      // The selected mode still applies for this session if storage is unavailable.
-    }
-  }, [mode]);
-
-  const toggleMode = () => {
-    setMode((currentMode) => currentMode === 'dark' ? 'day' : 'dark');
-  };
-
-  return (
-    <ColorModeContext.Provider value={{ mode, toggleMode }}>
-      {children}
-    </ColorModeContext.Provider>
-  );
-}
-
-function Header({ showLogout = true }: { showLogout?: boolean }) {
-  const client = useQueryClient();
-  const logoutMutation = useLogout();
-  const devBypass = useContext(DevAuthBypassContext);
-  const { mode, toggleMode } = useColorMode();
-  const pendingDecisionsQuery = useListDecisions(
-    { status: 'pending' },
-    { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } },
-  );
-  const pendingCount = pendingDecisionsQuery.data?.length ?? 0;
-
-  return (
-    <header className="topbar">
-      <Link href="/" className="brand" data-testid="link-home-brand">
-        <span className="brand-mark" aria-hidden="true">dd</span>
-        <span>DDG Control</span>
-      </Link>
-      <nav className="topbar-actions" aria-label="Main navigation">
-        {showLogout && (
-          <Link href="/organisation" className="header-link" data-testid="link-organisation">
-            Organisation
-          </Link>
-        )}
-        <Link href="/agents" className="header-link" data-testid="link-agents">
-          Agents
-        </Link>
-        <Link href="/decisions" className="header-link" data-testid="link-decisions">
-          Decisions{pendingCount > 0 && <span className="header-count">[{pendingCount}]</span>}
-        </Link>
-        <Link href="/finances" className="header-link" data-testid="link-finances">
-          Finances
-        </Link>
-        <button
-          className="theme-toggle"
-          type="button"
-          onClick={toggleMode}
-          aria-label={`Switch to ${mode === 'dark' ? 'day' : 'night'} mode`}
-          data-testid="button-theme-toggle"
-        >
-          {mode === 'dark' ? 'Day mode' : 'Night mode'}
-        </button>
-        {showLogout && !devBypass && (
-          <button
-            className="logout-button"
-            type="button"
-            disabled={logoutMutation.isPending}
-            onClick={() => logoutMutation.mutate(undefined, {
-              onSuccess: () => {
-                client.clear();
-                setAuthenticationRequired(true);
-              },
-            })}
-            data-testid="button-logout"
-          >
-            {logoutMutation.isPending ? 'Logging out…' : 'Log out'}
-          </button>
-        )}
-      </nav>
-    </header>
-  );
-}
 
 function Sparkline({ rows }: { rows: DailySalesRow[] }) {
   if (rows.length < 2) return null;
@@ -303,10 +165,6 @@ function Sparkline({ rows }: { rows: DailySalesRow[] }) {
     return `${x},${y}`;
   }).join(' ');
   return <svg className="tile-sparkline" viewBox="0 0 100 28" role="img" aria-label="Daily sales trend"><polyline points={points} /></svg>;
-}
-
-function formatFinanceCents(value: number): string {
-  return formatCurrencyCents(value, 'AUD');
 }
 
 function FinanceKpiCard({
@@ -636,38 +494,6 @@ const expenseKindLabels: Record<ExpenseKind, string> = {
   recurring_monthly: 'Monthly recurring',
   one_off: 'One-off',
 };
-
-function dollarsToCents(value: string): number {
-  if (!/^\d+(\.\d{1,2})?$/.test(value)) {
-    throw new Error('Enter an amount like 12.34');
-  }
-  const [whole, fraction = ''] = value.split('.');
-  const cents = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0') || '0');
-  if (cents > BigInt(Number.MAX_SAFE_INTEGER)) {
-    throw new Error('Enter an amount like 12.34');
-  }
-  return Number(cents);
-}
-
-function centsToDollarInput(value: number): string {
-  const digits = String(value);
-  return digits.length < 3
-    ? `0.${digits.padStart(2, '0')}`
-    : `${digits.slice(0, -2)}.${digits.slice(-2)}`;
-}
-
-function currentBrisbaneDate(): string {
-  const parts = new Intl.DateTimeFormat('en-AU', {
-    timeZone: 'Australia/Brisbane',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date());
-  const year = parts.find((part) => part.type === 'year')?.value ?? '';
-  const month = parts.find((part) => part.type === 'month')?.value ?? '';
-  const day = parts.find((part) => part.type === 'day')?.value ?? '';
-  return `${year}-${month}-${day}`;
-}
 
 function financeVentureName(slug: string | null, projects: Project[]): string {
   if (!slug) return 'Company';
@@ -1334,97 +1160,6 @@ function OrganisationPage() {
   );
 }
 
-function isNotFound(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const candidate = error as {
-    status?: number;
-    statusCode?: number;
-    response?: { status?: number };
-    data?: { error?: string };
-    error?: string;
-  };
-  return candidate.status === 404
-    || candidate.statusCode === 404
-    || candidate.response?.status === 404
-    || candidate.data?.error === 'not found'
-    || candidate.error === 'not found';
-}
-
-function serverErrorText(error: unknown, fallback = 'Unable to save project.'): string {
-  if (error && typeof error === 'object' && 'data' in error) {
-    const data = (error as { data?: unknown }).data;
-    if (
-      data &&
-      typeof data === 'object' &&
-      'error' in data &&
-      typeof data.error === 'string'
-    ) {
-      return data.error;
-    }
-  }
-  return error instanceof Error ? error.message : fallback;
-}
-
-function LoginScreen({ initialError }: { initialError?: string }) {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(initialError ?? '');
-  const loginMutation = useLogin();
-
-  const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const submittedPassword = password;
-    setPassword('');
-    setError('');
-
-    try {
-      await loginMutation.mutateAsync({ data: { password: submittedPassword } });
-      setAuthenticationRequired(false);
-      await queryClient.invalidateQueries({
-        queryKey: getGetSessionQueryKey(),
-        exact: true,
-      });
-    } catch (loginError) {
-      setError(serverErrorText(loginError, 'Unable to log in.'));
-    }
-  };
-
-  return (
-    <div className="app-shell auth-shell">
-      <Header showLogout={false} />
-      <main className="auth-main">
-        <section className="auth-card">
-          <p className="eyebrow">Control panel</p>
-          <h1 className="auth-title">Log in</h1>
-          <form className="auth-form" onSubmit={submitLogin} data-testid="login-form">
-            <label className="auth-field" htmlFor="login-password">
-              Password
-              <input
-                id="login-password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                data-testid="input-login-password"
-              />
-            </label>
-            {error && <p className="auth-error" role="alert" data-testid="error-login">{error}</p>}
-            <button
-              className="task-primary-button auth-submit"
-              type="submit"
-              disabled={loginMutation.isPending}
-              data-testid="button-login"
-            >
-              {loginMutation.isPending ? 'Logging in…' : 'Log in'}
-            </button>
-          </form>
-        </section>
-      </main>
-    </div>
-  );
-}
-
 type TaskDraft = {
   title: string;
   ownerId: string;
@@ -1451,67 +1186,6 @@ function taskDraftFromTask(task: Task): TaskDraft {
     notes: task.notes ?? '',
     status: task.status as TaskStatus,
   };
-}
-
-function formatDueDate(value: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return value;
-
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = Number(match[2]);
-  if (month < 1 || month > 12) return value;
-  return `${Number(match[3])} ${months[month - 1]} ${match[1]}`;
-}
-
-const completedDateFormatter = new Intl.DateTimeFormat('en-AU', {
-  timeZone: 'Australia/Brisbane',
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
-const brisbaneDateTimeFormatter = new Intl.DateTimeFormat('en-AU', {
-  timeZone: 'Australia/Brisbane',
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
-
-function formatCompletedDate(value: string | null): string | null {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : completedDateFormatter.format(date);
-}
-
-function formatBrisbaneDateTime(value: string | null): string {
-  if (!value) return 'Date unavailable';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? 'Date unavailable'
-    : brisbaneDateTimeFormatter.format(date);
-}
-
-function formatCurrencyCents(value: number, currency: 'AUD' | 'USD'): string {
-  const absoluteValue = Math.abs(value) / 100;
-  const formatted = currency === 'AUD'
-    ? new Intl.NumberFormat('en-AU', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(absoluteValue)
-    : `US$${new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(absoluteValue)}`;
-  return value < 0 ? `−${formatted}` : formatted;
-}
-
-function formatFigure(value: number, unit: string): string {
-  if (unit === 'aud_cents') return formatCurrencyCents(value, 'AUD');
-  if (unit === 'usd_cents') return formatCurrencyCents(value, 'USD');
-  return new Intl.NumberFormat('en-AU', { maximumFractionDigits: 0 }).format(value);
 }
 
 function TaskEditorForm({
@@ -3487,7 +3161,7 @@ function ProjectDetail() {
   );
 }
 
-function Router() {
+export function Router() {
   return (
     // Keep a shared shell (sidebar, navbar) outside the boundary so it
     // survives a page crash.
@@ -3507,47 +3181,6 @@ function Router() {
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
-}
-
-function AuthGate() {
-  const authRequired = useAuthenticationRequired();
-  const sessionQuery = useGetSession({
-    query: {
-      queryKey: getGetSessionQueryKey(),
-      enabled: !authRequired,
-      retry: false,
-    },
-  });
-
-  if (authRequired) {
-    return <LoginScreen />;
-  }
-  if (sessionQuery.isSuccess) {
-    const devBypass = sessionQuery.data.dev_bypass;
-    return (
-      <DevAuthBypassContext.Provider value={devBypass}>
-        {devBypass && (
-          <div className="dev-auth-banner" role="status">
-            DEV: login off
-          </div>
-        )}
-        <Router />
-      </DevAuthBypassContext.Provider>
-    );
-  }
-  if (sessionQuery.isError) {
-    return (
-      <LoginScreen
-        initialError={
-          isUnauthorizedError(sessionQuery.error)
-            ? undefined
-            : serverErrorText(sessionQuery.error, 'Unable to check session.')
-        }
-      />
-    );
-  }
-
-  return <main className="auth-loading" aria-live="polite">Loading…</main>;
 }
 
 function App() {
