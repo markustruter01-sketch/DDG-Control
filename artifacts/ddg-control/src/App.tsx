@@ -2,8 +2,9 @@ import { useState, type CSSProperties, type FormEvent, type ReactNode } from 're
 import {
   QueryClientProvider,
   useQueryClient,
+  type QueryClient,
+  type QueryKey,
 } from '@tanstack/react-query';
-import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthGate } from '@/components/auth';
 import { ColorModeProvider, Header } from '@/components/header';
 import { queryClient } from '@/lib/query-client';
@@ -116,16 +117,11 @@ import {
 } from 'recharts';
 import {
   Link,
-  Route,
-  Switch,
   useParams,
-  useLocation,
   Router as WouterRouter,
 } from 'wouter';
 import {
-  handleUnauthorizedError,
   isNotFound,
-  isUnauthorizedError,
   serverErrorText,
 } from '@/lib/errors';
 import {
@@ -139,6 +135,7 @@ import {
   formatFigure,
   formatFinanceCents,
 } from '@/lib/format';
+import { sourceLabelForDecision } from '@/pages/Decisions';
 import './ddg.css';
 
 function Sparkline({ rows }: { rows: DailySalesRow[] }) {
@@ -1058,92 +1055,6 @@ function FinanceRevenueSection({ projects }: { projects: Project[] }) {
         </form>
       )}
     </section>
-  );
-}
-
-function OrganisationPage() {
-  type OrgPerson = (typeof ORG_CHART)[number];
-  type VenturePerson = Extract<OrgPerson, { group: 'venture' }>;
-  const founder = ORG_CHART.filter((person) => person.group === 'founder');
-  const generalManagers = ORG_CHART.filter((person) => person.group === 'gm');
-  const corporateTeam = ORG_CHART.filter((person) => person.group === 'corporate');
-  const ventureManagers = ORG_CHART.filter(
-    (person): person is VenturePerson => person.group === 'venture',
-  );
-
-  const renderPeople = (people: OrgPerson[]) => people.map((person) => (
-    <article className="org-person" key={`${person.group}-${person.name}`}>
-      <span className="org-person-name">{person.name}</span>
-      <span className="org-person-role">{person.role}</span>
-    </article>
-  ));
-
-  return (
-    <div className="app-shell organisation-shell">
-      <Header />
-      <main className="page-wrap organisation-main">
-        <Link className="back-link" href="/" data-testid="link-organisation-home">← Projects</Link>
-        <header className="organisation-heading">
-          <p className="eyebrow">People & accountability</p>
-          <h1 className="home-title">Organisation</h1>
-          <p className="organisation-intro">The team recommending and delivering approved work across DDG.</p>
-        </header>
-
-        <section className="org-chart" aria-labelledby="org-chart-title">
-          <div className="section-rule"><span id="org-chart-title">Operating structure</span></div>
-          <div className="org-tier org-tier-founder">
-            <h2>Founder</h2>
-            <div className="org-people">{renderPeople(founder)}</div>
-          </div>
-          <div className="org-connector" aria-hidden="true" />
-          <div className="org-tier org-tier-gm">
-            <h2>GM</h2>
-            <div className="org-people">{renderPeople(generalManagers)}</div>
-          </div>
-          <div className="org-connector" aria-hidden="true" />
-          <div className="org-branches">
-            <section className="org-branch" aria-labelledby="corporate-title">
-              <div className="org-tier">
-                <h2 id="corporate-title">Corporate team</h2>
-                <div className="org-people">{renderPeople(corporateTeam)}</div>
-              </div>
-            </section>
-            <section className="org-branch" aria-labelledby="ventures-title">
-              <div className="org-tier">
-                <h2 id="ventures-title">Venture managers</h2>
-                <div className="org-people">
-                  {ventureManagers.map((person) => (
-                    <Link
-                      href={`/projects/${person.project_slug}`}
-                      className="org-person org-person-link"
-                      key={`${person.group}-${person.name}`}
-                      data-testid={`link-org-project-${person.project_slug}`}
-                    >
-                      <span className="org-person-name">{person.name}</span>
-                      <span className="org-person-role">{person.role}</span>
-                      <span className="org-project-arrow" aria-hidden="true">↗</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </section>
-          </div>
-        </section>
-
-        <section className="principles-section" aria-labelledby="principles-title">
-          <div className="section-rule"><span id="principles-title">Principles</span></div>
-          <ol className="principles-list">
-            {PRINCIPLES.map((principle, index) => (
-              <li key={principle}>
-                <span className="principle-index">{String(index + 1).padStart(2, '0')}</span>
-                <span>{principle}</span>
-              </li>
-            ))}
-          </ol>
-          <p className="organisation-note">Agents recommend. Markus decides.</p>
-        </section>
-      </main>
-    </div>
   );
 }
 
@@ -2622,246 +2533,6 @@ function NextActionWorkspace({ slug }: { slug: string }) {
   );
 }
 
-function sourceLabelForDecision(source: string): string {
-  return source === 'ollie_daily' ? 'Ollie daily' : source === 'cursor' ? 'Cursor' : source;
-}
-
-function DecisionsPage() {
-  const pendingQuery = useListDecisions(
-    { status: 'pending' },
-    { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } },
-  );
-  const approvedQuery = useListDecisions(
-    { status: 'approved' },
-    { query: { queryKey: getListDecisionsQueryKey({ status: 'approved' }) } },
-  );
-  const declinedQuery = useListDecisions(
-    { status: 'declined' },
-    { query: { queryKey: getListDecisionsQueryKey({ status: 'declined' }) } },
-  );
-  const projectsQuery = useListProjects({
-    query: { queryKey: getListProjectsQueryKey() },
-  });
-  const pending = pendingQuery.data ?? [];
-  const projectNames = new Map((projectsQuery.data ?? []).map((project) => [project.slug, project.name]));
-  const sortedHistory: DecisionWithNames[] = [
-    ...(approvedQuery.data ?? []),
-    ...(declinedQuery.data ?? []),
-  ].sort((a, b) => {
-    const aTime = a.decided_at ? new Date(a.decided_at).getTime() : 0;
-    const bTime = b.decided_at ? new Date(b.decided_at).getTime() : 0;
-    return bTime - aTime;
-  });
-  const isLoading = pendingQuery.isLoading || approvedQuery.isLoading || declinedQuery.isLoading;
-  const queryError = pendingQuery.error ?? approvedQuery.error ?? declinedQuery.error;
-
-  return (
-    <div className="app-shell">
-      <Header />
-      <main className="page-wrap detail-main decisions-main">
-        <Link className="back-link" href="/" data-testid="link-decisions-home">← Home</Link>
-        <div className="detail-heading decisions-heading">
-          <p className="eyebrow">Review queue</p>
-          <h1 className="detail-title">Decisions</h1>
-          <p className="detail-description">Ollie’s recommendations, ready for your call.</p>
-          <p className="cursor-decision-cta">Decide with Ollie in Cursor</p>
-        </div>
-
-        <section className="decision-section" aria-labelledby="pending-decisions-title">
-          <div className="decision-section-heading">
-            <h2 id="pending-decisions-title">Waiting for review</h2>
-            {!pendingQuery.isLoading && <span className="decision-count">{pending.length} pending</span>}
-          </div>
-          {isLoading ? (
-            <div className="decision-skeleton" role="status" aria-label="Loading decisions"><span /><span /></div>
-          ) : queryError ? (
-            <div className="task-query-error" role="alert">
-              <p>{serverErrorText(queryError, 'Unable to load decisions.')}</p>
-              <button className="task-secondary-button" type="button" onClick={() => {
-                void Promise.all([pendingQuery.refetch(), approvedQuery.refetch(), declinedQuery.refetch()]);
-              }}>Retry</button>
-            </div>
-          ) : pending.length === 0 ? (
-            <p className="decision-empty" data-testid="status-no-decisions">No decisions waiting</p>
-          ) : (
-            <div className="decision-list" data-testid="list-pending-decisions">
-              {pending.map((decision) => (
-                  <article className="decision-card" key={decision.id} data-testid={`card-decision-${decision.id}`}>
-                    <div className="decision-card-top">
-                      <div>
-                        <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
-                        <h3 className="decision-title">{decision.title}</h3>
-                      </div>
-                      <span className={`decision-urgency urgency-${decision.urgency}`}>{decision.urgency} urgency</span>
-                    </div>
-                    <p className="decision-recommendation">{decision.recommendation}</p>
-                    <dl className="decision-facts">
-                      <div><dt>Cost</dt><dd>{decision.cost_estimate_aud == null ? 'Cost unknown' : `${new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(decision.cost_estimate_aud)} est.`}</dd></div>
-                      <div><dt>Risk</dt><dd>{decision.risk}</dd></div>
-                      <div><dt>Confidence</dt><dd>{decision.confidence}</dd></div>
-                      <div><dt>Owner</dt><dd>{decision.owner_name}</dd></div>
-                      <div><dt>Due</dt><dd>{decision.due_date ? formatDueDate(decision.due_date) : 'Date unavailable'}</dd></div>
-                    </dl>
-                    <div className="decision-origin">
-                      <span>Source: {sourceLabelForDecision(decision.source)}</span>
-                      <span>Decided via: {decision.decided_via ?? 'Not recorded'}</span>
-                    </div>
-                    {decision.note && <p className="history-note">{decision.note}</p>}
-                  </article>
-                ))}
-            </div>
-          )}
-        </section>
-
-        <section className="decision-history" aria-labelledby="decision-history-title">
-          <div className="decision-section-heading">
-            <h2 id="decision-history-title">Decision history</h2>
-            <span className="decision-count">{sortedHistory.length} resolved</span>
-          </div>
-          {isLoading ? (
-            <div className="decision-history-skeleton" role="status" aria-label="Loading decision history" />
-          ) : sortedHistory.length === 0 ? (
-            <p className="decision-empty">No decisions recorded yet</p>
-          ) : (
-            <div className="decision-history-list" data-testid="list-decision-history">
-              {sortedHistory.map((decision) => (
-                <article className="decision-history-row" key={decision.id} data-testid={`history-decision-${decision.id}`}>
-                  <div className="history-decision-copy">
-                    <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
-                    <h3>{decision.title}</h3>
-                    {decision.note && <p className="history-note">{decision.note}</p>}
-                    <p className="history-note">Source: {sourceLabelForDecision(decision.source)} · Decided via: {decision.decided_via ?? 'Not recorded'}</p>
-                  </div>
-                  <div className="history-decision-meta">
-                    <span className={`history-status history-status-${decision.status}`}>{decision.status}</span>
-                    <time>{formatBrisbaneDateTime(decision.decided_at)}</time>
-                    {decision.status === 'approved' && (
-                      <Link className="history-task-link" href={`/projects/${decision.project_slug}?tab=To-do`}>
-                        View task
-                      </Link>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-      </main>
-    </div>
-  );
-}
-
-function AgentsPage() {
-  const client = useQueryClient();
-  const runsQuery = useListAgentRuns({
-    query: { queryKey: getListAgentRunsQueryKey() },
-  });
-  const [runNotice, setRunNotice] = useState<{ text: string; isError: boolean } | null>(null);
-  const runMutation = useRunOllie({
-    mutation: {
-      onSuccess: async (run) => {
-        setRunNotice({
-          text: `Run status: ${run.status}${run.error ? ` — ${run.error}` : ''}`,
-          isError: run.status === 'error' || run.status === 'invalid',
-        });
-        await Promise.all([
-          client.invalidateQueries({ queryKey: getListAgentRunsQueryKey() }),
-          client.invalidateQueries({ queryKey: getListLatestAgentUpdatesQueryKey() }),
-        ]);
-      },
-      onError: (error) => {
-        setRunNotice({
-          text: serverErrorText(error, 'Unable to run Ollie.'),
-          isError: true,
-        });
-      },
-    },
-  });
-  const runs = runsQuery.data ?? [];
-
-  return (
-    <div className="app-shell">
-      <Header />
-      <main className="page-wrap detail-main agents-main">
-        <Link className="back-link" href="/" data-testid="link-agents-home">← Home</Link>
-        <div className="detail-heading agents-heading">
-          <p className="eyebrow">Team activity</p>
-          <h1 className="detail-title">Agents</h1>
-          <p className="detail-description">Daily report runs and their results.</p>
-        </div>
-
-        <section className="agents-run-panel" aria-labelledby="agents-run-title">
-          <div className="agents-run-toolbar">
-            <h2 id="agents-run-title" className="todo-group-title">Ollie</h2>
-            <button
-              className="task-primary-button"
-              type="button"
-              disabled={runMutation.isPending}
-              onClick={() => {
-                setRunNotice(null);
-                runMutation.mutate({ data: {} });
-              }}
-              data-testid="button-run-ollie"
-            >
-              {runMutation.isPending ? 'Running…' : 'Run Ollie now'}
-            </button>
-          </div>
-          {runNotice && (
-            <p
-              className={runNotice.isError ? 'agents-run-notice agents-run-notice-error' : 'agents-run-notice'}
-              role={runNotice.isError ? 'alert' : 'status'}
-              data-testid="status-ollie-run"
-            >
-              {runNotice.text}
-            </p>
-          )}
-        </section>
-
-        <section className="agents-history" aria-labelledby="agents-history-title">
-          <h2 id="agents-history-title" className="section-rule">
-            <span>Recent runs</span>
-          </h2>
-          {runsQuery.isLoading ? (
-            <p className="task-state-message" role="status">Loading agent runs…</p>
-          ) : runsQuery.isError ? (
-            <div className="task-query-error" role="alert">
-              <p>{serverErrorText(runsQuery.error, 'Unable to load agent runs.')}</p>
-              <button
-                className="task-secondary-button"
-                type="button"
-                onClick={() => void runsQuery.refetch()}
-              >
-                Retry
-              </button>
-            </div>
-          ) : runs.length === 0 ? (
-            <p className="task-state-message" data-testid="status-no-agent-runs">No agent runs yet</p>
-          ) : (
-            <ol className="agents-run-list" data-testid="list-agent-runs">
-              {runs.map((run) => (
-                <li className="agents-run-card" key={run.id} data-testid={`card-agent-run-${run.id}`}>
-                  <div className="agents-run-header">
-                    <strong>{run.member_name}</strong>
-                    <span className={`agents-run-status agents-run-status-${run.status}`}>
-                      {run.status}
-                    </span>
-                  </div>
-                  <p className="agents-run-date">Started {formatBrisbaneDateTime(run.started_at)}</p>
-                  <div className="agents-run-tokens">
-                    <span>Input tokens: {run.input_tokens ?? 'No data yet'}</span>
-                    <span>Output tokens: {run.output_tokens ?? 'No data yet'}</span>
-                  </div>
-                  {run.error && <p className="agents-run-error">{run.error}</p>}
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
-      </main>
-    </div>
-  );
-}
-
 function ProjectDetail() {
   const { slug = '' } = useParams<{ slug: string }>();
   const projectQuery = useGetProject(slug, {
@@ -3148,34 +2819,14 @@ function ProjectDetail() {
   );
 }
 
-export function Router() {
-  return (
-    // Keep a shared shell (sidebar, navbar) outside the boundary so it
-    // survives a page crash.
-    <RoutedErrorBoundary>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/organisation" component={OrganisationPage} />
-        <Route path="/agents" component={AgentsPage} />
-        <Route path="/decisions" component={DecisionsPage} />
-        <Route path="/finances" component={FinancePage} />
-        <Route path="/projects/:slug" component={ProjectDetail} />
-      </Switch>
-    </RoutedErrorBoundary>
-  );
-}
-
-function RoutedErrorBoundary({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
-}
-
 function App() {
   return (
     <ColorModeProvider>
       <QueryClientProvider client={queryClient}>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <AuthGate />
+          <ProjectDetailContext.Provider value={ProjectDetail}>
+            <AuthGate />
+          </ProjectDetailContext.Provider>
         </WouterRouter>
       </QueryClientProvider>
     </ColorModeProvider>
