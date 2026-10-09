@@ -109,12 +109,12 @@ export const PROJECT_TABS = [
 ] as const;
 
 export const METRIC_DEFINITIONS = {
-  sales_7d: { unit: "aud_cents", label: "Sales, last 7 days" },
-  sales_30d: { unit: "aud_cents", label: "Sales, last 30 days" },
-  orders_7d: { unit: "count", label: "Orders, last 7 days" },
-  orders_30d: { unit: "count", label: "Orders, last 30 days" },
-  customers_30d: { unit: "count", label: "Customers, last 30 days" },
-  repeat_customers_30d: { unit: "count", label: "Repeat customers, last 30 days" },
+  sales_7d: { unit: "aud_cents", label: "Online sales, last 7 days" },
+  sales_30d: { unit: "aud_cents", label: "Online sales, last 30 days" },
+  orders_7d: { unit: "count", label: "Online orders, last 7 days" },
+  orders_30d: { unit: "count", label: "Online orders, last 30 days" },
+  customers_30d: { unit: "count", label: "Online customers, last 30 days" },
+  repeat_customers_30d: { unit: "count", label: "Online repeat customers, last 30 days" },
 } as const;
 
 export const PROJECT_HEADLINE_METRIC = {
