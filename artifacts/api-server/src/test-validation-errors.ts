@@ -29,10 +29,13 @@ assert.equal(
   `profile.display_name: ${nestedError.issues[0]?.message}`,
 );
 
-const multipleIssues = new ZodError([
-  { code: "custom", path: ["field"], message: "first issue\ncontinued" },
-  { code: "custom", path: ["other"], message: "second issue" },
-]);
+const multipleIssues = z
+  .object({
+    field: z.string().refine(() => false, { message: "first issue\ncontinued" }),
+    other: z.string(),
+  })
+  .safeParse({ field: "value", other: 2 }).error;
+assert(multipleIssues);
 assert.equal(zodErrorText(multipleIssues), "field: first issue continued");
 assert.equal(zodErrorText(new ZodError([])), "invalid request");
 process.stdout.write("PASS: helper handles first, root, nested, empty, and multiline issues\n");
@@ -102,8 +105,9 @@ function assertShortError(
   const body = result.body as Record<string, unknown>;
   assert.deepEqual(Object.keys(body), ["error"]);
   assert.equal(typeof body.error, "string");
-  assert.match(body.error, /^[^\r\n]+$/);
-  assert.doesNotMatch(body.error, /[{}\[\]]/);
+  const errorText = body.error as string;
+  assert.match(errorText, /^[^\r\n]+$/);
+  assert.doesNotMatch(errorText, /[{}\[\]]/);
   process.stdout.write(`${label}: HTTP ${result.status} ${JSON.stringify(result.body)}\n`);
 }
 

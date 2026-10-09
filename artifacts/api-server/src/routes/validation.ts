@@ -1,14 +1,17 @@
-import type { ZodError } from "zod/v4";
+import type { ZodError as ZodV3Error } from "zod";
+import type { ZodError as ZodV4Error } from "zod/v4";
 
 export type ValidationResult<T> = { value: T } | { error: string };
 
-export function zodErrorText(error: ZodError): string {
+export function zodErrorText<T>(
+  error: ZodV3Error<T> | ZodV4Error<T>,
+): string {
   const issue = error.issues[0];
   if (!issue) {
     return "invalid request";
   }
 
-  const path = issue.path.map(String).join(".");
+  const path = issue.path.map(String).join(".").replace(/[\r\n]+/g, " ").trim();
   const message = issue.message.replace(/[\r\n]+/g, " ").trim();
   return path ? `${path}: ${message}` : message;
 }
