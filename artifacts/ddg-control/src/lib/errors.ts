@@ -1,4 +1,4 @@
-import { queryClient } from '../App';
+import { queryClient } from './query-client';
 import { setAuthenticationRequired } from '../components/auth';
 
 export function isUnauthorizedError(error: unknown): boolean {

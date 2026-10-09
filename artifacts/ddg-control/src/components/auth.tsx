@@ -4,7 +4,8 @@ import {
   useGetSession,
   useLogin,
 } from '@workspace/api-client-react';
-import { queryClient, Router } from '../App';
+import { queryClient } from '../lib/query-client';
+import { Router } from '../lib/router';
 import { isUnauthorizedError, serverErrorText } from '../lib/errors';
 import { DevAuthBypassContext, Header } from './header';
 

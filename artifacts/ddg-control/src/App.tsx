@@ -1,15 +1,13 @@
 import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import {
-  MutationCache,
-  QueryCache,
-  QueryClient,
   QueryClientProvider,
   useQueryClient,
-  type QueryKey,
 } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthGate } from '@/components/auth';
 import { ColorModeProvider, Header } from '@/components/header';
+import { queryClient } from '@/lib/query-client';
+import { ProjectDetailContext } from '@/lib/router';
 import {
   getGetFinanceSummaryQueryKey,
   getGetCattleDogCoffeeProfitQueryKey,
@@ -142,17 +140,6 @@ import {
   formatFinanceCents,
 } from '@/lib/format';
 import './ddg.css';
-
-export const queryClient = new QueryClient({
-  queryCache: new QueryCache({ onError: handleUnauthorizedError }),
-  mutationCache: new MutationCache({ onError: handleUnauthorizedError }),
-  defaultOptions: {
-    queries: {
-      retry: (failureCount, error) =>
-        isUnauthorizedError(error) ? false : failureCount < 3,
-    },
-  },
-});
 
 function Sparkline({ rows }: { rows: DailySalesRow[] }) {
   if (rows.length < 2) return null;
