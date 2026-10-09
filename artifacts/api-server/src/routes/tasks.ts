@@ -27,6 +27,7 @@ import {
   validateCalendarDate,
   validateNotes,
   validateTitle,
+  zodErrorText,
 } from "./validation";
 
 const router: IRouter = Router();
@@ -158,7 +159,7 @@ router.get("/members", async (_req, res): Promise<void> => {
 router.get("/projects/:slug/tasks", async (req, res): Promise<void> => {
   const params = ListProjectTasksParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    res.status(400).json({ error: zodErrorText(params.error) });
     return;
   }
 
@@ -200,7 +201,7 @@ router.get("/projects/:slug/tasks", async (req, res): Promise<void> => {
 router.post("/projects/:slug/tasks", async (req, res): Promise<void> => {
   const params = CreateProjectTaskParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    res.status(400).json({ error: zodErrorText(params.error) });
     return;
   }
 
@@ -229,7 +230,7 @@ router.post("/projects/:slug/tasks", async (req, res): Promise<void> => {
 
   const validatedBody = CreateProjectTaskBody.safeParse(parsed.fields);
   if (!validatedBody.success) {
-    res.status(400).json({ error: validatedBody.error.message });
+    res.status(400).json({ error: zodErrorText(validatedBody.error) });
     return;
   }
 
@@ -303,7 +304,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
 
   const validatedBody = UpdateTaskBody.safeParse(parsed.fields);
   if (!validatedBody.success) {
-    res.status(400).json({ error: validatedBody.error.message });
+    res.status(400).json({ error: zodErrorText(validatedBody.error) });
     return;
   }
 

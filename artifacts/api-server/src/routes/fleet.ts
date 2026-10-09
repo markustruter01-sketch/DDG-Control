@@ -15,7 +15,11 @@ import {
 import { and, asc, desc, eq, gte, lt, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { requireInboundKey } from "./inbound";
-import { getUnknownFieldError, requestBodyRecord } from "./validation";
+import {
+  getUnknownFieldError,
+  requestBodyRecord,
+  zodErrorText,
+} from "./validation";
 
 const router: IRouter = Router();
 
@@ -320,7 +324,7 @@ router.post(
 
     const parsed = PostInboundFleetBody.safeParse(body);
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
+      res.status(400).json({ error: zodErrorText(parsed.error) });
       return;
     }
 

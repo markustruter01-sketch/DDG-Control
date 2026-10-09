@@ -37,6 +37,7 @@ import {
   requestBodyRecord,
   validateCalendarDate,
   type ValidationResult,
+  zodErrorText,
 } from "./validation";
 
 const router: IRouter = Router();
@@ -372,7 +373,7 @@ router.post("/finance/debts", async (req, res): Promise<void> => {
     note: note.value,
   });
   if (!parsedBody.success) {
-    res.status(400).json({ error: parsedBody.error.message });
+    res.status(400).json({ error: zodErrorText(parsedBody.error) });
     return;
   }
 
@@ -469,7 +470,7 @@ router.patch("/finance/debts/:id", async (req, res): Promise<void> => {
 
   const parsedBody = UpdateFinanceDebtBody.safeParse(normalizedBody);
   if (!parsedBody.success) {
-    res.status(400).json({ error: parsedBody.error.message });
+    res.status(400).json({ error: zodErrorText(parsedBody.error) });
     return;
   }
   const [updated] = await db
@@ -618,7 +619,7 @@ export async function createExpense(
   };
   const parsedBody = CreateFinanceExpenseBody.safeParse(normalizedBody);
   if (!parsedBody.success) {
-    return { status: 400, error: parsedBody.error.message };
+    return { status: 400, error: zodErrorText(parsedBody.error) };
   }
 
   const values = {
@@ -772,7 +773,7 @@ router.patch("/finance/expenses/:id", async (req, res): Promise<void> => {
 
   const parsedBody = UpdateFinanceExpenseBody.safeParse(normalizedBody);
   if (!parsedBody.success) {
-    res.status(400).json({ error: parsedBody.error.message });
+    res.status(400).json({ error: zodErrorText(parsedBody.error) });
     return;
   }
   const [updated] = await db
@@ -902,7 +903,7 @@ export async function createRevenue(
   };
   const parsedBody = CreateFinanceRevenueBody.safeParse(normalizedBody);
   if (!parsedBody.success) {
-    return { status: 400, error: parsedBody.error.message };
+    return { status: 400, error: zodErrorText(parsedBody.error) };
   }
 
   const values = {
@@ -1031,7 +1032,7 @@ router.patch("/finance/revenue/:id", async (req, res): Promise<void> => {
 
   const parsedBody = UpdateFinanceRevenueBody.safeParse(normalizedBody);
   if (!parsedBody.success) {
-    res.status(400).json({ error: parsedBody.error.message });
+    res.status(400).json({ error: zodErrorText(parsedBody.error) });
     return;
   }
   const [updated] = await db

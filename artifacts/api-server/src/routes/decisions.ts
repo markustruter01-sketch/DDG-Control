@@ -21,6 +21,7 @@ import { Router, type IRouter } from "express";
 import {
   getUnknownFieldError,
   requestBodyRecord,
+  zodErrorText,
 } from "./validation";
 
 const router: IRouter = Router();
@@ -62,7 +63,7 @@ function parseActionBody(
   const schema = action === "approve" ? ApproveDecisionBody : DeclineDecisionBody;
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return { error: parsed.error.message };
+    return { error: zodErrorText(parsed.error) };
   }
 
   return { note: parsed.data.note ?? null };

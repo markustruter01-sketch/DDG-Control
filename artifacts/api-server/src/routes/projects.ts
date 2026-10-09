@@ -14,6 +14,7 @@ import {
 } from "@workspace/project-constants";
 import { eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
+import { zodErrorText } from "./validation";
 
 const router: IRouter = Router();
 
@@ -109,7 +110,7 @@ router.get("/projects", async (_req, res): Promise<void> => {
 router.get("/projects/:slug", async (req, res): Promise<void> => {
   const params = GetProjectParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    res.status(400).json({ error: zodErrorText(params.error) });
     return;
   }
 
@@ -130,7 +131,7 @@ router.get("/projects/:slug", async (req, res): Promise<void> => {
 router.patch("/projects/:slug", async (req, res): Promise<void> => {
   const params = UpdateProjectParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    res.status(400).json({ error: zodErrorText(params.error) });
     return;
   }
 

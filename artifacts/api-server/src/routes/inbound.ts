@@ -41,6 +41,7 @@ import {
   requestBodyRecord,
   validateCalendarDate,
   validateTitle,
+  zodErrorText,
 } from "./validation";
 
 const router: IRouter = Router();
@@ -147,7 +148,7 @@ router.get("/inbound/state", async (_req, res): Promise<void> => {
 router.post("/inbound/finance/expenses", async (req, res): Promise<void> => {
   const parsed = CreateInboundFinanceExpenseBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    res.status(400).json({ error: zodErrorText(parsed.error) });
     return;
   }
 
@@ -169,7 +170,7 @@ router.post("/inbound/finance/expenses", async (req, res): Promise<void> => {
 router.post("/inbound/finance/revenue", async (req, res): Promise<void> => {
   const parsed = CreateInboundFinanceRevenueBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    res.status(400).json({ error: zodErrorText(parsed.error) });
     return;
   }
 
@@ -215,7 +216,7 @@ router.post("/inbound/decisions", async (req, res): Promise<void> => {
 
   const parsed = PostInboundDecisionBody.safeParse(body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    res.status(400).json({ error: zodErrorText(parsed.error) });
     return;
   }
 
@@ -420,7 +421,7 @@ router.post("/inbound/notes", async (req, res): Promise<void> => {
 
   const parsed = PostInboundNoteBody.safeParse(body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    res.status(400).json({ error: zodErrorText(parsed.error) });
     return;
   }
   if (

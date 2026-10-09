@@ -22,6 +22,7 @@ import {
   validateCalendarDate,
   validateNotes,
   validateTitle,
+  zodErrorText,
 } from "./validation";
 
 const router: IRouter = Router();
@@ -109,7 +110,7 @@ function toApiGoal(goal: Goal) {
 router.get("/projects/:slug/goals", async (req, res): Promise<void> => {
   const params = ListProjectGoalsParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    res.status(400).json({ error: zodErrorText(params.error) });
     return;
   }
 
@@ -161,7 +162,7 @@ router.get("/projects/:slug/goals", async (req, res): Promise<void> => {
 router.post("/projects/:slug/goals", async (req, res): Promise<void> => {
   const params = CreateProjectGoalParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    res.status(400).json({ error: zodErrorText(params.error) });
     return;
   }
 
@@ -190,7 +191,7 @@ router.post("/projects/:slug/goals", async (req, res): Promise<void> => {
 
   const validatedBody = CreateProjectGoalBody.safeParse(parsed.fields);
   if (!validatedBody.success) {
-    res.status(400).json({ error: validatedBody.error.message });
+    res.status(400).json({ error: zodErrorText(validatedBody.error) });
     return;
   }
 
@@ -263,7 +264,7 @@ router.patch("/goals/:id", async (req, res): Promise<void> => {
 
   const validatedBody = UpdateGoalBody.safeParse(parsed.fields);
   if (!validatedBody.success) {
-    res.status(400).json({ error: validatedBody.error.message });
+    res.status(400).json({ error: zodErrorText(validatedBody.error) });
     return;
   }
 

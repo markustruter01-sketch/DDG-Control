@@ -1,4 +1,17 @@
+import type { ZodError } from "zod/v4";
+
 export type ValidationResult<T> = { value: T } | { error: string };
+
+export function zodErrorText(error: ZodError): string {
+  const issue = error.issues[0];
+  if (!issue) {
+    return "invalid request";
+  }
+
+  const path = issue.path.map(String).join(".");
+  const message = issue.message.replace(/[\r\n]+/g, " ").trim();
+  return path ? `${path}: ${message}` : message;
+}
 
 export function requestBodyRecord(value: unknown): Record<string, unknown> | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
