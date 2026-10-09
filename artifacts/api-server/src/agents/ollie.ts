@@ -13,6 +13,7 @@ import {
 } from "@workspace/db";
 import {
   AGENT_RUN_STATUSES,
+  BUSINESS_BRIEFS,
   DECISION_STATUSES,
   GOAL_STATUSES,
   LEVELS,
@@ -64,6 +65,7 @@ Rules:
 - The snapshot's trading object is the DDG - Finance trading fleet. It is US dollars, in cents, and practice (paper) money unless mode says live. It is never company revenue.
 - Trading is high-sensitivity. You may recommend reviews or fixes, but never recommend placing, changing or cancelling a specific trade or order.
 - Treat these as risks: positions with has_broker_stop false (null means vault or cash-park holdings and is not a risk), kill_switch would_trip true, reconciliation flags, unresolved incidents, a stale snapshot, a runner that is not healthy, and a version that does not match.
+- business_briefs are dated status notes verified by Claude (DDG's coding lead). Treat them as facts as of their date; if a brief conflicts with newer live data in the snapshot, trust the newer data and say so.
 `;
 
 export const OllieForm = z
@@ -495,6 +497,18 @@ export async function buildOllieSnapshot(
       status: project.status,
       description: redactSnapshotText(project.description, apiKey),
     })),
+    business_briefs: projects.flatMap((project) => {
+      const brief = BUSINESS_BRIEFS[project.slug];
+      return brief
+        ? [
+            {
+              project_slug: project.slug,
+              updated: brief.updated,
+              text: redactSnapshotText(brief.text, apiKey),
+            },
+          ]
+        : [];
+    }),
     active_goals: activeGoals.map((goal) => ({
       project_slug: goal.project_slug,
       title: redactSnapshotText(goal.title, apiKey),

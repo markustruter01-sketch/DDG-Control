@@ -100,6 +100,7 @@ import {
   TASK_STATUS_LABELS,
   METRIC_DEFINITIONS,
   PROJECT_HEADLINE_METRIC,
+  BUSINESS_BRIEFS,
   type GoalStatus,
   type ProjectStatus,
   type TaskStatus,
@@ -1571,6 +1572,7 @@ function ProjectGoals({ slug }: { slug: string }) {
   const latestUpdate = agentUpdatesQuery.data?.find(
     (update) => update.project_slug === slug,
   );
+  const businessBrief = BUSINESS_BRIEFS[slug];
   const groupedGoals = GOAL_STATUSES
     .map((status) => ({
       status,
@@ -1722,6 +1724,13 @@ function ProjectGoals({ slug }: { slug: string }) {
           </>
         )}
       </aside>
+
+      {businessBrief && (
+        <aside className="business-brief-card" data-testid={`business-brief-${slug}`}>
+          <h2>Business brief · updated {businessBrief.updated}</h2>
+          <p>{businessBrief.text}</p>
+        </aside>
+      )}
 
       <div className="todo-toolbar">
         <button

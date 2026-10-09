@@ -108,6 +108,8 @@ export const PROJECT_TABS = [
   "Next Best Action",
 ] as const;
 
+export { BUSINESS_BRIEFS } from "./briefs";
+
 export const METRIC_DEFINITIONS = {
   sales_7d: { unit: "aud_cents", label: "Online sales, last 7 days" },
   sales_30d: { unit: "aud_cents", label: "Online sales, last 30 days" },
