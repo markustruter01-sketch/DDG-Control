@@ -7,7 +7,7 @@ import {
   fleetSnapshotsTable,
   goalsTable,
   membersTable,
-  metricSnapshotsTable,
+  metricSnapshotsV2Table,
   projectsTable,
   tasksTable,
 } from "@workspace/db";
@@ -379,18 +379,18 @@ export async function buildOllieSnapshot(
       .where(ne(tasksTable.status, "done")),
     db
       .select({
-        project_id: metricSnapshotsTable.project_id,
+        project_id: metricSnapshotsV2Table.project_id,
         project_slug: projectsTable.slug,
-        key: metricSnapshotsTable.key,
-        value: metricSnapshotsTable.value,
-        captured_at: metricSnapshotsTable.captured_at,
+        key: metricSnapshotsV2Table.key,
+        value: metricSnapshotsV2Table.value,
+        captured_at: metricSnapshotsV2Table.captured_at,
       })
-      .from(metricSnapshotsTable)
+      .from(metricSnapshotsV2Table)
       .innerJoin(
         projectsTable,
-        eq(metricSnapshotsTable.project_id, projectsTable.id),
+        eq(metricSnapshotsV2Table.project_id, projectsTable.id),
       )
-      .orderBy(desc(metricSnapshotsTable.captured_at)),
+      .orderBy(desc(metricSnapshotsV2Table.captured_at)),
     db
       .select({ name: membersTable.name, kind: membersTable.kind })
       .from(membersTable)

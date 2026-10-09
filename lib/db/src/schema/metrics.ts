@@ -16,6 +16,7 @@ import { projectsTable } from "./projects";
 
 const metricKeys = Object.keys(METRIC_DEFINITIONS);
 
+// DEPRECATED: replaced by metric_snapshots_v2 (production CHECK could not be updated via publish)
 export const metricSnapshotsTable = pgTable(
   "metric_snapshots",
   {
@@ -37,6 +38,27 @@ export const metricSnapshotsTable = pgTable(
       )})`,
     ),
     index("metric_snapshots_project_key_captured_at_idx").on(
+      table.project_id,
+      table.key,
+      table.captured_at,
+    ),
+  ],
+);
+
+export const metricSnapshotsV2Table = pgTable(
+  "metric_snapshots_v2",
+  {
+    id: serial("id").primaryKey(),
+    project_id: integer("project_id")
+      .notNull()
+      .references(() => projectsTable.id),
+    key: text("key").notNull(),
+    value: bigint("value", { mode: "number" }).notNull(),
+    source: text("source").notNull(),
+    captured_at: timestamp("captured_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("metric_snapshots_v2_project_key_captured_at_idx").on(
       table.project_id,
       table.key,
       table.captured_at,

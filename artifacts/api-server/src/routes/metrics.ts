@@ -11,7 +11,7 @@ import {
   dailySalesTable,
   db,
   membersTable,
-  metricSnapshotsTable,
+  metricSnapshotsV2Table,
   projectsTable,
 } from "@workspace/db";
 import {
@@ -160,7 +160,7 @@ function lastBrisbaneSalesDays(today = brisbaneDate(new Date())): string[] {
   );
 }
 
-function toApiMetric(row: typeof metricSnapshotsTable.$inferSelect) {
+function toApiMetric(row: typeof metricSnapshotsV2Table.$inferSelect) {
   const definition = METRIC_DEFINITIONS[row.key as MetricKey];
   if (!definition) {
     throw new Error(`Metric snapshot "${row.id}" has an invalid key`);
@@ -187,9 +187,9 @@ router.get(
 
     const rows = await db
       .select()
-      .from(metricSnapshotsTable)
-      .where(eq(metricSnapshotsTable.project_id, projectId))
-      .orderBy(desc(metricSnapshotsTable.captured_at));
+      .from(metricSnapshotsV2Table)
+      .where(eq(metricSnapshotsV2Table.project_id, projectId))
+      .orderBy(desc(metricSnapshotsV2Table.captured_at));
 
     const latestByKey = new Map<string, (typeof rows)[number]>();
     for (const row of rows) {
@@ -371,6 +371,12 @@ export async function refreshCattleDogMetrics() {
     },
   );
 
+  for (const metric of values) {
+    if (!Object.hasOwn(METRIC_DEFINITIONS, metric.key)) {
+      throw new Error(`Invalid metric key: ${metric.key}`);
+    }
+  }
+
   const inserted = await db.transaction(async (tx) => {
     await tx
       .insert(dailySalesTable)
@@ -383,7 +389,7 @@ export async function refreshCattleDogMetrics() {
           updated_at: sql`now()`,
         },
       });
-    return tx.insert(metricSnapshotsTable).values(values).returning();
+    return tx.insert(metricSnapshotsV2Table).values(values).returning();
   });
   return inserted.map(toApiMetric);
 }
@@ -450,20 +456,20 @@ router.get(
 
     const rows = await db
       .select({
-        value: metricSnapshotsTable.value,
-        captured_at: metricSnapshotsTable.captured_at,
-        id: metricSnapshotsTable.id,
+        value: metricSnapshotsV2Table.value,
+        captured_at: metricSnapshotsV2Table.captured_at,
+        id: metricSnapshotsV2Table.id,
       })
-      .from(metricSnapshotsTable)
+      .from(metricSnapshotsV2Table)
       .where(
         and(
-          eq(metricSnapshotsTable.project_id, projectId),
-          eq(metricSnapshotsTable.key, key),
+          eq(metricSnapshotsV2Table.project_id, projectId),
+          eq(metricSnapshotsV2Table.key, key),
         ),
       )
       .orderBy(
-        desc(metricSnapshotsTable.captured_at),
-        desc(metricSnapshotsTable.id),
+        desc(metricSnapshotsV2Table.captured_at),
+        desc(metricSnapshotsV2Table.id),
       )
       .limit(90);
     const response = rows

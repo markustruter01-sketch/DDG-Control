@@ -23,7 +23,7 @@ import {
   db,
   debtsTable,
   expensesTable,
-  metricSnapshotsTable,
+  metricSnapshotsV2Table,
   projectsTable,
   revenueEntriesTable,
 } from "@workspace/db";
@@ -1115,19 +1115,22 @@ export async function computeFinanceSummary() {
   const metricRows = coffeeProject
     ? await db
         .select({
-          id: metricSnapshotsTable.id,
-          key: metricSnapshotsTable.key,
-          value: metricSnapshotsTable.value,
-          captured_at: metricSnapshotsTable.captured_at,
+          id: metricSnapshotsV2Table.id,
+          key: metricSnapshotsV2Table.key,
+          value: metricSnapshotsV2Table.value,
+          captured_at: metricSnapshotsV2Table.captured_at,
         })
-        .from(metricSnapshotsTable)
+        .from(metricSnapshotsV2Table)
         .where(
           and(
-            eq(metricSnapshotsTable.project_id, coffeeProject.id),
-            inArray(metricSnapshotsTable.key, ["sales_30d", "customers_30d"]),
+            eq(metricSnapshotsV2Table.project_id, coffeeProject.id),
+            inArray(metricSnapshotsV2Table.key, ["sales_30d", "customers_30d"]),
           ),
         )
-        .orderBy(desc(metricSnapshotsTable.captured_at), desc(metricSnapshotsTable.id))
+        .orderBy(
+          desc(metricSnapshotsV2Table.captured_at),
+          desc(metricSnapshotsV2Table.id),
+        )
     : [];
   const latestMetrics = new Map<string, number>();
   for (const row of metricRows) {
