@@ -1,0 +1,47 @@
+PROMPT ID: 17d-2
+
+ENVIRONMENT
+Replit: DDG Control. Development only. Do not publish. Make NO xAI requests. Do not contact DDG - Finance or any broker.
+
+GOAL
+Polish the Finance trading screens: label drawdown with its start date, zoom line charts to their data, hide near-zero positions, and stop bot names wrapping.
+
+DONE WHEN
+- The Drawdown card reads "Drawdown · since <date of oldest fleet history day, e.g. 8 Oct 2026>".
+- The fleet equity line chart and the Cattle Dog Coffee sales_30d trend line use a y-axis from (data minimum − 1%) to (data maximum + 1%). Bar charts still start at 0.
+- In the Positions table, rows with an absolute qty below 0.000001 are hidden, and a small note shows "<n> near-zero position(s) hidden" when n > 0.
+- Bot ids never wrap in any table. On narrow screens, tables scroll sideways inside their card, with no page-level horizontal overflow.
+- Works at 402 px and 1440 px width, in day and night mode. `pnpm run typecheck` passes.
+
+SCOPE
+- artifacts/ddg-control/src/App.tsx
+- artifacts/ddg-control/src/ddg.css
+
+DO NOT
+- Do not change any API route, schema, the fleet receiver, Ollie, or any other project's tabs.
+- Do not change any number's value. Display only.
+- Do not add, remove or upgrade packages.
+- Do not publish.
+- Do not hand-edit any generated file.
+- Do not add anything not listed in STEPS.
+- Do not refactor, rename or reformat code you were not asked to change.
+- Do not fix unrelated problems you notice. Report them instead.
+
+STEPS
+1. Drawdown label: use the oldest day returned by GET /api/projects/finance/fleet/history, formatted with the existing date formatter. If history is empty, the label is just "Drawdown".
+
+2. Line charts: set the y-axis domain to [min × 0.99, max × 1.01] of the plotted values, for the fleet equity line and the sales_30d trend line only. Leave bar charts unchanged.
+
+3. Positions table: hide rows where |qty| < 0.000001, and add the hidden-count note.
+
+4. CSS: give bot-id cells white-space: nowrap. Wrap each wide table in a container with overflow-x: auto. Confirm document.documentElement.scrollWidth equals the viewport width at 402 px.
+
+5. Test against the development server, using FLEET_INBOUND_KEY from the environment without printing it. Record the ids.
+   a) Show the "before" counts of the 3 fleet tables.
+   b) POST 2 snapshots (dated now minus 1 day, and now minus 1 minute) with different equity values. The second includes a detail with 3 positions, one of them with qty 0.000000004.
+   c) Screenshot the finance Revenue tab at 402 px and 1440 px, in day and night mode: zoomed chart, drawdown label, and 2 visible positions plus the "1 near-zero position(s) hidden" note. Do not save screenshots in the workspace. Show scrollWidth at 402 px.
+   d) Cleanup, in one transaction, deleting only the recorded ids (detail, then bot rows, then snapshots) with exact counts, otherwise roll back. Show that the counts equal the "before" counts.
+
+6. Run `pnpm run typecheck`. Report every file touched.
+
+Give your entire response in one fenced code block. End it with a FACTS block listing only what you verified by running something, and the command you ran for each.

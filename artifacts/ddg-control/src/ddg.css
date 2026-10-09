@@ -667,7 +667,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 .fleet-no-errors { margin: 0; padding: 12px 0; color: hsl(var(--muted-foreground)); font-size: 12px; }
 .fleet-bots-panel { padding: 17px; }
 .fleet-bots-panel > .fleet-panel-heading { margin-bottom: 8px; }
-.fleet-table-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: hsl(var(--border)) transparent; }
+.fleet-table-scroll { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: thin; scrollbar-color: hsl(var(--border)) transparent; }
 .fleet-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
 .fleet-table th, .fleet-table td { padding: 12px 10px; border-bottom: 1px solid hsl(var(--border)); white-space: nowrap; }
 .fleet-table thead th { color: hsl(var(--muted-foreground)); font: 500 9px/1.3 var(--app-font-mono); letter-spacing: .035em; text-transform: uppercase; }
@@ -713,6 +713,9 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 .fleet-incident-meta strong { color: hsl(var(--foreground)); font-weight: 700; text-transform: capitalize; }
 .fleet-detail-table { table-layout: fixed; font-size: 10px; }
 .fleet-detail-table th, .fleet-detail-table td { padding: 9px 6px; white-space: normal; overflow-wrap: anywhere; }
+.fleet-detail-table .fleet-bot-id { white-space: nowrap; }
+.fleet-bot-id { white-space: nowrap; }
+.fleet-near-zero-note { margin: 0 0 8px; color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.35; }
 .fleet-detail-table thead th { font-size: 8px; }
 .fleet-detail-table tbody th { font-size: 10px; }
 .fleet-detail-table th:nth-child(1) { width: 17%; }
@@ -732,6 +735,9 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   .fleet-overview { grid-template-columns: 1fr; }
   .fleet-dashboard-grid { grid-template-columns: 1fr; }
   .fleet-detail-panels { grid-template-columns: 1fr; }
+}
+@media (max-width: 699px) {
+  .detail-main[data-project-slug="finance"] .fleet-table { min-width: 620px; }
 }
 @media (max-width: 520px) {
   .fleet-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

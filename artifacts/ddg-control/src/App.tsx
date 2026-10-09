@@ -2290,6 +2290,12 @@ function RevenueWorkspace({ slug }: { slug: string }) {
   const metrics = metricsQuery.data ?? [];
   const historyRows: MetricHistoryRow[] = [...(historyQuery.data ?? [])]
     .sort((a, b) => a.captured_at.localeCompare(b.captured_at));
+  const salesHistoryDomain: [number, number] | undefined = historyRows.length > 0
+    ? [
+      Math.min(...historyRows.map((row) => row.value)) * 0.99,
+      Math.max(...historyRows.map((row) => row.value)) * 1.01,
+    ]
+    : undefined;
   const latestMetric = metrics.reduce<ProjectMetric | undefined>((latest, metric) => (
     !latest || new Date(metric.captured_at).getTime() > new Date(latest.captured_at).getTime()
       ? metric
@@ -2340,7 +2346,7 @@ function RevenueWorkspace({ slug }: { slug: string }) {
               <LineChart data={historyRows} margin={{ top: 10, right: 8, bottom: 0, left: 0 }}>
                 <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 4" />
                 <XAxis dataKey="captured_at" tickFormatter={(value: string) => formatDueDate(value.slice(0, 10))} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" minTickGap={24} />
-                <YAxis tickFormatter={(value: number) => formatFigure(value, 'aud_cents')} width={60} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" />
+                <YAxis domain={salesHistoryDomain} tickFormatter={(value: number) => formatFigure(value, 'aud_cents')} width={60} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" />
                 <Tooltip formatter={(value: number) => formatFigure(value, 'aud_cents')} labelFormatter={(value: string) => formatBrisbaneDateTime(value)} contentStyle={{ background: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} />
                 <Line dataKey="value" name="Sales" type="monotone" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
               </LineChart>
@@ -2371,6 +2377,15 @@ function FinanceFleetWorkspace() {
     ? latestQuery.data
     : undefined;
   const history: FleetHistoryResponse = historyQuery.data ?? [];
+  const oldestHistoryDay = history.reduce<string | undefined>((oldest, row) => (
+    !oldest || row.day < oldest ? row.day : oldest
+  ), undefined);
+  const fleetEquityDomain: [number, number] | undefined = history.length > 0
+    ? [
+      Math.min(...history.map((row) => row.total_equity_cents)) * 0.99,
+      Math.max(...history.map((row) => row.total_equity_cents)) * 1.01,
+    ]
+    : undefined;
 
   if (latestQuery.isLoading) {
     return (
@@ -2430,7 +2445,7 @@ function FinanceFleetWorkspace() {
             <span className="fleet-metric-label">Total P&amp;L</span>
             <strong className={pnlPositive ? 'fleet-positive' : 'fleet-negative'}>{formatFigure(latest.total_pnl_cents, 'usd_cents')}</strong>
           </article>
-          <article className="fleet-metric-card"><span className="fleet-metric-label">Drawdown</span><strong>{latest.drawdown_pct.toFixed(2)}%</strong></article>
+          <article className="fleet-metric-card"><span className="fleet-metric-label">{oldestHistoryDay ? `Drawdown · since ${formatDueDate(oldestHistoryDay)}` : 'Drawdown'}</span><strong>{latest.drawdown_pct.toFixed(2)}%</strong></article>
           <article className="fleet-metric-card"><span className="fleet-metric-label">Peak equity</span><strong>{formatFigure(latest.peak_equity_cents, 'usd_cents')}</strong></article>
           <article className="fleet-metric-card"><span className="fleet-metric-label">Open positions</span><strong>{formatFigure(latest.open_positions, 'count')}</strong></article>
           <article className="fleet-metric-card"><span className="fleet-metric-label">Paused bots</span><strong>{formatFigure(latest.paused_bots, 'count')}</strong></article>
@@ -2453,7 +2468,7 @@ function FinanceFleetWorkspace() {
               <LineChart data={history} margin={{ top: 12, right: 12, bottom: 0, left: 3 }}>
                 <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 4" />
                 <XAxis dataKey="day" tickFormatter={(day: string) => formatDueDate(day)} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" minTickGap={26} />
-                <YAxis tickFormatter={(value: number) => formatFigure(value, 'usd_cents')} width={82} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" />
+                <YAxis domain={fleetEquityDomain} tickFormatter={(value: number) => formatFigure(value, 'usd_cents')} width={82} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} stroke="hsl(var(--border))" />
                 <Tooltip
                   formatter={(value: number) => formatFigure(value, 'usd_cents')}
                   labelFormatter={(day: string) => formatDueDate(day)}
@@ -2495,7 +2510,7 @@ function FinanceFleetWorkspace() {
                   const status = bot.paused ? 'Paused' : bot.stale ? 'Stale' : 'Running';
                   return (
                     <tr key={bot.id} data-testid={`row-fleet-bot-${bot.bot_id}`}>
-                      <th scope="row">{bot.bot_id}</th>
+                      <th scope="row" className="fleet-bot-id">{bot.bot_id}</th>
                       <td>{formatFigure(bot.equity_cents, 'usd_cents')}</td>
                       <td className={bot.pnl_cents >= 0 ? 'fleet-positive' : 'fleet-negative'}>{formatFigure(bot.pnl_cents, 'usd_cents')}</td>
                       <td className={pnlPercent === null ? '' : pnlPercent >= 0 ? 'fleet-positive' : 'fleet-negative'}>{pnlPercent === null ? '—' : `${pnlPercent.toFixed(2)}%`}</td>
@@ -2515,6 +2530,9 @@ function FinanceFleetWorkspace() {
 }
 
 function FleetDetailPanels({ detail }: { detail: FleetLatestSnapshotResponse['detail'] }) {
+  const nearZeroPositionCount = detail?.positions.filter((position) => Math.abs(position.qty) < 0.000001).length ?? 0;
+  const visiblePositions = detail?.positions.filter((position) => Math.abs(position.qty) >= 0.000001) ?? [];
+
   return (
     <div className="fleet-detail-panels">
       <section className="fleet-detail-panel" aria-labelledby="fleet-positions-title" data-testid="fleet-positions">
@@ -2524,21 +2542,26 @@ function FleetDetailPanels({ detail }: { detail: FleetLatestSnapshotResponse['de
         </div>
         {!detail ? (
           <p className="data-empty">No detail yet</p>
-        ) : detail.positions.length === 0 ? (
-          <p className="data-empty">No positions reported</p>
         ) : (
+          <>
+          {nearZeroPositionCount > 0 && (
+            <p className="fleet-near-zero-note">{nearZeroPositionCount} near-zero position(s) hidden</p>
+          )}
+          {visiblePositions.length === 0 ? nearZeroPositionCount === 0 && (
+            <p className="data-empty">No positions reported</p>
+          ) : (
           <div className="fleet-table-scroll">
             <table className="fleet-table fleet-detail-table">
               <thead>
                 <tr><th scope="col">Bot</th><th scope="col">Symbol</th><th scope="col">Qty</th><th scope="col">Entry</th><th scope="col">Stop</th><th scope="col">Protected</th></tr>
               </thead>
               <tbody>
-                {detail.positions.map((position, index) => (
+                {visiblePositions.map((position, index) => (
                   <tr
                     key={`${position.bot_id}-${position.symbol}-${index}`}
                     className={position.has_broker_stop === false ? 'fleet-position-no-stop' : undefined}
                   >
-                    <th scope="row">{position.bot_id}</th>
+                    <th scope="row" className="fleet-bot-id">{position.bot_id}</th>
                     <td>{position.symbol}</td>
                     <td>{new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(position.qty)}</td>
                     <td>{position.entry_price === null ? '—' : formatFigure(position.entry_price * 100, 'usd_cents')}</td>
@@ -2549,6 +2572,8 @@ function FleetDetailPanels({ detail }: { detail: FleetLatestSnapshotResponse['de
               </tbody>
             </table>
           </div>
+          )}
+          </>
         )}
       </section>
 
@@ -2570,7 +2595,7 @@ function FleetDetailPanels({ detail }: { detail: FleetLatestSnapshotResponse['de
               <tbody>
                 {detail.bots_meta.map((bot, index) => (
                   <tr key={`${bot.bot_id}-${index}`}>
-                    <th scope="row">{bot.bot_id}</th>
+                    <th scope="row" className="fleet-bot-id">{bot.bot_id}</th>
                     <td>{bot.strategy || '—'}</td>
                     <td>{bot.broker || '—'}</td>
                     <td>{bot.account_mode}</td>
