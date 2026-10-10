@@ -1,0 +1,33 @@
+# Wakes Dashboard Ollie once a day. DDG Control scales to zero when idle, so an
+# in-app timer can't be relied on; GitHub's scheduler calls the cron endpoint.
+# Needs repo secret CRON_SECRET (same value as DDG Control's CRON_SECRET).
+# The endpoint itself refuses a second run on the same Brisbane day (409).
+name: ollie-daily
+
+on:
+  schedule:
+    # 20:40 UTC = 06:40 Brisbane (UTC+10, no daylight saving). GitHub may start
+    # scheduled jobs late; the run is still once per Brisbane day.
+    - cron: "40 20 * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  run-ollie:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call Dashboard Ollie
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then echo "CRON_SECRET repo secret not set"; exit 1; fi
+          status=$(curl -sS -o response.json -w "%{http_code}" --max-time 120 \
+            -X POST "https://ddg-control.replit.app/api/agents/ollie/cron" \
+            -H "Authorization: Bearer $CRON_SECRET")
+          echo "HTTP $status"
+          # Print only the run status/error fields, never the full body.
+          python3 -c "import json;d=json.load(open('response.json'));print({k:d.get(k) for k in ('status','error')})" || true
+          # 200 = ran; 409 = already ran today. Anything else fails the job so it shows red.
+          if [ "$status" != "200" ] && [ "$status" != "409" ]; then exit 1; fi
