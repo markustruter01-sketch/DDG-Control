@@ -41,8 +41,8 @@ const initialProjects: Array<typeof projectsTable.$inferInsert> = [
     sort_order: 3,
   },
   {
-    slug: "gods-eye-view",
-    name: "Gods Eye View",
+    slug: "ddg-music",
+    name: "DDG Music",
     description: null,
     status: PROJECT_STATUSES[0],
     sort_order: 4,
@@ -63,6 +63,14 @@ export async function seedProjectsIfEmpty(): Promise<void> {
   if (existing.length === 0) {
     await db.insert(projectsTable).values(initialProjects);
   }
+
+  // One-time venture swap (approved by Markus 11 Oct 2026): Gods Eye View moved
+  // to another Claude account; its slot becomes DDG Music. Idempotent: a no-op
+  // once no row has the old slug. Keeps the row id, so history stays attached.
+  await db
+    .update(projectsTable)
+    .set({ slug: "ddg-music", name: "DDG Music", description: null })
+    .where(eq(projectsTable.slug, "gods-eye-view"));
 
   const existingMembers = await db
     .select({ id: membersTable.id })

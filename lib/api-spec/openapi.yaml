@@ -28,6 +28,8 @@ tags:
     description: Key-protected inbound operations for Cursor
   - name: finance
     description: Finance ledger operations
+  - name: social
+    description: Social audience numbers per venture
 paths:
   /healthz:
     get:
@@ -710,6 +712,54 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/LatestAgentProjectUpdate"
+  /social/summary:
+    get:
+      operationId: getSocialSummary
+      tags: [social]
+      summary: Latest social audience numbers per venture, with 30-day change
+      responses:
+        "200":
+          description: Social summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialSummaryResponse"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /social/snapshots:
+    post:
+      operationId: createSocialSnapshot
+      tags: [social]
+      summary: Record one reading of a venture's numbers on one platform
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SocialSnapshotCreate"
+      responses:
+        "201":
+          description: Reading recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialSnapshot"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /finance/debts:
     get:
       operationId: listFinanceDebts
@@ -2448,6 +2498,100 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/FinanceDebt"
+    SocialPlatform:
+      type: string
+      enum: [instagram, facebook, tiktok, youtube, x, linkedin]
+    SocialSnapshotCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        project_slug:
+          type: string
+          minLength: 1
+        platform:
+          $ref: "#/components/schemas/SocialPlatform"
+        followers:
+          type: integer
+          minimum: 0
+          maximum: 2000000000
+        impressions_30d:
+          type: ["integer", "null"]
+          minimum: 0
+          maximum: 2000000000
+        engagements_30d:
+          type: ["integer", "null"]
+          minimum: 0
+          maximum: 2000000000
+      required: [project_slug, platform, followers]
+    SocialSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        project_slug:
+          type: string
+        platform:
+          $ref: "#/components/schemas/SocialPlatform"
+        followers:
+          type: integer
+        impressions_30d:
+          type: ["integer", "null"]
+        engagements_30d:
+          type: ["integer", "null"]
+        captured_on:
+          type: string
+          format: date
+        source:
+          type: string
+      required: [id, project_slug, platform, followers, impressions_30d, engagements_30d, captured_on, source]
+    SocialPlatformFigure:
+      type: object
+      additionalProperties: false
+      properties:
+        platform:
+          $ref: "#/components/schemas/SocialPlatform"
+        followers:
+          type: integer
+        followers_change_30d:
+          type: ["integer", "null"]
+          description: Null when there is no reading from 30 or more days ago.
+        impressions_30d:
+          type: ["integer", "null"]
+        engagements_30d:
+          type: ["integer", "null"]
+        captured_on:
+          type: string
+          format: date
+        source:
+          type: string
+      required: [platform, followers, followers_change_30d, impressions_30d, engagements_30d, captured_on, source]
+    SocialVentureSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        project_slug:
+          type: string
+        total_followers:
+          type: integer
+        followers_change_30d:
+          type: ["integer", "null"]
+        platforms:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialPlatformFigure"
+      required: [project_slug, total_followers, followers_change_30d, platforms]
+    SocialSummaryResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        total_followers:
+          type: integer
+        ventures:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialVentureSummary"
+      required: [total_followers, ventures]
     FinanceDebtCreate:
       type: object
       additionalProperties: false

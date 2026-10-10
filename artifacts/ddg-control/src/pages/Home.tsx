@@ -24,6 +24,7 @@ import {
 } from '@workspace/api-client-react';
 import { PROJECT_HEADLINE_METRIC } from '@workspace/project-constants';
 import { Header } from '@/components/header';
+import { SocialBar } from '@/components/SocialBar';
 import { serverErrorText } from '@/lib/errors';
 import { formatAgo, formatFigure, formatFinanceCents } from '@/lib/format';
 
@@ -230,6 +231,7 @@ export function Home() {
           onRetry={() => void financeSummaryQuery.refetch()}
           updatedAt={financeSummaryQuery.dataUpdatedAt}
         />
+        <SocialBar projects={projects} />
         {(pendingDecisionsQuery.data?.length ?? 0) > 0 && (
           <Link className="decisions-waiting" href="/decisions" data-testid="link-decisions-waiting">
             Decisions waiting: {pendingDecisionsQuery.data?.length}

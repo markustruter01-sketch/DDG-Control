@@ -83,7 +83,7 @@ export const ORG_CHART = [
     name: "DDG Venture",
     role: "Venture Manager",
     group: "venture",
-    project_slug: "gods-eye-view",
+    project_slug: "ddg-music",
   },
 ] as const;
 
@@ -111,7 +111,7 @@ export const PROJECT_TABS = [
 const HIDDEN_PROJECT_TABS: Record<string, readonly (typeof PROJECT_TABS)[number][]> = {
   finance: ["Customers"],
   hypest: ["Customers", "Revenue & Subscriptions"],
-  "gods-eye-view": ["Customers", "Revenue & Subscriptions"],
+  "ddg-music": ["Customers", "Revenue & Subscriptions"],
 };
 
 export function projectTabsFor(slug: string): (typeof PROJECT_TABS)[number][] {
@@ -138,3 +138,22 @@ export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 export type ProjectTab = (typeof PROJECT_TABS)[number];
 export type MetricKey = keyof typeof METRIC_DEFINITIONS;
 export type MetricUnit = (typeof METRIC_DEFINITIONS)[MetricKey]["unit"];
+
+// Social audience numbers shown on the Home "Social" row.
+export const SOCIAL_PLATFORMS = [
+  "instagram",
+  "facebook",
+  "tiktok",
+  "youtube",
+  "x",
+  "linkedin",
+] as const;
+export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
+export const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  x: "X",
+  linkedin: "LinkedIn",
+};

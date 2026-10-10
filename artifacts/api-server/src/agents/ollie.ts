@@ -44,7 +44,7 @@ Ventures:
 - DDG - Finance: automated four-bot quantitative trading fleet. High-sensitivity.
 - DDG - Hypest: global health and fitness marketplace for selling content and personal training services.
 - Cattle Dog Coffee: premium small-batch coffee. $1 from every sale goes to animal charities such as the RSPCA.
-- Gods Eye View: portfolio showpiece for a Saab Australia demonstration. Lower priority. Target completion is the end of the current month.
+- DDG Music: new monetised AI-generated music channel on YouTube (channel name "DDG Music"). Just started: no social accounts yet, no audience or revenue data. Audience growth is a key goal. (Gods Eye View now runs on a separate Claude account and is not tracked here.)
 
 Team members are listed in the snapshot. Agents can only recommend; humans act.
 

@@ -37,7 +37,7 @@ try {
   assert.equal(snapshot.business_briefs?.length, 4);
   assert.deepEqual(
     snapshot.business_briefs?.map((brief) => brief.project_slug).sort(),
-    ["cattle-dog-coffee", "finance", "gods-eye-view", "hypest"].sort(),
+    ["cattle-dog-coffee", "finance", "ddg-music", "hypest"].sort(),
   );
   assert.ok(snapshot.business_briefs?.every((brief) => brief.updated === "2026-10-10"));
   console.log(

@@ -10,6 +10,7 @@ import decisionsRouter from "./decisions";
 import fleetRouter from "./fleet";
 import inboundRouter from "./inbound";
 import financeRouter from "./finance";
+import socialRouter from "./social";
 
 const router: IRouter = Router();
 
@@ -25,5 +26,6 @@ router.use(decisionsRouter);
 router.use(fleetRouter);
 router.use(inboundRouter);
 router.use(financeRouter);
+router.use(socialRouter);
 
 export default router;

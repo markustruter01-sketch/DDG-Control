@@ -1114,6 +1114,11 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
+.social-summary { margin-top: 12px; display: grid; gap: 9px; }
+.social-summary-head { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
+.social-summary-head .finance-kpi-label { min-height: 0; }
+.social-form { display: grid; gap: 11px; padding: 13px; border: 1px solid hsl(var(--border)); border-radius: 9px; background: hsl(var(--background) / .54); }
+.social-form-actions { display: flex; flex-wrap: wrap; gap: 9px; }
 .finance-kpi-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

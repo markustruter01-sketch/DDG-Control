@@ -867,6 +867,83 @@ export interface FinanceDebt {
 
 export type FinanceDebtListResponse = FinanceDebt[];
 
+export type SocialPlatform = typeof SocialPlatform[keyof typeof SocialPlatform];
+
+
+export const SocialPlatform = {
+  instagram: 'instagram',
+  facebook: 'facebook',
+  tiktok: 'tiktok',
+  youtube: 'youtube',
+  x: 'x',
+  linkedin: 'linkedin',
+} as const;
+
+export interface SocialSnapshotCreate {
+  /** @minLength 1 */
+  project_slug: string;
+  platform: SocialPlatform;
+  /**
+     * @minimum 0
+     * @maximum 2000000000
+     */
+  followers: number;
+  /**
+     * @minimum 0
+     * @maximum 2000000000
+     * @nullable
+     */
+  impressions_30d?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 2000000000
+     * @nullable
+     */
+  engagements_30d?: number | null;
+}
+
+export interface SocialSnapshot {
+  id: number;
+  project_slug: string;
+  platform: SocialPlatform;
+  followers: number;
+  /** @nullable */
+  impressions_30d: number | null;
+  /** @nullable */
+  engagements_30d: number | null;
+  captured_on: string;
+  source: string;
+}
+
+export interface SocialPlatformFigure {
+  platform: SocialPlatform;
+  followers: number;
+  /**
+     * Null when there is no reading from 30 or more days ago.
+     * @nullable
+     */
+  followers_change_30d: number | null;
+  /** @nullable */
+  impressions_30d: number | null;
+  /** @nullable */
+  engagements_30d: number | null;
+  captured_on: string;
+  source: string;
+}
+
+export interface SocialVentureSummary {
+  project_slug: string;
+  total_followers: number;
+  /** @nullable */
+  followers_change_30d: number | null;
+  platforms: SocialPlatformFigure[];
+}
+
+export interface SocialSummaryResponse {
+  total_followers: number;
+  ventures: SocialVentureSummary[];
+}
+
 export interface FinanceDebtCreate {
   /**
      * Null represents Company.

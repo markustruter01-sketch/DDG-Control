@@ -541,6 +541,63 @@ export const ListLatestAgentUpdatesResponse = zod.array(ListLatestAgentUpdatesRe
 
 
 /**
+ * @summary Latest social audience numbers per venture, with 30-day change
+ */
+export const GetSocialSummaryResponse = zod.object({
+  "total_followers": zod.number().int(),
+  "ventures": zod.array(zod.object({
+  "project_slug": zod.string(),
+  "total_followers": zod.number().int(),
+  "followers_change_30d": zod.number().int().nullable(),
+  "platforms": zod.array(zod.object({
+  "platform": zod.enum(['instagram', 'facebook', 'tiktok', 'youtube', 'x', 'linkedin']),
+  "followers": zod.number().int(),
+  "followers_change_30d": zod.number().int().nullable().describe('Null when there is no reading from 30 or more days ago.'),
+  "impressions_30d": zod.number().int().nullable(),
+  "engagements_30d": zod.number().int().nullable(),
+  "captured_on": zod.coerce.date(),
+  "source": zod.string()
+}))
+}))
+})
+
+
+/**
+ * @summary Record one reading of a venture's numbers on one platform
+ */
+
+export const createSocialSnapshotBodyFollowersMin = 0;
+export const createSocialSnapshotBodyFollowersMax = 2000000000;
+
+export const createSocialSnapshotBodyImpressions30dMin = 0;
+export const createSocialSnapshotBodyImpressions30dMax = 2000000000;
+
+export const createSocialSnapshotBodyEngagements30dMin = 0;
+export const createSocialSnapshotBodyEngagements30dMax = 2000000000;
+
+
+
+export const CreateSocialSnapshotBody = zod.object({
+  "project_slug": zod.string().min(1),
+  "platform": zod.enum(['instagram', 'facebook', 'tiktok', 'youtube', 'x', 'linkedin']),
+  "followers": zod.number().int().min(createSocialSnapshotBodyFollowersMin).max(createSocialSnapshotBodyFollowersMax),
+  "impressions_30d": zod.number().int().min(createSocialSnapshotBodyImpressions30dMin).max(createSocialSnapshotBodyImpressions30dMax).nullish(),
+  "engagements_30d": zod.number().int().min(createSocialSnapshotBodyEngagements30dMin).max(createSocialSnapshotBodyEngagements30dMax).nullish()
+})
+
+export const CreateSocialSnapshotResponse = zod.object({
+  "id": zod.number().int(),
+  "project_slug": zod.string(),
+  "platform": zod.enum(['instagram', 'facebook', 'tiktok', 'youtube', 'x', 'linkedin']),
+  "followers": zod.number().int(),
+  "impressions_30d": zod.number().int().nullable(),
+  "engagements_30d": zod.number().int().nullable(),
+  "captured_on": zod.coerce.date(),
+  "source": zod.string()
+})
+
+
+/**
  * @summary List debts
  */
 export const listFinanceDebtsResponseNameMax = 100;

@@ -124,9 +124,9 @@ const validForm: SampleForm = {
       risks: [],
     },
     {
-      slug: "gods-eye-view",
+      slug: "ddg-music",
       status_light: "red",
-      summary: "Sample daily status for Gods Eye View.",
+      summary: "Sample daily status for DDG Music.",
       next_action: "Review the sample report.",
       priority: "delay",
       risks: [
@@ -369,7 +369,7 @@ async function testMode(keepRows: boolean): Promise<void> {
     "hypest",
     "finance",
     "cattle-dog-coffee",
-    "gods-eye-view",
+    "ddg-music",
   ]) {
     assert.ok(
       projectRows.some((project: { slug: string }) => project.slug === slug),
