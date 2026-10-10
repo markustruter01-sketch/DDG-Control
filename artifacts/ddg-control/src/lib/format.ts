@@ -94,3 +94,15 @@ export function formatFigure(value: number, unit: string): string {
   if (unit === 'usd_cents') return formatCurrencyCents(value, 'USD');
   return new Intl.NumberFormat('en-AU', { maximumFractionDigits: 0 }).format(value);
 }
+
+export function formatAgo(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === 0) return 'time unknown';
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return 'time unknown';
+  const minutes = Math.max(0, Math.floor((Date.now() - time) / 60_000));
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours} h ago`;
+  return `${Math.floor(hours / 24)} days ago`;
+}

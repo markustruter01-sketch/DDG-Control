@@ -114,6 +114,11 @@ export function calculateFinanceSourceTotals({
   const expenses30dCents = recurringMonthlyCents + oneOff30dCents;
   const profit30dCents = cdcStoreProfitCents +
     otherManualRevenueCents - expenses30dCents;
+  // Next month: same profit basis as the last 30 days, minus one-off costs
+  // (they don't repeat). Never gross revenue minus expenses, because CDC
+  // product costs and charity live in the store's net profit, not here.
+  const expectedProfitNextMonthCents = cdcStoreProfitCents +
+    otherManualRevenueCents - recurringMonthlyCents;
   const otherProjectRevenueIds = new Set(
     otherManualRevenueRows.flatMap((row) =>
       row.project_id === null ? [] : [row.project_id],
@@ -140,6 +145,7 @@ export function calculateFinanceSourceTotals({
     expenses30dCents,
     profit30dCents,
     recurringMonthlyCents,
+    expectedProfitNextMonthCents,
     venturesWithoutRevenueSource,
     notes,
   };
@@ -1239,7 +1245,7 @@ export async function computeFinanceSummary() {
       : safeMetricInteger(customersValue, "customers_30d");
   const expectedExpenses = sourceTotals.recurringMonthlyCents;
   const expectedRevenue = sourceTotals.revenue30dCents;
-  const expectedProfit = expectedRevenue - expectedExpenses;
+  const expectedProfit = sourceTotals.expectedProfitNextMonthCents;
 
   return GetFinanceSummaryResponse.parse({
     profit_30d_cents: apiCents(sourceTotals.profit30dCents, "profit_30d_cents"),

@@ -25,7 +25,7 @@ import {
 import { PROJECT_HEADLINE_METRIC } from '@workspace/project-constants';
 import { Header } from '@/components/header';
 import { serverErrorText } from '@/lib/errors';
-import { formatFigure, formatFinanceCents } from '@/lib/format';
+import { formatAgo, formatFigure, formatFinanceCents } from '@/lib/format';
 
 function Sparkline({ rows }: { rows: DailySalesRow[] }) {
   if (rows.length < 2) return null;
@@ -68,9 +68,11 @@ function FinanceSummaryBar({
   isLoading,
   error,
   onRetry,
+  updatedAt,
 }: {
   summary: FinanceSummaryResponse | undefined;
   projects: Project[];
+  updatedAt: number;
   isLoading: boolean;
   error: unknown;
   onRetry: () => void;
@@ -121,6 +123,7 @@ function FinanceSummaryBar({
           detail="Cattle Dog Coffee, Stripe only"
         />
       </div>
+      {summary && <p className="finance-partial-line" data-testid="finance-summary-updated">Updated {formatAgo(updatedAt)}</p>}
       {isLoading && <p className="finance-summary-state" role="status">Loading company figures…</p>}
       {error != null && (
         <div className="finance-summary-state finance-summary-error" role="alert">
@@ -225,6 +228,7 @@ export function Home() {
           isLoading={financeSummaryQuery.isLoading}
           error={financeSummaryQuery.isError ? financeSummaryQuery.error : null}
           onRetry={() => void financeSummaryQuery.refetch()}
+          updatedAt={financeSummaryQuery.dataUpdatedAt}
         />
         {(pendingDecisionsQuery.data?.length ?? 0) > 0 && (
           <Link className="decisions-waiting" href="/decisions" data-testid="link-decisions-waiting">
@@ -264,12 +268,12 @@ export function Home() {
                 ? fleetLatestQuery.isError
                   ? 'No data yet'
                   : fleet?.mode === 'paper'
-                    ? `${formatFigure(fleet.total_equity_cents, 'usd_cents')} · Fleet value (paper)`
+                    ? `${formatFigure(fleet.total_equity_cents, 'usd_cents')} · Fleet value (paper) · updated ${formatAgo(fleet.generated_at)}`
                     : 'No data yet'
                 : null;
               const coffeeProfitHeadline = project.slug === coffeeSlug
                 ? coffeeProfitQuery.data
-                  ? `${formatFigure(coffeeProfitQuery.data.last30d.grossRevenueCents, 'aud_cents')} sales · ${coffeeProfitQuery.data.last30d.netProfitCents === null ? '—' : formatFigure(coffeeProfitQuery.data.last30d.netProfitCents, 'aud_cents')} profit · last 30 days`
+                  ? `${formatFigure(coffeeProfitQuery.data.last30d.grossRevenueCents, 'aud_cents')} sales · ${coffeeProfitQuery.data.last30d.netProfitCents === null ? '—' : formatFigure(coffeeProfitQuery.data.last30d.netProfitCents, 'aud_cents')} profit · last 30 days · updated ${formatAgo(coffeeProfitQuery.data.generatedAt)}`
                   : coffeeProfitQuery.isError
                     ? `${headlineMetric ? `${formatFigure(headlineMetric.value, headlineMetric.unit)} · ${headlineMetric.label}` : 'No data yet'} (online only)`
                     : 'Loading…'

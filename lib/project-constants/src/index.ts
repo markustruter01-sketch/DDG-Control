@@ -103,10 +103,21 @@ export const PROJECT_TABS = [
   "To-do",
   "Customers",
   "Revenue & Subscriptions",
-  "Marketing",
   "Agent Activity",
   "Next Best Action",
 ] as const;
+
+// Tabs with no data source for a project are hidden rather than shown empty.
+const HIDDEN_PROJECT_TABS: Record<string, readonly (typeof PROJECT_TABS)[number][]> = {
+  finance: ["Customers"],
+  hypest: ["Customers", "Revenue & Subscriptions"],
+  "gods-eye-view": ["Customers", "Revenue & Subscriptions"],
+};
+
+export function projectTabsFor(slug: string): (typeof PROJECT_TABS)[number][] {
+  const hidden = HIDDEN_PROJECT_TABS[slug] ?? [];
+  return PROJECT_TABS.filter((tab) => !hidden.includes(tab));
+}
 
 export { BUSINESS_BRIEFS } from "./briefs";
 

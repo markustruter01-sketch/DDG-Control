@@ -61,6 +61,7 @@ try {
   assert.equal(successful.revenue30dCents, 6000n);
   assert.equal(successful.expenses30dCents, 150n);
   assert.equal(successful.profit30dCents, 2150n);
+  assert.equal(successful.expectedProfitNextMonthCents, 2200n);
   assert.equal(successful.venturesWithoutRevenueSource.includes("cattle-dog-coffee"), false);
 
   globalThis.fetch = async (): Promise<Response> =>
@@ -74,6 +75,7 @@ try {
   });
   assert.equal(failed.revenue30dCents, 1000n);
   assert.equal(failed.profit30dCents, 850n);
+  assert.equal(failed.expectedProfitNextMonthCents, 900n);
   assert.equal(failed.venturesWithoutRevenueSource.includes("cattle-dog-coffee"), true);
   assert(
     failed.notes.includes(

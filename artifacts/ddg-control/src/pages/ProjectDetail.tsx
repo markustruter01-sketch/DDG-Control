@@ -8,7 +8,7 @@ import {
   useUpdateProject,
   type Project,
 } from '@workspace/api-client-react';
-import { PROJECT_STATUSES, PROJECT_TABS, type ProjectStatus } from '@workspace/project-constants';
+import { PROJECT_STATUSES, PROJECT_TABS, projectTabsFor, type ProjectStatus } from '@workspace/project-constants';
 import { Link, useParams } from 'wouter';
 import { isNotFound, serverErrorText } from '@/lib/errors';
 import { ProjectTodo } from '@/components/projects/Todo';
@@ -256,7 +256,7 @@ export function ProjectDetail() {
           </div>
         </section>
         <div className="tab-list" role="tablist" aria-label="Project sections" data-testid="tab-list-project">
-          {PROJECT_TABS.map((tab) => (
+          {projectTabsFor(project.slug).map((tab) => (
             <button
               key={tab}
               className="tab-button"
@@ -284,18 +284,14 @@ export function ProjectDetail() {
             : activeTab === 'Overview & Goals'
               ? <><ProjectGoals slug={project.slug} /><OverviewWorkspace slug={project.slug} /></>
               : activeTab === 'Customers'
-                ? project.slug === 'finance'
-                  ? <p className="data-empty">Not applicable — trading fleet</p>
-                  : <CustomerWorkspace slug={project.slug} />
+                ? <CustomerWorkspace slug={project.slug} />
                 : activeTab === 'Revenue & Subscriptions'
                   ? project.slug === 'finance'
                     ? <FinanceFleetWorkspace />
                     : <RevenueWorkspace slug={project.slug} />
-                  : activeTab === 'Marketing'
-                    ? <p className="data-empty">No marketing data source connected yet. Connect a source (for example site analytics or an ad account) to fill this tab.</p>
-                    : activeTab === 'Agent Activity'
-                      ? <AgentActivityWorkspace slug={project.slug} />
-                      : <NextActionWorkspace slug={project.slug} />}
+                  : activeTab === 'Agent Activity'
+                    ? <AgentActivityWorkspace slug={project.slug} />
+                    : <NextActionWorkspace slug={project.slug} />}
         </section>
       </main>
     </div>
