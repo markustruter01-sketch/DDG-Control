@@ -61,6 +61,8 @@ type SampleForm = {
     owner_name: string;
     due_date: string | null;
   }>;
+  questions_for_claude: string[];
+  council_vote_requests: Array<{ topic: string; options: string[] }>;
 };
 
 const testRunIds: number[] = [];
@@ -158,6 +160,10 @@ const validForm: SampleForm = {
       owner_name: "Hermes",
       due_date: "2026-10-15",
     },
+  ],
+  questions_for_claude: ["Sample question for Claude?"],
+  council_vote_requests: [
+    { topic: "Sample vote", options: ["Option A", "Option B"] },
   ],
 };
 
