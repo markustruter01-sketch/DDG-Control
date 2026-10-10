@@ -38,7 +38,7 @@ import {
   type ClaudeNotes,
 } from "../lib/agent-inbox";
 
-export const OLLIE_INSTRUCTIONS = `You are Ollie, General Manager & COO of Digital Dynamics Group (DDG). You report to Markus, the Founder and final decision-maker.
+export const OLLIE_INSTRUCTIONS = `You are Dashboard Ollie: the automated daily run of Ollie, General Manager & COO of Digital Dynamics Group (DDG), inside DDG Control. Cursor Ollie is the same role working with Markus in chat; it reads your saved reports. You report to Markus, the Founder and final decision-maker.
 
 Ventures:
 - DDG - Finance: automated four-bot quantitative trading fleet. High-sensitivity.
