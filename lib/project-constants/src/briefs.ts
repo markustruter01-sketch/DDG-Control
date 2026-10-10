@@ -12,7 +12,7 @@ export const BUSINESS_BRIEFS: Record<
   },
   "cattle-dog-coffee": {
     updated: "2026-10-10",
-    text: "Online store live at cattledogcoffee.com.au; in-person and market sales are recorded in the store admin. To 9 Oct (all time): 8 active orders, $843.70 sales of which only $48.95 was online via Stripe; net profit $217.82 after coffee, satchels, estimated Stripe fees and the RSPCA donation of $1 per bag. Refunded orders are cancelled by hand. On the Revenue tab the 'Online' cards are Stripe only; the Profit & loss card is all sales. Known issue: the company 'Profit · last 30 days' figure counts online sales only and ignores coffee costs, so it understates sales and overstates margin; fix pending.",
+    text: "Online store live at cattledogcoffee.com.au; in-person and market sales are recorded in the store admin. To 9 Oct (all time): 8 active orders, $843.70 sales of which only $48.95 was online via Stripe; net profit $217.82 after coffee, satchels, estimated Stripe fees and the RSPCA donation of $1 per bag. Refunded orders are cancelled by hand. On the Revenue tab the 'Online' cards are Stripe only; the Profit & loss card is all sales. Since 10 Oct the company profit figure uses the store's own sales and net profit.",
   },
   "gods-eye-view": {
     updated: "2026-10-10",

@@ -39,6 +39,10 @@ import {
   type ValidationResult,
   zodErrorText,
 } from "./validation";
+import {
+  getCattleDogCoffeeProfit,
+  type CattleDogCoffeeProfitResult,
+} from "../lib/cdc-store";
 
 const router: IRouter = Router();
 type ExpenseKind = (typeof EXPENSE_KINDS)[number];
@@ -67,7 +71,82 @@ const REVENUE_FIELDS = [
 const FINANCE_SUMMARY_NOTES = [
   "Recurring monthly costs count in full in the last 30 days.",
   "Next-month revenue is an estimate based on the last 30 days.",
+  "Cattle Dog Coffee figures are from the store (all sales incl. in-person; profit after coffee, satchels, Stripe fees and RSPCA).",
 ] as const;
+
+export function calculateFinanceSourceTotals({
+  projects,
+  revenueRows,
+  recurringExpenseRows,
+  oneOffExpenseRows,
+  storeResult,
+}: {
+  projects: { id: number; slug: string }[];
+  revenueRows: { project_id: number | null; amount_cents: bigint }[];
+  recurringExpenseRows: { amount_cents: bigint }[];
+  oneOffExpenseRows: { amount_cents: bigint }[];
+  storeResult: CattleDogCoffeeProfitResult;
+}) {
+  const coffeeProject = projects.find(
+    (project) => project.slug === "cattle-dog-coffee",
+  );
+  const validStoreProfit =
+    storeResult.ok && storeResult.data.last30d.netProfitCents !== null;
+  const cdcStoreRevenueCents = validStoreProfit
+    ? BigInt(storeResult.data.last30d.grossRevenueCents)
+    : 0n;
+  const cdcStoreProfitCents = validStoreProfit
+    ? BigInt(storeResult.data.last30d.netProfitCents!)
+    : 0n;
+  const otherManualRevenueRows = revenueRows.filter(
+    (row) => !coffeeProject || row.project_id !== coffeeProject.id,
+  );
+  const otherManualRevenueCents = sumBigInts(
+    otherManualRevenueRows.map((row) => row.amount_cents),
+  );
+  const recurringMonthlyCents = sumBigInts(
+    recurringExpenseRows.map((row) => row.amount_cents),
+  );
+  const oneOff30dCents = sumBigInts(
+    oneOffExpenseRows.map((row) => row.amount_cents),
+  );
+  const revenue30dCents = cdcStoreRevenueCents + otherManualRevenueCents;
+  const expenses30dCents = recurringMonthlyCents + oneOff30dCents;
+  const profit30dCents = cdcStoreProfitCents +
+    otherManualRevenueCents - expenses30dCents;
+  const otherProjectRevenueIds = new Set(
+    otherManualRevenueRows.flatMap((row) =>
+      row.project_id === null ? [] : [row.project_id],
+    ),
+  );
+  const venturesWithoutRevenueSource = projects
+    .filter(
+      (project) =>
+        (project.slug === "cattle-dog-coffee" && !validStoreProfit) ||
+        (project.slug !== "cattle-dog-coffee" &&
+          !otherProjectRevenueIds.has(project.id)),
+    )
+    .map((project) => project.slug);
+  const notes = [...FINANCE_SUMMARY_NOTES];
+  notes.push(
+    "Cattle Dog Coffee figures are from the store (all sales incl. in-person; profit after coffee, satchels, Stripe fees and RSPCA).",
+  );
+  if (!validStoreProfit) {
+    const error = storeResult.ok
+      ? "net profit unavailable"
+      : storeResult.error;
+    notes.push(`Cattle Dog Coffee store figures unavailable: ${error}`);
+  }
+
+  return {
+    revenue30dCents,
+    expenses30dCents,
+    profit30dCents,
+    recurringMonthlyCents,
+    venturesWithoutRevenueSource,
+    notes,
+  };
+}
 
 type ProjectReference = {
   project_id: number | null;
@@ -1070,8 +1149,14 @@ export async function computeFinanceSummary() {
   const today = brisbaneDate(new Date());
   const startDate = subtractCalendarDays(today, 29);
 
-  const [projects, debtRows, recurringExpenseRows, oneOffExpenseRows, revenueRows] =
-    await Promise.all([
+  const [
+    projects,
+    debtRows,
+    recurringExpenseRows,
+    oneOffExpenseRows,
+    revenueRows,
+    storeResult,
+  ] = await Promise.all([
       db
         .select({ id: projectsTable.id, slug: projectsTable.slug })
         .from(projectsTable)
@@ -1108,6 +1193,7 @@ export async function computeFinanceSummary() {
             lte(revenueEntriesTable.received_on, today),
           ),
         ),
+      getCattleDogCoffeeProfit(),
     ]);
 
   const coffeeProject = projects.find(
@@ -1125,7 +1211,7 @@ export async function computeFinanceSummary() {
         .where(
           and(
             eq(metricSnapshotsV2Table.project_id, coffeeProject.id),
-            inArray(metricSnapshotsV2Table.key, ["sales_30d", "customers_30d"]),
+            inArray(metricSnapshotsV2Table.key, ["customers_30d"]),
           ),
         )
         .orderBy(
@@ -1140,51 +1226,28 @@ export async function computeFinanceSummary() {
     }
   }
 
-  const stripeCentsValue = latestMetrics.get("sales_30d") ?? 0;
-  if (!Number.isSafeInteger(stripeCentsValue)) {
-    throw new Error("sales_30d exceeds the safe integer range");
-  }
-  const stripeCents = BigInt(stripeCentsValue);
-  const manualRevenueCents = sumBigInts(
-    revenueRows.map((row) => row.amount_cents),
-  );
-  const recurringMonthlyCents = sumBigInts(
-    recurringExpenseRows.map((row) => row.amount_cents),
-  );
-  const oneOff30dCents = sumBigInts(
-    oneOffExpenseRows.map((row) => row.amount_cents),
-  );
-  const revenue30dCents = stripeCents + manualRevenueCents;
-  const expenses30dCents = recurringMonthlyCents + oneOff30dCents;
-  const profit30dCents = revenue30dCents - expenses30dCents;
+  const sourceTotals = calculateFinanceSourceTotals({
+    projects,
+    revenueRows,
+    recurringExpenseRows,
+    oneOffExpenseRows,
+    storeResult,
+  });
   const debtCents = sumBigInts(debtRows.map((row) => row.balance_cents));
-
-  const projectRevenueIds = new Set(
-    revenueRows.flatMap((row) =>
-      row.project_id === null ? [] : [row.project_id],
-    ),
-  );
-  const venturesWithoutRevenueSource = projects
-    .filter(
-      (project) =>
-        project.slug !== "cattle-dog-coffee" &&
-        !projectRevenueIds.has(project.id),
-    )
-    .map((project) => project.slug);
 
   const customersValue = latestMetrics.get("customers_30d");
   const customers =
     customersValue === undefined
       ? null
       : safeMetricInteger(customersValue, "customers_30d");
-  const expectedExpenses = recurringMonthlyCents;
-  const expectedRevenue = revenue30dCents;
+  const expectedExpenses = sourceTotals.recurringMonthlyCents;
+  const expectedRevenue = sourceTotals.revenue30dCents;
   const expectedProfit = expectedRevenue - expectedExpenses;
 
   return GetFinanceSummaryResponse.parse({
-    profit_30d_cents: apiCents(profit30dCents, "profit_30d_cents"),
-    revenue_30d_cents: apiCents(revenue30dCents, "revenue_30d_cents"),
-    expenses_30d_cents: apiCents(expenses30dCents, "expenses_30d_cents"),
+    profit_30d_cents: apiCents(sourceTotals.profit30dCents, "profit_30d_cents"),
+    revenue_30d_cents: apiCents(sourceTotals.revenue30dCents, "revenue_30d_cents"),
+    expenses_30d_cents: apiCents(sourceTotals.expenses30dCents, "expenses_30d_cents"),
     debt_cents: apiCents(debtCents, "debt_cents"),
     expected_expenses_next_month_cents: apiCents(
       expectedExpenses,
@@ -1199,8 +1262,8 @@ export async function computeFinanceSummary() {
       "expected_profit_next_month_cents",
     ),
     customers,
-    ventures_without_revenue_source: venturesWithoutRevenueSource,
-    notes: FINANCE_SUMMARY_NOTES,
+    ventures_without_revenue_source: sourceTotals.venturesWithoutRevenueSource,
+    notes: sourceTotals.notes,
   });
 }
 

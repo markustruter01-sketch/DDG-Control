@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { Link } from 'wouter';
 import {
   getGetFinanceSummaryQueryKey,
+  getGetCattleDogCoffeeProfitQueryKey,
   getGetProjectFinanceFleetLatestQueryKey,
   getListDecisionsQueryKey,
   getListLatestAgentUpdatesQueryKey,
@@ -9,6 +10,7 @@ import {
   getListProjectMetricsQueryKey,
   getListProjectsQueryKey,
   useGetFinanceSummary,
+  useGetCattleDogCoffeeProfit,
   useGetProjectFinanceFleetLatest,
   useListDecisions,
   useListLatestAgentUpdates,
@@ -114,9 +116,9 @@ function FinanceSummaryBar({
         />
         <FinanceKpiCard
           testId="finance-kpi-customers"
-          label="Customers · paid in last 30 days"
+          label="Online customers · last 30 days"
           value={customerCount}
-          detail="Cattle Dog Coffee only"
+          detail="Cattle Dog Coffee, Stripe only"
         />
       </div>
       {isLoading && <p className="finance-summary-state" role="status">Loading company figures…</p>}
@@ -163,6 +165,12 @@ export function Home() {
   const fleetLatestQuery = useGetProjectFinanceFleetLatest({
     query: {
       queryKey: getGetProjectFinanceFleetLatestQueryKey(),
+      staleTime: 60_000,
+    },
+  });
+  const coffeeProfitQuery = useGetCattleDogCoffeeProfit({
+    query: {
+      queryKey: getGetCattleDogCoffeeProfitQueryKey(),
       staleTime: 60_000,
     },
   });
@@ -259,6 +267,13 @@ export function Home() {
                     ? `${formatFigure(fleet.total_equity_cents, 'usd_cents')} · Fleet value (paper)`
                     : 'No data yet'
                 : null;
+              const coffeeProfitHeadline = project.slug === coffeeSlug
+                ? coffeeProfitQuery.data
+                  ? `${formatFigure(coffeeProfitQuery.data.last30d.grossRevenueCents, 'aud_cents')} sales · ${coffeeProfitQuery.data.last30d.netProfitCents === null ? '—' : formatFigure(coffeeProfitQuery.data.last30d.netProfitCents, 'aud_cents')} profit · last 30 days`
+                  : coffeeProfitQuery.isError
+                    ? `${headlineMetric ? `${formatFigure(headlineMetric.value, headlineMetric.unit)} · ${headlineMetric.label}` : 'No data yet'} (online only)`
+                    : 'Loading…'
+                : null;
               const dailySales = project.slug === coffeeSlug ? (coffeeSalesQuery.data ?? []) : [];
               return (
                 <Link
@@ -294,6 +309,8 @@ export function Home() {
                       <strong>Headline:</strong>{' '}
                       {project.slug === 'finance'
                         ? financeHeadline
+                        : project.slug === coffeeSlug
+                          ? coffeeProfitHeadline
                         : headlineMetric
                           ? `${formatFigure(headlineMetric.value, headlineMetric.unit)} · ${headlineMetric.label}`
                           : 'No data yet'}
