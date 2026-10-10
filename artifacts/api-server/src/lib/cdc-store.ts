@@ -42,9 +42,15 @@ function addNetProfit(
   };
 }
 
-export type CattleDogCoffeeProfit = z.infer<
-  typeof GetCattleDogCoffeeProfitResponse
->;
+export type CattleDogCoffeeProfit = {
+  generatedAt: Date;
+  last30d: z.infer<typeof CdcStoreSummarySchema> & {
+    netProfitCents: number | null;
+  };
+  allTime: z.infer<typeof CdcStoreSummarySchema> & {
+    netProfitCents: number | null;
+  };
+};
 
 export type CattleDogCoffeeProfitResult =
   | { ok: true; data: CattleDogCoffeeProfit }
@@ -92,10 +98,10 @@ export async function getCattleDogCoffeeProfit(): Promise<CattleDogCoffeeProfitR
 
   return {
     ok: true,
-    data: GetCattleDogCoffeeProfitResponse.parse({
+      data: GetCattleDogCoffeeProfitResponse.parse({
       generatedAt: parsed.data.generatedAt,
       last30d: addNetProfit(parsed.data.last30d),
       allTime: addNetProfit(parsed.data.allTime),
-    }),
+      }) as CattleDogCoffeeProfit,
   };
 }

@@ -127,10 +127,7 @@ export function calculateFinanceSourceTotals({
           !otherProjectRevenueIds.has(project.id)),
     )
     .map((project) => project.slug);
-  const notes = [...FINANCE_SUMMARY_NOTES];
-  notes.push(
-    "Cattle Dog Coffee figures are from the store (all sales incl. in-person; profit after coffee, satchels, Stripe fees and RSPCA).",
-  );
+  const notes: string[] = [...FINANCE_SUMMARY_NOTES];
   if (!validStoreProfit) {
     const error = storeResult.ok
       ? "net profit unavailable"

@@ -39,7 +39,6 @@ try {
 
   const storeResult = await getCattleDogCoffeeProfit();
   assert.equal(storeResult.ok, true);
-  if (!storeResult.ok) throw new Error(storeResult.error);
   assert.equal(storeResult.data.last30d.netProfitCents, 1300);
 
   const testInputs = {
@@ -68,7 +67,6 @@ try {
     Response.json({ error: "unavailable" }, { status: 503 });
   const failedStoreResult = await getCattleDogCoffeeProfit();
   assert.equal(failedStoreResult.ok, false);
-  if (failedStoreResult.ok) throw new Error("Expected fake store failure");
 
   const failed = calculateFinanceSourceTotals({
     ...testInputs,
