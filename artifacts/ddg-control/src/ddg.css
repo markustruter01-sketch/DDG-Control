@@ -377,6 +377,18 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
     radial-gradient(circle at 15% 0%, hsl(var(--accent) / .11), transparent 34%),
     hsl(var(--background));
 }
+.app-shell:not(.home-shell) {
+  background-color: hsl(var(--background));
+  background-image:
+    linear-gradient(rgba(8, 12, 15, .42), rgba(8, 12, 15, .42)),
+    url('/dashboard-background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+:root[data-theme='day'] .app-shell:not(.home-shell) {
+  background-image: url('/dashboard-background.jpg');
+}
 .auth-loading {
   min-height: 100dvh;
   display: grid;
