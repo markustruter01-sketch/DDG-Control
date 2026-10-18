@@ -654,6 +654,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /cursor/models:
+    get:
+      operationId: listCursorModels
+      tags: [agents]
+      summary: Read the Cursor Cloud Agent models available to this account
+      description: Read-only model discovery. This does not start an agent or confirm model billing is included in the user's plan.
+      responses:
+        "200":
+          description: Cursor API key is missing or the account's available model list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CursorModelsResponse"
+        "502":
+          description: Cursor could not return a valid model list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /agents/ollie/cron:
     post:
       operationId: runOllieCron
@@ -1858,6 +1877,27 @@ components:
         error:
           type: string
       required: [error]
+    CursorModelsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [not_configured, connected]
+        models:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+              displayName:
+                type: string
+              description:
+                type: string
+            required: [id, displayName]
+      required: [status, models]
     Member:
       type: object
       additionalProperties: false

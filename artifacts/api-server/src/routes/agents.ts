@@ -18,6 +18,72 @@ import { runOllie } from "../agents/ollie";
 
 const router: IRouter = Router();
 
+type CursorModel = {
+  id: string;
+  displayName: string;
+  description?: string;
+};
+
+router.get("/cursor/models", async (_req, res): Promise<void> => {
+  const apiKey = process.env.CURSOR_API_KEY?.trim();
+  if (!apiKey) {
+    res.json({ status: "not_configured", models: [] satisfies CursorModel[] });
+    return;
+  }
+
+  try {
+    const response = await fetch("https://api.cursor.com/v1/models", {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`,
+        Accept: "application/json",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!response.ok) {
+      res.status(502).json({ error: "Cursor could not provide its model list." });
+      return;
+    }
+
+    const payload: unknown = await response.json();
+    if (
+      payload === null ||
+      typeof payload !== "object" ||
+      !("items" in payload) ||
+      !Array.isArray(payload.items)
+    ) {
+      res.status(502).json({ error: "Cursor returned an unreadable model list." });
+      return;
+    }
+
+    const models = payload.items.flatMap((item): CursorModel[] => {
+      if (
+        item === null ||
+        typeof item !== "object" ||
+        !("id" in item) ||
+        typeof item.id !== "string" ||
+        !("displayName" in item) ||
+        typeof item.displayName !== "string"
+      ) {
+        return [];
+      }
+      return [
+        {
+          id: item.id,
+          displayName: item.displayName,
+          ...("description" in item && typeof item.description === "string"
+            ? { description: item.description }
+            : {}),
+        },
+      ];
+    });
+
+    res.json({ status: "connected", models });
+  } catch {
+    res.status(502).json({ error: "Could not contact Cursor to get its model list." });
+  }
+});
+
 export type LatestUpdateRisk = {
   text: string;
   severity: string | null;

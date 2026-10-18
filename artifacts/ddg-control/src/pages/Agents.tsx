@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import {
   getListAgentRunsQueryKey,
@@ -11,8 +11,30 @@ import { Header } from '@/components/header';
 import { serverErrorText } from '@/lib/errors';
 import { formatBrisbaneDateTime } from '@/lib/format';
 
+type CursorModelsResponse = {
+  status: 'not_configured' | 'connected';
+  models: Array<{ id: string; displayName: string; description?: string }>;
+};
+
+async function loadCursorModels(): Promise<CursorModelsResponse> {
+  const response = await fetch('/api/cursor/models', {
+    headers: { Accept: 'application/json' },
+    cache: 'no-store',
+  });
+  if (!response.ok) {
+    throw new Error('Unable to read Cursor models. Check the API key and try again.');
+  }
+  return response.json() as Promise<CursorModelsResponse>;
+}
+
 export function AgentsPage() {
   const client = useQueryClient();
+  const cursorModelsQuery = useQuery({
+    queryKey: ['cursor-models'],
+    queryFn: loadCursorModels,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
   const runsQuery = useListAgentRuns({
     query: { queryKey: getListAgentRunsQueryKey() },
   });
@@ -73,6 +95,49 @@ export function AgentsPage() {
               data-testid="status-ollie-run"
             >
               {runNotice.text}
+            </p>
+          )}
+        </section>
+
+        <section className="agents-run-panel" aria-labelledby="cursor-models-title">
+          <div className="agents-run-toolbar">
+            <h2 id="cursor-models-title" className="todo-group-title">Cursor models</h2>
+            <button
+              className="task-secondary-button"
+              type="button"
+              disabled={cursorModelsQuery.isFetching}
+              onClick={() => void cursorModelsQuery.refetch()}
+              data-testid="button-refresh-cursor-models"
+            >
+              {cursorModelsQuery.isFetching ? 'Checking…' : 'Check models'}
+            </button>
+          </div>
+          <p className="agents-run-notice">
+            This is a read-only check. It does not start an agent. A model appearing here does not prove its use is included in your plan; check Cursor billing before starting any coding task.
+          </p>
+          {cursorModelsQuery.isLoading ? (
+            <p className="task-state-message" role="status">Checking Cursor connection…</p>
+          ) : cursorModelsQuery.isError ? (
+            <p className="agents-run-notice agents-run-notice-error" role="alert">
+              {serverErrorText(cursorModelsQuery.error, 'Unable to check Cursor models.')}
+            </p>
+          ) : cursorModelsQuery.data?.status === 'not_configured' ? (
+            <p className="task-state-message" data-testid="status-cursor-not-configured">
+              Cursor is not connected yet. Add CURSOR_API_KEY to Replit Secrets to check available models. Never put the key in this page or in GitHub.
+            </p>
+          ) : cursorModelsQuery.data?.models.length ? (
+            <ul className="cursor-model-list" data-testid="list-cursor-models">
+              {cursorModelsQuery.data.models.map((model) => (
+                <li key={model.id}>
+                  <strong>{model.displayName}</strong>
+                  <code>{model.id}</code>
+                  {model.description && <span>{model.description}</span>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="task-state-message" data-testid="status-no-cursor-models">
+              Cursor is connected, but it returned no models.
             </p>
           )}
         </section>
