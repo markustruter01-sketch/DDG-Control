@@ -3,6 +3,11 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { ErrorBoundary } from '@/components/error-boundary';
 
+document.documentElement.style.setProperty(
+  '--home-background',
+  `url("${import.meta.env.BASE_URL}dashboard-background.jpg")`,
+);
+
 createRoot(document.getElementById('root')!, {
   // Keeps caught errors off reportError(), which would raise the dev overlay.
   onCaughtError: (error, errorInfo) => {

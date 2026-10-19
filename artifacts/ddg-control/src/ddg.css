@@ -1484,6 +1484,21 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   .home-shell { background-position: center top; }
 }
 
+/* Keep the dashboard photo as the shared backdrop across every non-home page. */
+.app-shell:not(.home-shell) {
+  background-color: hsl(var(--background));
+  background-image:
+    linear-gradient(rgba(5, 12, 10, .42), rgba(5, 12, 10, .42)),
+    var(--home-background);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+:root[data-theme='day'] .app-shell:not(.home-shell) {
+  background-image: var(--home-background);
+}
+
 /* Compact layouts for the Finance and Coffee project pages only. */
 @media (min-width: 700px) {
   .detail-main[data-project-slug="finance"],
