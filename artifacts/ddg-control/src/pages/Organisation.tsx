@@ -2,6 +2,7 @@ import { Link } from 'wouter';
 import { ORG_CHART, PRINCIPLES } from '@workspace/project-constants';
 import { Header } from '@/components/header';
 import { formatCurrentDisplayName } from '@/lib/format';
+import { CompanyMap } from '@/components/CompanyMap';
 
 export function OrganisationPage() {
   type OrgPerson = (typeof ORG_CHART)[number];
@@ -30,6 +31,8 @@ export function OrganisationPage() {
           <h1 className="home-title">Organisation</h1>
           <p className="organisation-intro">The team recommending and delivering approved work across DDG.</p>
         </header>
+
+        <CompanyMap />
 
         <section className="org-chart" aria-labelledby="org-chart-title">
           <div className="section-rule"><span id="org-chart-title">Operating structure</span></div>

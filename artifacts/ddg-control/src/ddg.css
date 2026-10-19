@@ -850,6 +850,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 .principles-list li { display: grid; grid-template-columns: 31px minmax(0, 1fr); gap: 11px; padding: 14px 3px; border-bottom: 1px solid hsl(var(--border)); font-size: 12px; font-weight: 600; line-height: 1.55; overflow-wrap: anywhere; }
 .principle-index { color: hsl(var(--accent)); font: 500 10px/1.7 var(--app-font-mono); }
 .organisation-note { margin: 19px 0 0; padding: 16px; border-left: 2px solid hsl(var(--accent)); background: hsl(var(--accent) / .075); color: hsl(var(--foreground)); font-size: 14px; font-weight: 700; letter-spacing: -.02em; }
+.company-map-home-link{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 16px;padding:12px 15px;border:1px solid rgba(70,166,195,.38);border-radius:13px;background:linear-gradient(120deg,rgba(13,39,62,.92),rgba(18,58,82,.9));color:#e8f8fc;text-decoration:none}.company-map-home-link span:first-child{display:grid;gap:3px}.company-map-home-link strong{font-size:.82rem}.company-map-home-link small{color:#a7cedb;font-size:.7rem}.company-map-home-link span:last-child{color:#60d5e9;font-size:1.1rem}
 
 .project-heading-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .project-files-link {

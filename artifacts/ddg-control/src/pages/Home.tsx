@@ -212,6 +212,10 @@ export function Home() {
           onRetry={() => void financeSummaryQuery.refetch()}
         />
         <SocialBar projects={projects} />
+        <Link className="company-map-home-link" href="/organisation#company-map-title" data-testid="link-company-map">
+          <span><strong>Company Map</strong><small>People, systems, projects and delivery gaps</small></span>
+          <span aria-hidden="true">→</span>
+        </Link>
         {(pendingDecisionsQuery.data?.length ?? 0) > 0 && (
           <Link className="decisions-waiting" href="/decisions" data-testid="link-decisions-waiting">
             Decisions waiting: {pendingDecisionsQuery.data?.length}
