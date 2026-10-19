@@ -25,3 +25,4 @@ export * from "./metrics";
 export * from "./agents";
 export * from "./finance";
 export * from "./fleet";export * from "./social";
+export * from "./work-management";

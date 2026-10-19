@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/header";
 
@@ -43,11 +43,39 @@ async function loadCursorAgents(): Promise<CursorAgentsResponse> {
 }
 
 const projectNames = [
-  "DDG Finance",
-  "DDG Hypest",
-  "Cattle Dog Coffee",
-  "DDG Music",
+  "DDG Finance", "DDG - Fitness / Hypest", "DDG Coffee / Cattle Dog Coffee",
+  "DDG Control AI Stack", "DDG Music · undecided",
 ];
+const managedAreas = [
+  { key: "finance", label: "DDG Finance" },
+  { key: "hypest", label: "DDG - Fitness / Hypest" },
+  { key: "cattle-dog-coffee", label: "DDG Coffee / Cattle Dog Coffee" },
+  { key: "ddg-control-ai-stack", label: "DDG Control AI Stack" },
+];
+type Control = { project_key: string; enabled: boolean; updated_at: string };
+async function getWorkControls() {
+  const r = await fetch("/api/work-controls", { cache: "no-store" });
+  if (!r.ok) throw new Error("Work controls unavailable");
+  return r.json() as Promise<{ controls: Control[]; audit: Array<{ id: number; project_key: string; enabled: boolean; created_at: string }> }>;
+}
+async function saveWorkControl(input: { key: string; enabled: boolean }) {
+  const r = await fetch(`/api/work-controls/${encodeURIComponent(input.key)}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled: input.enabled, owner_confirmed: true }),
+  });
+  if (!r.ok) throw new Error((await r.json().catch(() => null))?.error ?? "Could not save work control");
+  return r.json();
+}
+async function getHandovers() {
+  const r = await fetch("/api/work-handovers", { cache: "no-store" });
+  if (!r.ok) throw new Error("Handovers unavailable");
+  return r.json() as Promise<Array<{ id:number; project_key:string; status:string; completed_work:string; next_action:string; blockers:string; verification:string; recovery_note:string; branch:string|null; commit_ref:string|null; created_at:string }>>;
+}
+async function saveHandover(data: Record<string, string>) {
+  const r = await fetch("/api/work-handovers", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data) });
+  if (!r.ok) throw new Error((await r.json().catch(()=>null))?.error ?? "Could not save checkpoint");
+  return r.json();
+}
 
 type DetailView = "work" | "usage" | "safety" | null;
 
@@ -375,6 +403,19 @@ function DetailDialog({
 }
 
 export function AIStackPage() {
+  const queryClient = useQueryClient();
+  const controlsQuery = useQuery({ queryKey: ["work-controls"], queryFn: getWorkControls, retry: false });
+  const handoversQuery = useQuery({ queryKey: ["work-handovers"], queryFn: getHandovers, retry: false });
+  const controlMutation = useMutation({
+    mutationFn: saveWorkControl,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["work-controls"] }),
+  });
+  const handoverMutation = useMutation({
+    mutationFn: saveHandover,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["work-handovers"] }),
+  });
+  const [handoverKey, setHandoverKey] = useState("finance");
+  const [handoverFields, setHandoverFields] = useState({ status: "in progress", completed_work: "", next_action: "", blockers: "", verification: "", recovery_note: "", branch: "", commit_ref: "" });
   const agentsQuery = useQuery({
     queryKey: ["cursor-cloud-agents"],
     queryFn: loadCursorAgents,
@@ -701,6 +742,42 @@ export function AIStackPage() {
               ))}
             </div>
           </div>
+        </section>
+        <section className="ai-stack-panel ai-stack-controls-panel" aria-labelledby="work-controls-heading">
+          <div className="ai-stack-section-heading">
+            <div><h2 id="work-controls-heading">Project work controls</h2><p className="ai-stack-help">ON permits dashboard-mediated work; it never starts an agent.</p></div>
+            <span className="ai-stack-status">OFF by default</span>
+          </div>
+          <p className="ai-stack-chart-caption">OFF blocks new dashboard work. It cannot stop agents started outside this dashboard or revoke their permissions. Existing tasks and history remain visible.</p>
+          {controlsQuery.isError ? <p role="alert">Could not load saved controls. Retry the page before changing work state.</p> : (
+            <div className="ai-stack-control-list">
+              {managedAreas.map((area) => {
+                const control = controlsQuery.data?.controls.find((item) => item.project_key === area.key);
+                const enabled = control?.enabled === true;
+                return <div className="ai-stack-control-row" key={area.key}>
+                  <strong>{area.label}</strong><span className={enabled ? "work-state is-on" : "work-state"}>{enabled ? "ON" : "OFF"}</span>
+                  <button type="button" className={`work-toggle ${enabled ? "is-on" : ""}`} aria-pressed={enabled} disabled={controlMutation.isPending || !controlsQuery.data} onClick={() => {
+                    const next = !enabled;
+                    if (window.confirm(`Markus, confirm ${next ? "ON" : "OFF"} for ${area.label}?`)) controlMutation.mutate({ key: area.key, enabled: next });
+                  }}>{enabled ? "Turn OFF" : "Turn ON"}</button>
+                </div>;
+              })}
+              <div className="ai-stack-control-row is-undecided"><strong>DDG Music</strong><span>Undecided · unchanged</span></div>
+            </div>
+          )}
+          {controlMutation.isError && <p className="ai-stack-error" role="alert">{controlMutation.error.message}</p>}
+          <h3>Owner change history</h3>
+          <ol className="work-audit-list">{(controlsQuery.data?.audit ?? []).slice(0,8).map((entry) => <li key={entry.id}>{managedAreas.find((x)=>x.key===entry.project_key)?.label ?? entry.project_key}: {entry.enabled ? "ON" : "OFF"} · {new Date(entry.created_at).toLocaleString()}</li>)}</ol>
+        </section>
+        <section className="ai-stack-panel ai-stack-checkpoint-panel" aria-labelledby="handover-heading">
+          <div className="ai-stack-section-heading"><div><h2 id="handover-heading">Shared handover / checkpoint</h2><p className="ai-stack-help">Manual save · five-minute target reminder · no automatic checkpoint callback is connected.</p></div><span className="ai-stack-status">Manual</span></div>
+          <form className="work-handover-form" onSubmit={(event) => { event.preventDefault(); handoverMutation.mutate({ project_key: handoverKey, ...handoverFields }); }}>
+            <label>Project<select value={handoverKey} onChange={(e)=>setHandoverKey(e.target.value)}>{managedAreas.map((a)=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
+            {(["status","completed_work","next_action","blockers","verification","recovery_note","branch","commit_ref"] as const).map((field)=><label key={field}>{field.replaceAll("_"," ")}<input required={["status","completed_work","next_action","recovery_note"].includes(field)} value={handoverFields[field]} onChange={(e)=>setHandoverFields({...handoverFields,[field]:e.target.value})}/></label>)}
+            <button type="submit" className="work-toggle" disabled={handoverMutation.isPending}>Save checkpoint</button>
+          </form>
+          {handoverMutation.isError && <p role="alert">{handoverMutation.error.message}</p>}
+          <div className="work-handover-history">{(handoversQuery.data ?? []).slice(0,6).map((h)=><article key={h.id}><strong>{managedAreas.find((a)=>a.key===h.project_key)?.label ?? h.project_key} · {h.status}</strong><small>{new Date(h.created_at).toLocaleString()} · branch {h.branch || "Unknown"} · commit {h.commit_ref || "Unknown"}</small><p>Done: {h.completed_work}</p><p>Next: {h.next_action}</p><p>Blockers: {h.blockers || "None recorded"} · Verification: {h.verification || "Unknown"}</p><p>Recovery: {h.recovery_note}</p></article>)}</div>
         </section>
         <p className="ai-stack-footnote">
           This page shows Cursor Cloud Agent activity only. It does not run a
