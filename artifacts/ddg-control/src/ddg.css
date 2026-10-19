@@ -1244,6 +1244,23 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   .ai-stack-footnote { font-size: 8px; }
 }
 
+@media (min-width: 981px) and (max-height: 600px) {
+  .ai-stack-work-panel { min-height: 170px; }
+  .ai-stack-work-panel .ai-stack-help,
+  .ai-stack-usage-panel .ai-stack-chart-caption,
+  .ai-stack-order-panel .ai-stack-help,
+  .ai-stack-project-panel .ai-stack-help,
+  .ai-stack-footnote { display: none; }
+  .ai-stack-safety-grid small { display: none; }
+  .ai-stack-safety-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
+  .ai-stack-safety-grid > div { gap: 3px; padding: 4px; }
+  .ai-stack-usage-panel { min-height: 82px; }
+  .ai-stack-safety-panel { min-height: 92px; }
+  .ai-stack-empty { margin: 8px 0; }
+  .ai-stack-order-list { margin-top: 3px; }
+  .ai-stack-project-list { margin-top: 3px; }
+}
+
 @media (min-width: 768px) {
   .data-tab-panel { padding: 20px; }
   .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
