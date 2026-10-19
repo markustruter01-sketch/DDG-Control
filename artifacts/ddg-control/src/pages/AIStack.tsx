@@ -96,7 +96,7 @@ type WorkItem = { id:number; project_key:string; title:string; objective:string;
 async function getWorkItems() {
   const r = await fetch("/api/work-items", { cache:"no-store" });
   if (!r.ok) throw new Error("Work queue unavailable");
-  return r.json() as Promise<{items:WorkItem[];events:Array<{id:number;work_item_id:number;actor:string;event_type:string;created_at:string;details:Record<string,unknown>}>}>;
+  return r.json() as Promise<{items:WorkItem[];dispatches:Array<{id:number;work_item_id:number;provider:string;model_id:string|null;agent_id:string|null;run_id:string|null;provider_status:string|null;status:string;branch:string|null;error_summary:string;started_at:string}>;events:Array<{id:number;work_item_id:number;actor:string;event_type:string;created_at:string;details:Record<string,unknown>}>}>;
 }
 type WorkOutcome = { id:number; project_key:string; title:string; description:string; status:string; gates:Array<{key:string;title:string;acceptance:string[]}> };
 async function getWorkOutcomes() {
@@ -107,7 +107,22 @@ async function getWorkOutcomes() {
 async function getWorkReadiness() {
   const r=await fetch("/api/work-readiness",{cache:"no-store"});
   if(!r.ok) throw new Error("Worker readiness unavailable");
-  return r.json() as Promise<{dispatch_enabled:boolean;status:string;blockers:string[];finance_hold:string;local_limits:string}>;
+  return r.json() as Promise<{dispatch_enabled:boolean;manual_dispatch_ready:boolean;automatic_pickup:boolean;status:string;blockers:string[];background_worker_blocker:string;finance_hold:string;local_limits:string;secret_present:boolean;config:{enabled:boolean;plan_model_confirmed:boolean;included_allowance_confirmed:boolean;no_overage_confirmed:boolean;github_access_confirmed:boolean;secret_owner_verified:boolean;selected_model_id:string|null;approved_repository:string|null;approved_starting_branch:string|null;approved_project_key:string|null;updated_at:string|null}}>;
+}
+async function saveDispatchConfig(data:Record<string,unknown>) {
+  const r=await fetch("/api/work-dispatch-config",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+  if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Could not save dispatch readiness");
+  return r.json();
+}
+async function approveOutcome(id:number) {
+  const r=await fetch(`/api/work-outcomes/${id}/approve`,{method:"POST"});
+  if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Outcome approval failed");
+  return r.json();
+}
+async function dispatchWorkItem(id:number) {
+  const r=await fetch(`/api/work-items/${id}/dispatch`,{method:"POST"});
+  if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Dispatch is blocked");
+  return r.json();
 }
 type SavedReport={project_slug:string;summary:string;next_action:string;priority:string|null;status_light:string};
 async function getSavedReports(){
@@ -465,6 +480,9 @@ export function AIStackPage() {
   const workItemsQuery = useQuery({ queryKey: ["work-items"], queryFn: getWorkItems, retry: false });
   const outcomesQuery = useQuery({ queryKey: ["work-outcomes"], queryFn: getWorkOutcomes, retry: false });
   const readinessQuery = useQuery({ queryKey: ["work-readiness"], queryFn: getWorkReadiness, retry: false });
+  const dispatchConfigMutation=useMutation({mutationFn:saveDispatchConfig,onSuccess:()=>queryClient.invalidateQueries({queryKey:["work-readiness"]})});
+  const outcomeApproveMutation=useMutation({mutationFn:approveOutcome,onSuccess:()=>{void queryClient.invalidateQueries({queryKey:["work-outcomes"]});void queryClient.invalidateQueries({queryKey:["work-items"]});}});
+  const dispatchMutation=useMutation({mutationFn:dispatchWorkItem,onSuccess:()=>{void queryClient.invalidateQueries({queryKey:["work-items"]});void queryClient.invalidateQueries({queryKey:["work-readiness"]});}});
   const savedReportsQuery = useQuery({ queryKey:["saved-heimdall-reports"],queryFn:getSavedReports,retry:false });
   const controlMutation = useMutation({
     mutationFn: saveWorkControl,
@@ -483,6 +501,8 @@ export function AIStackPage() {
   const [handoverFields, setHandoverFields] = useState({ status: "in progress", completed_work: "", next_action: "", blockers: "", verification: "", recovery_note: "", branch: "", commit_ref: "", task_id: "", work_item_id: "" });
   const [handoverCopyStatus, setHandoverCopyStatus] = useState("");
   const [workFields, setWorkFields] = useState({ project_key:"hypest", title:"", objective:"", outcome:"", checklist:"", acceptance_checks:"", deadline:"", time_limit_minutes:"30", max_attempts:"1", stop_condition:"Stop when any acceptance check fails or the limit is reached.", outcome_id:"", gate_key:"", repository:"", target_branch:"" });
+  const [dispatchConfig,setDispatchConfig]=useState({enabled:false,plan_model_confirmed:false,included_allowance_confirmed:false,no_overage_confirmed:false,github_access_confirmed:false,secret_owner_verified:false,selected_model_id:"",approved_repository:"",approved_starting_branch:"",approved_project_key:""});
+  useEffect(()=>{const c=readinessQuery.data?.config;if(c)setDispatchConfig({...c,selected_model_id:c.selected_model_id??"",approved_repository:c.approved_repository??"",approved_starting_branch:c.approved_starting_branch??"",approved_project_key:c.approved_project_key??""});},[readinessQuery.data]);
   const agentsQuery = useQuery({
     queryKey: ["cursor-cloud-agents"],
     queryFn: loadCursorAgents,
@@ -901,11 +921,32 @@ export function AIStackPage() {
             <p>Manual checkpoints only. No ChatGPT quota detection, automatic provider/model switching, or worker start is connected.</p>
             {readinessQuery.isError ? <p role="alert">Readiness status unavailable; dispatch remains disabled.</p> : <>
               <ul>{(readinessQuery.data?.blockers ?? ["Checking activation requirements…"]).map((blocker,index)=><li key={index}>{blocker}</li>)}</ul>
+              <p><b>Automatic pickup:</b> OFF. {readinessQuery.data?.background_worker_blocker}</p>
+              <p>Cursor API secret: {readinessQuery.data?.secret_present ? "Present (value hidden)" : "Missing"}. This does not verify that the key is valid.</p>
+              <form className="work-item-form" onSubmit={e=>{e.preventDefault();dispatchConfigMutation.mutate({...dispatchConfig,enabled:false,selected_model_id:dispatchConfig.selected_model_id||null});}}>
+                <h4>Owner setup checks</h4>
+                {([
+                  ["plan_model_confirmed","Eligible plan and exact model verified"],
+                  ["included_allowance_confirmed","Included model allowance verified"],
+                  ["no_overage_confirmed","No-overage or hard spend protection verified"],
+                  ["github_access_confirmed","GitHub repository and branch access verified"],
+                  ["secret_owner_verified","Server secret added and owner-verified (never paste it here)"],
+                ] as const).map(([key,label])=><label className="dispatch-owner-check" key={key}><input type="checkbox" checked={dispatchConfig[key]} disabled={devBypass} onChange={e=>setDispatchConfig({...dispatchConfig,[key]:e.target.checked,enabled:false})}/>{label}</label>)}
+                <label>Explicit Cursor model ID<input value={dispatchConfig.selected_model_id} disabled={devBypass} onChange={e=>setDispatchConfig({...dispatchConfig,selected_model_id:e.target.value,enabled:false})}/></label>
+                <label>Owner-approved GitHub repository<input placeholder="github.com/owner/repository" value={dispatchConfig.approved_repository} disabled={devBypass} onChange={e=>setDispatchConfig({...dispatchConfig,approved_repository:e.target.value,enabled:false})}/></label>
+                <label>Owner-approved starting branch<input value={dispatchConfig.approved_starting_branch} disabled={devBypass} onChange={e=>setDispatchConfig({...dispatchConfig,approved_starting_branch:e.target.value,enabled:false})}/></label>
+                <label>Owner-approved project<select value={dispatchConfig.approved_project_key} disabled={devBypass} onChange={e=>setDispatchConfig({...dispatchConfig,approved_project_key:e.target.value,enabled:false})}><option value="">Choose project</option>{managedAreas.filter(a=>a.key!=="finance"&&a.key!=="ddg-music").map(a=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
+                <button className="work-toggle" type="submit" disabled={devBypass||dispatchConfigMutation.isPending}>Save owner readiness checks</button>
+                <button className={`work-toggle ${dispatchConfig.enabled?"is-on":""}`} type="button" aria-pressed={readinessQuery.data?.dispatch_enabled===true} disabled={devBypass||dispatchConfigMutation.isPending||(!dispatchConfig.enabled&&!readinessQuery.data?.manual_dispatch_ready)} onClick={()=>dispatchConfigMutation.mutate({...dispatchConfig,enabled:!dispatchConfig.enabled,selected_model_id:dispatchConfig.selected_model_id||null})}>Dispatch toggle · {readinessQuery.data?.dispatch_enabled?"ON":"OFF"}</button>
+                {devBypass&&<p role="note">Configuration changes require a real authenticated owner session; development auth bypass is not accepted.</p>}
+                {dispatchConfigMutation.isError&&<p role="alert">{dispatchConfigMutation.error.message}</p>}
+              </form>
               <p>{readinessQuery.data?.finance_hold}</p><p>{readinessQuery.data?.local_limits}</p>
             </>}
             <h3>DDG Control outcome · owner approval pending</h3>
             {outcomesQuery.isError ? <p role="alert">Could not load the saved outcome or its audit history.</p> : (outcomesQuery.data?.outcomes ?? []).filter(o=>o.project_key==="ddg-control-ai-stack").map(outcome=><div key={outcome.id}>
               <strong>{outcome.title} · {outcome.status.replaceAll("_"," ")}</strong><p>{outcome.description}</p>
+              {outcome.status==="pending_approval"&&<button className="work-toggle" type="button" disabled={devBypass||controlsQuery.data?.controls.find(c=>c.project_key===outcome.project_key)?.enabled!==true||outcomeApproveMutation.isPending} onClick={()=>outcomeApproveMutation.mutate(outcome.id)}>Approve outcome</button>}
               <ol>{outcome.gates.map(gate=><li key={gate.key}><b>{gate.title}</b> · {gate.key}<ul>{gate.acceptance.map((check,i)=><li key={i}>{check}</li>)}</ul></li>)}</ol>
             </div>)}
           </section>
@@ -938,14 +979,15 @@ export function AIStackPage() {
           {createWorkMutation.isError && <p role="alert">{createWorkMutation.error.message}</p>}
           {workItemsQuery.isError ? <p role="alert">Could not load approval queue or task history.</p> : (workItemsQuery.data?.items ?? []).map(item=><article className="managed-work-card" key={item.id}>
             <div className="ai-stack-section-heading"><div><strong>{managedAreas.find(a=>a.key===item.project_key)?.label} · {item.title}</strong><p>{item.status.replaceAll("_"," ")} · attempt {item.attempts}/{item.max_attempts} · due {new Date(item.deadline).toLocaleString()}</p></div>
-              {item.status==="pending_approval"&&<button className="work-toggle" disabled title="Worker readiness is blocked; approval cannot dispatch work." onClick={()=>approveWorkMutation.mutate(item.id)}>Approve · blocked</button>}
-              {item.status==="approved"&&<span className="ai-stack-help">Start blocked · no worker is connected.</span>}
+              {item.status==="pending_approval"&&<button className="work-toggle" disabled={devBypass||!readinessQuery.data?.dispatch_enabled||outcomesQuery.data?.outcomes.find(o=>o.id===item.outcome_id)?.status!=="approved"||approveWorkMutation.isPending} title="Requires real owner approval, approved outcome, project ON, and verified dispatch readiness." onClick={()=>approveWorkMutation.mutate(item.id)}>Approve</button>}
+              {item.status==="approved"&&<button className="work-toggle" disabled={devBypass||!readinessQuery.data?.dispatch_enabled||dispatchMutation.isPending} onClick={()=>dispatchMutation.mutate(item.id)}>Start Cursor Cloud Agent</button>}
               {item.status==="in_progress"&&<div className="work-actions"><button onClick={()=>moveWorkMutation.mutate({id:item.id,status:"needs_owner"})}>Needs owner</button><button onClick={()=>moveWorkMutation.mutate({id:item.id,status:"failed"})}>Mark failed</button><button onClick={()=>{const evidence=window.prompt("Enter acceptance evidence before completion:");if(evidence?.trim()) moveWorkMutation.mutate({id:item.id,status:"completed",acceptance_evidence:evidence});}}>Mark complete</button></div>}
             </div>
             <p>{item.objective}</p><p><b>Outcome:</b> {item.outcome} · gate: {item.gate_key || "Unknown"}</p><p><b>Stop:</b> {item.stop_condition}</p>
             <div className="managed-work-lists"><span><b>Checklist</b>{item.checklist.map((c,i)=><small key={i}>□ {c}</small>)}</span><span><b>Acceptance checks</b>{item.acceptance_checks.map((c,i)=><small key={i}>{c}</small>)}</span></div>
             <p>Evidence/result: {item.acceptance_evidence || item.result || "Not recorded"} · repository: {item.repository || "Unknown"} · target branch: {item.target_branch || "Unknown"} · branch: {item.branch || "Unknown"} · commit: {item.commit_ref || "Unknown"} · review: {item.review_link || "Unknown"}</p>
-            <p><b>Dispatch:</b> {item.dispatch_state} · {item.dispatch_block_reason}</p>
+            {(workItemsQuery.data?.dispatches??[]).filter(d=>d.work_item_id===item.id).map(d=><p key={d.id}>Dispatch #{d.id} · {d.provider}/{d.model_id||"model unknown"} · {d.status} ({d.provider_status||"provider status unknown"}) · agent {d.agent_id||"Unknown"} · run {d.run_id||"Unknown"} · {d.started_at}{d.error_summary?` · ${d.error_summary}`:""}</p>)}
+            <p><b>Dispatch:</b> {(workItemsQuery.data?.dispatches??[]).some(d=>d.work_item_id===item.id) ? item.dispatch_state : "Not dispatched · see activation blockers above."}</p>
           </article>)}
           {[createWorkMutation,approveWorkMutation,moveWorkMutation].some(m=>m.isError)&&<p role="alert">Work action failed; current saved state is unchanged. Refresh before retrying.</p>}
           <h3>Append-only task history</h3><ol className="work-audit-list">{(workItemsQuery.data?.events??[]).slice(0,30).map(e=><li key={e.id}>#{e.work_item_id} · {e.event_type} · {e.actor} · {new Date(e.created_at).toLocaleString()}</li>)}</ol>

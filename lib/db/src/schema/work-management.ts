@@ -55,6 +55,7 @@ export const managedWorkOutcomesTable = pgTable("managed_work_outcomes", {
   description: text("description").notNull(),
   gates: jsonb("gates").$type<Array<{ key: string; title: string; acceptance: string[] }>>().notNull(),
   status: text("status").notNull().default("pending_approval"),
+  version: integer("version").notNull().default(1),
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
@@ -73,6 +74,24 @@ export const managedWorkOutcomeEventsTable = pgTable("managed_work_outcome_event
   details: jsonb("details").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const managedWorkDispatchConfigTable = pgTable("managed_work_dispatch_config", {
+  id: integer("id").primaryKey().default(1),
+  enabled: boolean("enabled").notNull().default(false),
+  plan_model_confirmed: boolean("plan_model_confirmed").notNull().default(false),
+  included_allowance_confirmed: boolean("included_allowance_confirmed").notNull().default(false),
+  no_overage_confirmed: boolean("no_overage_confirmed").notNull().default(false),
+  github_access_confirmed: boolean("github_access_confirmed").notNull().default(false),
+  secret_owner_verified: boolean("secret_owner_verified").notNull().default(false),
+  selected_model_id: text("selected_model_id"),
+  approved_repository: text("approved_repository"),
+  approved_starting_branch: text("approved_starting_branch"),
+  approved_project_key: text("approved_project_key"),
+  updated_by: text("updated_by").notNull().default("Markus"),
+  updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("managed_work_dispatch_config_singleton_check", sql`${table.id} = 1`),
+]);
 
 export const managedWorkItemsTable = pgTable("managed_work_items", {
   id: serial("id").primaryKey(),
@@ -120,6 +139,28 @@ export const managedWorkItemsTable = pgTable("managed_work_items", {
   check("managed_work_attempts_check", sql`${table.attempts} >= 0`),
   check("managed_work_no_spend_check", sql`${table.spend_limit_cents} = 0`),
   check("managed_work_status_check", sql`${table.status} IN ('pending_approval', 'approved', 'in_progress', 'needs_owner', 'failed', 'completed', 'rejected')`),
+]);
+
+export const managedWorkDispatchesTable = pgTable("managed_work_dispatches", {
+  id: serial("id").primaryKey(),
+  work_item_id: integer("work_item_id").notNull().references(() => managedWorkItemsTable.id),
+  project_key: text("project_key").notNull(),
+  outcome_id: integer("outcome_id").references(() => managedWorkOutcomesTable.id),
+  outcome_version: integer("outcome_version").notNull(),
+  idempotency_key: text("idempotency_key").notNull().unique(),
+  provider: text("provider").notNull().default("cursor"),
+  model_id: text("model_id"),
+  agent_id: text("agent_id"),
+  run_id: text("run_id"),
+  provider_status: text("provider_status"),
+  branch: text("branch"),
+  status: text("status").notNull().default("submitting"),
+  error_summary: text("error_summary").notNull().default(""),
+  started_at: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  finished_at: timestamp("finished_at", { withTimezone: true }),
+}, (table) => [
+  uniqueIndex("managed_work_dispatch_one_per_task").on(table.work_item_id),
+  check("managed_work_dispatch_status_check", sql`${table.status} IN ('submitting', 'running', 'needs_owner', 'failed', 'completed')`),
 ]);
 
 export const managedWorkEventsTable = pgTable("managed_work_events", {
