@@ -243,6 +243,10 @@ router.post("/inbound/decisions", async (req, res): Promise<void> => {
       res.status(409).json({ error: "decision is not pending" });
       return;
     }
+    if (outcome.kind === "paused") {
+      res.status(423).json({ error: "Project work is OFF. The decision cannot create work." });
+      return;
+    }
 
     const response = toApiDecision(outcome.decision);
     PostInboundDecisionResponse.parse(response);
@@ -320,6 +324,10 @@ router.post("/inbound/decisions", async (req, res): Promise<void> => {
   }
   if (decided.kind === "not-pending") {
     res.status(409).json({ error: "decision is not pending" });
+    return;
+  }
+  if (decided.kind === "paused") {
+    res.status(423).json({ error: "Project work is OFF. The decision cannot create work." });
     return;
   }
 

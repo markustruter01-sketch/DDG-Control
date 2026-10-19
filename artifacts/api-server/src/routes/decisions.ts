@@ -277,6 +277,10 @@ router.post("/decisions/:id/decline", async (req, res): Promise<void> => {
     res.status(409).json({ error: "decision is not pending" });
     return;
   }
+  if (outcome.kind === "paused") {
+    res.status(423).json({ error: "Project work is OFF. The decision cannot create work." });
+    return;
+  }
   res.json(toApiDecision(outcome.decision));
 });
 
