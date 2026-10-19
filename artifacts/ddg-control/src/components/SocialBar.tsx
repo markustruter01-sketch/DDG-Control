@@ -9,7 +9,7 @@ import {
 } from '@workspace/api-client-react';
 import { SOCIAL_PLATFORMS, SOCIAL_PLATFORM_LABELS } from '@workspace/project-constants';
 import { serverErrorText } from '@/lib/errors';
-import { formatAgo, formatFigure } from '@/lib/format';
+import { formatFigure } from '@/lib/format';
 
 function change(value: number | null): string {
   if (value === null) return '30-day change: not enough history yet';
@@ -123,7 +123,6 @@ export function SocialBar({ projects }: { projects: Project[] }) {
           ))}
         </div>
       )}
-      {summary && <p className="finance-partial-line">Entered by hand · Updated {formatAgo(query.dataUpdatedAt)}</p>}
       {query.isLoading && <p className="finance-summary-state" role="status">Loading social numbers…</p>}
       {query.isError && (
         <div className="finance-summary-state finance-summary-error" role="alert">

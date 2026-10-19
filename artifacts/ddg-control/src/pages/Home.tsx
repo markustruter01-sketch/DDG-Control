@@ -65,22 +65,15 @@ function FinanceKpiCard({
 
 function FinanceSummaryBar({
   summary,
-  projects,
   isLoading,
   error,
   onRetry,
-  updatedAt,
 }: {
   summary: FinanceSummaryResponse | undefined;
-  projects: Project[];
-  updatedAt: number;
   isLoading: boolean;
   error: unknown;
   onRetry: () => void;
 }) {
-  const missingRevenueProjects = (summary?.ventures_without_revenue_source ?? []).map(
-    (slug) => projects.find((project) => project.slug === slug)?.name ?? slug,
-  );
   const placeholder = isLoading ? '…' : '—';
   const customerCount = summary
     ? summary.customers === null
@@ -124,23 +117,12 @@ function FinanceSummaryBar({
           detail="Cattle Dog Coffee, Stripe only"
         />
       </div>
-      {summary && <p className="finance-partial-line" data-testid="finance-summary-updated">Updated {formatAgo(updatedAt)}</p>}
       {isLoading && <p className="finance-summary-state" role="status">Loading company figures…</p>}
       {error != null && (
         <div className="finance-summary-state finance-summary-error" role="alert">
           <span>{serverErrorText(error, 'Unable to load company figures.')}</span>
           <button className="retry-button" type="button" onClick={onRetry}>Retry</button>
         </div>
-      )}
-      {missingRevenueProjects.length > 0 && (
-        <p className="finance-partial-line">
-          Partial: no revenue data for {missingRevenueProjects.join(', ')}
-        </p>
-      )}
-      {summary && summary.notes.length > 0 && (
-        <ul className="finance-summary-notes">
-          {summary.notes.map((note) => <li key={note}>{note}</li>)}
-        </ul>
       )}
     </section>
   );
@@ -225,11 +207,9 @@ export function Home() {
         <h1 className="home-title">Projects</h1>
         <FinanceSummaryBar
           summary={financeSummaryQuery.data}
-          projects={projects}
           isLoading={financeSummaryQuery.isLoading}
           error={financeSummaryQuery.isError ? financeSummaryQuery.error : null}
           onRetry={() => void financeSummaryQuery.refetch()}
-          updatedAt={financeSummaryQuery.dataUpdatedAt}
         />
         <SocialBar projects={projects} />
         {(pendingDecisionsQuery.data?.length ?? 0) > 0 && (
