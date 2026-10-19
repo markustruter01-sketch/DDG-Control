@@ -4,3 +4,4 @@
 - [Structured Ollie risks](structured-ollie-risks.md) — keep API/UI risk shapes aligned; normalize legacy strings in responses and do not rewrite stored rows.
 - [Orval parameter export collision](orval-param-export-collision.md) — explicitly re-export the query params type and alias the path schema when both generate the same name.
 - [DDG preview routing](ddg-preview-routing.md) — browser automation should use the artifact preview proxy root, not the artifact-prefixed development domain URL.
+- [Heimdall display name](heimdall-display-name.md) — display Heimdall in DDG Control; leave legacy Ollie identifiers and stored member values intact.

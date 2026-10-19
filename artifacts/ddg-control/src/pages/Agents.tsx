@@ -9,7 +9,7 @@ import {
 } from '@workspace/api-client-react';
 import { Header } from '@/components/header';
 import { serverErrorText } from '@/lib/errors';
-import { formatBrisbaneDateTime } from '@/lib/format';
+import { formatBrisbaneDateTime, formatCurrentDisplayName } from '@/lib/format';
 
 type CursorModelsResponse = {
   status: 'not_configured' | 'connected';
@@ -43,7 +43,7 @@ export function AgentsPage() {
     mutation: {
       onSuccess: async (run) => {
         setRunNotice({
-          text: `Run status: ${run.status}${run.error ? ` — ${run.error}` : ''}`,
+          text: `Run status: ${run.status}${run.error ? ` — ${formatCurrentDisplayName(run.error)}` : ''}`,
           isError: run.status === 'error' || run.status === 'invalid',
         });
         await Promise.all([
@@ -53,7 +53,7 @@ export function AgentsPage() {
       },
       onError: (error) => {
         setRunNotice({
-          text: serverErrorText(error, 'Unable to run Ollie.'),
+          text: serverErrorText(error, 'Unable to run Heimdall.'),
           isError: true,
         });
       },
@@ -74,7 +74,7 @@ export function AgentsPage() {
 
         <section className="agents-run-panel" aria-labelledby="agents-run-title">
           <div className="agents-run-toolbar">
-            <h2 id="agents-run-title" className="todo-group-title">Ollie</h2>
+            <h2 id="agents-run-title" className="todo-group-title">Heimdall</h2>
             <button
               className="task-primary-button"
               type="button"
@@ -85,7 +85,7 @@ export function AgentsPage() {
               }}
               data-testid="button-run-ollie"
             >
-              {runMutation.isPending ? 'Running…' : 'Run Ollie now'}
+              {runMutation.isPending ? 'Running…' : 'Run Heimdall now'}
             </button>
           </div>
           {runNotice && (
@@ -166,7 +166,7 @@ export function AgentsPage() {
               {runs.map((run) => (
                 <li className="agents-run-card" key={run.id} data-testid={`card-agent-run-${run.id}`}>
                   <div className="agents-run-header">
-                    <strong>{run.member_name}</strong>
+                    <strong>{formatCurrentDisplayName(run.member_name)}</strong>
                     <span className={`agents-run-status agents-run-status-${run.status}`}>
                       {run.status}
                     </span>

@@ -2,6 +2,12 @@ export function formatFinanceCents(value: number): string {
   return formatCurrencyCents(value, 'AUD');
 }
 
+export function formatCurrentDisplayName(value: string): string {
+  return value
+    .replace(/\bOllie\b/g, 'Heimdall')
+    .replace(/\bOLLIE\b/g, 'HEIMDALL');
+}
+
 export function dollarsToCents(value: string): number {
   if (!/^\d+(\.\d{1,2})?$/.test(value)) {
     throw new Error('Enter an amount like 12.34');

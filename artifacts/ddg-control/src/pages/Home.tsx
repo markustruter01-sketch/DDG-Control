@@ -26,7 +26,7 @@ import { PROJECT_HEADLINE_METRIC } from '@workspace/project-constants';
 import { Header } from '@/components/header';
 import { SocialBar } from '@/components/SocialBar';
 import { serverErrorText } from '@/lib/errors';
-import { formatAgo, formatFigure, formatFinanceCents } from '@/lib/format';
+import { formatAgo, formatCurrentDisplayName, formatFigure, formatFinanceCents } from '@/lib/format';
 
 function Sparkline({ rows }: { rows: DailySalesRow[] }) {
   if (rows.length < 2) return null;
@@ -187,7 +187,7 @@ export function Home() {
         differences.push(`Priority: ${previous.priority} → ${update.priority}`);
       }
       if (previous.next_action !== update.next_action) {
-        differences.push(`Next action changed: ${update.next_action}`);
+        differences.push(`Next action changed: ${formatCurrentDisplayName(update.next_action)}`);
       }
       if (differences.length === 0) return [];
       const project = projects.find((item) => item.slug === update.project_slug);
@@ -278,8 +278,8 @@ export function Home() {
                       {latestUpdate && (
                         <span
                           className={`agent-light-dot agent-light-${latestUpdate.status_light}`}
-                          title={`Ollie: ${latestUpdate.status_light}`}
-                          aria-label={`Ollie's status light: ${latestUpdate.status_light}`}
+                          title={`Heimdall: ${latestUpdate.status_light}`}
+                          aria-label={`Heimdall's status light: ${latestUpdate.status_light}`}
                           data-testid={`agent-light-${project.slug}`}
                         />
                       )}
@@ -308,7 +308,7 @@ export function Home() {
                     )}
                     {project.slug === coffeeSlug && <Sparkline rows={dailySales} />}
                     <p className="tile-fact">
-                      <strong>Next action:</strong> {latestUpdate?.next_action ?? 'No data yet'}
+                      <strong>Next action:</strong> {latestUpdate ? formatCurrentDisplayName(latestUpdate.next_action) : 'No data yet'}
                     </p>
                   </div>
                 </Link>
@@ -324,7 +324,7 @@ export function Home() {
         <section className="report-section" aria-labelledby="report-title" data-testid="section-since-report">
           <div className="report-heading">
             <div>
-              <p className="eyebrow">Ollie’s latest comparison</p>
+              <p className="eyebrow">Heimdall’s latest comparison</p>
               <h2 id="report-title" className="report-title">Since last report</h2>
             </div>
           </div>

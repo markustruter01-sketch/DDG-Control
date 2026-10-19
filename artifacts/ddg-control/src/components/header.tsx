@@ -224,6 +224,15 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
                 <span>Approvals</span>
                 {pendingCount > 0 && <span className="menu-pending-count">{pendingCount}</span>}
               </Link>
+              <Link
+                href="/organisation"
+                className="floating-nav-menu-link"
+                role="menuitem"
+                onClick={() => setWorkMenuOpen(false)}
+                data-testid="link-nav-organisation"
+              >
+                <span>Organisation</span><span className="menu-link-mark" aria-hidden="true">↗</span>
+              </Link>
             </div>
           )}
         </div>

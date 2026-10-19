@@ -1,6 +1,7 @@
 import { Link } from 'wouter';
 import { ORG_CHART, PRINCIPLES } from '@workspace/project-constants';
 import { Header } from '@/components/header';
+import { formatCurrentDisplayName } from '@/lib/format';
 
 export function OrganisationPage() {
   type OrgPerson = (typeof ORG_CHART)[number];
@@ -14,7 +15,7 @@ export function OrganisationPage() {
 
   const renderPeople = (people: OrgPerson[]) => people.map((person) => (
     <article className="org-person" key={`${person.group}-${person.name}`}>
-      <span className="org-person-name">{person.name}</span>
+      <span className="org-person-name">{formatCurrentDisplayName(person.name)}</span>
       <span className="org-person-role">{person.role}</span>
     </article>
   ));
@@ -60,7 +61,7 @@ export function OrganisationPage() {
                       key={`${person.group}-${person.name}`}
                       data-testid={`link-org-project-${person.project_slug}`}
                     >
-                      <span className="org-person-name">{person.name}</span>
+                      <span className="org-person-name">{formatCurrentDisplayName(person.name)}</span>
                       <span className="org-person-role">{person.role}</span>
                       <span className="org-project-arrow" aria-hidden="true">↗</span>
                     </Link>
@@ -77,7 +78,7 @@ export function OrganisationPage() {
             {PRINCIPLES.map((principle, index) => (
               <li key={principle}>
                 <span className="principle-index">{String(index + 1).padStart(2, '0')}</span>
-                <span>{principle}</span>
+                <span>{formatCurrentDisplayName(principle)}</span>
               </li>
             ))}
           </ol>

@@ -8,10 +8,10 @@ import {
 } from '@workspace/api-client-react';
 import { Header } from '@/components/header';
 import { serverErrorText } from '@/lib/errors';
-import { formatBrisbaneDateTime, formatDueDate } from '@/lib/format';
+import { formatBrisbaneDateTime, formatCurrentDisplayName, formatDueDate } from '@/lib/format';
 
 export function sourceLabelForDecision(source: string): string {
-  return source === 'ollie_daily' ? 'Ollie daily' : source === 'cursor' ? 'Cursor' : source;
+  return source === 'ollie_daily' ? 'Heimdall daily' : source === 'cursor' ? 'Cursor' : source;
 }
 
 export function DecisionsPage() {
@@ -51,8 +51,8 @@ export function DecisionsPage() {
         <div className="detail-heading decisions-heading">
           <p className="eyebrow">Review queue</p>
           <h1 className="detail-title">Decisions</h1>
-          <p className="detail-description">Ollie’s recommendations, ready for your call.</p>
-          <p className="cursor-decision-cta">Decide with Ollie in Cursor</p>
+          <p className="detail-description">Heimdall’s recommendations, ready for your call.</p>
+          <p className="cursor-decision-cta">Decide with Heimdall in Cursor</p>
         </div>
 
         <section className="decision-section" aria-labelledby="pending-decisions-title">
@@ -78,23 +78,23 @@ export function DecisionsPage() {
                     <div className="decision-card-top">
                       <div>
                         <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
-                        <h3 className="decision-title">{decision.title}</h3>
+                        <h3 className="decision-title">{formatCurrentDisplayName(decision.title)}</h3>
                       </div>
                       <span className={`decision-urgency urgency-${decision.urgency}`}>{decision.urgency} urgency</span>
                     </div>
-                    <p className="decision-recommendation">{decision.recommendation}</p>
+                    <p className="decision-recommendation">{formatCurrentDisplayName(decision.recommendation)}</p>
                     <dl className="decision-facts">
                       <div><dt>Cost</dt><dd>{decision.cost_estimate_aud == null ? 'Cost unknown' : `${new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(decision.cost_estimate_aud)} est.`}</dd></div>
                       <div><dt>Risk</dt><dd>{decision.risk}</dd></div>
                       <div><dt>Confidence</dt><dd>{decision.confidence}</dd></div>
-                      <div><dt>Owner</dt><dd>{decision.owner_name}</dd></div>
+                      <div><dt>Owner</dt><dd>{formatCurrentDisplayName(decision.owner_name)}</dd></div>
                       <div><dt>Due</dt><dd>{decision.due_date ? formatDueDate(decision.due_date) : 'Date unavailable'}</dd></div>
                     </dl>
                     <div className="decision-origin">
                       <span>Source: {sourceLabelForDecision(decision.source)}</span>
                       <span>Decided via: {decision.decided_via ?? 'Not recorded'}</span>
                     </div>
-                    {decision.note && <p className="history-note">{decision.note}</p>}
+                    {decision.note && <p className="history-note">{formatCurrentDisplayName(decision.note)}</p>}
                   </article>
                 ))}
             </div>
@@ -116,8 +116,8 @@ export function DecisionsPage() {
                 <article className="decision-history-row" key={decision.id} data-testid={`history-decision-${decision.id}`}>
                   <div className="history-decision-copy">
                     <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
-                    <h3>{decision.title}</h3>
-                    {decision.note && <p className="history-note">{decision.note}</p>}
+                    <h3>{formatCurrentDisplayName(decision.title)}</h3>
+                    {decision.note && <p className="history-note">{formatCurrentDisplayName(decision.note)}</p>}
                     <p className="history-note">Source: {sourceLabelForDecision(decision.source)} · Decided via: {decision.decided_via ?? 'Not recorded'}</p>
                   </div>
                   <div className="history-decision-meta">
