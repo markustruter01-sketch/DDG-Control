@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { db, goalsTable, managedWorkDispatchConfigTable, managedWorkDispatchesTable, managedWorkEventsTable, managedWorkItemsTable, managedWorkOutcomeEventsTable, managedWorkOutcomesTable, projectHandoverEventsTable, projectHandoverTable, projectWorkAuditTable, projectWorkControlsTable, projectsTable, tasksTable } from "@workspace/db";
+import { db, goalsTable, managedFleetQuestionsTable, managedWorkDispatchConfigTable, managedWorkDispatchesTable, managedWorkEventsTable, managedWorkItemsTable, managedWorkOutcomeEventsTable, managedWorkOutcomesTable, projectHandoverEventsTable, projectHandoverTable, projectWorkAuditTable, projectWorkControlsTable, projectsTable, tasksTable } from "@workspace/db";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { requireRealOwnerSession } from "./auth";
@@ -234,6 +234,10 @@ router.post("/work-items/:id/approve", requireRealOwnerSession, async (req, res)
     if (!(await isProjectWorkEnabled(item.project_key))) return { kind: "off" as const };
     if (item.status === "approved") return { kind: "ok" as const, item };
     if (item.status !== "pending_approval") return { kind: "state" as const };
+    const [blockingQuestion] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
+      .where(and(eq(managedFleetQuestionsTable.project_key, item.project_key), eq(managedFleetQuestionsTable.work_item_id, item.id),
+        eq(managedFleetQuestionsTable.plan_version, item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
+    if (blockingQuestion) return { kind: "question" as const };
     if (item.outcome_id) {
       const [outcome] = await tx.select().from(managedWorkOutcomesTable).where(eq(managedWorkOutcomesTable.id, item.outcome_id)).limit(1);
       if (!outcome || outcome.project_key !== item.project_key || outcome.status !== "approved") return { kind: "state" as const };
@@ -247,8 +251,8 @@ router.post("/work-items/:id/approve", requireRealOwnerSession, async (req, res)
     return { kind: "ok" as const, item: updated };
   });
   if (result.kind !== "ok") {
-    const status = result.kind === "missing" ? 404 : result.kind === "off" ? 423 : 409;
-    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "duplicate" ? "An active work item already exists for this project or repository." : result.kind === "state" ? "Outcome must be owner-approved before its task can be approved." : "Work item not found." });
+    const status = result.kind === "missing" ? 404 : result.kind === "off" || result.kind === "question" ? 423 : 409;
+    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "question" ? "A blocking owner question is still open for this task version." : result.kind === "duplicate" ? "An active work item already exists for this project or repository." : result.kind === "state" ? "Outcome must be owner-approved before its task can be approved." : "Work item not found." });
     return;
   }
   res.json(result.item);
@@ -264,6 +268,10 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
     const [item] = await tx.select().from(managedWorkItemsTable).where(eq(managedWorkItemsTable.id, id)).for("update").limit(1);
     if (!item) return { kind: "missing" as const };
     if (!(await isProjectWorkEnabled(item.project_key))) return { kind: "off" as const };
+    const [blockingQuestion] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
+      .where(and(eq(managedFleetQuestionsTable.project_key, item.project_key), eq(managedFleetQuestionsTable.work_item_id, item.id),
+        eq(managedFleetQuestionsTable.plan_version, item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
+    if (blockingQuestion) return { kind: "question" as const };
     const normalizeRepository = (value: string | null) => value?.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\.git$/, "").replace(/\/$/, "") ?? "";
     if (item.project_key === "finance" || item.project_key !== config.approved_project_key || !item.repository || !item.target_branch ||
         normalizeRepository(item.repository) !== normalizeRepository(config.approved_repository) ||
@@ -287,8 +295,8 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
     return { kind: "reserved" as const, item, dispatch };
   });
   if (reservation.kind !== "reserved") {
-    const status = reservation.kind === "missing" ? 404 : reservation.kind === "off" ? 423 : 409;
-    res.status(status).json({ error: reservation.kind === "off" ? "Project work is OFF." : reservation.kind === "duplicate" ? "A dispatch already exists or same-repository work is active; inspect history, do not retry." : reservation.kind === "not_ready" ? "Task is not owner-approved and Ready." : "Work item not found.", ...(reservation.kind === "duplicate" ? { dispatch_status: reservation.status } : {}) });
+    const status = reservation.kind === "missing" ? 404 : reservation.kind === "off" || reservation.kind === "question" ? 423 : 409;
+    res.status(status).json({ error: reservation.kind === "off" ? "Project work is OFF." : reservation.kind === "question" ? "A blocking owner question is still open for this task version." : reservation.kind === "duplicate" ? "A dispatch already exists or same-repository work is active; inspect history, do not retry." : reservation.kind === "not_ready" ? "Task is not owner-approved and Ready." : "Work item not found.", ...(reservation.kind === "duplicate" ? { dispatch_status: reservation.status } : {}) });
     return;
   }
   const apiKey = process.env.CURSOR_API_KEY?.trim();
@@ -324,7 +332,7 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
   }
 });
 
-router.patch("/work-items/:id/status", async (req, res): Promise<void> => {
+router.patch("/work-items/:id/status", requireRealOwnerSession, async (req, res): Promise<void> => {
   const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
   const next = req.body?.status;
   if (!Number.isSafeInteger(id) || id < 1 || !workStatuses.includes(next)) { res.status(400).json({ error: "Invalid work item or status." }); return; }
@@ -332,6 +340,12 @@ router.patch("/work-items/:id/status", async (req, res): Promise<void> => {
     const [item] = await tx.select().from(managedWorkItemsTable).where(eq(managedWorkItemsTable.id, id)).for("update").limit(1);
     if (!item) return { kind: "missing" as const };
     if (!(await isProjectWorkEnabled(item.project_key))) return { kind: "off" as const };
+    if (next === "approved") {
+      const [blockingQuestion] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
+        .where(and(eq(managedFleetQuestionsTable.project_key, item.project_key), eq(managedFleetQuestionsTable.work_item_id, item.id),
+          eq(managedFleetQuestionsTable.plan_version, item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
+      if (blockingQuestion) return { kind: "question" as const };
+    }
     if (next === "in_progress") return { kind: "blocked" as const };
     if (item.status === next) return { kind: "ok" as const, item };
     const permitted = (item.status === "approved" && next === "in_progress") ||
@@ -363,8 +377,8 @@ router.patch("/work-items/:id/status", async (req, res): Promise<void> => {
     return { kind: "ok" as const, item: updated };
   });
   if (result.kind !== "ok") {
-    const status = result.kind === "missing" ? 404 : result.kind === "off" || result.kind === "blocked" ? 423 : result.kind === "limit" || result.kind === "evidence" ? 409 : 409;
-    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "blocked" ? "No eligible worker is connected; in-progress cannot be claimed." : result.kind === "limit" ? "Deadline or attempt limit reached; owner review required." : result.kind === "evidence" ? "Acceptance evidence is required before completion." : result.kind === "transition" ? "Invalid status transition." : "Work item not found." });
+     const status = result.kind === "missing" ? 404 : result.kind === "off" || result.kind === "blocked" || result.kind === "question" ? 423 : result.kind === "limit" || result.kind === "evidence" ? 409 : 409;
+     res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "question" ? "A blocking owner question is still open for this task version." : result.kind === "blocked" ? "No eligible worker is connected; in-progress cannot be claimed." : result.kind === "limit" ? "Deadline or attempt limit reached; owner review required." : result.kind === "evidence" ? "Acceptance evidence is required before completion." : result.kind === "transition" ? "Invalid status transition." : "Work item not found." });
     return;
   }
   res.json(result.item);
@@ -487,7 +501,7 @@ router.post("/work-handovers", async (req, res): Promise<void> => {
   res.status(201).json(saved);
 });
 
-router.post("/work-handovers/:id/resume", async (req, res): Promise<void> => {
+router.post("/work-handovers/:id/resume", requireRealOwnerSession, async (req, res): Promise<void> => {
   const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
   if (!Number.isSafeInteger(id) || id < 1) {
     res.status(400).json({ error: "Invalid checkpoint id." });
@@ -513,6 +527,13 @@ router.post("/work-handovers/:id/resume", async (req, res): Promise<void> => {
     const [item] = await db.select().from(managedWorkItemsTable).where(eq(managedWorkItemsTable.id, checkpoint.work_item_id)).limit(1);
     if (!item || item.project_key !== checkpoint.project_key || ["completed", "failed", "rejected"].includes(item.status)) {
       res.status(409).json({ error: "The linked work item is not resumable." });
+      return;
+    }
+    const [blockingQuestion] = await db.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
+      .where(and(eq(managedFleetQuestionsTable.project_key, item.project_key), eq(managedFleetQuestionsTable.work_item_id, item.id),
+        eq(managedFleetQuestionsTable.plan_version, item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
+    if (blockingQuestion) {
+      res.status(423).json({ error: "A blocking owner question is open for this task version. Record the owner decision and recheck prerequisites before resume." });
       return;
     }
     if (item.status === "needs_owner") {

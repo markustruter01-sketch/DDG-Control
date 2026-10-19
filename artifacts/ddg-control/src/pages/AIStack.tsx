@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useContext, useEffect, useState } from "react";
 import { DevAuthBypassContext, Header } from "@/components/header";
+import FleetDesk from "@/components/FleetDesk";
 import { writeHandoverPacket, type HandoverPacketRecord } from "@/lib/handover-packet";
 
 type CursorAgent = {
@@ -92,13 +93,13 @@ async function resumeHandover(id:number) {
   if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Checkpoint cannot be resumed");
   return r.json();
 }
-type WorkItem = { id:number; project_key:string; title:string; objective:string; outcome:string; checklist:string[]; acceptance_checks:string[]; acceptance_evidence:string; result:string; deadline:string; time_limit_minutes:number; max_attempts:number; attempts:number; spend_limit_cents:number; stop_condition:string; status:string; branch:string|null; commit_ref:string|null; review_link:string|null; outcome_id:number|null; gate_key:string|null; repository:string|null; target_branch:string|null; dispatch_state:string; dispatch_block_reason:string };
+type WorkItem = { id:number; project_key:string; title:string; objective:string; outcome:string; checklist:string[]; acceptance_checks:string[]; acceptance_evidence:string; result:string; deadline:string; time_limit_minutes:number; max_attempts:number; attempts:number; spend_limit_cents:number; stop_condition:string; status:string; plan_version?:number; branch:string|null; commit_ref:string|null; review_link:string|null; outcome_id:number|null; gate_key:string|null; repository:string|null; target_branch:string|null; dispatch_state:string; dispatch_block_reason:string };
 async function getWorkItems() {
   const r = await fetch("/api/work-items", { cache:"no-store" });
   if (!r.ok) throw new Error("Work queue unavailable");
   return r.json() as Promise<{items:WorkItem[];dispatches:Array<{id:number;work_item_id:number;provider:string;model_id:string|null;agent_id:string|null;run_id:string|null;provider_status:string|null;status:string;branch:string|null;error_summary:string;started_at:string}>;events:Array<{id:number;work_item_id:number;actor:string;event_type:string;created_at:string;details:Record<string,unknown>}>}>;
 }
-type WorkOutcome = { id:number; project_key:string; title:string; description:string; status:string; gates:Array<{key:string;title:string;acceptance:string[]}> };
+type WorkOutcome = { id:number; project_key:string; title:string; description:string; status:string; version:number; gates:Array<{key:string;title:string;acceptance:string[]}> };
 async function getWorkOutcomes() {
   const r=await fetch("/api/work-outcomes",{cache:"no-store"});
   if(!r.ok) throw new Error("Outcome record unavailable");
@@ -129,6 +130,30 @@ async function getSavedReports(){
   const r=await fetch("/api/agent-updates/latest",{cache:"no-store"});
   if(!r.ok) throw new Error("Saved Heimdall reports unavailable");
   return r.json() as Promise<SavedReport[]>;
+}
+type FleetMessageInput = { project_key:string; work_item_id:number|null; plan_version:number|null; outcome_version:number|null; body:string; kind:"draft"|"note"; client_request_id:string };
+async function getFleetThread(projectKey:string, taskId:number|null) {
+  const params=new URLSearchParams({project_key:projectKey});
+  if(taskId!==null) params.set("work_item_id",String(taskId));
+  const r=await fetch(`/api/fleet/thread?${params}`,{cache:"no-store"});
+  if(!r.ok) throw new Error("Fleet Desk history unavailable");
+  return r.json();
+}
+async function saveFleetMessage(input:FleetMessageInput) {
+  const r=await fetch("/api/fleet/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(input)});
+  if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Could not save dashboard item");
+  return r.json();
+}
+async function createFleetQuestion(input:Record<string,unknown>) {
+  const r=await fetch("/api/fleet/questions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(input)});
+  if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Could not save owner question");
+  return r.json();
+}
+async function answerFleetQuestion(input:{question_id:number;question_version:number;task_plan_version:number|null;outcome_version:number|null;selected_option:string;comment:string}) {
+  const {question_id,...body}=input;
+  const r=await fetch(`/api/fleet/questions/${question_id}/answers`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Could not record owner answer");
+  return r.json();
 }
 async function createWorkItem(data: Record<string, unknown>) {
   const r = await fetch("/api/work-items", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
@@ -484,6 +509,17 @@ export function AIStackPage() {
   const outcomeApproveMutation=useMutation({mutationFn:approveOutcome,onSuccess:()=>{void queryClient.invalidateQueries({queryKey:["work-outcomes"]});void queryClient.invalidateQueries({queryKey:["work-items"]});}});
   const dispatchMutation=useMutation({mutationFn:dispatchWorkItem,onSuccess:()=>{void queryClient.invalidateQueries({queryKey:["work-items"]});void queryClient.invalidateQueries({queryKey:["work-readiness"]});}});
   const savedReportsQuery = useQuery({ queryKey:["saved-heimdall-reports"],queryFn:getSavedReports,retry:false });
+  const [fleetProjectKey,setFleetProjectKey]=useState("ddg-control-ai-stack");
+  const [fleetTaskId,setFleetTaskId]=useState<number|null>(null);
+  const fleetThreadQuery=useQuery({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId],queryFn:()=>getFleetThread(fleetProjectKey,fleetTaskId),enabled:!!fleetProjectKey,retry:false});
+  const fleetThreadRaw=fleetThreadQuery.data as any;
+  const fleetThread={
+    messages:(fleetThreadRaw?.messages??[]).map((message:any)=>({...message,task_id:message.work_item_id})),
+    questions:(fleetThreadRaw?.questions??[]).map((question:any)=>({...question,task_id:question.work_item_id,answers:question.answers??[]})),
+    worker_label:fleetThreadRaw?.worker_label??"No active worker",
+    model_label:fleetThreadRaw?.model_label??"Unknown",
+    delivery_blocker:fleetThreadRaw?.delivery_blocker??"Provider messaging unavailable; content remains dashboard-only.",
+  };
   const controlMutation = useMutation({
     mutationFn: saveWorkControl,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["work-controls"] }),
@@ -562,6 +598,23 @@ export function AIStackPage() {
     <div className="app-shell">
       <Header />
       <main className="page-wrap detail-main ai-stack-main">
+        <FleetDesk
+          projects={managedAreas.map((area)=>({key:area.key,label:area.label,enabled:controlsQuery.data?.controls.find((control)=>control.project_key===area.key)?.enabled??false,financeHeld:area.key==="finance"}))}
+          tasks={(workItemsQuery.data?.items??[]).filter((item)=>item.project_key===fleetProjectKey).map((item)=>({id:item.id,project_key:item.project_key,title:item.title,status:item.status,plan_version:item.plan_version??1,outcome_id:item.outcome_id,outcome_version:outcomesQuery.data?.outcomes.find((outcome)=>outcome.id===item.outcome_id)?.version??null}))}
+          savedReports={savedReportsQuery.data??[]}
+          thread={fleetThread}
+          selectedProjectKey={fleetProjectKey}
+          selectedTaskId={fleetTaskId}
+          onSelectProject={(key)=>{setFleetProjectKey(key);setFleetTaskId(null);}}
+          onSelectTask={setFleetTaskId}
+          onSaveMessage={async(input)=>{await saveFleetMessage(input);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
+          onCreateQuestion={async(input)=>{await createFleetQuestion(input as unknown as Record<string,unknown>);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
+          onAnswerQuestion={async(input)=>{await answerFleetQuestion(input);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
+          onProposeNextWork={(report)=>{const project=managedAreas.find((area)=>area.key===report.project_slug);if(!project)return;setWorkFields((current)=>({...current,project_key:project.key,title:(report.next_action||report.summary).slice(0,160),objective:report.summary,outcome:report.next_action,checklist:"",acceptance_checks:"",repository:"",target_branch:""}));window.setTimeout(()=>document.getElementById("work-item-creator")?.scrollIntoView({behavior:"smooth",block:"center"}),0);}}
+          loading={fleetThreadQuery.isLoading}
+          error={fleetThreadQuery.isError?"Conversation unavailable. Refresh and explicitly reselect the project/task.":null}
+          canAnswer={!devBypass}
+        />
         <div className="ai-stack-heading">
           <div>
             <p className="eyebrow">Separate control area</p>
@@ -957,7 +1010,7 @@ export function AIStackPage() {
             <p>{report.summary}</p><p><b>Suggested next action:</b> {report.next_action}</p>
             {report.project_slug==="finance" ? <span className="ai-stack-help">Held until Claude review · no Finance work starts here.</span> : <button type="button" className="work-toggle" onClick={()=>{const outcome=outcomesQuery.data?.outcomes.find(o=>o.project_key===report.project_slug&&o.status==="pending_approval");const gate=outcome?.gates[0];setWorkFields({...workFields,project_key:report.project_slug,title:report.next_action.slice(0,160),objective:report.next_action,outcome:report.summary,outcome_id:outcome?String(outcome.id):"",gate_key:gate?.key??""});}}>Use saved report in draft</button>}
           </article>)}
-          <form className="work-item-form" onSubmit={(event)=>{event.preventDefault();createWorkMutation.mutate({
+          <form id="work-item-creator" className="work-item-form" onSubmit={(event)=>{event.preventDefault();createWorkMutation.mutate({
             project_key:workFields.project_key,title:workFields.title,objective:workFields.objective,outcome:workFields.outcome,
             checklist:workFields.checklist.split("\n").map(x=>x.trim()).filter(Boolean),
             acceptance_checks:workFields.acceptance_checks.split("\n").map(x=>x.trim()).filter(Boolean),

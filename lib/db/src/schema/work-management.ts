@@ -122,6 +122,7 @@ export const managedWorkItemsTable = pgTable("managed_work_items", {
   spend_limit_cents: integer("spend_limit_cents").notNull().default(0),
   stop_condition: text("stop_condition").notNull(),
   status: text("status").notNull().default("pending_approval"),
+  plan_version: integer("plan_version").notNull().default(1),
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
@@ -162,6 +163,70 @@ export const managedWorkDispatchesTable = pgTable("managed_work_dispatches", {
   uniqueIndex("managed_work_dispatch_one_per_task").on(table.work_item_id),
   check("managed_work_dispatch_status_check", sql`${table.status} IN ('submitting', 'running', 'needs_owner', 'failed', 'completed')`),
 ]);
+
+export const managedFleetConversationsTable = pgTable("managed_fleet_conversations", {
+  id: serial("id").primaryKey(),
+  project_key: text("project_key").notNull(),
+  scope_key: text("scope_key").notNull().unique(),
+  work_item_id: integer("work_item_id").references(() => managedWorkItemsTable.id),
+  plan_version: integer("plan_version"),
+  outcome_id: integer("outcome_id").references(() => managedWorkOutcomesTable.id),
+  outcome_version: integer("outcome_version"),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export const managedFleetMessagesTable = pgTable("managed_fleet_messages", {
+  id: serial("id").primaryKey(),
+  conversation_id: integer("conversation_id").notNull().references(() => managedFleetConversationsTable.id),
+  client_request_id: text("client_request_id").notNull().unique(),
+  project_key: text("project_key").notNull(),
+  work_item_id: integer("work_item_id"),
+  plan_version: integer("plan_version"),
+  outcome_id: integer("outcome_id"),
+  outcome_version: integer("outcome_version"),
+  author: text("author").notNull().default("Markus"),
+  body: text("body").notNull(),
+  kind: text("kind").notNull(),
+  delivery_state: text("delivery_state").notNull(),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("managed_fleet_message_kind_check", sql`${table.kind} IN ('draft', 'note')`),
+  check("managed_fleet_message_delivery_check", sql`${table.delivery_state} IN ('draft', 'dashboard_only', 'queued', 'sent', 'acknowledged', 'blocked', 'failed')`),
+]);
+export const managedFleetQuestionsTable = pgTable("managed_fleet_questions", {
+  id: serial("id").primaryKey(),
+  question_key: text("question_key").notNull().unique(),
+  conversation_id: integer("conversation_id").notNull().references(() => managedFleetConversationsTable.id),
+  project_key: text("project_key").notNull(),
+  work_item_id: integer("work_item_id"),
+  plan_version: integer("plan_version"),
+  outcome_id: integer("outcome_id"),
+  outcome_version: integer("outcome_version"),
+  question_version: integer("question_version").notNull().default(1),
+  question: text("question").notNull(),
+  options: jsonb("options").$type<string[]>().notNull(),
+  recommendation: text("recommendation").notNull(),
+  blocks_work: boolean("blocks_work").notNull().default(false),
+  status: text("status").notNull().default("open"),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [check("managed_fleet_question_status_check", sql`${table.status} IN ('open', 'answered', 'stale', 'superseded')`)]);
+export const managedFleetAnswersTable = pgTable("managed_fleet_answers", {
+  id: serial("id").primaryKey(),
+  question_id: integer("question_id").notNull().references(() => managedFleetQuestionsTable.id),
+  question_version: integer("question_version").notNull(),
+  selected_option: text("selected_option").notNull(),
+  comment: text("comment").notNull().default(""),
+  actor: text("actor").notNull().default("Markus"),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("managed_fleet_one_answer_per_question_version").on(table.question_id, table.question_version)]);
+export const managedFleetQuestionEventsTable = pgTable("managed_fleet_question_events", {
+  id: serial("id").primaryKey(),
+  question_id: integer("question_id").notNull().references(() => managedFleetQuestionsTable.id),
+  project_key: text("project_key").notNull(),
+  event_type: text("event_type").notNull(),
+  actor: text("actor").notNull(),
+  details: jsonb("details").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const managedWorkEventsTable = pgTable("managed_work_events", {
   id: serial("id").primaryKey(),

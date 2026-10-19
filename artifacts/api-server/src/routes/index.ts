@@ -12,6 +12,7 @@ import inboundRouter from "./inbound";
 import financeRouter from "./finance";
 import socialRouter from "./social";
 import workManagementRouter from "./work-management";
+import fleetDeskRouter from "./fleet-desk";
 
 const router: IRouter = Router();
 
@@ -29,5 +30,6 @@ router.use(inboundRouter);
 router.use(financeRouter);
 router.use(socialRouter);
 router.use(workManagementRouter);
+router.use(fleetDeskRouter);
 
 export default router;
