@@ -4,9 +4,11 @@ import { Router, type IRouter } from "express";
 
 export const WORK_KEYS = ["finance", "hypest", "cattle-dog-coffee", "ddg-control-ai-stack"] as const;
 export type WorkKey = (typeof WORK_KEYS)[number];
+const FINANCE_REVIEW_REQUIRED = true;
 
 export async function isProjectWorkEnabled(key: string): Promise<boolean> {
   if (!WORK_KEYS.includes(key as WorkKey)) return false;
+  if (key === "finance" && FINANCE_REVIEW_REQUIRED) return false;
   const [row] = await db.select({ enabled: projectWorkControlsTable.enabled, completed: projectWorkControlsTable.completed })
     .from(projectWorkControlsTable).where(eq(projectWorkControlsTable.project_key, key)).limit(1);
   return row?.enabled === true && row.completed === false;
@@ -142,6 +144,10 @@ router.patch("/work-controls/:key", async (req, res): Promise<void> => {
     return;
   }
   const enabled = req.body.enabled as boolean;
+  if (key === "finance" && enabled && FINANCE_REVIEW_REQUIRED) {
+    res.status(423).json({ error: "Finance work remains OFF until Claude's later review. Trading logic and strategies are not changed here." });
+    return;
+  }
   const [previous] = await db.select({ completed: projectWorkControlsTable.completed })
     .from(projectWorkControlsTable).where(eq(projectWorkControlsTable.project_key, key)).limit(1);
   if (enabled && previous?.completed) {
@@ -197,6 +203,10 @@ router.post("/work-handovers", async (req, res): Promise<void> => {
   const b = req.body;
   if (!b || !WORK_KEYS.includes(b.project_key) || typeof b.status !== "string" || typeof b.completed_work !== "string" || typeof b.next_action !== "string" || typeof b.recovery_note !== "string" || typeof b.blockers !== "string" || typeof b.verification !== "string" || (b.branch != null && typeof b.branch !== "string") || (b.commit_ref != null && typeof b.commit_ref !== "string") || (b.task_id != null && !Number.isInteger(b.task_id)) || (b.work_item_id != null && !Number.isInteger(b.work_item_id))) {
     res.status(400).json({ error: "Provide project, status, completed work, next action, blockers, verification, and recovery note." });
+    return;
+  }
+  if (b.project_key === "finance" && FINANCE_REVIEW_REQUIRED) {
+    res.status(423).json({ error: "Finance checkpoints are held until Claude's later review." });
     return;
   }
   const [project] = await db.select({ id: projectsTable.id }).from(projectsTable).where(eq(projectsTable.slug, b.project_key)).limit(1);

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { Header } from "@/components/header";
+import { useContext, useEffect, useState } from "react";
+import { DevAuthBypassContext, Header } from "@/components/header";
 
 type CursorAgent = {
   id: string;
@@ -445,6 +445,7 @@ function DetailDialog({
 }
 
 export function AIStackPage() {
+  const devBypass = useContext(DevAuthBypassContext);
   const queryClient = useQueryClient();
   const controlsQuery = useQuery({ queryKey: ["work-controls"], queryFn: getWorkControls, retry: false });
   const handoversQuery = useQuery({ queryKey: ["work-handovers"], queryFn: getHandovers, retry: false });
@@ -464,15 +465,16 @@ export function AIStackPage() {
   const createWorkMutation = useMutation({ mutationFn: createWorkItem, onSuccess: () => queryClient.invalidateQueries({ queryKey:["work-items"] }) });
   const approveWorkMutation = useMutation({ mutationFn: approveWorkItem, onSuccess: () => queryClient.invalidateQueries({ queryKey:["work-items"] }) });
   const moveWorkMutation = useMutation({ mutationFn: moveWorkItem, onSuccess: () => queryClient.invalidateQueries({ queryKey:["work-items"] }) });
-  const [handoverKey, setHandoverKey] = useState("finance");
+  const [handoverKey, setHandoverKey] = useState("hypest");
   const [handoverFields, setHandoverFields] = useState({ status: "in progress", completed_work: "", next_action: "", blockers: "", verification: "", recovery_note: "", branch: "", commit_ref: "", task_id: "", work_item_id: "" });
-  const [workFields, setWorkFields] = useState({ project_key:"finance", title:"", objective:"", outcome:"", checklist:"", acceptance_checks:"", deadline:"", time_limit_minutes:"30", max_attempts:"1", stop_condition:"Stop when any acceptance check fails or the limit is reached." });
+  const [workFields, setWorkFields] = useState({ project_key:"hypest", title:"", objective:"", outcome:"", checklist:"", acceptance_checks:"", deadline:"", time_limit_minutes:"30", max_attempts:"1", stop_condition:"Stop when any acceptance check fails or the limit is reached." });
   const agentsQuery = useQuery({
     queryKey: ["cursor-cloud-agents"],
     queryFn: loadCursorAgents,
+    enabled: !devBypass,
     retry: false,
-    refetchInterval: 60_000,
-    refetchOnWindowFocus: true,
+    refetchInterval: devBypass ? false : 60_000,
+    refetchOnWindowFocus: !devBypass,
   });
   const agents = agentsQuery.data?.agents ?? [];
   const tokenValues = agents.map((agent) => agent.totalTokens ?? 0);
@@ -511,7 +513,9 @@ export function AIStackPage() {
             <span
               className={`ai-stack-live-dot ${agentsQuery.data?.status === "connected" ? "is-live" : ""}`}
             />
-            {agentsQuery.isFetching
+            {devBypass
+              ? "Cursor polling disabled in development bypass"
+              : agentsQuery.isFetching
               ? "Checking…"
               : agentsQuery.data?.checkedAt
                 ? `Updated ${new Date(agentsQuery.data.checkedAt).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}`
@@ -539,8 +543,8 @@ export function AIStackPage() {
             </strong>
           </div>
           <div className="ai-stack-no-spend">
-            <span aria-hidden="true">✓</span> Read-only · no agent starts · no
-            new spend
+            <span aria-hidden="true">✓</span> Dashboard work only · no agent starts · no
+            new model calls
           </div>
         </section>
 
@@ -797,7 +801,7 @@ export function AIStackPage() {
         </section>
         <section className="ai-stack-panel ai-stack-controls-panel" aria-labelledby="work-controls-heading">
           <div className="ai-stack-section-heading">
-            <div><h2 id="work-controls-heading">Project work controls</h2><p className="ai-stack-help">ON permits dashboard-mediated work; it never starts an agent.</p></div>
+            <div><h2 id="work-controls-heading">Project work controls</h2><p className="ai-stack-help">ON permits dashboard-mediated work; it never starts an agent. Finance stays OFF until Claude review.</p></div>
             <span className="ai-stack-status">OFF by default</span>
           </div>
           <p className="ai-stack-chart-caption">OFF blocks new dashboard work. It cannot stop agents started outside this dashboard or revoke their permissions. Existing tasks and history remain visible.</p>
@@ -808,11 +812,11 @@ export function AIStackPage() {
                 const enabled = control?.enabled === true;
                 return <div className="ai-stack-control-row" key={area.key}>
                   <strong>{area.label}</strong><span className={enabled ? "work-state is-on" : "work-state"}>{control?.completed ? "COMPLETED" : enabled ? "ON" : "OFF"}</span>
-                  <button type="button" className={`work-toggle ${enabled ? "is-on" : ""}`} aria-pressed={enabled} disabled={controlMutation.isPending || !controlsQuery.data || control?.completed} onClick={() => {
+                  <button type="button" className={`work-toggle ${enabled ? "is-on" : ""}`} aria-pressed={enabled} disabled={controlMutation.isPending || !controlsQuery.data || control?.completed || (area.key === "finance" && !enabled)} title={area.key === "finance" && !enabled ? "Finance remains OFF until Claude review" : undefined} onClick={() => {
                     const next = !enabled;
                     if (window.confirm(`Markus, confirm ${next ? "ON" : "OFF"} for ${area.label}?`)) controlMutation.mutate({ key: area.key, enabled: next });
-                  }}>{enabled ? "Turn OFF" : "Turn ON"}</button>
-                  {!control?.completed && <button type="button" className="work-toggle" disabled={completeMutation.isPending} onClick={()=>{if(window.confirm(`Mark ${area.label} complete? This stops new suggested work.`)) completeMutation.mutate(area.key);}}>Mark complete</button>}
+                  }}>{enabled ? "Turn OFF" : area.key === "finance" ? "Claude review required" : "Turn ON"}</button>
+                  {!control?.completed && area.key !== "finance" && <button type="button" className="work-toggle" disabled={completeMutation.isPending} onClick={()=>{if(window.confirm(`Mark ${area.label} complete? This stops new suggested work.`)) completeMutation.mutate(area.key);}}>Mark complete</button>}
                 </div>;
               })}
               <div className="ai-stack-control-row is-undecided"><strong>DDG Music</strong><span>Undecided · unchanged</span></div>
@@ -826,7 +830,7 @@ export function AIStackPage() {
         <section className="ai-stack-panel ai-stack-checkpoint-panel" aria-labelledby="handover-heading">
           <div className="ai-stack-section-heading"><div><h2 id="handover-heading">Shared handover / checkpoint</h2><p className="ai-stack-help">Manual save · five-minute target reminder · no automatic checkpoint callback is connected.</p></div><span className="ai-stack-status">Manual</span></div>
           <form className="work-handover-form" onSubmit={(event) => { event.preventDefault(); const {task_id,work_item_id,...rest}=handoverFields; handoverMutation.mutate({ project_key: handoverKey, ...rest, ...(task_id?{task_id:Number(task_id)}:{}), ...(work_item_id?{work_item_id:Number(work_item_id)}:{}) }); }}>
-            <label>Project<select value={handoverKey} onChange={(e)=>setHandoverKey(e.target.value)}>{managedAreas.map((a)=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
+            <label>Project<select value={handoverKey} onChange={(e)=>setHandoverKey(e.target.value)}>{managedAreas.filter((a)=>a.key!=="finance").map((a)=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
             {(["status","completed_work","next_action","blockers","verification","recovery_note","branch","commit_ref","task_id","work_item_id"] as const).map((field)=><label key={field}>{field.replaceAll("_"," ")}<input type={field.endsWith("_id")?"number":"text"} min={field.endsWith("_id")?1:undefined} required={["status","completed_work","next_action","recovery_note"].includes(field)} value={handoverFields[field]} onChange={(e)=>setHandoverFields({...handoverFields,[field]:e.target.value})}/></label>)}
             <button type="submit" className="work-toggle" disabled={handoverMutation.isPending}>Save checkpoint</button>
           </form>
@@ -842,7 +846,7 @@ export function AIStackPage() {
           {(savedReportsQuery.data??[]).filter(r=>managedAreas.some(a=>a.key===r.project_slug)).map(report=><article className="managed-work-card" key={report.project_slug}>
             <strong>{managedAreas.find(a=>a.key===report.project_slug)?.label} · {report.priority??"Priority unknown"}</strong>
             <p>{report.summary}</p><p><b>Suggested next action:</b> {report.next_action}</p>
-            <button type="button" className="work-toggle" onClick={()=>setWorkFields({...workFields,project_key:report.project_slug,title:report.next_action.slice(0,160),objective:report.next_action,outcome:report.summary})}>Use saved report in draft</button>
+            {report.project_slug==="finance" ? <span className="ai-stack-help">Held until Claude review · no Finance work starts here.</span> : <button type="button" className="work-toggle" onClick={()=>setWorkFields({...workFields,project_key:report.project_slug,title:report.next_action.slice(0,160),objective:report.next_action,outcome:report.summary})}>Use saved report in draft</button>}
           </article>)}
           <form className="work-item-form" onSubmit={(event)=>{event.preventDefault();createWorkMutation.mutate({
             project_key:workFields.project_key,title:workFields.title,objective:workFields.objective,outcome:workFields.outcome,
@@ -852,7 +856,7 @@ export function AIStackPage() {
             max_attempts:Number(workFields.max_attempts),spend_limit_cents:0,
             stop_condition:workFields.stop_condition,
           });}}>
-            <label>Project<select value={workFields.project_key} onChange={e=>setWorkFields({...workFields,project_key:e.target.value})}>{managedAreas.map(a=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
+            <label>Project<select value={workFields.project_key} onChange={e=>setWorkFields({...workFields,project_key:e.target.value})}>{managedAreas.filter((a)=>a.key!=="finance").map(a=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
             {(["title","objective","outcome","checklist","acceptance_checks","deadline","time_limit_minutes","max_attempts","stop_condition"] as const).map(field=><label key={field}>{field.replaceAll("_"," ")}{["checklist","acceptance_checks","objective","outcome","stop_condition"].includes(field)?<textarea required value={workFields[field]} onChange={e=>setWorkFields({...workFields,[field]:e.target.value})}/>:<input required type={field==="deadline"?"datetime-local":"text"} value={workFields[field]} onChange={e=>setWorkFields({...workFields,[field]:e.target.value})}/>}</label>)}
             <p className="ai-stack-chart-caption">Zero spend limit. Time is 5–1,440 minutes; attempts are 1–10. No provider or agent is started.</p>
             <button className="work-toggle" disabled={createWorkMutation.isPending}>Queue for Markus’ approval</button>
@@ -872,8 +876,7 @@ export function AIStackPage() {
           <h3>Append-only task history</h3><ol className="work-audit-list">{(workItemsQuery.data?.events??[]).slice(0,30).map(e=><li key={e.id}>#{e.work_item_id} · {e.event_type} · {e.actor} · {new Date(e.created_at).toLocaleString()}</li>)}</ol>
         </section>
         <p className="ai-stack-footnote">
-          This page shows Cursor Cloud Agent activity only. It does not run a
-          24/7 coding loop or switch providers automatically.
+          Cursor status is read-only. Managed work is dashboard-mediated, waits for owner approval, and does not start agents or switch providers automatically.
         </p>
       </main>
       <DetailDialog

@@ -1089,7 +1089,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 .cursor-decision-cta { width: fit-content; margin: 0; padding: 9px 11px; border: 1px solid hsl(var(--accent) / .38); border-radius: 6px; background: hsl(var(--accent) / .1); color: hsl(var(--accent)); font-size: 11px; font-weight: 700; }
 
 /* AI Stack is a separate control area; keep its styling scoped to this page. */
-.ai-stack-main { --ai-stack-chart-1: #78caa1; --ai-stack-chart-2: #89b8d8; --ai-stack-chart-3: #d5b36c; --ai-stack-chart-4: #bc9bd8; width: min(1500px, calc(100% - 48px)); height: calc(100dvh - 180px); min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; gap: 8px; padding: 10px 0 8px; overflow: hidden; }
+.ai-stack-main { --ai-stack-chart-1: #78caa1; --ai-stack-chart-2: #89b8d8; --ai-stack-chart-3: #d5b36c; --ai-stack-chart-4: #bc9bd8; width: min(1500px, calc(100% - 48px)); height: auto; min-height: calc(100dvh - 180px); display: grid; grid-template-rows: auto; gap: 8px; padding: 10px 0 8px; overflow: visible; }
 .ai-stack-heading, .ai-stack-section-heading, .ai-stack-agent-top, .ai-stack-agent-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .ai-stack-heading .eyebrow { margin-bottom: 7px; }
 .ai-stack-heading .detail-title { margin: 0; font-size: clamp(24px, 3vw, 33px); }
@@ -1198,7 +1198,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 @media (max-width: 980px) {
   .ai-stack-main { height: auto; min-height: 0; overflow: visible; }
   .ai-stack-dashboard-grid { grid-template-columns: 1fr; }
-  .ai-stack-work-panel { min-height: 330px; }
+  .ai-stack-work-panel { min-height: 210px; }
   .ai-stack-side-column { grid-template-rows: auto auto; }
 }
 @media (max-width: 720px) {
