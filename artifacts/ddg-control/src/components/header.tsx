@@ -85,6 +85,9 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
         <Link href="/agents" className="header-link" data-testid="link-agents">
           Agents
         </Link>
+        <Link href="/ai-stack" className="header-link" data-testid="link-ai-stack">
+          AI Stack
+        </Link>
         <Link href="/decisions" className="header-link" data-testid="link-decisions">
           Decisions{pendingCount > 0 && <span className="header-count">[{pendingCount}]</span>}
         </Link>
