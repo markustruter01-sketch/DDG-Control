@@ -15,6 +15,7 @@ import {
 import { eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { zodErrorText } from "./validation";
+import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
 
 const router: IRouter = Router();
 
@@ -151,6 +152,10 @@ router.patch("/projects/:slug", async (req, res): Promise<void> => {
 
   if (!existing) {
     res.status(404).json({ error: "not found" });
+    return;
+  }
+  if (hasWorkControl(params.data.slug) && !(await isProjectWorkEnabled(params.data.slug))) {
+    res.status(423).json({ error: "Project work is OFF. Project updates are paused." });
     return;
   }
 

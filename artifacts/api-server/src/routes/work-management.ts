@@ -6,8 +6,12 @@ export const WORK_KEYS = ["finance", "hypest", "cattle-dog-coffee", "ddg-control
 export type WorkKey = (typeof WORK_KEYS)[number];
 const FINANCE_REVIEW_REQUIRED = true;
 
+export function hasWorkControl(key: string): key is WorkKey {
+  return WORK_KEYS.includes(key as WorkKey);
+}
+
 export async function isProjectWorkEnabled(key: string): Promise<boolean> {
-  if (!WORK_KEYS.includes(key as WorkKey)) return false;
+  if (!hasWorkControl(key)) return false;
   if (key === "finance" && FINANCE_REVIEW_REQUIRED) return false;
   const [row] = await db.select({ enabled: projectWorkControlsTable.enabled, completed: projectWorkControlsTable.completed })
     .from(projectWorkControlsTable).where(eq(projectWorkControlsTable.project_key, key)).limit(1);
@@ -74,8 +78,8 @@ router.post("/work-items/:id/approve", async (req, res): Promise<void> => {
   const result = await db.transaction(async (tx) => {
     const [item] = await tx.select().from(managedWorkItemsTable).where(eq(managedWorkItemsTable.id, id)).for("update").limit(1);
     if (!item) return { kind: "missing" as const };
-    if (item.status === "approved") return { kind: "ok" as const, item };
     if (!(await isProjectWorkEnabled(item.project_key))) return { kind: "off" as const };
+    if (item.status === "approved") return { kind: "ok" as const, item };
     if (item.status !== "pending_approval") return { kind: "state" as const };
     const [active] = await tx.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable).where(and(eq(managedWorkItemsTable.project_key, item.project_key), inArray(managedWorkItemsTable.status, ["approved", "in_progress"]))).limit(1);
     if (active) return { kind: "duplicate" as const };
@@ -98,12 +102,12 @@ router.patch("/work-items/:id/status", async (req, res): Promise<void> => {
   const result = await db.transaction(async (tx) => {
     const [item] = await tx.select().from(managedWorkItemsTable).where(eq(managedWorkItemsTable.id, id)).for("update").limit(1);
     if (!item) return { kind: "missing" as const };
+    if (!(await isProjectWorkEnabled(item.project_key))) return { kind: "off" as const };
     if (item.status === next) return { kind: "ok" as const, item };
     const permitted = (item.status === "approved" && next === "in_progress") ||
       (item.status === "in_progress" && ["needs_owner", "failed", "completed"].includes(next)) ||
       (item.status === "needs_owner" && ["approved", "rejected"].includes(next));
     if (!permitted) return { kind: "transition" as const };
-    if (["in_progress", "approved", "completed"].includes(next) && !(await isProjectWorkEnabled(item.project_key))) return { kind: "off" as const };
     if (next === "completed" && !(typeof req.body?.acceptance_evidence === "string" && req.body.acceptance_evidence.trim())) return { kind: "evidence" as const };
     if (next === "in_progress" && (item.attempts >= item.max_attempts || new Date() > item.deadline)) return { kind: "limit" as const };
     if (item.started_at && Date.now() - item.started_at.getTime() > item.time_limit_minutes * 60_000 && !["needs_owner", "failed"].includes(next)) return { kind: "limit" as const };
@@ -207,6 +211,10 @@ router.post("/work-handovers", async (req, res): Promise<void> => {
   }
   if (b.project_key === "finance" && FINANCE_REVIEW_REQUIRED) {
     res.status(423).json({ error: "Finance checkpoints are held until Claude's later review." });
+    return;
+  }
+  if (!(await isProjectWorkEnabled(b.project_key))) {
+    res.status(423).json({ error: "Project work is OFF. New checkpoints are paused." });
     return;
   }
   const [project] = await db.select({ id: projectsTable.id }).from(projectsTable).where(eq(projectsTable.slug, b.project_key)).limit(1);

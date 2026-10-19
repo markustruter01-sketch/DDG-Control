@@ -20,7 +20,7 @@ import {
 import { MEMBER_KINDS, TASK_STATUSES } from "@workspace/project-constants";
 import { eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { isProjectWorkEnabled } from "./work-management";
+import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
 import {
   getMissingRequiredFieldError,
   getUnknownFieldError,
@@ -241,11 +241,11 @@ router.post("/projects/:slug/tasks", async (req, res): Promise<void> => {
     return;
   }
 
-  const status = fields.status ?? TASK_STATUSES[0];
-  if (status !== TASK_STATUSES[0] && !(await isProjectWorkEnabled(params.data.slug))) {
-    res.status(423).json({ error: "Project work is OFF. New owner planning tasks can be saved as Planned; status changes require ON." });
+  if (hasWorkControl(params.data.slug) && !(await isProjectWorkEnabled(params.data.slug))) {
+    res.status(423).json({ error: "Project work is OFF. Task changes are paused." });
     return;
   }
+  const status = fields.status ?? TASK_STATUSES[0];
   const values: typeof tasksTable.$inferInsert = {
     project_id: project.id,
     title: fields.title as string,
@@ -314,13 +314,11 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   }
 
   const fields = parsed.fields;
-  if (Object.hasOwn(fields, "status")) {
-    const [project] = await db.select({ slug: projectsTable.slug }).from(projectsTable)
-      .where(eq(projectsTable.id, existing.project_id)).limit(1);
-    if (!project || !(await isProjectWorkEnabled(project.slug))) {
-      res.status(423).json({ error: "Project work is OFF. Task history remains visible; status changes are paused." });
-      return;
-    }
+  const [taskProject] = await db.select({ slug: projectsTable.slug }).from(projectsTable)
+    .where(eq(projectsTable.id, existing.project_id)).limit(1);
+  if (!taskProject || (hasWorkControl(taskProject.slug) && !(await isProjectWorkEnabled(taskProject.slug)))) {
+    res.status(423).json({ error: "Project work is OFF. Task changes are paused; history remains visible." });
+    return;
   }
   if (
     Object.hasOwn(fields, "owner_id") &&

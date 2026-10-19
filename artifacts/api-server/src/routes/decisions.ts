@@ -10,7 +10,6 @@ import {
   decisionsTable,
   membersTable,
   projectsTable,
-  projectWorkControlsTable,
   tasksTable,
 } from "@workspace/db";
 import {
@@ -24,6 +23,7 @@ import {
   requestBodyRecord,
   zodErrorText,
 } from "./validation";
+import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
 
 const router: IRouter = Router();
 
@@ -94,12 +94,10 @@ async function decideWithinTransaction(
   if (decision.status !== DECISION_STATUSES[0]) {
     return { kind: "not-pending" as const };
   }
-  if (outcome === "approved") {
-    const [project] = await tx.select({ slug: projectsTable.slug })
-      .from(projectsTable).where(eq(projectsTable.id, decision.project_id)).limit(1);
-    const [control] = project ? await tx.select({ enabled: projectWorkControlsTable.enabled })
-      .from(projectWorkControlsTable).where(eq(projectWorkControlsTable.project_key, project.slug)).limit(1) : [];
-    if (!control?.enabled) return { kind: "paused" as const };
+  const [project] = await tx.select({ slug: projectsTable.slug })
+    .from(projectsTable).where(eq(projectsTable.id, decision.project_id)).limit(1);
+  if (!project || (hasWorkControl(project.slug) && !(await isProjectWorkEnabled(project.slug)))) {
+    return { kind: "paused" as const };
   }
 
   let taskId: number | null = null;
