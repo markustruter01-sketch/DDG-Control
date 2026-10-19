@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/header";
 
 type CursorAgent = {
@@ -15,6 +16,13 @@ type CursorAgent = {
     pullRequest: string | null;
   }>;
   totalTokens: number | null;
+  tokenUsage: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+    totalTokens: number;
+  } | null;
   agentUrl: string | null;
   note: string | null;
 };
@@ -41,6 +49,8 @@ const projectNames = [
   "DDG Music",
 ];
 
+type DetailView = "work" | "usage" | "safety" | null;
+
 function runLabel(agent: CursorAgent): string {
   const status = agent.runStatus?.toUpperCase();
   if (status === "RUNNING" || status === "CREATING") return "Working now";
@@ -65,6 +75,305 @@ function tokenLabel(value: number | null): string {
   }).format(value);
 }
 
+function DetailDialog({
+  view,
+  agents,
+  checkedAt,
+  onClose,
+}: {
+  view: DetailView;
+  agents: CursorAgent[];
+  checkedAt: string | null;
+  onClose: () => void;
+}) {
+  if (!view) return null;
+
+  const tokenTotals = agents.reduce(
+    (totals, agent) => {
+      const usage = agent.tokenUsage;
+      if (!usage) return totals;
+      totals.inputTokens += usage.inputTokens;
+      totals.outputTokens += usage.outputTokens;
+      totals.cacheReadTokens += usage.cacheReadTokens;
+      totals.cacheWriteTokens += usage.cacheWriteTokens;
+      totals.totalTokens += usage.totalTokens;
+      return totals;
+    },
+    {
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      totalTokens: 0,
+    },
+  );
+
+  const headings = {
+    work: [
+      "Work details",
+      "Cursor Cloud Agent runs and the information Cursor returns.",
+    ],
+    usage: ["Usage details", "Latest run token counts returned by Cursor."],
+    safety: [
+      "Safety details",
+      "What this page can do, what it can see, and what it cannot confirm.",
+    ],
+  } as const;
+
+  return (
+    <div
+      className="ai-stack-dialog-backdrop"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <section
+        className="ai-stack-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-stack-dialog-title"
+      >
+        <header className="ai-stack-dialog-heading">
+          <div>
+            <p className="eyebrow">AI Stack details</p>
+            <h2 id="ai-stack-dialog-title">{headings[view][0]}</h2>
+            <p>{headings[view][1]}</p>
+          </div>
+          <button
+            className="ai-stack-dialog-close"
+            type="button"
+            onClick={onClose}
+            aria-label="Close details"
+          >
+            ×
+          </button>
+        </header>
+
+        {view === "work" && (
+          <div className="ai-stack-dialog-content">
+            <div className="ai-stack-detail-callout">
+              Cursor returns the agent name, run state, repository, final
+              result, and any pushed branch or pull request. It does not tell
+              this page which model was used or whether an active run is waiting
+              for you.
+            </div>
+            {agents.length ? (
+              <div className="ai-stack-detail-agent-list">
+                {agents.map((agent) => (
+                  <article className="ai-stack-detail-agent" key={agent.id}>
+                    <div className="ai-stack-agent-top">
+                      <strong>{agent.name}</strong>
+                      <span
+                        className={`ai-stack-run-pill ${agent.runStatus?.toLowerCase() ?? "idle"}`}
+                      >
+                        {runLabel(agent)}
+                      </span>
+                    </div>
+                    <p className="ai-stack-repo">
+                      {agent.repositories.length
+                        ? agent.repositories.map(shortRepository).join(" · ")
+                        : "Repository not reported"}
+                    </p>
+                    <p className="ai-stack-detail-result">
+                      {agent.note ??
+                        agent.result ??
+                        "No final result yet. Cursor has not returned a final handover for this run."}
+                    </p>
+                    <div className="ai-stack-detail-links">
+                      {agent.branches.map((branch) => (
+                        <span
+                          key={`${branch.repository}-${branch.branch ?? "branch"}`}
+                        >
+                          {branch.branch
+                            ? `Branch: ${branch.branch}`
+                            : branch.repository}
+                          {branch.pullRequest && (
+                            <a
+                              href={branch.pullRequest}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Open pull request ↗
+                            </a>
+                          )}
+                        </span>
+                      ))}
+                      {agent.agentUrl && (
+                        <a
+                          href={agent.agentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open agent in Cursor ↗
+                        </a>
+                      )}
+                      <small>
+                        {agent.updatedAt
+                          ? `Updated ${new Date(agent.updatedAt).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}`
+                          : "Update time not returned"}
+                      </small>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="ai-stack-empty">
+                No Cursor Cloud Agent records are available.
+              </p>
+            )}
+          </div>
+        )}
+
+        {view === "usage" && (
+          <div className="ai-stack-dialog-content">
+            <div className="ai-stack-detail-callout">
+              These figures cover only the latest Cursor runs shown below. They
+              are token counts, not dollars, plan limits, or remaining
+              allowance. Other AI providers are not connected to this usage
+              view.
+            </div>
+            <div className="ai-stack-usage-totals">
+              {(
+                [
+                  ["Input", tokenTotals.inputTokens],
+                  ["Output", tokenTotals.outputTokens],
+                  ["Cache read", tokenTotals.cacheReadTokens],
+                  ["Cache written", tokenTotals.cacheWriteTokens],
+                  ["Total", tokenTotals.totalTokens],
+                ] as const
+              ).map(([label, value]) => (
+                <div key={label}>
+                  <span>{label}</span>
+                  <strong>{tokenLabel(value)}</strong>
+                </div>
+              ))}
+            </div>
+            <div className="ai-stack-table-wrap">
+              <table className="ai-stack-usage-table">
+                <thead>
+                  <tr>
+                    <th>Agent</th>
+                    <th>Input</th>
+                    <th>Output</th>
+                    <th>Cache read</th>
+                    <th>Cache written</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {agents.map((agent) => (
+                    <tr key={agent.id}>
+                      <th scope="row">{agent.name}</th>
+                      <td>
+                        {tokenLabel(agent.tokenUsage?.inputTokens ?? null)}
+                      </td>
+                      <td>
+                        {tokenLabel(agent.tokenUsage?.outputTokens ?? null)}
+                      </td>
+                      <td>
+                        {tokenLabel(agent.tokenUsage?.cacheReadTokens ?? null)}
+                      </td>
+                      <td>
+                        {tokenLabel(agent.tokenUsage?.cacheWriteTokens ?? null)}
+                      </td>
+                      <td>
+                        {tokenLabel(agent.tokenUsage?.totalTokens ?? null)}
+                      </td>
+                    </tr>
+                  ))}
+                  {!agents.length && (
+                    <tr>
+                      <td colSpan={6}>No run usage returned yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="ai-stack-chart-caption">
+              Cursor’s per-run usage can include related task agents and side
+              chats. Snapshot checked{" "}
+              {checkedAt
+                ? new Date(checkedAt).toLocaleString("en-AU", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })
+                : "time not available"}
+              .
+            </p>
+          </div>
+        )}
+
+        {view === "safety" && (
+          <div className="ai-stack-dialog-content">
+            <div className="ai-stack-safety-detail-grid">
+              <article>
+                <span className="ai-stack-check">✓</span>
+                <div>
+                  <h3>No agent controls</h3>
+                  <p>
+                    This dashboard only makes Cursor read requests. It cannot
+                    start, stop, edit, or cancel a run.
+                  </p>
+                </div>
+              </article>
+              <article>
+                <span className="ai-stack-check">✓</span>
+                <div>
+                  <h3>Key stays server-side</h3>
+                  <p>
+                    The Cursor key is read by the protected API route. It is not
+                    sent to the browser or shown on the page.
+                  </p>
+                </div>
+              </article>
+              <article>
+                <span className="ai-stack-check">✓</span>
+                <div>
+                  <h3>Human review stays required</h3>
+                  <p>
+                    Check completed code and any branch or pull request before
+                    merging. This page never merges or deploys project code.
+                  </p>
+                </div>
+              </article>
+              <article>
+                <span className="ai-stack-check ai-stack-check-info">i</span>
+                <div>
+                  <h3>Wait state is unknown</h3>
+                  <p>
+                    Cursor’s status data does not give us a clear “waiting for
+                    Markus” signal. An error or finished run is shown for
+                    review, not treated as proof that you were asked a question.
+                  </p>
+                </div>
+              </article>
+              <article>
+                <span className="ai-stack-check ai-stack-check-info">i</span>
+                <div>
+                  <h3>Usage limits are unknown</h3>
+                  <p>
+                    Token totals do not reveal included plan usage, remaining
+                    quota, or cost. Do not use them to switch models or claim
+                    that a run is free.
+                  </p>
+                </div>
+              </article>
+              <article>
+                <span className="ai-stack-check ai-stack-check-info">i</span>
+                <div>
+                  <h3>No automatic rotation</h3>
+                  <p>
+                    The provider order is a plan only. This page does not run a
+                    24/7 loop or move work between providers.
+                  </p>
+                </div>
+              </article>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 export function AIStackPage() {
   const agentsQuery = useQuery({
     queryKey: ["cursor-cloud-agents"],
@@ -82,6 +391,16 @@ export function AIStackPage() {
   const attentionCount = agents.filter((agent) =>
     ["ERROR", "EXPIRED"].includes(agent.runStatus?.toUpperCase() ?? ""),
   ).length;
+  const [detailView, setDetailView] = useState<DetailView>(null);
+
+  useEffect(() => {
+    if (!detailView) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDetailView(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [detailView]);
 
   return (
     <div className="app-shell">
@@ -136,6 +455,7 @@ export function AIStackPage() {
           <section
             className="ai-stack-panel ai-stack-work-panel"
             aria-labelledby="ai-stack-work-title"
+            onClick={() => setDetailView("work")}
           >
             <div className="ai-stack-section-heading">
               <div>
@@ -144,7 +464,16 @@ export function AIStackPage() {
                   Latest runs. This refreshes about once a minute.
                 </p>
               </div>
-              <span className="ai-stack-status">{agents.length} agents</span>
+              <div className="ai-stack-panel-actions">
+                <span className="ai-stack-status">{agents.length} agents</span>
+                <button
+                  className="ai-stack-detail-button"
+                  type="button"
+                  onClick={() => setDetailView("work")}
+                >
+                  Details ↗
+                </button>
+              </div>
             </div>
             {agentsQuery.isLoading ? (
               <p className="ai-stack-empty">Checking Cursor…</p>
@@ -205,6 +534,7 @@ export function AIStackPage() {
                           href={agent.agentUrl}
                           target="_blank"
                           rel="noreferrer"
+                          onClick={(event) => event.stopPropagation()}
                         >
                           Open in Cursor ↗
                         </a>
@@ -220,6 +550,7 @@ export function AIStackPage() {
             <section
               className="ai-stack-panel ai-stack-usage-panel"
               aria-labelledby="ai-stack-usage-title"
+              onClick={() => setDetailView("usage")}
             >
               <div className="ai-stack-section-heading">
                 <div>
@@ -229,6 +560,13 @@ export function AIStackPage() {
                     estimate.
                   </p>
                 </div>
+                <button
+                  className="ai-stack-detail-button"
+                  type="button"
+                  onClick={() => setDetailView("usage")}
+                >
+                  Details ↗
+                </button>
               </div>
               {agents.length ? (
                 <div
@@ -265,6 +603,7 @@ export function AIStackPage() {
             <section
               className="ai-stack-panel ai-stack-safety-panel"
               aria-labelledby="ai-stack-safety-title"
+              onClick={() => setDetailView("safety")}
             >
               <div className="ai-stack-section-heading">
                 <div>
@@ -273,6 +612,13 @@ export function AIStackPage() {
                     What this dashboard allows today.
                   </p>
                 </div>
+                <button
+                  className="ai-stack-detail-button"
+                  type="button"
+                  onClick={() => setDetailView("safety")}
+                >
+                  Details ↗
+                </button>
               </div>
               <div className="ai-stack-safety-grid">
                 <div>
@@ -361,6 +707,12 @@ export function AIStackPage() {
           24/7 coding loop or switch providers automatically.
         </p>
       </main>
+      <DetailDialog
+        view={detailView}
+        agents={agents}
+        checkedAt={agentsQuery.data?.checkedAt ?? null}
+        onClose={() => setDetailView(null)}
+      />
     </div>
   );
 }

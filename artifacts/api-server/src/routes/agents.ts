@@ -38,6 +38,13 @@ type CursorAgentSnapshot = {
     pullRequest: string | null;
   }>;
   totalTokens: number | null;
+  tokenUsage: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+    totalTokens: number;
+  } | null;
   agentUrl: string | null;
   note: string | null;
 };
@@ -59,6 +66,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function stringValue(value: unknown): string | null {
   return typeof value === "string" ? value : null;
+}
+
+function numberValue(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 async function cursorGet(apiKey: string, path: string): Promise<unknown> {
@@ -123,9 +134,29 @@ router.get("/cursor/cloud-agents", async (_req, res): Promise<void> => {
               const details = isObject(agentInfo) ? agentInfo : {};
               const run = isObject(runInfo) ? runInfo : {};
               const repos = Array.isArray(details.repos) ? details.repos : [];
-              const usage =
+              const rawUsage =
                 isObject(usageInfo) && isObject(usageInfo.totalUsage)
-                  ? usageInfo.totalUsage.totalTokens
+                  ? usageInfo.totalUsage
+                  : null;
+              const usageValues = rawUsage
+                ? {
+                    inputTokens: numberValue(rawUsage.inputTokens),
+                    outputTokens: numberValue(rawUsage.outputTokens),
+                    cacheReadTokens: numberValue(rawUsage.cacheReadTokens),
+                    cacheWriteTokens: numberValue(rawUsage.cacheWriteTokens),
+                    totalTokens: numberValue(rawUsage.totalTokens),
+                  }
+                : null;
+              const tokenUsage =
+                usageValues &&
+                Object.values(usageValues).every((value) => value !== null)
+                  ? {
+                      inputTokens: usageValues.inputTokens!,
+                      outputTokens: usageValues.outputTokens!,
+                      cacheReadTokens: usageValues.cacheReadTokens!,
+                      cacheWriteTokens: usageValues.cacheWriteTokens!,
+                      totalTokens: usageValues.totalTokens!,
+                    }
                   : null;
               const git = isObject(run.git) ? run.git : {};
               const branches = Array.isArray(git.branches)
@@ -161,7 +192,8 @@ router.get("/cursor/cloud-agents", async (_req, res): Promise<void> => {
                 ),
                 result: stringValue(run.result)?.slice(0, 2000) ?? null,
                 branches,
-                totalTokens: typeof usage === "number" ? usage : null,
+                totalTokens: tokenUsage?.totalTokens ?? null,
+                tokenUsage,
                 agentUrl: stringValue(details.url) ?? stringValue(rawAgent.url),
                 note: null,
               };
@@ -176,6 +208,7 @@ router.get("/cursor/cloud-agents", async (_req, res): Promise<void> => {
                 result: null,
                 branches: [],
                 totalTokens: null,
+                tokenUsage: null,
                 agentUrl: stringValue(rawAgent.url),
                 note: "Cursor could not provide this agent's latest run details.",
               };
@@ -193,12 +226,10 @@ router.get("/cursor/cloud-agents", async (_req, res): Promise<void> => {
     cursorAgentsCache = { expiresAt: Date.now() + 30_000, value };
     res.json(value);
   } catch {
-    res
-      .status(502)
-      .json({
-        error:
-          "Could not read Cursor Cloud Agent status. Check the API key and try again.",
-      });
+    res.status(502).json({
+      error:
+        "Could not read Cursor Cloud Agent status. Check the API key and try again.",
+    });
   }
 });
 
