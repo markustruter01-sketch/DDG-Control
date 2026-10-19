@@ -507,7 +507,11 @@ export function AIStackPage() {
             <p className="detail-description">
               A live view of dashboard-mediated work, token use, and safety.
             </p>
-            <p className="ai-stack-release-warning" role="status">Development preview · NOT READY for release: signed-in route and UI verification is still outstanding.</p>
+            {devBypass && (
+              <p className="ai-stack-release-warning" role="status">
+                Development preview · NOT READY for release: signed-in route and UI verification is still outstanding.
+              </p>
+            )}
           </div>
           <div className="ai-stack-refresh" role="status">
             <span
