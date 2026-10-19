@@ -92,11 +92,22 @@ async function resumeHandover(id:number) {
   if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Checkpoint cannot be resumed");
   return r.json();
 }
-type WorkItem = { id:number; project_key:string; title:string; objective:string; outcome:string; checklist:string[]; acceptance_checks:string[]; acceptance_evidence:string; result:string; deadline:string; time_limit_minutes:number; max_attempts:number; attempts:number; spend_limit_cents:number; stop_condition:string; status:string; branch:string|null; commit_ref:string|null; review_link:string|null };
+type WorkItem = { id:number; project_key:string; title:string; objective:string; outcome:string; checklist:string[]; acceptance_checks:string[]; acceptance_evidence:string; result:string; deadline:string; time_limit_minutes:number; max_attempts:number; attempts:number; spend_limit_cents:number; stop_condition:string; status:string; branch:string|null; commit_ref:string|null; review_link:string|null; outcome_id:number|null; gate_key:string|null; repository:string|null; target_branch:string|null; dispatch_state:string; dispatch_block_reason:string };
 async function getWorkItems() {
   const r = await fetch("/api/work-items", { cache:"no-store" });
   if (!r.ok) throw new Error("Work queue unavailable");
   return r.json() as Promise<{items:WorkItem[];events:Array<{id:number;work_item_id:number;actor:string;event_type:string;created_at:string;details:Record<string,unknown>}>}>;
+}
+type WorkOutcome = { id:number; project_key:string; title:string; description:string; status:string; gates:Array<{key:string;title:string;acceptance:string[]}> };
+async function getWorkOutcomes() {
+  const r=await fetch("/api/work-outcomes",{cache:"no-store"});
+  if(!r.ok) throw new Error("Outcome record unavailable");
+  return r.json() as Promise<{outcomes:WorkOutcome[];events:Array<{id:number;outcome_id:number;event_type:string;created_at:string}>}>;
+}
+async function getWorkReadiness() {
+  const r=await fetch("/api/work-readiness",{cache:"no-store"});
+  if(!r.ok) throw new Error("Worker readiness unavailable");
+  return r.json() as Promise<{dispatch_enabled:boolean;status:string;blockers:string[];finance_hold:string;local_limits:string}>;
 }
 type SavedReport={project_slug:string;summary:string;next_action:string;priority:string|null;status_light:string};
 async function getSavedReports(){
@@ -452,6 +463,8 @@ export function AIStackPage() {
   const handoversQuery = useQuery({ queryKey: ["work-handovers"], queryFn: getHandovers, retry: false });
   const handoverEventsQuery = useQuery({ queryKey: ["work-handover-events"], queryFn: getHandoverEvents, retry: false });
   const workItemsQuery = useQuery({ queryKey: ["work-items"], queryFn: getWorkItems, retry: false });
+  const outcomesQuery = useQuery({ queryKey: ["work-outcomes"], queryFn: getWorkOutcomes, retry: false });
+  const readinessQuery = useQuery({ queryKey: ["work-readiness"], queryFn: getWorkReadiness, retry: false });
   const savedReportsQuery = useQuery({ queryKey:["saved-heimdall-reports"],queryFn:getSavedReports,retry:false });
   const controlMutation = useMutation({
     mutationFn: saveWorkControl,
@@ -469,7 +482,7 @@ export function AIStackPage() {
   const [handoverKey, setHandoverKey] = useState("hypest");
   const [handoverFields, setHandoverFields] = useState({ status: "in progress", completed_work: "", next_action: "", blockers: "", verification: "", recovery_note: "", branch: "", commit_ref: "", task_id: "", work_item_id: "" });
   const [handoverCopyStatus, setHandoverCopyStatus] = useState("");
-  const [workFields, setWorkFields] = useState({ project_key:"hypest", title:"", objective:"", outcome:"", checklist:"", acceptance_checks:"", deadline:"", time_limit_minutes:"30", max_attempts:"1", stop_condition:"Stop when any acceptance check fails or the limit is reached." });
+  const [workFields, setWorkFields] = useState({ project_key:"hypest", title:"", objective:"", outcome:"", checklist:"", acceptance_checks:"", deadline:"", time_limit_minutes:"30", max_attempts:"1", stop_condition:"Stop when any acceptance check fails or the limit is reached.", outcome_id:"", gate_key:"", repository:"", target_branch:"" });
   const agentsQuery = useQuery({
     queryKey: ["cursor-cloud-agents"],
     queryFn: loadCursorAgents,
@@ -883,12 +896,25 @@ export function AIStackPage() {
         </section>
         <section className="ai-stack-panel ai-stack-workqueue-panel" aria-labelledby="work-queue-heading">
           <div className="ai-stack-section-heading"><div><h2 id="work-queue-heading">Next work · owner approval</h2><p className="ai-stack-help">Saved Heimdall reports only · viewing this queue makes no model calls.</p></div><span className="ai-stack-status">No agent starts</span></div>
+          <section className="managed-work-card" aria-labelledby="activation-heading">
+            <h3 id="activation-heading">Activation checklist · dispatch blocked</h3>
+            <p>Manual checkpoints only. No ChatGPT quota detection, automatic provider/model switching, or worker start is connected.</p>
+            {readinessQuery.isError ? <p role="alert">Readiness status unavailable; dispatch remains disabled.</p> : <>
+              <ul>{(readinessQuery.data?.blockers ?? ["Checking activation requirements…"]).map((blocker,index)=><li key={index}>{blocker}</li>)}</ul>
+              <p>{readinessQuery.data?.finance_hold}</p><p>{readinessQuery.data?.local_limits}</p>
+            </>}
+            <h3>DDG Control outcome · owner approval pending</h3>
+            {outcomesQuery.isError ? <p role="alert">Could not load the saved outcome or its audit history.</p> : (outcomesQuery.data?.outcomes ?? []).filter(o=>o.project_key==="ddg-control-ai-stack").map(outcome=><div key={outcome.id}>
+              <strong>{outcome.title} · {outcome.status.replaceAll("_"," ")}</strong><p>{outcome.description}</p>
+              <ol>{outcome.gates.map(gate=><li key={gate.key}><b>{gate.title}</b> · {gate.key}<ul>{gate.acceptance.map((check,i)=><li key={i}>{check}</li>)}</ul></li>)}</ol>
+            </div>)}
+          </section>
           <h3>Saved Heimdall suggestions</h3>
           {savedReportsQuery.isError&&<p role="alert">Saved reports unavailable; no new recommendation was generated.</p>}
           {(savedReportsQuery.data??[]).filter(r=>managedAreas.some(a=>a.key===r.project_slug)).map(report=><article className="managed-work-card" key={report.project_slug}>
             <strong>{managedAreas.find(a=>a.key===report.project_slug)?.label} · {report.priority??"Priority unknown"}</strong>
             <p>{report.summary}</p><p><b>Suggested next action:</b> {report.next_action}</p>
-            {report.project_slug==="finance" ? <span className="ai-stack-help">Held until Claude review · no Finance work starts here.</span> : <button type="button" className="work-toggle" onClick={()=>setWorkFields({...workFields,project_key:report.project_slug,title:report.next_action.slice(0,160),objective:report.next_action,outcome:report.summary})}>Use saved report in draft</button>}
+            {report.project_slug==="finance" ? <span className="ai-stack-help">Held until Claude review · no Finance work starts here.</span> : <button type="button" className="work-toggle" onClick={()=>{const outcome=outcomesQuery.data?.outcomes.find(o=>o.project_key===report.project_slug&&o.status==="pending_approval");const gate=outcome?.gates[0];setWorkFields({...workFields,project_key:report.project_slug,title:report.next_action.slice(0,160),objective:report.next_action,outcome:report.summary,outcome_id:outcome?String(outcome.id):"",gate_key:gate?.key??""});}}>Use saved report in draft</button>}
           </article>)}
           <form className="work-item-form" onSubmit={(event)=>{event.preventDefault();createWorkMutation.mutate({
             project_key:workFields.project_key,title:workFields.title,objective:workFields.objective,outcome:workFields.outcome,
@@ -896,23 +922,30 @@ export function AIStackPage() {
             acceptance_checks:workFields.acceptance_checks.split("\n").map(x=>x.trim()).filter(Boolean),
             deadline:new Date(workFields.deadline).toISOString(),time_limit_minutes:Number(workFields.time_limit_minutes),
             max_attempts:Number(workFields.max_attempts),spend_limit_cents:0,
-            stop_condition:workFields.stop_condition,
+            stop_condition:workFields.stop_condition,outcome_id:Number(workFields.outcome_id),gate_key:workFields.gate_key,
+            repository:workFields.repository,target_branch:workFields.target_branch,
           });}}>
             <label>Project<select value={workFields.project_key} onChange={e=>setWorkFields({...workFields,project_key:e.target.value})}>{managedAreas.filter((a)=>a.key!=="finance").map(a=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
+            <label>Linked outcome<select required value={workFields.outcome_id} onChange={e=>setWorkFields({...workFields,outcome_id:e.target.value,gate_key:""})}><option value="">Select pending outcome</option>{(outcomesQuery.data?.outcomes??[]).filter(o=>o.project_key===workFields.project_key&&o.status==="pending_approval").map(o=><option key={o.id} value={o.id}>{o.title}</option>)}</select></label>
+            <label>Outcome gate<select required value={workFields.gate_key} onChange={e=>setWorkFields({...workFields,gate_key:e.target.value})}><option value="">Select gate</option>{outcomesQuery.data?.outcomes.find(o=>String(o.id)===workFields.outcome_id)?.gates.map(g=><option key={g.key} value={g.key}>{g.title}</option>)}</select></label>
+            <label>Repository<input required value={workFields.repository} onChange={e=>setWorkFields({...workFields,repository:e.target.value})}/></label>
+            <label>Target branch<input required value={workFields.target_branch} onChange={e=>setWorkFields({...workFields,target_branch:e.target.value})}/></label>
             {(["title","objective","outcome","checklist","acceptance_checks","deadline","time_limit_minutes","max_attempts","stop_condition"] as const).map(field=><label key={field}>{field.replaceAll("_"," ")}{["checklist","acceptance_checks","objective","outcome","stop_condition"].includes(field)?<textarea required value={workFields[field]} onChange={e=>setWorkFields({...workFields,[field]:e.target.value})}/>:<input required type={field==="deadline"?"datetime-local":"text"} value={workFields[field]} onChange={e=>setWorkFields({...workFields,[field]:e.target.value})}/>}</label>)}
             <p className="ai-stack-chart-caption">Zero spend limit. Time is 5–1,440 minutes; attempts are 1–10. No provider or agent is started.</p>
-            <button className="work-toggle" disabled={createWorkMutation.isPending}>Queue for Markus’ approval</button>
+            <p className="ai-stack-help">Planning records stay visible while OFF; new work can only be queued for an ON, incomplete project.</p>
+            <button className="work-toggle" disabled={createWorkMutation.isPending || controlsQuery.data?.controls.find(c=>c.project_key===workFields.project_key)?.enabled !== true || controlsQuery.data?.controls.find(c=>c.project_key===workFields.project_key)?.completed === true}>Queue for Markus’ approval</button>
           </form>
           {createWorkMutation.isError && <p role="alert">{createWorkMutation.error.message}</p>}
           {workItemsQuery.isError ? <p role="alert">Could not load approval queue or task history.</p> : (workItemsQuery.data?.items ?? []).map(item=><article className="managed-work-card" key={item.id}>
             <div className="ai-stack-section-heading"><div><strong>{managedAreas.find(a=>a.key===item.project_key)?.label} · {item.title}</strong><p>{item.status.replaceAll("_"," ")} · attempt {item.attempts}/{item.max_attempts} · due {new Date(item.deadline).toLocaleString()}</p></div>
-              {item.status==="pending_approval"&&<button className="work-toggle" disabled={approveWorkMutation.isPending} onClick={()=>approveWorkMutation.mutate(item.id)}>Approve</button>}
-              {item.status==="approved"&&<button className="work-toggle" disabled={moveWorkMutation.isPending} onClick={()=>moveWorkMutation.mutate({id:item.id,status:"in_progress"})}>Start work item</button>}
+              {item.status==="pending_approval"&&<button className="work-toggle" disabled title="Worker readiness is blocked; approval cannot dispatch work." onClick={()=>approveWorkMutation.mutate(item.id)}>Approve · blocked</button>}
+              {item.status==="approved"&&<span className="ai-stack-help">Start blocked · no worker is connected.</span>}
               {item.status==="in_progress"&&<div className="work-actions"><button onClick={()=>moveWorkMutation.mutate({id:item.id,status:"needs_owner"})}>Needs owner</button><button onClick={()=>moveWorkMutation.mutate({id:item.id,status:"failed"})}>Mark failed</button><button onClick={()=>{const evidence=window.prompt("Enter acceptance evidence before completion:");if(evidence?.trim()) moveWorkMutation.mutate({id:item.id,status:"completed",acceptance_evidence:evidence});}}>Mark complete</button></div>}
             </div>
-            <p>{item.objective}</p><p><b>Outcome:</b> {item.outcome}</p><p><b>Stop:</b> {item.stop_condition}</p>
+            <p>{item.objective}</p><p><b>Outcome:</b> {item.outcome} · gate: {item.gate_key || "Unknown"}</p><p><b>Stop:</b> {item.stop_condition}</p>
             <div className="managed-work-lists"><span><b>Checklist</b>{item.checklist.map((c,i)=><small key={i}>□ {c}</small>)}</span><span><b>Acceptance checks</b>{item.acceptance_checks.map((c,i)=><small key={i}>{c}</small>)}</span></div>
-            <p>Evidence/result: {item.acceptance_evidence || item.result || "Not recorded"} · branch: {item.branch || "Unknown"} · commit: {item.commit_ref || "Unknown"} · review: {item.review_link || "Unknown"}</p>
+            <p>Evidence/result: {item.acceptance_evidence || item.result || "Not recorded"} · repository: {item.repository || "Unknown"} · target branch: {item.target_branch || "Unknown"} · branch: {item.branch || "Unknown"} · commit: {item.commit_ref || "Unknown"} · review: {item.review_link || "Unknown"}</p>
+            <p><b>Dispatch:</b> {item.dispatch_state} · {item.dispatch_block_reason}</p>
           </article>)}
           {[createWorkMutation,approveWorkMutation,moveWorkMutation].some(m=>m.isError)&&<p role="alert">Work action failed; current saved state is unchanged. Refresh before retrying.</p>}
           <h3>Append-only task history</h3><ol className="work-audit-list">{(workItemsQuery.data?.events??[]).slice(0,30).map(e=><li key={e.id}>#{e.work_item_id} · {e.event_type} · {e.actor} · {new Date(e.created_at).toLocaleString()}</li>)}</ol>

@@ -34,13 +34,23 @@ router.get("/work-items", async (req, res): Promise<void> => {
   const items = key
     ? await base.where(eq(managedWorkItemsTable.project_key, key)).orderBy(desc(managedWorkItemsTable.created_at)).limit(100)
     : await base.orderBy(desc(managedWorkItemsTable.created_at)).limit(200);
-  const events = await db.select().from(managedWorkEventsTable).orderBy(desc(managedWorkEventsTable.created_at)).limit(200);
+  const eventsQuery = db.select().from(managedWorkEventsTable);
+  const events = key
+    ? await eventsQuery.where(eq(managedWorkEventsTable.project_key, key)).orderBy(desc(managedWorkEventsTable.created_at)).limit(200)
+    : await eventsQuery.orderBy(desc(managedWorkEventsTable.created_at)).limit(200);
   res.json({ items, events });
 });
 
-router.get("/work-outcomes", async (_req, res): Promise<void> => {
-  const outcomes = await db.select().from(managedWorkOutcomesTable).orderBy(desc(managedWorkOutcomesTable.created_at));
-  const events = await db.select().from(managedWorkOutcomeEventsTable).orderBy(desc(managedWorkOutcomeEventsTable.created_at)).limit(200);
+router.get("/work-outcomes", async (req, res): Promise<void> => {
+  const key = typeof req.query.project_key === "string" ? req.query.project_key : null;
+  const outcomesQuery = db.select().from(managedWorkOutcomesTable);
+  const eventsQuery = db.select().from(managedWorkOutcomeEventsTable);
+  const outcomes = key
+    ? await outcomesQuery.where(eq(managedWorkOutcomesTable.project_key, key)).orderBy(desc(managedWorkOutcomesTable.created_at))
+    : await outcomesQuery.orderBy(desc(managedWorkOutcomesTable.created_at));
+  const events = key
+    ? await eventsQuery.where(eq(managedWorkOutcomeEventsTable.project_key, key)).orderBy(desc(managedWorkOutcomeEventsTable.created_at)).limit(200)
+    : await eventsQuery.orderBy(desc(managedWorkOutcomeEventsTable.created_at)).limit(200);
   res.json({ outcomes, events });
 });
 
