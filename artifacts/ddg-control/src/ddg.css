@@ -1485,7 +1485,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
 }
 
 /* Keep the dashboard photo as the shared backdrop across every non-home page. */
-.app-shell:not(.home-shell) {
+.app-shell:not(.home-shell),
+.auth-loading {
   background-color: hsl(var(--background));
   background-image:
     linear-gradient(rgba(5, 12, 10, .42), rgba(5, 12, 10, .42)),
@@ -1495,7 +1496,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   background-repeat: no-repeat;
   background-attachment: fixed;
 }
-:root[data-theme='day'] .app-shell:not(.home-shell) {
+:root[data-theme='day'] .app-shell:not(.home-shell),
+:root[data-theme='day'] .auth-loading {
   background-image: var(--home-background);
 }
 
