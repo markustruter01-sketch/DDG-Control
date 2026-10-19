@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useContext, useEffect, useState } from "react";
 import { DevAuthBypassContext, Header } from "@/components/header";
+import { writeHandoverPacket, type HandoverPacketRecord } from "@/lib/handover-packet";
 
 type CursorAgent = {
   id: string;
@@ -74,7 +75,7 @@ async function completeProject(key:string) {
 async function getHandovers() {
   const r = await fetch("/api/work-handovers", { cache: "no-store" });
   if (!r.ok) throw new Error("Handovers unavailable");
-  return r.json() as Promise<Array<{ id:number; project_key:string; task_id:number|null; work_item_id:number|null; status:string; completed_work:string; next_action:string; blockers:string; verification:string; recovery_note:string; branch:string|null; commit_ref:string|null; created_at:string }>>;
+  return r.json() as Promise<HandoverPacketRecord[]>;
 }
 async function getHandoverEvents() {
   const r=await fetch("/api/work-handover-events",{cache:"no-store"});
@@ -467,6 +468,7 @@ export function AIStackPage() {
   const moveWorkMutation = useMutation({ mutationFn: moveWorkItem, onSuccess: () => queryClient.invalidateQueries({ queryKey:["work-items"] }) });
   const [handoverKey, setHandoverKey] = useState("hypest");
   const [handoverFields, setHandoverFields] = useState({ status: "in progress", completed_work: "", next_action: "", blockers: "", verification: "", recovery_note: "", branch: "", commit_ref: "", task_id: "", work_item_id: "" });
+  const [handoverCopyStatus, setHandoverCopyStatus] = useState("");
   const [workFields, setWorkFields] = useState({ project_key:"hypest", title:"", objective:"", outcome:"", checklist:"", acceptance_checks:"", deadline:"", time_limit_minutes:"30", max_attempts:"1", stop_condition:"Stop when any acceptance check fails or the limit is reached." });
   const agentsQuery = useQuery({
     queryKey: ["cursor-cloud-agents"],
@@ -486,6 +488,33 @@ export function AIStackPage() {
     ["ERROR", "EXPIRED"].includes(agent.runStatus?.toUpperCase() ?? ""),
   ).length;
   const [detailView, setDetailView] = useState<DetailView>(null);
+  const latestHandover = [...(handoversQuery.data ?? [])].sort((a, b) =>
+    Date.parse(b.created_at) - Date.parse(a.created_at) || b.id - a.id,
+  )[0];
+
+  const copyLatestHandover = async () => {
+    if (!latestHandover) {
+      setHandoverCopyStatus("Save a checkpoint first; there is no handover to copy.");
+      return;
+    }
+    if (!navigator.clipboard?.writeText) {
+      setHandoverCopyStatus("Clipboard access is unavailable in this browser. No handover was copied.");
+      return;
+    }
+    try {
+      const projectLabel =
+        managedAreas.find((area) => area.key === latestHandover.project_key)?.label ??
+        latestHandover.project_key;
+      await writeHandoverPacket(
+        latestHandover,
+        projectLabel,
+        (packet) => navigator.clipboard.writeText(packet),
+      );
+      setHandoverCopyStatus("Latest saved checkpoint copied for the next agent.");
+    } catch {
+      setHandoverCopyStatus("Could not copy the handover. Check browser clipboard permission and try again.");
+    }
+  };
 
   useEffect(() => {
     if (!detailView) return;
@@ -832,7 +861,16 @@ export function AIStackPage() {
           <ol className="work-audit-list">{(controlsQuery.data?.audit ?? []).slice(0,8).map((entry) => <li key={entry.id}>{managedAreas.find((x)=>x.key===entry.project_key)?.label ?? entry.project_key}: {entry.enabled ? "ON" : "OFF"} · {new Date(entry.created_at).toLocaleString()}</li>)}</ol>
         </section>
         <section className="ai-stack-panel ai-stack-checkpoint-panel" aria-labelledby="handover-heading">
-          <div className="ai-stack-section-heading"><div><h2 id="handover-heading">Shared handover / checkpoint</h2><p className="ai-stack-help">Manual save · five-minute target reminder · no automatic checkpoint callback is connected.</p></div><span className="ai-stack-status">Manual</span></div>
+          <div className="ai-stack-section-heading"><div><h2 id="handover-heading">Shared handover / checkpoint</h2><p className="ai-stack-help">Manual save only · five-minute target is a reminder, not automatic capture. No quota detection or automatic AI transfer/start.</p></div><span className="ai-stack-status">Manual</span></div>
+          <div className="handover-copy-action">
+            <button type="button" className="work-toggle" onClick={() => void copyLatestHandover()} disabled={handoversQuery.isLoading || handoversQuery.isError || !latestHandover}>
+              Copy handover for next agent
+            </button>
+            {handoversQuery.isLoading && <p className="ai-stack-help">Loading saved checkpoints…</p>}
+            {handoversQuery.isError && <p className="ai-stack-error" role="alert">Saved checkpoints are unavailable. Retry before copying.</p>}
+            {!handoversQuery.isLoading && !handoversQuery.isError && !latestHandover && <p className="ai-stack-help">No saved checkpoint yet. Save one first; no handover packet will be fabricated.</p>}
+            <p className="ai-stack-help" role="status" aria-live="polite">{handoverCopyStatus}</p>
+          </div>
           <form className="work-handover-form" onSubmit={(event) => { event.preventDefault(); const {task_id,work_item_id,...rest}=handoverFields; handoverMutation.mutate({ project_key: handoverKey, ...rest, ...(task_id?{task_id:Number(task_id)}:{}), ...(work_item_id?{work_item_id:Number(work_item_id)}:{}) }); }}>
             <label>Project<select value={handoverKey} onChange={(e)=>setHandoverKey(e.target.value)}>{managedAreas.filter((a)=>a.key!=="finance").map((a)=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
             {(["status","completed_work","next_action","blockers","verification","recovery_note","branch","commit_ref","task_id","work_item_id"] as const).map((field)=><label key={field}>{field.replaceAll("_"," ")}<input type={field.endsWith("_id")?"number":"text"} min={field.endsWith("_id")?1:undefined} required={["status","completed_work","next_action","recovery_note"].includes(field)} value={handoverFields[field]} onChange={(e)=>setHandoverFields({...handoverFields,[field]:e.target.value})}/></label>)}
