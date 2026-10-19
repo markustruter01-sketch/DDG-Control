@@ -1,19 +1,130 @@
-import { db, projectHandoverTable, projectWorkAuditTable, projectWorkControlsTable, projectsTable } from "@workspace/db";
-import { desc, eq } from "drizzle-orm";
+import { db, goalsTable, managedWorkEventsTable, managedWorkItemsTable, projectHandoverEventsTable, projectHandoverTable, projectWorkAuditTable, projectWorkControlsTable, projectsTable, tasksTable } from "@workspace/db";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { tasksTable } from "@workspace/db";
 
 export const WORK_KEYS = ["finance", "hypest", "cattle-dog-coffee", "ddg-control-ai-stack"] as const;
 export type WorkKey = (typeof WORK_KEYS)[number];
 
 export async function isProjectWorkEnabled(key: string): Promise<boolean> {
   if (!WORK_KEYS.includes(key as WorkKey)) return false;
-  const [row] = await db.select({ enabled: projectWorkControlsTable.enabled })
+  const [row] = await db.select({ enabled: projectWorkControlsTable.enabled, completed: projectWorkControlsTable.completed })
     .from(projectWorkControlsTable).where(eq(projectWorkControlsTable.project_key, key)).limit(1);
-  return row?.enabled === true;
+  return row?.enabled === true && row.completed === false;
 }
 
 const router: IRouter = Router();
+const workStatuses = ["pending_approval", "approved", "in_progress", "needs_owner", "failed", "completed", "rejected"] as const;
+
+router.get("/work-items", async (req, res): Promise<void> => {
+  const key = typeof req.query.project_key === "string" ? req.query.project_key : null;
+  const base = db.select().from(managedWorkItemsTable);
+  const items = key
+    ? await base.where(eq(managedWorkItemsTable.project_key, key)).orderBy(desc(managedWorkItemsTable.created_at)).limit(100)
+    : await base.orderBy(desc(managedWorkItemsTable.created_at)).limit(200);
+  const events = await db.select().from(managedWorkEventsTable).orderBy(desc(managedWorkEventsTable.created_at)).limit(200);
+  res.json({ items, events });
+});
+
+router.post("/work-items", async (req, res): Promise<void> => {
+  const b = req.body;
+  const validList = (v: unknown) => Array.isArray(v) && v.length > 0 && v.length <= 20 && v.every((x) => typeof x === "string" && x.trim().length > 0 && x.length <= 500);
+  if (!b || !WORK_KEYS.includes(b.project_key) || typeof b.title !== "string" || !b.title.trim() || b.title.length > 160 ||
+      typeof b.objective !== "string" || !b.objective.trim() || b.objective.length > 1000 ||
+      typeof b.outcome !== "string" || !b.outcome.trim() || b.outcome.length > 1000 ||
+      !validList(b.checklist) || !validList(b.acceptance_checks) ||
+      typeof b.deadline !== "string" || !Number.isFinite(Date.parse(b.deadline)) || Date.parse(b.deadline) <= Date.now() ||
+      !Number.isInteger(b.time_limit_minutes) || b.time_limit_minutes < 5 || b.time_limit_minutes > 1440 ||
+      !Number.isInteger(b.max_attempts) || b.max_attempts < 1 || b.max_attempts > 10 ||
+      b.spend_limit_cents !== 0 || typeof b.stop_condition !== "string" || !b.stop_condition.trim() || b.stop_condition.length > 1000) {
+    res.status(400).json({ error: "Provide a bounded objective, outcome, checklist, acceptance checks, future deadline, time limit, 1–10 attempts, zero spend limit, and stop condition." });
+    return;
+  }
+  if (!(await isProjectWorkEnabled(b.project_key))) {
+    res.status(423).json({ error: "Project work is OFF. Enable it before queuing work." });
+    return;
+  }
+  const [project] = await db.select({ id: projectsTable.id }).from(projectsTable).where(eq(projectsTable.slug, b.project_key)).limit(1);
+  if (b.project_key !== "ddg-control-ai-stack" && !project) {
+    res.status(400).json({ error: "Project is unavailable." });
+    return;
+  }
+  if (b.goal_id != null) {
+    const [goal] = await db.select({ project_id: goalsTable.project_id }).from(goalsTable).where(eq(goalsTable.id, b.goal_id)).limit(1);
+    if (!goal || goal.project_id !== project?.id) {
+      res.status(400).json({ error: "Outcome must belong to the selected project." });
+      return;
+    }
+  }
+  const [item] = await db.insert(managedWorkItemsTable).values({
+    project_key: b.project_key, project_id: project?.id ?? null, goal_id: b.goal_id ?? null,
+    title: b.title.trim(), objective: b.objective.trim(), outcome: b.outcome.trim(),
+    checklist: b.checklist, acceptance_checks: b.acceptance_checks,
+    deadline: new Date(b.deadline), time_limit_minutes: b.time_limit_minutes,
+    max_attempts: b.max_attempts, spend_limit_cents: 0, stop_condition: b.stop_condition.trim(),
+  }).returning();
+  if (!item) { res.status(500).json({ error: "Could not queue work." }); return; }
+  await db.insert(managedWorkEventsTable).values({ work_item_id: item.id, project_key: item.project_key, actor: "Markus", event_type: "created_pending_approval", to_status: item.status, details: { title: item.title } });
+  res.status(201).json(item);
+});
+
+router.post("/work-items/:id/approve", async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  const result = await db.transaction(async (tx) => {
+    const [item] = await tx.select().from(managedWorkItemsTable).where(eq(managedWorkItemsTable.id, id)).for("update").limit(1);
+    if (!item) return { kind: "missing" as const };
+    if (item.status === "approved") return { kind: "ok" as const, item };
+    if (!(await isProjectWorkEnabled(item.project_key))) return { kind: "off" as const };
+    if (item.status !== "pending_approval") return { kind: "state" as const };
+    const [active] = await tx.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable).where(and(eq(managedWorkItemsTable.project_key, item.project_key), inArray(managedWorkItemsTable.status, ["approved", "in_progress"]))).limit(1);
+    if (active) return { kind: "duplicate" as const };
+    const [updated] = await tx.update(managedWorkItemsTable).set({ status: "approved", updated_at: new Date() }).where(eq(managedWorkItemsTable.id, id)).returning();
+    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "approved", from_status: item.status, to_status: "approved" });
+    return { kind: "ok" as const, item: updated };
+  });
+  if (result.kind !== "ok") {
+    const status = result.kind === "missing" ? 404 : result.kind === "off" ? 423 : result.kind === "duplicate" ? 409 : 409;
+    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "duplicate" ? "An active work item already exists for this project." : result.kind === "state" ? "Only pending work can be approved." : "Work item not found." });
+    return;
+  }
+  res.json(result.item);
+});
+
+router.patch("/work-items/:id/status", async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  const next = req.body?.status;
+  if (!Number.isSafeInteger(id) || id < 1 || !workStatuses.includes(next)) { res.status(400).json({ error: "Invalid work item or status." }); return; }
+  const result = await db.transaction(async (tx) => {
+    const [item] = await tx.select().from(managedWorkItemsTable).where(eq(managedWorkItemsTable.id, id)).for("update").limit(1);
+    if (!item) return { kind: "missing" as const };
+    if (item.status === next) return { kind: "ok" as const, item };
+    const permitted = (item.status === "approved" && next === "in_progress") ||
+      (item.status === "in_progress" && ["needs_owner", "failed", "completed"].includes(next)) ||
+      (item.status === "needs_owner" && ["approved", "rejected"].includes(next));
+    if (!permitted) return { kind: "transition" as const };
+    if (["in_progress", "approved", "completed"].includes(next) && !(await isProjectWorkEnabled(item.project_key))) return { kind: "off" as const };
+    if (next === "completed" && !(typeof req.body?.acceptance_evidence === "string" && req.body.acceptance_evidence.trim())) return { kind: "evidence" as const };
+    if (next === "in_progress" && (item.attempts >= item.max_attempts || new Date() > item.deadline)) return { kind: "limit" as const };
+    if (item.started_at && Date.now() - item.started_at.getTime() > item.time_limit_minutes * 60_000 && !["needs_owner", "failed"].includes(next)) return { kind: "limit" as const };
+    const [updated] = await tx.update(managedWorkItemsTable).set({
+      status: next, updated_at: new Date(),
+      ...(next === "in_progress" ? { attempts: item.attempts + 1 } : {}),
+      ...(next === "in_progress" && !item.started_at ? { started_at: new Date() } : {}),
+      ...(typeof req.body?.result === "string" ? { result: req.body.result.slice(0, 4000) } : {}),
+      ...(typeof req.body?.acceptance_evidence === "string" ? { acceptance_evidence: req.body.acceptance_evidence.slice(0, 4000) } : {}),
+      ...(typeof req.body?.branch === "string" ? { branch: req.body.branch.slice(0, 300) } : {}),
+      ...(typeof req.body?.commit_ref === "string" ? { commit_ref: req.body.commit_ref.slice(0, 200) } : {}),
+      ...(typeof req.body?.review_link === "string" ? { review_link: req.body.review_link.slice(0, 1000) } : {}),
+    }).where(eq(managedWorkItemsTable.id, id)).returning();
+    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "status_changed", from_status: item.status, to_status: next, details: { result: req.body?.result ?? null } });
+    return { kind: "ok" as const, item: updated };
+  });
+  if (result.kind !== "ok") {
+    const status = result.kind === "missing" ? 404 : result.kind === "off" ? 423 : result.kind === "limit" || result.kind === "evidence" ? 409 : 409;
+    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "limit" ? "Deadline or attempt limit reached; owner review required." : result.kind === "evidence" ? "Acceptance evidence is required before completion." : result.kind === "transition" ? "Invalid status transition." : "Work item not found." });
+    return;
+  }
+  res.json(result.item);
+});
 
 router.get("/work-controls", async (_req, res): Promise<void> => {
   for (const project_key of WORK_KEYS) {
@@ -31,13 +142,33 @@ router.patch("/work-controls/:key", async (req, res): Promise<void> => {
     return;
   }
   const enabled = req.body.enabled as boolean;
-  await db.insert(projectWorkControlsTable).values({ project_key: key, enabled })
-    .onConflictDoUpdate({ target: projectWorkControlsTable.project_key, set: { enabled, updated_by: "Markus", updated_at: new Date() } });
+  const [previous] = await db.select({ completed: projectWorkControlsTable.completed })
+    .from(projectWorkControlsTable).where(eq(projectWorkControlsTable.project_key, key)).limit(1);
+  if (enabled && previous?.completed) {
+    res.status(409).json({ error: "This project is owner-completed. Reopen it explicitly before enabling work." });
+    return;
+  }
+  await db.transaction(async (tx) => {
+    await tx.insert(projectWorkControlsTable).values({ project_key: key, enabled })
+      .onConflictDoUpdate({ target: projectWorkControlsTable.project_key, set: { enabled, updated_by: "Markus", updated_at: new Date() } });
+    await tx.insert(projectWorkAuditTable).values({ project_key: key, enabled, owner_confirmed: true, event_type: enabled ? "work_enabled" : "work_disabled" });
+  });
   // This router is mounted after requireAuth; identity comes from the verified
   // session, never from a client-supplied confirmation field.
-  await db.insert(projectWorkAuditTable).values({ project_key: key, enabled, owner_confirmed: true });
   const [control] = await db.select().from(projectWorkControlsTable).where(eq(projectWorkControlsTable.project_key, key)).limit(1);
   res.json(control);
+});
+
+router.post("/work-controls/:key/complete", async (req, res): Promise<void> => {
+  const key = Array.isArray(req.params.key) ? req.params.key[0] : req.params.key;
+  if (!WORK_KEYS.includes(key as WorkKey)) { res.status(404).json({ error: "Unknown project." }); return; }
+  const [open] = await db.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable)
+    .where(and(eq(managedWorkItemsTable.project_key, key), inArray(managedWorkItemsTable.status, ["pending_approval", "approved", "in_progress", "needs_owner", "failed"]))).limit(1);
+  if (open) { res.status(409).json({ error: "Resolve every queued, active, failed, or owner-needed item before completing this project." }); return; }
+  await db.insert(projectWorkControlsTable).values({ project_key: key }).onConflictDoNothing();
+  await db.update(projectWorkControlsTable).set({ completed: true, enabled: false, updated_by: "Markus", updated_at: new Date() }).where(eq(projectWorkControlsTable.project_key, key));
+  await db.insert(projectWorkAuditTable).values({ project_key: key, enabled: false, owner_confirmed: true, event_type: "project_completed" });
+  res.json({ project_key: key, completed: true, enabled: false });
 });
 
 router.get("/work-handovers", async (req, res): Promise<void> => {
@@ -45,6 +176,7 @@ router.get("/work-handovers", async (req, res): Promise<void> => {
   const query = db.select({
     id: projectHandoverTable.id, project_key: projectHandoverTable.project_key,
     project_id: projectHandoverTable.project_id, task_id: projectHandoverTable.task_id,
+    work_item_id: projectHandoverTable.work_item_id,
     branch: projectHandoverTable.branch, commit_ref: projectHandoverTable.commit_ref,
     status: projectHandoverTable.status, completed_work: projectHandoverTable.completed_work,
     next_action: projectHandoverTable.next_action, blockers: projectHandoverTable.blockers,
@@ -55,9 +187,15 @@ router.get("/work-handovers", async (req, res): Promise<void> => {
   res.json(rows);
 });
 
+router.get("/work-handover-events", async (_req, res): Promise<void> => {
+  const events = await db.select().from(projectHandoverEventsTable)
+    .orderBy(desc(projectHandoverEventsTable.created_at)).limit(100);
+  res.json(events);
+});
+
 router.post("/work-handovers", async (req, res): Promise<void> => {
   const b = req.body;
-  if (!b || !WORK_KEYS.includes(b.project_key) || typeof b.status !== "string" || typeof b.completed_work !== "string" || typeof b.next_action !== "string" || typeof b.recovery_note !== "string" || typeof b.blockers !== "string" || typeof b.verification !== "string" || (b.branch != null && typeof b.branch !== "string") || (b.commit_ref != null && typeof b.commit_ref !== "string") || (b.task_id != null && !Number.isInteger(b.task_id))) {
+  if (!b || !WORK_KEYS.includes(b.project_key) || typeof b.status !== "string" || typeof b.completed_work !== "string" || typeof b.next_action !== "string" || typeof b.recovery_note !== "string" || typeof b.blockers !== "string" || typeof b.verification !== "string" || (b.branch != null && typeof b.branch !== "string") || (b.commit_ref != null && typeof b.commit_ref !== "string") || (b.task_id != null && !Number.isInteger(b.task_id)) || (b.work_item_id != null && !Number.isInteger(b.work_item_id))) {
     res.status(400).json({ error: "Provide project, status, completed work, next action, blockers, verification, and recovery note." });
     return;
   }
@@ -73,12 +211,23 @@ router.post("/work-handovers", async (req, res): Promise<void> => {
       return;
     }
   }
+  if (b.work_item_id != null) {
+    const [item] = await db.select({ project_key: managedWorkItemsTable.project_key }).from(managedWorkItemsTable).where(eq(managedWorkItemsTable.id, b.work_item_id)).limit(1);
+    if (!item || item.project_key !== b.project_key) {
+      res.status(400).json({ error: "The work item must belong to the selected project." });
+      return;
+    }
+  }
   const [saved] = await db.insert(projectHandoverTable).values({
-    project_key: b.project_key, project_id: project?.id ?? null, task_id: b.task_id ?? null,
+    project_key: b.project_key, project_id: project?.id ?? null, task_id: b.task_id ?? null, work_item_id: b.work_item_id ?? null,
     branch: b.branch ?? null, commit_ref: b.commit_ref ?? null, status: b.status,
     completed_work: b.completed_work, next_action: b.next_action, blockers: b.blockers,
     verification: b.verification, recovery_note: b.recovery_note,
   }).returning();
+  if (saved) await db.insert(projectHandoverEventsTable).values({
+    checkpoint_id: saved.id, project_key: saved.project_key, task_id: saved.task_id,
+    actor: "Markus", event_type: "checkpoint_saved", details: { status: saved.status, work_item_id: saved.work_item_id },
+  });
   res.status(201).json(saved);
 });
 
@@ -97,6 +246,35 @@ router.post("/work-handovers/:id/resume", async (req, res): Promise<void> => {
     res.status(423).json({ error: "Project work is OFF. Enable it before resuming work." });
     return;
   }
+  if (checkpoint.task_id != null) {
+    const [task] = await db.select({ project_id: tasksTable.project_id, status: tasksTable.status }).from(tasksTable).where(eq(tasksTable.id, checkpoint.task_id)).limit(1);
+    if (!task || task.project_id !== checkpoint.project_id || task.status === "done") {
+      res.status(409).json({ error: "The linked task is missing, belongs to another project, or is already complete." });
+      return;
+    }
+  }
+  if (checkpoint.work_item_id != null) {
+    const [item] = await db.select().from(managedWorkItemsTable).where(eq(managedWorkItemsTable.id, checkpoint.work_item_id)).limit(1);
+    if (!item || item.project_key !== checkpoint.project_key || ["completed", "failed", "rejected"].includes(item.status)) {
+      res.status(409).json({ error: "The linked work item is not resumable." });
+      return;
+    }
+    if (item.status === "needs_owner") {
+      const [alreadyActive] = await db.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable)
+        .where(and(eq(managedWorkItemsTable.project_key, item.project_key), inArray(managedWorkItemsTable.status, ["approved", "in_progress"]))).limit(1);
+      if (alreadyActive) {
+        res.status(409).json({ error: "Another work item is active for this project." });
+        return;
+      }
+      await db.update(managedWorkItemsTable).set({ status: "approved", updated_at: new Date() }).where(eq(managedWorkItemsTable.id, item.id));
+      await db.insert(managedWorkEventsTable).values({ work_item_id: item.id, project_key: item.project_key, actor: "Markus", event_type: "resumed_from_checkpoint", from_status: "needs_owner", to_status: "approved", details: { checkpoint_id: checkpoint.id } });
+    }
+  }
+  await db.insert(projectHandoverEventsTable).values({
+    checkpoint_id: checkpoint.id, project_key: checkpoint.project_key, task_id: checkpoint.task_id,
+    actor: "Markus", event_type: "resume_requested",
+    details: { work_item_id: checkpoint.work_item_id, from_status: checkpoint.status, to_status: "resume_ready" },
+  });
   res.json({
     checkpoint_id: checkpoint.id,
     project_key: checkpoint.project_key,

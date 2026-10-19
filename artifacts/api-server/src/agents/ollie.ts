@@ -32,6 +32,7 @@ import {
 import { refreshCattleDogMetrics } from "../routes/metrics";
 import { computeFinanceSummary } from "../routes/finance";
 import { logger } from "../lib/logger";
+import { isProjectWorkEnabled, WORK_KEYS } from "../routes/work-management";
 import {
   fetchClaudeNotes,
   writeOllieReply,
@@ -689,6 +690,11 @@ export function ollieReplyMarkdown(
 export async function runOllie(
   options: { force?: boolean } = {},
 ): Promise<OllieRunOutcome> {
+  for (const key of WORK_KEYS) {
+    if (!(await isProjectWorkEnabled(key))) {
+      return { httpStatus: 423, response: { error: "Project work controls are OFF; recommendations and agent updates are paused." } };
+    }
+  }
   if (ollieRunInProgress) {
     logger.info({ reason: "already running" }, "ollie-run-skipped");
     return { httpStatus: 409, response: { error: "already running" } };

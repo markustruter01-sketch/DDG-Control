@@ -49,3 +49,12 @@ Do not refactor existing business pages or the existing `Agents` page as part of
 ## Display name
 
 Heimdall is the current display name for the DDG Control GM/COO persona. Current UI copy, display-only member labels, and human-readable OpenAPI summaries use Heimdall. Legacy technical identifiers and stored values—including API routes, operation/schema IDs, the persisted `"Ollie"` member value, enum values, environment-variable names, generated client names, and archived prompt files—remain unchanged for compatibility. The UI formats the legacy member value as Heimdall without rewriting stored records.
+
+## 2026-10-19 project work management completion pass
+
+- Added additive work-control, owner-audit, managed-work, task-history, checkpoint, and checkpoint-event tables. Migration: `lib/db/migrations/20261019_work_management.sql`; reverse-order rollback: `lib/db/migrations/20261019_work_management_rollback.sql`. The migration was applied only to the confirmed Replit development database (`heliumdb`); production was not queried or changed.
+- Four work controls default OFF: Finance, Fitness/Hypest, Coffee/Cattle Dog Coffee, and DDG Control AI Stack. DDG Music has no control. Dashboard-mediated recommendations, task approvals/updates, notes, and agent report updates check the project state. OFF cannot stop agents started outside this dashboard.
+- Work items require a bounded objective/outcome/checklist, acceptance checks, a future deadline, attempt/time limits, zero spend, and a stop condition. They remain pending until owner approval; approval does not start an agent. Per-project active work uniqueness is enforced. Completion requires acceptance evidence; owner-completed projects reject further managed work.
+- Heimdall suggestions are loaded from saved reports only; loading them makes no xAI/model call. Checkpoint save and resume are manual and auditable. Five minutes is a reminder target, not a verified automatic checkpoint.
+- Model identity, quota, cost, and owner-wait status remain unknown without an authoritative source. No external agent start, merge, or deployment is performed.
+- Review limits: development schema creation was verified. The rollback file was not executed against the feature tables because it would delete their records. Signed-in browser coverage and route-level integration tests remain release checks.

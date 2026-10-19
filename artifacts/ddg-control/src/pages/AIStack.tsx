@@ -52,7 +52,7 @@ const managedAreas = [
   { key: "cattle-dog-coffee", label: "DDG Coffee / Cattle Dog Coffee" },
   { key: "ddg-control-ai-stack", label: "DDG Control AI Stack" },
 ];
-type Control = { project_key: string; enabled: boolean; updated_at: string };
+type Control = { project_key: string; enabled: boolean; completed: boolean; updated_at: string };
 async function getWorkControls() {
   const r = await fetch("/api/work-controls", { cache: "no-store" });
   if (!r.ok) throw new Error("Work controls unavailable");
@@ -66,14 +66,56 @@ async function saveWorkControl(input: { key: string; enabled: boolean }) {
   if (!r.ok) throw new Error((await r.json().catch(() => null))?.error ?? "Could not save work control");
   return r.json();
 }
+async function completeProject(key:string) {
+  const r=await fetch(`/api/work-controls/${encodeURIComponent(key)}/complete`,{method:"POST"});
+  if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Could not complete project");
+  return r.json();
+}
 async function getHandovers() {
   const r = await fetch("/api/work-handovers", { cache: "no-store" });
   if (!r.ok) throw new Error("Handovers unavailable");
-  return r.json() as Promise<Array<{ id:number; project_key:string; status:string; completed_work:string; next_action:string; blockers:string; verification:string; recovery_note:string; branch:string|null; commit_ref:string|null; created_at:string }>>;
+  return r.json() as Promise<Array<{ id:number; project_key:string; task_id:number|null; work_item_id:number|null; status:string; completed_work:string; next_action:string; blockers:string; verification:string; recovery_note:string; branch:string|null; commit_ref:string|null; created_at:string }>>;
 }
-async function saveHandover(data: Record<string, string>) {
+async function getHandoverEvents() {
+  const r=await fetch("/api/work-handover-events",{cache:"no-store"});
+  if(!r.ok) throw new Error("Checkpoint history unavailable");
+  return r.json() as Promise<Array<{id:number;checkpoint_id:number;event_type:string;created_at:string}>>;
+}
+async function saveHandover(data: Record<string, unknown>) {
   const r = await fetch("/api/work-handovers", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data) });
   if (!r.ok) throw new Error((await r.json().catch(()=>null))?.error ?? "Could not save checkpoint");
+  return r.json();
+}
+async function resumeHandover(id:number) {
+  const r=await fetch(`/api/work-handovers/${id}/resume`,{method:"POST"});
+  if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Checkpoint cannot be resumed");
+  return r.json();
+}
+type WorkItem = { id:number; project_key:string; title:string; objective:string; outcome:string; checklist:string[]; acceptance_checks:string[]; acceptance_evidence:string; result:string; deadline:string; time_limit_minutes:number; max_attempts:number; attempts:number; spend_limit_cents:number; stop_condition:string; status:string; branch:string|null; commit_ref:string|null; review_link:string|null };
+async function getWorkItems() {
+  const r = await fetch("/api/work-items", { cache:"no-store" });
+  if (!r.ok) throw new Error("Work queue unavailable");
+  return r.json() as Promise<{items:WorkItem[];events:Array<{id:number;work_item_id:number;actor:string;event_type:string;created_at:string;details:Record<string,unknown>}>}>;
+}
+type SavedReport={project_slug:string;summary:string;next_action:string;priority:string|null;status_light:string};
+async function getSavedReports(){
+  const r=await fetch("/api/agent-updates/latest",{cache:"no-store"});
+  if(!r.ok) throw new Error("Saved Heimdall reports unavailable");
+  return r.json() as Promise<SavedReport[]>;
+}
+async function createWorkItem(data: Record<string, unknown>) {
+  const r = await fetch("/api/work-items", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+  if (!r.ok) throw new Error((await r.json().catch(()=>null))?.error ?? "Could not queue work");
+  return r.json();
+}
+async function approveWorkItem(id:number) {
+  const r=await fetch(`/api/work-items/${id}/approve`,{method:"POST"});
+  if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error ?? "Approval failed");
+  return r.json();
+}
+async function moveWorkItem(input:{id:number;status:string;acceptance_evidence?:string}) {
+  const r=await fetch(`/api/work-items/${input.id}/status`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(input)});
+  if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error ?? "Status change failed");
   return r.json();
 }
 
@@ -406,16 +448,25 @@ export function AIStackPage() {
   const queryClient = useQueryClient();
   const controlsQuery = useQuery({ queryKey: ["work-controls"], queryFn: getWorkControls, retry: false });
   const handoversQuery = useQuery({ queryKey: ["work-handovers"], queryFn: getHandovers, retry: false });
+  const handoverEventsQuery = useQuery({ queryKey: ["work-handover-events"], queryFn: getHandoverEvents, retry: false });
+  const workItemsQuery = useQuery({ queryKey: ["work-items"], queryFn: getWorkItems, retry: false });
+  const savedReportsQuery = useQuery({ queryKey:["saved-heimdall-reports"],queryFn:getSavedReports,retry:false });
   const controlMutation = useMutation({
     mutationFn: saveWorkControl,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["work-controls"] }),
   });
+  const completeMutation = useMutation({ mutationFn: completeProject, onSuccess:()=>queryClient.invalidateQueries({queryKey:["work-controls"]}) });
   const handoverMutation = useMutation({
     mutationFn: saveHandover,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["work-handovers"] }),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["work-handovers"] }); void queryClient.invalidateQueries({ queryKey: ["work-handover-events"] }); },
   });
+  const resumeMutation = useMutation({ mutationFn: resumeHandover, onSuccess: () => queryClient.invalidateQueries({ queryKey: ["work-handover-events"] }) });
+  const createWorkMutation = useMutation({ mutationFn: createWorkItem, onSuccess: () => queryClient.invalidateQueries({ queryKey:["work-items"] }) });
+  const approveWorkMutation = useMutation({ mutationFn: approveWorkItem, onSuccess: () => queryClient.invalidateQueries({ queryKey:["work-items"] }) });
+  const moveWorkMutation = useMutation({ mutationFn: moveWorkItem, onSuccess: () => queryClient.invalidateQueries({ queryKey:["work-items"] }) });
   const [handoverKey, setHandoverKey] = useState("finance");
-  const [handoverFields, setHandoverFields] = useState({ status: "in progress", completed_work: "", next_action: "", blockers: "", verification: "", recovery_note: "", branch: "", commit_ref: "" });
+  const [handoverFields, setHandoverFields] = useState({ status: "in progress", completed_work: "", next_action: "", blockers: "", verification: "", recovery_note: "", branch: "", commit_ref: "", task_id: "", work_item_id: "" });
+  const [workFields, setWorkFields] = useState({ project_key:"finance", title:"", objective:"", outcome:"", checklist:"", acceptance_checks:"", deadline:"", time_limit_minutes:"30", max_attempts:"1", stop_condition:"Stop when any acceptance check fails or the limit is reached." });
   const agentsQuery = useQuery({
     queryKey: ["cursor-cloud-agents"],
     queryFn: loadCursorAgents,
@@ -452,8 +503,9 @@ export function AIStackPage() {
             <p className="eyebrow">Separate control area</p>
             <h1 className="detail-title">AI Stack</h1>
             <p className="detail-description">
-              A live view of Cursor work, token use, and safety.
+              A live view of dashboard-mediated work, token use, and safety.
             </p>
+            <p className="ai-stack-release-warning" role="status">Development preview · NOT READY for release: signed-in route and UI verification is still outstanding.</p>
           </div>
           <div className="ai-stack-refresh" role="status">
             <span
@@ -665,8 +717,8 @@ export function AIStackPage() {
                 <div>
                   <span className="ai-stack-check">✓</span>
                   <span>
-                    <strong>Read-only</strong>
-                    <small>No start, stop, or edit controls</small>
+                    <strong>Switch-gated work</strong>
+                    <small>ON permits dashboard work; it never starts agents</small>
                   </span>
                 </div>
                 <div>
@@ -686,8 +738,8 @@ export function AIStackPage() {
                 <div>
                   <span className="ai-stack-check ai-stack-check-info">i</span>
                   <span>
-                    <strong>Wait status</strong>
-                    <small>Cursor does not show a clear owner-wait flag</small>
+                    <strong>Unknown data</strong>
+                    <small>Model identity, quota, cost, and owner-wait are unknown</small>
                   </span>
                 </div>
               </div>
@@ -755,29 +807,69 @@ export function AIStackPage() {
                 const control = controlsQuery.data?.controls.find((item) => item.project_key === area.key);
                 const enabled = control?.enabled === true;
                 return <div className="ai-stack-control-row" key={area.key}>
-                  <strong>{area.label}</strong><span className={enabled ? "work-state is-on" : "work-state"}>{enabled ? "ON" : "OFF"}</span>
-                  <button type="button" className={`work-toggle ${enabled ? "is-on" : ""}`} aria-pressed={enabled} disabled={controlMutation.isPending || !controlsQuery.data} onClick={() => {
+                  <strong>{area.label}</strong><span className={enabled ? "work-state is-on" : "work-state"}>{control?.completed ? "COMPLETED" : enabled ? "ON" : "OFF"}</span>
+                  <button type="button" className={`work-toggle ${enabled ? "is-on" : ""}`} aria-pressed={enabled} disabled={controlMutation.isPending || !controlsQuery.data || control?.completed} onClick={() => {
                     const next = !enabled;
                     if (window.confirm(`Markus, confirm ${next ? "ON" : "OFF"} for ${area.label}?`)) controlMutation.mutate({ key: area.key, enabled: next });
                   }}>{enabled ? "Turn OFF" : "Turn ON"}</button>
+                  {!control?.completed && <button type="button" className="work-toggle" disabled={completeMutation.isPending} onClick={()=>{if(window.confirm(`Mark ${area.label} complete? This stops new suggested work.`)) completeMutation.mutate(area.key);}}>Mark complete</button>}
                 </div>;
               })}
               <div className="ai-stack-control-row is-undecided"><strong>DDG Music</strong><span>Undecided · unchanged</span></div>
             </div>
           )}
           {controlMutation.isError && <p className="ai-stack-error" role="alert">{controlMutation.error.message}</p>}
+          {completeMutation.isError && <p className="ai-stack-error" role="alert">{completeMutation.error.message}</p>}
           <h3>Owner change history</h3>
           <ol className="work-audit-list">{(controlsQuery.data?.audit ?? []).slice(0,8).map((entry) => <li key={entry.id}>{managedAreas.find((x)=>x.key===entry.project_key)?.label ?? entry.project_key}: {entry.enabled ? "ON" : "OFF"} · {new Date(entry.created_at).toLocaleString()}</li>)}</ol>
         </section>
         <section className="ai-stack-panel ai-stack-checkpoint-panel" aria-labelledby="handover-heading">
           <div className="ai-stack-section-heading"><div><h2 id="handover-heading">Shared handover / checkpoint</h2><p className="ai-stack-help">Manual save · five-minute target reminder · no automatic checkpoint callback is connected.</p></div><span className="ai-stack-status">Manual</span></div>
-          <form className="work-handover-form" onSubmit={(event) => { event.preventDefault(); handoverMutation.mutate({ project_key: handoverKey, ...handoverFields }); }}>
+          <form className="work-handover-form" onSubmit={(event) => { event.preventDefault(); const {task_id,work_item_id,...rest}=handoverFields; handoverMutation.mutate({ project_key: handoverKey, ...rest, ...(task_id?{task_id:Number(task_id)}:{}), ...(work_item_id?{work_item_id:Number(work_item_id)}:{}) }); }}>
             <label>Project<select value={handoverKey} onChange={(e)=>setHandoverKey(e.target.value)}>{managedAreas.map((a)=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
-            {(["status","completed_work","next_action","blockers","verification","recovery_note","branch","commit_ref"] as const).map((field)=><label key={field}>{field.replaceAll("_"," ")}<input required={["status","completed_work","next_action","recovery_note"].includes(field)} value={handoverFields[field]} onChange={(e)=>setHandoverFields({...handoverFields,[field]:e.target.value})}/></label>)}
+            {(["status","completed_work","next_action","blockers","verification","recovery_note","branch","commit_ref","task_id","work_item_id"] as const).map((field)=><label key={field}>{field.replaceAll("_"," ")}<input type={field.endsWith("_id")?"number":"text"} min={field.endsWith("_id")?1:undefined} required={["status","completed_work","next_action","recovery_note"].includes(field)} value={handoverFields[field]} onChange={(e)=>setHandoverFields({...handoverFields,[field]:e.target.value})}/></label>)}
             <button type="submit" className="work-toggle" disabled={handoverMutation.isPending}>Save checkpoint</button>
           </form>
           {handoverMutation.isError && <p role="alert">{handoverMutation.error.message}</p>}
-          <div className="work-handover-history">{(handoversQuery.data ?? []).slice(0,6).map((h)=><article key={h.id}><strong>{managedAreas.find((a)=>a.key===h.project_key)?.label ?? h.project_key} · {h.status}</strong><small>{new Date(h.created_at).toLocaleString()} · branch {h.branch || "Unknown"} · commit {h.commit_ref || "Unknown"}</small><p>Done: {h.completed_work}</p><p>Next: {h.next_action}</p><p>Blockers: {h.blockers || "None recorded"} · Verification: {h.verification || "Unknown"}</p><p>Recovery: {h.recovery_note}</p></article>)}</div>
+          <div className="work-handover-history">{(handoversQuery.data ?? []).slice(0,6).map((h)=><article key={h.id}><strong>{managedAreas.find((a)=>a.key===h.project_key)?.label ?? h.project_key} · {h.status}</strong><small>{new Date(h.created_at).toLocaleString()} · task {h.task_id ?? h.work_item_id ?? "Unknown"} · branch {h.branch || "Unknown"} · commit {h.commit_ref || "Unknown"}</small><p>Done: {h.completed_work}</p><p>Next: {h.next_action}</p><p>Blockers: {h.blockers || "None recorded"} · Verification: {h.verification || "Unknown"}</p><p>Recovery: {h.recovery_note}</p><button className="work-toggle" type="button" disabled={resumeMutation.isPending} onClick={()=>resumeMutation.mutate(h.id)}>Resume from checkpoint</button></article>)}</div>
+          {resumeMutation.isError&&<p role="alert">{resumeMutation.error.message}</p>}
+          <ol className="work-audit-list">{(handoverEventsQuery.data??[]).slice(0,12).map(e=><li key={e.id}>Checkpoint #{e.checkpoint_id} · {e.event_type} · {new Date(e.created_at).toLocaleString()}</li>)}</ol>
+        </section>
+        <section className="ai-stack-panel ai-stack-workqueue-panel" aria-labelledby="work-queue-heading">
+          <div className="ai-stack-section-heading"><div><h2 id="work-queue-heading">Next work · owner approval</h2><p className="ai-stack-help">Saved Heimdall reports only · viewing this queue makes no model calls.</p></div><span className="ai-stack-status">No agent starts</span></div>
+          <h3>Saved Heimdall suggestions</h3>
+          {savedReportsQuery.isError&&<p role="alert">Saved reports unavailable; no new recommendation was generated.</p>}
+          {(savedReportsQuery.data??[]).filter(r=>managedAreas.some(a=>a.key===r.project_slug)).map(report=><article className="managed-work-card" key={report.project_slug}>
+            <strong>{managedAreas.find(a=>a.key===report.project_slug)?.label} · {report.priority??"Priority unknown"}</strong>
+            <p>{report.summary}</p><p><b>Suggested next action:</b> {report.next_action}</p>
+            <button type="button" className="work-toggle" onClick={()=>setWorkFields({...workFields,project_key:report.project_slug,title:report.next_action.slice(0,160),objective:report.next_action,outcome:report.summary})}>Use saved report in draft</button>
+          </article>)}
+          <form className="work-item-form" onSubmit={(event)=>{event.preventDefault();createWorkMutation.mutate({
+            project_key:workFields.project_key,title:workFields.title,objective:workFields.objective,outcome:workFields.outcome,
+            checklist:workFields.checklist.split("\n").map(x=>x.trim()).filter(Boolean),
+            acceptance_checks:workFields.acceptance_checks.split("\n").map(x=>x.trim()).filter(Boolean),
+            deadline:new Date(workFields.deadline).toISOString(),time_limit_minutes:Number(workFields.time_limit_minutes),
+            max_attempts:Number(workFields.max_attempts),spend_limit_cents:0,
+            stop_condition:workFields.stop_condition,
+          });}}>
+            <label>Project<select value={workFields.project_key} onChange={e=>setWorkFields({...workFields,project_key:e.target.value})}>{managedAreas.map(a=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
+            {(["title","objective","outcome","checklist","acceptance_checks","deadline","time_limit_minutes","max_attempts","stop_condition"] as const).map(field=><label key={field}>{field.replaceAll("_"," ")}{["checklist","acceptance_checks","objective","outcome","stop_condition"].includes(field)?<textarea required value={workFields[field]} onChange={e=>setWorkFields({...workFields,[field]:e.target.value})}/>:<input required type={field==="deadline"?"datetime-local":"text"} value={workFields[field]} onChange={e=>setWorkFields({...workFields,[field]:e.target.value})}/>}</label>)}
+            <p className="ai-stack-chart-caption">Zero spend limit. Time is 5–1,440 minutes; attempts are 1–10. No provider or agent is started.</p>
+            <button className="work-toggle" disabled={createWorkMutation.isPending}>Queue for Markus’ approval</button>
+          </form>
+          {createWorkMutation.isError && <p role="alert">{createWorkMutation.error.message}</p>}
+          {workItemsQuery.isError ? <p role="alert">Could not load approval queue or task history.</p> : (workItemsQuery.data?.items ?? []).map(item=><article className="managed-work-card" key={item.id}>
+            <div className="ai-stack-section-heading"><div><strong>{managedAreas.find(a=>a.key===item.project_key)?.label} · {item.title}</strong><p>{item.status.replaceAll("_"," ")} · attempt {item.attempts}/{item.max_attempts} · due {new Date(item.deadline).toLocaleString()}</p></div>
+              {item.status==="pending_approval"&&<button className="work-toggle" disabled={approveWorkMutation.isPending} onClick={()=>approveWorkMutation.mutate(item.id)}>Approve</button>}
+              {item.status==="approved"&&<button className="work-toggle" disabled={moveWorkMutation.isPending} onClick={()=>moveWorkMutation.mutate({id:item.id,status:"in_progress"})}>Start work item</button>}
+              {item.status==="in_progress"&&<div className="work-actions"><button onClick={()=>moveWorkMutation.mutate({id:item.id,status:"needs_owner"})}>Needs owner</button><button onClick={()=>moveWorkMutation.mutate({id:item.id,status:"failed"})}>Mark failed</button><button onClick={()=>{const evidence=window.prompt("Enter acceptance evidence before completion:");if(evidence?.trim()) moveWorkMutation.mutate({id:item.id,status:"completed",acceptance_evidence:evidence});}}>Mark complete</button></div>}
+            </div>
+            <p>{item.objective}</p><p><b>Outcome:</b> {item.outcome}</p><p><b>Stop:</b> {item.stop_condition}</p>
+            <div className="managed-work-lists"><span><b>Checklist</b>{item.checklist.map((c,i)=><small key={i}>□ {c}</small>)}</span><span><b>Acceptance checks</b>{item.acceptance_checks.map((c,i)=><small key={i}>{c}</small>)}</span></div>
+            <p>Evidence/result: {item.acceptance_evidence || item.result || "Not recorded"} · branch: {item.branch || "Unknown"} · commit: {item.commit_ref || "Unknown"} · review: {item.review_link || "Unknown"}</p>
+          </article>)}
+          {[createWorkMutation,approveWorkMutation,moveWorkMutation].some(m=>m.isError)&&<p role="alert">Work action failed; current saved state is unchanged. Refresh before retrying.</p>}
+          <h3>Append-only task history</h3><ol className="work-audit-list">{(workItemsQuery.data?.events??[]).slice(0,30).map(e=><li key={e.id}>#{e.work_item_id} · {e.event_type} · {e.actor} · {new Date(e.created_at).toLocaleString()}</li>)}</ol>
         </section>
         <p className="ai-stack-footnote">
           This page shows Cursor Cloud Agent activity only. It does not run a

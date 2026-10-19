@@ -30,6 +30,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { desc, eq, ne } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import { decideDecision } from "./decisions";
+import { isProjectWorkEnabled } from "./work-management";
 import { getTradingSnapshot } from "../agents/ollie";
 import {
   computeFinanceSummary,
@@ -271,12 +272,16 @@ router.post("/inbound/decisions", async (req, res): Promise<void> => {
   }
 
   const [project] = await db
-    .select({ id: projectsTable.id })
+    .select({ id: projectsTable.id, slug: projectsTable.slug })
     .from(projectsTable)
     .where(eq(projectsTable.slug, createInput.project_slug))
     .limit(1);
   if (!project) {
     res.status(400).json({ error: "unknown project" });
+    return;
+  }
+  if (!(await isProjectWorkEnabled(project.slug))) {
+    res.status(423).json({ error: "Project work is OFF. New recommendations are paused." });
     return;
   }
 
@@ -384,6 +389,12 @@ router.post("/inbound/tasks/:id/status", async (req, res): Promise<void> => {
     res.status(404).json({ error: "not found" });
     return;
   }
+  const [taskProject] = await db.select({ slug: projectsTable.slug }).from(projectsTable)
+    .where(eq(projectsTable.id, existing.project_id)).limit(1);
+  if (!taskProject || !(await isProjectWorkEnabled(taskProject.slug))) {
+    res.status(423).json({ error: "Project work is OFF. Task status updates are paused." });
+    return;
+  }
 
   const updates: Partial<typeof tasksTable.$inferInsert> = {
     status: parsed.data.status,
@@ -447,6 +458,10 @@ router.post("/inbound/notes", async (req, res): Promise<void> => {
     .limit(1);
   if (!project) {
     res.status(400).json({ error: "unknown project" });
+    return;
+  }
+  if (!(await isProjectWorkEnabled(project.slug))) {
+    res.status(423).json({ error: "Project work is OFF. New project notes are paused." });
     return;
   }
 
