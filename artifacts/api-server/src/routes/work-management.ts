@@ -1,6 +1,7 @@
 import { db, projectHandoverTable, projectWorkAuditTable, projectWorkControlsTable, projectsTable } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
+import { tasksTable } from "@workspace/db";
 
 export const WORK_KEYS = ["finance", "hypest", "cattle-dog-coffee", "ddg-control-ai-stack"] as const;
 export type WorkKey = (typeof WORK_KEYS)[number];
@@ -25,13 +26,15 @@ router.get("/work-controls", async (_req, res): Promise<void> => {
 
 router.patch("/work-controls/:key", async (req, res): Promise<void> => {
   const key = Array.isArray(req.params.key) ? req.params.key[0] : req.params.key;
-  if (!WORK_KEYS.includes(key as WorkKey) || typeof req.body?.enabled !== "boolean" || req.body?.owner_confirmed !== true) {
-    res.status(400).json({ error: "Choose a valid work area and confirm the change as owner." });
+  if (!WORK_KEYS.includes(key as WorkKey) || typeof req.body?.enabled !== "boolean") {
+    res.status(400).json({ error: "Choose a valid work area and enabled state." });
     return;
   }
   const enabled = req.body.enabled as boolean;
   await db.insert(projectWorkControlsTable).values({ project_key: key, enabled })
     .onConflictDoUpdate({ target: projectWorkControlsTable.project_key, set: { enabled, updated_by: "Markus", updated_at: new Date() } });
+  // This router is mounted after requireAuth; identity comes from the verified
+  // session, never from a client-supplied confirmation field.
   await db.insert(projectWorkAuditTable).values({ project_key: key, enabled, owner_confirmed: true });
   const [control] = await db.select().from(projectWorkControlsTable).where(eq(projectWorkControlsTable.project_key, key)).limit(1);
   res.json(control);
@@ -59,6 +62,17 @@ router.post("/work-handovers", async (req, res): Promise<void> => {
     return;
   }
   const [project] = await db.select({ id: projectsTable.id }).from(projectsTable).where(eq(projectsTable.slug, b.project_key)).limit(1);
+  if (b.task_id != null) {
+    if (!project) {
+      res.status(400).json({ error: "Control-only handovers cannot reference a task." });
+      return;
+    }
+    const [task] = await db.select({ project_id: tasksTable.project_id }).from(tasksTable).where(eq(tasksTable.id, b.task_id)).limit(1);
+    if (!task || task.project_id !== project.id) {
+      res.status(400).json({ error: "The task must belong to the selected project." });
+      return;
+    }
+  }
   const [saved] = await db.insert(projectHandoverTable).values({
     project_key: b.project_key, project_id: project?.id ?? null, task_id: b.task_id ?? null,
     branch: b.branch ?? null, commit_ref: b.commit_ref ?? null, status: b.status,
@@ -66,6 +80,33 @@ router.post("/work-handovers", async (req, res): Promise<void> => {
     verification: b.verification, recovery_note: b.recovery_note,
   }).returning();
   res.status(201).json(saved);
+});
+
+router.post("/work-handovers/:id/resume", async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1) {
+    res.status(400).json({ error: "Invalid checkpoint id." });
+    return;
+  }
+  const [checkpoint] = await db.select().from(projectHandoverTable).where(eq(projectHandoverTable.id, id)).limit(1);
+  if (!checkpoint) {
+    res.status(404).json({ error: "Checkpoint not found." });
+    return;
+  }
+  if (!(await isProjectWorkEnabled(checkpoint.project_key))) {
+    res.status(423).json({ error: "Project work is OFF. Enable it before resuming work." });
+    return;
+  }
+  res.json({
+    checkpoint_id: checkpoint.id,
+    project_key: checkpoint.project_key,
+    task_id: checkpoint.task_id,
+    next_action: checkpoint.next_action,
+    blockers: checkpoint.blockers,
+    recovery_note: checkpoint.recovery_note,
+    status: "ready_to_resume",
+    agent_started: false,
+  });
 });
 
 export default router;

@@ -61,7 +61,7 @@ async function getWorkControls() {
 async function saveWorkControl(input: { key: string; enabled: boolean }) {
   const r = await fetch(`/api/work-controls/${encodeURIComponent(input.key)}`, {
     method: "PATCH", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ enabled: input.enabled, owner_confirmed: true }),
+    body: JSON.stringify({ enabled: input.enabled }),
   });
   if (!r.ok) throw new Error((await r.json().catch(() => null))?.error ?? "Could not save work control");
   return r.json();
