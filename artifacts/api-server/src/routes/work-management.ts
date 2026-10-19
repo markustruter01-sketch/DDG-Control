@@ -1,10 +1,17 @@
-import { db, goalsTable, managedWorkEventsTable, managedWorkItemsTable, projectHandoverEventsTable, projectHandoverTable, projectWorkAuditTable, projectWorkControlsTable, projectsTable, tasksTable } from "@workspace/db";
+import { db, goalsTable, managedWorkEventsTable, managedWorkItemsTable, managedWorkOutcomeEventsTable, managedWorkOutcomesTable, projectHandoverEventsTable, projectHandoverTable, projectWorkAuditTable, projectWorkControlsTable, projectsTable, tasksTable } from "@workspace/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 
 export const WORK_KEYS = ["finance", "hypest", "cattle-dog-coffee", "ddg-control-ai-stack"] as const;
 export type WorkKey = (typeof WORK_KEYS)[number];
 const FINANCE_REVIEW_REQUIRED = true;
+const CURSOR_DISPATCH_ENABLED = false;
+const CURSOR_DISPATCH_BLOCKERS = [
+  "Cursor Cloud Agent entitlement and included-use/no-overage terms are unverified for this account.",
+  "Repository access and owner-approved target branch permissions are not verified.",
+  "No Cursor dispatch adapter or durable worker is implemented; no agent can be started from this queue.",
+  "The five-minute checkpoint target is manual; no verified worker callback exists.",
+];
 
 export function hasWorkControl(key: string): key is WorkKey {
   return WORK_KEYS.includes(key as WorkKey);
@@ -31,6 +38,22 @@ router.get("/work-items", async (req, res): Promise<void> => {
   res.json({ items, events });
 });
 
+router.get("/work-outcomes", async (_req, res): Promise<void> => {
+  const outcomes = await db.select().from(managedWorkOutcomesTable).orderBy(desc(managedWorkOutcomesTable.created_at));
+  const events = await db.select().from(managedWorkOutcomeEventsTable).orderBy(desc(managedWorkOutcomeEventsTable.created_at)).limit(200);
+  res.json({ outcomes, events });
+});
+
+router.get("/work-readiness", async (_req, res): Promise<void> => {
+  res.json({
+    dispatch_enabled: CURSOR_DISPATCH_ENABLED,
+    status: "blocked",
+    blockers: CURSOR_DISPATCH_BLOCKERS,
+    finance_hold: "DDG Finance remains hard-held until Claude review and Markus approval.",
+    local_limits: "Dashboard records enforce deadlines, 5–1,440 minute limits, 1–10 attempts, and zero app-side spend; provider billing limits remain unverified.",
+  });
+});
+
 router.post("/work-items", async (req, res): Promise<void> => {
   const b = req.body;
   const validList = (v: unknown) => Array.isArray(v) && v.length > 0 && v.length <= 20 && v.every((x) => typeof x === "string" && x.trim().length > 0 && x.length <= 500);
@@ -41,12 +64,21 @@ router.post("/work-items", async (req, res): Promise<void> => {
       typeof b.deadline !== "string" || !Number.isFinite(Date.parse(b.deadline)) || Date.parse(b.deadline) <= Date.now() ||
       !Number.isInteger(b.time_limit_minutes) || b.time_limit_minutes < 5 || b.time_limit_minutes > 1440 ||
       !Number.isInteger(b.max_attempts) || b.max_attempts < 1 || b.max_attempts > 10 ||
-      b.spend_limit_cents !== 0 || typeof b.stop_condition !== "string" || !b.stop_condition.trim() || b.stop_condition.length > 1000) {
-    res.status(400).json({ error: "Provide a bounded objective, outcome, checklist, acceptance checks, future deadline, time limit, 1–10 attempts, zero spend limit, and stop condition." });
+      b.spend_limit_cents !== 0 || typeof b.stop_condition !== "string" || !b.stop_condition.trim() || b.stop_condition.length > 1000 ||
+      !Number.isSafeInteger(b.outcome_id) || typeof b.gate_key !== "string" || !b.gate_key.trim() ||
+      typeof b.repository !== "string" || !b.repository.trim() || typeof b.target_branch !== "string" ||
+      !/^[A-Za-z0-9._/-]{1,200}$/.test(b.target_branch)) {
+    res.status(400).json({ error: "Provide an outcome/gate, repository, target branch, bounded objective and checklist, future deadline, time limit, attempt limit, zero app spend, and stop condition." });
     return;
   }
   if (!(await isProjectWorkEnabled(b.project_key))) {
     res.status(423).json({ error: "Project work is OFF. Enable it before queuing work." });
+    return;
+  }
+  const [outcome] = await db.select().from(managedWorkOutcomesTable).where(eq(managedWorkOutcomesTable.id, b.outcome_id)).limit(1);
+  if (!outcome || outcome.project_key !== b.project_key || outcome.status !== "pending_approval" ||
+      !outcome.gates.some((gate) => gate.key === b.gate_key)) {
+    res.status(400).json({ error: "The outcome gate must exist and belong to this project's pending outcome." });
     return;
   }
   const [project] = await db.select({ id: projectsTable.id }).from(projectsTable).where(eq(projectsTable.slug, b.project_key)).limit(1);
@@ -63,6 +95,9 @@ router.post("/work-items", async (req, res): Promise<void> => {
   }
   const [item] = await db.insert(managedWorkItemsTable).values({
     project_key: b.project_key, project_id: project?.id ?? null, goal_id: b.goal_id ?? null,
+    outcome_id: outcome.id, gate_key: b.gate_key, repository: b.repository.trim().toLowerCase(),
+    target_branch: b.target_branch.trim(), dispatch_state: "disabled",
+    dispatch_block_reason: CURSOR_DISPATCH_BLOCKERS.join(" "),
     title: b.title.trim(), objective: b.objective.trim(), outcome: b.outcome.trim(),
     checklist: b.checklist, acceptance_checks: b.acceptance_checks,
     deadline: new Date(b.deadline), time_limit_minutes: b.time_limit_minutes,
@@ -79,6 +114,7 @@ router.post("/work-items/:id/approve", async (req, res): Promise<void> => {
     const [item] = await tx.select().from(managedWorkItemsTable).where(eq(managedWorkItemsTable.id, id)).for("update").limit(1);
     if (!item) return { kind: "missing" as const };
     if (!(await isProjectWorkEnabled(item.project_key))) return { kind: "off" as const };
+    if (!CURSOR_DISPATCH_ENABLED) return { kind: "blocked" as const };
     if (item.status === "approved") return { kind: "ok" as const, item };
     if (item.status !== "pending_approval") return { kind: "state" as const };
     const [active] = await tx.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable).where(and(eq(managedWorkItemsTable.project_key, item.project_key), inArray(managedWorkItemsTable.status, ["approved", "in_progress"]))).limit(1);
@@ -88,8 +124,8 @@ router.post("/work-items/:id/approve", async (req, res): Promise<void> => {
     return { kind: "ok" as const, item: updated };
   });
   if (result.kind !== "ok") {
-    const status = result.kind === "missing" ? 404 : result.kind === "off" ? 423 : result.kind === "duplicate" ? 409 : 409;
-    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "duplicate" ? "An active work item already exists for this project." : result.kind === "state" ? "Only pending work can be approved." : "Work item not found." });
+    const status = result.kind === "missing" ? 404 : result.kind === "off" || result.kind === "blocked" ? 423 : result.kind === "duplicate" ? 409 : 409;
+    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "blocked" ? `Approval is held: ${CURSOR_DISPATCH_BLOCKERS.join(" ")}` : result.kind === "duplicate" ? "An active work item already exists for this project." : result.kind === "state" ? "Only pending work can be approved." : "Work item not found." });
     return;
   }
   res.json(result.item);
@@ -103,6 +139,7 @@ router.patch("/work-items/:id/status", async (req, res): Promise<void> => {
     const [item] = await tx.select().from(managedWorkItemsTable).where(eq(managedWorkItemsTable.id, id)).for("update").limit(1);
     if (!item) return { kind: "missing" as const };
     if (!(await isProjectWorkEnabled(item.project_key))) return { kind: "off" as const };
+    if (next === "in_progress" && !CURSOR_DISPATCH_ENABLED) return { kind: "blocked" as const };
     if (item.status === next) return { kind: "ok" as const, item };
     const permitted = (item.status === "approved" && next === "in_progress") ||
       (item.status === "in_progress" && ["needs_owner", "failed", "completed"].includes(next)) ||
@@ -125,8 +162,8 @@ router.patch("/work-items/:id/status", async (req, res): Promise<void> => {
     return { kind: "ok" as const, item: updated };
   });
   if (result.kind !== "ok") {
-    const status = result.kind === "missing" ? 404 : result.kind === "off" ? 423 : result.kind === "limit" || result.kind === "evidence" ? 409 : 409;
-    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "limit" ? "Deadline or attempt limit reached; owner review required." : result.kind === "evidence" ? "Acceptance evidence is required before completion." : result.kind === "transition" ? "Invalid status transition." : "Work item not found." });
+    const status = result.kind === "missing" ? 404 : result.kind === "off" || result.kind === "blocked" ? 423 : result.kind === "limit" || result.kind === "evidence" ? 409 : 409;
+    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "blocked" ? "No eligible worker is connected; in-progress cannot be claimed." : result.kind === "limit" ? "Deadline or attempt limit reached; owner review required." : result.kind === "evidence" ? "Acceptance evidence is required before completion." : result.kind === "transition" ? "Invalid status transition." : "Work item not found." });
     return;
   }
   res.json(result.item);

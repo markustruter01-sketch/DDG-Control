@@ -48,11 +48,43 @@ export const projectHandoverEventsTable = pgTable("project_handover_events", {
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const managedWorkOutcomesTable = pgTable("managed_work_outcomes", {
+  id: serial("id").primaryKey(),
+  project_key: text("project_key").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  gates: jsonb("gates").$type<Array<{ key: string; title: string; acceptance: string[] }>>().notNull(),
+  status: text("status").notNull().default("pending_approval"),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check("managed_work_outcome_status_check", sql`${table.status} IN ('draft', 'pending_approval', 'approved', 'rejected', 'completed')`),
+  uniqueIndex("managed_work_one_pending_outcome_per_project")
+    .on(table.project_key)
+    .where(sql`${table.status} IN ('draft', 'pending_approval', 'approved')`),
+]);
+
+export const managedWorkOutcomeEventsTable = pgTable("managed_work_outcome_events", {
+  id: serial("id").primaryKey(),
+  outcome_id: integer("outcome_id").notNull().references(() => managedWorkOutcomesTable.id),
+  project_key: text("project_key").notNull(),
+  actor: text("actor").notNull(),
+  event_type: text("event_type").notNull(),
+  details: jsonb("details").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const managedWorkItemsTable = pgTable("managed_work_items", {
   id: serial("id").primaryKey(),
   project_key: text("project_key").notNull(),
   project_id: integer("project_id").references(() => projectsTable.id),
   goal_id: integer("goal_id").references(() => goalsTable.id),
+  outcome_id: integer("outcome_id").references(() => managedWorkOutcomesTable.id),
+  gate_key: text("gate_key"),
+  repository: text("repository"),
+  target_branch: text("target_branch"),
+  dispatch_state: text("dispatch_state").notNull().default("disabled"),
+  dispatch_block_reason: text("dispatch_block_reason").notNull().default("Cursor entitlement and no-overage terms are unverified."),
   title: text("title").notNull(),
   objective: text("objective").notNull(),
   outcome: text("outcome").notNull(),
@@ -77,6 +109,12 @@ export const managedWorkItemsTable = pgTable("managed_work_items", {
   uniqueIndex("managed_work_one_active_per_project")
     .on(table.project_key)
     .where(sql`${table.status} IN ('approved', 'in_progress')`),
+  uniqueIndex("managed_work_one_active_per_repository")
+    .on(table.repository)
+    .where(sql`${table.repository} IS NOT NULL AND ${table.status} IN ('approved', 'in_progress')`),
+  uniqueIndex("managed_work_one_task_per_outcome_gate")
+    .on(table.outcome_id, table.gate_key)
+    .where(sql`${table.outcome_id} IS NOT NULL AND ${table.gate_key} IS NOT NULL`),
   check("managed_work_time_limit_check", sql`${table.time_limit_minutes} BETWEEN 5 AND 1440`),
   check("managed_work_attempt_limit_check", sql`${table.max_attempts} BETWEEN 1 AND 10`),
   check("managed_work_attempts_check", sql`${table.attempts} >= 0`),
