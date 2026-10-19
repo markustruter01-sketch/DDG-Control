@@ -36,3 +36,12 @@ This change adds a separate `/ai-stack` dashboard page with read-only Cursor Clo
 ## Guardrail
 
 Do not refactor existing business pages or the existing `Agents` page as part of this work. If another existing file must change, tell the owner first and explain the exact file and reason. `AGENTS.md` had a separate pre-existing uncommitted change when this task began; it was not edited for this work and must not be included in this task's commit.
+
+## 2026-10-19 visual/navigation update
+
+- Updated the shared header navigation to five independent floating circular controls: Projects, Work, Home, AI Stack, and Finance. Home is centered, larger, and raised. The controls are not joined into a dock or bar.
+- Projects scrolls to the existing project list on Home. Work opens an Agents / Approvals menu and retains the pending approval count. Theme and logout remain small top-right utility controls.
+- Updated the shared styles for the requested warm landscape and glass-like controls, with responsive spacing for desktop and phone.
+- Kept the existing AI Stack sections, API polling, chart, read-only safety copy, and Work / Usage / Safety detail windows; no integration or business logic was changed.
+- Files changed for this update: `artifacts/ddg-control/src/components/header.tsx`, `artifacts/ddg-control/src/pages/Home.tsx` (anchor only), and `artifacts/ddg-control/src/ddg.css`.
+- Verification: `pnpm run typecheck` passed; `PORT=26196 BASE_PATH=/ pnpm --filter @workspace/ddg-control run build` passed with the existing large-chunk warning. Desktop and phone previews were checked. The current AI Stack view reports a Cursor connection error; GET `/api/cursor/cloud-agents` returned 404 during the check. This was not changed as part of the visual update.

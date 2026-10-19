@@ -218,7 +218,7 @@ export function Home() {
             <span aria-hidden="true">→</span>
           </Link>
         )}
-        <div className="section-rule"><span>Projects</span></div>
+        <div className="section-rule" id="project-list" data-testid="section-project-list"><span>Projects</span></div>
 
         {projectsQuery.isLoading ? (
           <section className="state-panel" aria-live="polite" data-testid="status-projects-loading">

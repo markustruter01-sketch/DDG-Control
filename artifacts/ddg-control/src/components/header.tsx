@@ -1,11 +1,11 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getListDecisionsQueryKey,
   useListDecisions,
   useLogout,
 } from '@workspace/api-client-react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { setAuthenticationRequired } from './auth';
 
 type ColorMode = 'dark' | 'day';
@@ -64,11 +64,45 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
   const logoutMutation = useLogout();
   const devBypass = useContext(DevAuthBypassContext);
   const { mode, toggleMode } = useColorMode();
+  const [location] = useLocation();
+  const [workMenuOpen, setWorkMenuOpen] = useState(false);
+  const workMenuRef = useRef<HTMLDivElement>(null);
+  const workButtonRef = useRef<HTMLButtonElement>(null);
   const pendingDecisionsQuery = useListDecisions(
     { status: 'pending' },
     { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } },
   );
   const pendingCount = pendingDecisionsQuery.data?.length ?? 0;
+
+  useEffect(() => {
+    if (!workMenuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setWorkMenuOpen(false);
+        workButtonRef.current?.focus();
+      }
+    };
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (event.target instanceof Node && !workMenuRef.current?.contains(event.target)) {
+        setWorkMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    window.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => {
+      window.removeEventListener('keydown', closeOnEscape);
+      window.removeEventListener('pointerdown', closeOnOutsideClick);
+    };
+  }, [workMenuOpen]);
+
+  useEffect(() => setWorkMenuOpen(false), [location]);
+
+  useEffect(() => {
+    if (location !== '/' || window.location.hash !== '#project-list') return;
+    window.requestAnimationFrame(() => {
+      document.getElementById('project-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [location]);
 
   return (
     <header className="topbar">
@@ -76,24 +110,7 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
         <span className="brand-mark" aria-hidden="true">dd</span>
         <span>DDG Control</span>
       </Link>
-      <nav className="topbar-actions" aria-label="Main navigation">
-        {showLogout && (
-          <Link href="/organisation" className="header-link" data-testid="link-organisation">
-            Organisation
-          </Link>
-        )}
-        <Link href="/agents" className="header-link" data-testid="link-agents">
-          Agents
-        </Link>
-        <Link href="/ai-stack" className="header-link" data-testid="link-ai-stack">
-          AI Stack
-        </Link>
-        <Link href="/decisions" className="header-link" data-testid="link-decisions">
-          Decisions{pendingCount > 0 && <span className="header-count">[{pendingCount}]</span>}
-        </Link>
-        <Link href="/finances" className="header-link" data-testid="link-finances">
-          Finances
-        </Link>
+      <div className="topbar-actions">
         <button
           className="theme-toggle"
           type="button"
@@ -119,6 +136,131 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
             {logoutMutation.isPending ? 'Logging out…' : 'Log out'}
           </button>
         )}
+      </div>
+      <nav className="floating-navigation" aria-label="Primary navigation">
+        <Link
+          href="/#project-list"
+          className={`floating-nav-control${location === '/' ? ' is-current' : ''}`}
+          aria-current={location === '/' ? 'page' : undefined}
+          onClick={() => {
+            if (location === '/') {
+              window.requestAnimationFrame(() => {
+                document.getElementById('project-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              });
+            }
+          }}
+          data-testid="link-nav-projects"
+        >
+          <span className="floating-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 6.5h16M4 12h11M4 17.5h8" /></svg>
+          </span>
+          <span className="floating-nav-label">Projects</span>
+        </Link>
+        <div className={`floating-nav-menu${workMenuOpen ? ' is-open' : ''}`} ref={workMenuRef}>
+          <button
+            ref={workButtonRef}
+            className={`floating-nav-control${location === '/agents' || location === '/decisions' ? ' is-current' : ''}`}
+            type="button"
+            aria-haspopup="true"
+            aria-expanded={workMenuOpen}
+            aria-controls="work-navigation-menu"
+            onClick={() => setWorkMenuOpen((open) => !open)}
+            onKeyDown={(event) => {
+              if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                setWorkMenuOpen(true);
+                window.requestAnimationFrame(() => {
+                  const items = workMenuRef.current?.querySelectorAll<HTMLAnchorElement>('[role="menuitem"]');
+                  (event.key === 'ArrowUp' ? items?.[items.length - 1] : items?.[0])?.focus();
+                });
+              }
+            }}
+            data-testid="button-nav-work"
+          >
+            <span className="floating-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M7 7.5h10M7 12h10M7 16.5h6" /><circle cx="4.5" cy="7.5" r=".7" /><circle cx="4.5" cy="12" r=".7" /><circle cx="4.5" cy="16.5" r=".7" /></svg>
+            </span>
+            <span className="floating-nav-label">Work</span>
+            {pendingCount > 0 && <span className="floating-nav-count" aria-label={`${pendingCount} approvals pending`}>{pendingCount}</span>}
+          </button>
+          {workMenuOpen && (
+            <div
+              className="floating-nav-popover"
+              id="work-navigation-menu"
+              role="menu"
+              aria-label="Work pages"
+              onKeyDown={(event) => {
+                const menuItems = Array.from(
+                  event.currentTarget.querySelectorAll<HTMLAnchorElement>('[role="menuitem"]'),
+                );
+                const currentIndex = menuItems.indexOf(document.activeElement as HTMLAnchorElement);
+                let nextIndex: number | null = null;
+                if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1 + menuItems.length) % menuItems.length;
+                if (event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + menuItems.length) % menuItems.length;
+                if (event.key === 'Home') nextIndex = 0;
+                if (event.key === 'End') nextIndex = menuItems.length - 1;
+                if (nextIndex !== null) {
+                  event.preventDefault();
+                  menuItems[nextIndex]?.focus();
+                }
+              }}
+            >
+              <Link
+                href="/agents"
+                className="floating-nav-menu-link"
+                role="menuitem"
+                onClick={() => setWorkMenuOpen(false)}
+                data-testid="link-nav-agents"
+              >
+                <span>Agents</span><span className="menu-link-mark" aria-hidden="true">↗</span>
+              </Link>
+              <Link
+                href="/decisions"
+                className="floating-nav-menu-link"
+                role="menuitem"
+                onClick={() => setWorkMenuOpen(false)}
+                data-testid="link-nav-approvals"
+              >
+                <span>Approvals</span>
+                {pendingCount > 0 && <span className="menu-pending-count">{pendingCount}</span>}
+              </Link>
+            </div>
+          )}
+        </div>
+        <Link
+          href="/"
+          className="floating-nav-control floating-nav-home"
+          aria-label="Home"
+          aria-current={location === '/' ? 'page' : undefined}
+          data-testid="link-nav-home"
+        >
+          <span className="floating-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m4 10 8-6 8 6v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z" /></svg>
+          </span>
+          <span className="floating-nav-label">Home</span>
+        </Link>
+        <Link
+          href="/ai-stack"
+          className={`floating-nav-control${location === '/ai-stack' ? ' is-current' : ''}`}
+          aria-current={location === '/ai-stack' ? 'page' : undefined}
+          data-testid="link-nav-ai-stack"
+        >
+          <span className="floating-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3.5v3M12 17.5v3M3.5 12h3m11 0h3M6 6l2.1 2.1m7.8 7.8L18 18m0-12-2.1 2.1m-7.8 7.8L6 18" /><circle cx="12" cy="12" r="4.5" /></svg>
+          </span>
+          <span className="floating-nav-label">AI Stack</span>
+        </Link>
+        <Link
+          href="/finances"
+          className={`floating-nav-control${location === '/finances' ? ' is-current' : ''}`}
+          aria-current={location === '/finances' ? 'page' : undefined}
+          data-testid="link-nav-finance"
+        >
+          <span className="floating-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 19.5h16M6.5 16V11m5.5 5V5m5.5 11V8" /></svg>
+          </span>
+          <span className="floating-nav-label">Finance</span>
+        </Link>
       </nav>
     </header>
   );
