@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getListDecisionsQueryKey,
@@ -65,37 +65,11 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
   const devBypass = useContext(DevAuthBypassContext);
   const { mode, toggleMode } = useColorMode();
   const [location] = useLocation();
-  const [workMenuOpen, setWorkMenuOpen] = useState(false);
-  const workMenuRef = useRef<HTMLDivElement>(null);
-  const workButtonRef = useRef<HTMLButtonElement>(null);
   const pendingDecisionsQuery = useListDecisions(
     { status: 'pending' },
     { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } },
   );
   const pendingCount = pendingDecisionsQuery.data?.length ?? 0;
-
-  useEffect(() => {
-    if (!workMenuOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setWorkMenuOpen(false);
-        workButtonRef.current?.focus();
-      }
-    };
-    const closeOnOutsideClick = (event: PointerEvent) => {
-      if (event.target instanceof Node && !workMenuRef.current?.contains(event.target)) {
-        setWorkMenuOpen(false);
-      }
-    };
-    window.addEventListener('keydown', closeOnEscape);
-    window.addEventListener('pointerdown', closeOnOutsideClick);
-    return () => {
-      window.removeEventListener('keydown', closeOnEscape);
-      window.removeEventListener('pointerdown', closeOnOutsideClick);
-    };
-  }, [workMenuOpen]);
-
-  useEffect(() => setWorkMenuOpen(false), [location]);
 
   useEffect(() => {
     if (location !== '/' || window.location.hash !== '#project-list') return;
@@ -107,7 +81,6 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
   return (
     <header className="topbar">
       <Link href="/" className="brand" data-testid="link-home-brand">
-        <span className="brand-mark" aria-hidden="true">dd</span>
         <span>DDG Control</span>
       </Link>
       <div className="topbar-actions">
@@ -156,86 +129,18 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
           </span>
           <span className="floating-nav-label">Projects</span>
         </Link>
-        <div className={`floating-nav-menu${workMenuOpen ? ' is-open' : ''}`} ref={workMenuRef}>
-          <button
-            ref={workButtonRef}
-            className={`floating-nav-control${location === '/agents' || location === '/decisions' ? ' is-current' : ''}`}
-            type="button"
-            aria-haspopup="true"
-            aria-expanded={workMenuOpen}
-            aria-controls="work-navigation-menu"
-            onClick={() => setWorkMenuOpen((open) => !open)}
-            onKeyDown={(event) => {
-              if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-                event.preventDefault();
-                setWorkMenuOpen(true);
-                window.requestAnimationFrame(() => {
-                  const items = workMenuRef.current?.querySelectorAll<HTMLAnchorElement>('[role="menuitem"]');
-                  (event.key === 'ArrowUp' ? items?.[items.length - 1] : items?.[0])?.focus();
-                });
-              }
-            }}
-            data-testid="button-nav-work"
-          >
-            <span className="floating-nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M7 7.5h10M7 12h10M7 16.5h6" /><circle cx="4.5" cy="7.5" r=".7" /><circle cx="4.5" cy="12" r=".7" /><circle cx="4.5" cy="16.5" r=".7" /></svg>
-            </span>
-            <span className="floating-nav-label">Work</span>
-            {pendingCount > 0 && <span className="floating-nav-count" aria-label={`${pendingCount} approvals pending`}>{pendingCount}</span>}
-          </button>
-          {workMenuOpen && (
-            <div
-              className="floating-nav-popover"
-              id="work-navigation-menu"
-              role="menu"
-              aria-label="Work pages"
-              onKeyDown={(event) => {
-                const menuItems = Array.from(
-                  event.currentTarget.querySelectorAll<HTMLAnchorElement>('[role="menuitem"]'),
-                );
-                const currentIndex = menuItems.indexOf(document.activeElement as HTMLAnchorElement);
-                let nextIndex: number | null = null;
-                if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1 + menuItems.length) % menuItems.length;
-                if (event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + menuItems.length) % menuItems.length;
-                if (event.key === 'Home') nextIndex = 0;
-                if (event.key === 'End') nextIndex = menuItems.length - 1;
-                if (nextIndex !== null) {
-                  event.preventDefault();
-                  menuItems[nextIndex]?.focus();
-                }
-              }}
-            >
-              <Link
-                href="/agents"
-                className="floating-nav-menu-link"
-                role="menuitem"
-                onClick={() => setWorkMenuOpen(false)}
-                data-testid="link-nav-agents"
-              >
-                <span>Agents</span><span className="menu-link-mark" aria-hidden="true">↗</span>
-              </Link>
-              <Link
-                href="/decisions"
-                className="floating-nav-menu-link"
-                role="menuitem"
-                onClick={() => setWorkMenuOpen(false)}
-                data-testid="link-nav-approvals"
-              >
-                <span>Approvals</span>
-                {pendingCount > 0 && <span className="menu-pending-count">{pendingCount}</span>}
-              </Link>
-              <Link
-                href="/organisation"
-                className="floating-nav-menu-link"
-                role="menuitem"
-                onClick={() => setWorkMenuOpen(false)}
-                data-testid="link-nav-organisation"
-              >
-                <span>Organisation</span><span className="menu-link-mark" aria-hidden="true">↗</span>
-              </Link>
-            </div>
-          )}
-        </div>
+        <Link
+          href="/decisions"
+          className={`floating-nav-control${location === '/decisions' ? ' is-current' : ''}`}
+          aria-current={location === '/decisions' ? 'page' : undefined}
+          data-testid="link-nav-decisions"
+        >
+          <span className="floating-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M5 5.5h14M5 12h14M5 18.5h9" /><path d="m16 17 2 2 3-4" /></svg>
+          </span>
+          <span className="floating-nav-label">Decisions</span>
+          {pendingCount > 0 && <span className="floating-nav-count" aria-label={`${pendingCount} decisions pending`}>{pendingCount}</span>}
+        </Link>
         <Link
           href="/"
           className="floating-nav-control floating-nav-home"

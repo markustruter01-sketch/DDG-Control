@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from "react";
 import { DevAuthBypassContext, Header } from "@/components/header";
 import FleetDesk from "@/components/FleetDesk";
 import { writeHandoverPacket, type HandoverPacketRecord } from "@/lib/handover-packet";
+import { Link } from "wouter";
 
 type CursorAgent = {
   id: string;
@@ -294,11 +295,12 @@ function DetailDialog({
                         ? agent.repositories.map(shortRepository).join(" · ")
                         : "Repository not reported"}
                     </p>
-                    <p className="ai-stack-detail-result">
-                      {agent.note ??
-                        agent.result ??
-                        "No final result yet. Cursor has not returned a final handover for this run."}
-                    </p>
+                    <details className="ai-stack-result-disclosure">
+                      <summary>Open full Cursor result</summary>
+                      <div className="ai-stack-detail-result">
+                        {agent.note ?? agent.result ?? "No final result yet. Cursor has not returned a final handover for this run."}
+                      </div>
+                    </details>
                     <div className="ai-stack-detail-links">
                       {agent.branches.map((branch) => (
                         <span
@@ -556,6 +558,20 @@ export function AIStackPage() {
   const attentionCount = agents.filter((agent) =>
     ["ERROR", "EXPIRED"].includes(agent.runStatus?.toUpperCase() ?? ""),
   ).length;
+  const cursorConnected = !devBypass && agentsQuery.data?.status === "connected";
+  const controlCount = controlsQuery.data?.controls.filter((control) => control.enabled).length;
+  const latestTokenTotal = agents.reduce((total, agent) => total + (agent.totalTokens ?? 0), 0);
+  const hasTokenTotals = cursorConnected && agents.some((agent) => agent.totalTokens !== null);
+  const checkedAtMs = agentsQuery.data?.checkedAt ? Date.parse(agentsQuery.data.checkedAt) : NaN;
+  const cursorFreshness = devBypass
+    ? "Unknown · development bypass"
+    : agentsQuery.isError
+      ? "Unavailable"
+      : !Number.isFinite(checkedAtMs)
+        ? "Unknown · no check timestamp"
+        : Date.now() - checkedAtMs > 120_000
+          ? "Stale · last checked over 2 min ago"
+          : "Checked recently";
   const [detailView, setDetailView] = useState<DetailView>(null);
   const latestHandover = [...(handoversQuery.data ?? [])].sort((a, b) =>
     Date.parse(b.created_at) - Date.parse(a.created_at) || b.id - a.id,
@@ -598,29 +614,12 @@ export function AIStackPage() {
     <div className="app-shell">
       <Header />
       <main className="page-wrap detail-main ai-stack-main">
-        <FleetDesk
-          projects={managedAreas.map((area)=>({key:area.key,label:area.label,enabled:controlsQuery.data?.controls.find((control)=>control.project_key===area.key)?.enabled??false,financeHeld:area.key==="finance"}))}
-          tasks={(workItemsQuery.data?.items??[]).filter((item)=>item.project_key===fleetProjectKey).map((item)=>({id:item.id,project_key:item.project_key,title:item.title,status:item.status,plan_version:item.plan_version??1,outcome_id:item.outcome_id,outcome_version:outcomesQuery.data?.outcomes.find((outcome)=>outcome.id===item.outcome_id)?.version??null}))}
-          savedReports={savedReportsQuery.data??[]}
-          thread={fleetThread}
-          selectedProjectKey={fleetProjectKey}
-          selectedTaskId={fleetTaskId}
-          onSelectProject={(key)=>{setFleetProjectKey(key);setFleetTaskId(null);}}
-          onSelectTask={setFleetTaskId}
-          onSaveMessage={async(input)=>{await saveFleetMessage(input);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
-          onCreateQuestion={async(input)=>{await createFleetQuestion(input as unknown as Record<string,unknown>);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
-          onAnswerQuestion={async(input)=>{await answerFleetQuestion(input);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
-          onProposeNextWork={(report)=>{const project=managedAreas.find((area)=>area.key===report.project_slug);if(!project)return;setWorkFields((current)=>({...current,project_key:project.key,title:(report.next_action||report.summary).slice(0,160),objective:report.summary,outcome:report.next_action,checklist:"",acceptance_checks:"",repository:"",target_branch:""}));window.setTimeout(()=>document.getElementById("work-item-creator")?.scrollIntoView({behavior:"smooth",block:"center"}),0);}}
-          loading={fleetThreadQuery.isLoading}
-          error={fleetThreadQuery.isError?"Conversation unavailable. Refresh and explicitly reselect the project/task.":null}
-          canAnswer={!devBypass}
-        />
         <div className="ai-stack-heading">
           <div>
-            <p className="eyebrow">Separate control area</p>
+            <p className="eyebrow">Control room · dashboard-mediated work</p>
             <h1 className="detail-title">AI Stack</h1>
             <p className="detail-description">
-              A live view of dashboard-mediated work, token use, and safety.
+              Current operating signals and owner controls. Unknown stays unknown.
             </p>
             {devBypass && (
               <p className="ai-stack-release-warning" role="status">
@@ -642,36 +641,58 @@ export function AIStackPage() {
           </div>
         </div>
 
-        <section className="ai-stack-topline" aria-label="Agent overview">
-          <div className="ai-stack-stat">
-            <span>Agents shown</span>
-            <strong>
-              {agentsQuery.data?.status === "connected" ? agents.length : "—"}
-            </strong>
-          </div>
-          <div className="ai-stack-stat">
-            <span>Working now</span>
-            <strong>
-              {agentsQuery.data?.status === "connected" ? activeCount : "—"}
-            </strong>
-          </div>
-          <div className="ai-stack-stat">
-            <span>Needs review</span>
-            <strong>
-              {agentsQuery.data?.status === "connected" ? attentionCount : "—"}
-            </strong>
-          </div>
-          <div className="ai-stack-no-spend">
-            <span aria-hidden="true">✓</span> Dashboard work only · no agent starts · no
-            new model calls
+        <section className="ai-stack-summary" aria-label="Current operating summary">
+          <article className="ai-stack-summary-card">
+            <span className="ai-stack-summary-label">Work controls</span>
+            <strong>{controlsQuery.data ? `${controlCount ?? 0} / ${managedAreas.length}` : "Unknown"}</strong>
+            <p>{controlsQuery.isError ? "Saved control states unavailable" : "Project areas currently ON"}</p>
+            <div className="ai-stack-summary-track" role="img" aria-label={controlsQuery.data ? `${controlCount ?? 0} of ${managedAreas.length} work areas are on` : "Work control state unknown"}>
+              <i style={{ width: controlsQuery.data ? `${((controlCount ?? 0) / managedAreas.length) * 100}%` : "0%" }} />
+            </div>
+          </article>
+          <article className="ai-stack-summary-card">
+            <span className="ai-stack-summary-label">Latest Cursor activity</span>
+            <strong>{cursorConnected ? `${activeCount} active` : "Unknown"}</strong>
+            <p>{cursorConnected ? `${attentionCount} need review · ${agents.length} returned` : cursorFreshness}</p>
+          </article>
+          <article className="ai-stack-summary-card">
+            <span className="ai-stack-summary-label">Latest run tokens</span>
+            <strong>{hasTokenTotals ? tokenLabel(latestTokenTotal) : "Unknown"}</strong>
+            <p>{hasTokenTotals ? "Returned token counts · not cost or quota" : "No verified token total available"}</p>
+            <div className="ai-stack-summary-track" role="img" aria-label={hasTokenTotals ? "Token counts are available; they do not represent cost or quota" : "Token counts unknown"}>
+              <i style={{ width: hasTokenTotals ? "100%" : "0%" }} />
+            </div>
+          </article>
+          <div className="ai-stack-summary-foot">
+            <span className={`ai-stack-freshness${cursorFreshness.startsWith("Stale") ? " is-stale" : ""}`}><i aria-hidden="true" />{cursorFreshness}</span>
+            <nav aria-label="Related pages"><Link href="/agents">Agent records</Link><Link href="/organisation">Company Map</Link></nav>
           </div>
         </section>
 
+        <FleetDesk
+          projects={managedAreas.map((area)=>({key:area.key,label:area.label,enabled:controlsQuery.data?.controls.find((control)=>control.project_key===area.key)?.enabled??false,financeHeld:area.key==="finance"}))}
+          tasks={(workItemsQuery.data?.items??[]).filter((item)=>item.project_key===fleetProjectKey).map((item)=>({id:item.id,project_key:item.project_key,title:item.title,status:item.status,plan_version:item.plan_version??1,outcome_id:item.outcome_id,outcome_version:outcomesQuery.data?.outcomes.find((outcome)=>outcome.id===item.outcome_id)?.version??null}))}
+          savedReports={savedReportsQuery.data??[]}
+          thread={fleetThread}
+          selectedProjectKey={fleetProjectKey}
+          selectedTaskId={fleetTaskId}
+          onSelectProject={(key)=>{setFleetProjectKey(key);setFleetTaskId(null);}}
+          onSelectTask={setFleetTaskId}
+          onSaveMessage={async(input)=>{await saveFleetMessage(input);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
+          onCreateQuestion={async(input)=>{await createFleetQuestion(input as unknown as Record<string,unknown>);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
+          onAnswerQuestion={async(input)=>{await answerFleetQuestion(input);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
+          onProposeNextWork={(report)=>{const project=managedAreas.find((area)=>area.key===report.project_slug);if(!project)return;setWorkFields((current)=>({...current,project_key:project.key,title:(report.next_action||report.summary).slice(0,160),objective:report.summary,outcome:report.next_action,checklist:"",acceptance_checks:"",repository:"",target_branch:""}));window.setTimeout(()=>document.getElementById("work-item-creator")?.scrollIntoView({behavior:"smooth",block:"center"}),0);}}
+          loading={fleetThreadQuery.isLoading}
+          error={fleetThreadQuery.isError?"Conversation unavailable. Refresh and explicitly reselect the project/task.":null}
+          canAnswer={!devBypass}
+        />
+
         <div className="ai-stack-dashboard-grid">
+          <details className="ai-stack-cockpit-category" open>
+            <summary><span>Agent activity</span><small>{cursorConnected ? `${activeCount} active · ${attentionCount} need review` : cursorFreshness}</small></summary>
           <section
             className="ai-stack-panel ai-stack-work-panel"
             aria-labelledby="ai-stack-work-title"
-            onClick={() => setDetailView("work")}
           >
             <div className="ai-stack-section-heading">
               <div>
@@ -723,10 +744,11 @@ export function AIStackPage() {
                         ? agent.repositories.map(shortRepository).join(" · ")
                         : "Project name not supplied by Cursor"}
                     </p>
-                    {agent.note ? (
-                      <p className="ai-stack-result">{agent.note}</p>
-                    ) : agent.result ? (
-                      <p className="ai-stack-result">{agent.result}</p>
+                    {agent.note || agent.result ? (
+                      <details className="ai-stack-result-disclosure">
+                        <summary>{(agent.note ?? agent.result ?? "").slice(0, 120)}{(agent.note ?? agent.result ?? "").length > 120 ? "…" : ""} · Full run result</summary>
+                        <div className="ai-stack-result-full">{agent.note ?? agent.result}</div>
+                      </details>
                     ) : (
                       <p className="ai-stack-result ai-stack-muted">
                         No final handover yet. Cursor does not report a separate
@@ -761,12 +783,14 @@ export function AIStackPage() {
               </ul>
             )}
           </section>
+          </details>
 
           <div className="ai-stack-side-column">
+            <details className="ai-stack-cockpit-category">
+              <summary><span>Usage</span><small>Latest run token counts only · quota and cost unknown</small></summary>
             <section
               className="ai-stack-panel ai-stack-usage-panel"
               aria-labelledby="ai-stack-usage-title"
-              onClick={() => setDetailView("usage")}
             >
               <div className="ai-stack-section-heading">
                 <div>
@@ -815,11 +839,13 @@ export function AIStackPage() {
                 remaining plan allowance.
               </p>
             </section>
+            </details>
 
+            <details className="ai-stack-cockpit-category">
+              <summary><span>Safety</span><small>Limits, holds and unknowns</small></summary>
             <section
               className="ai-stack-panel ai-stack-safety-panel"
               aria-labelledby="ai-stack-safety-title"
-              onClick={() => setDetailView("safety")}
             >
               <div className="ai-stack-section-heading">
                 <div>
@@ -867,13 +893,13 @@ export function AIStackPage() {
                 </div>
               </div>
             </section>
+            </details>
           </div>
         </div>
 
-        <section
-          className="ai-stack-bottom-grid"
-          aria-label="Model priority and projects"
-        >
+        <details className="ai-stack-cockpit-category">
+          <summary><span>Projects / provider plan</span><small>Project mapping and planned provider order</small></summary>
+          <section className="ai-stack-bottom-grid" aria-label="Model priority and projects">
           <div className="ai-stack-panel ai-stack-order-panel">
             <div className="ai-stack-section-heading">
               <div>
@@ -917,7 +943,10 @@ export function AIStackPage() {
               ))}
             </div>
           </div>
-        </section>
+          </section>
+        </details>
+        <details className="ai-stack-cockpit-category" open>
+          <summary><span>Projects / work switches</span><small>Four clear controls · Finance remains held</small></summary>
         <section className="ai-stack-panel ai-stack-controls-panel" aria-labelledby="work-controls-heading">
           <div className="ai-stack-section-heading">
             <div><h2 id="work-controls-heading">Project work controls</h2><p className="ai-stack-help">ON permits dashboard-mediated work; it never starts an agent. Finance stays OFF until Claude review.</p></div>
@@ -946,6 +975,9 @@ export function AIStackPage() {
           <h3>Owner change history</h3>
           <ol className="work-audit-list">{(controlsQuery.data?.audit ?? []).slice(0,8).map((entry) => <li key={entry.id}>{managedAreas.find((x)=>x.key===entry.project_key)?.label ?? entry.project_key}: {entry.enabled ? "ON" : "OFF"} · {new Date(entry.created_at).toLocaleString()}</li>)}</ol>
         </section>
+        </details>
+        <details className="ai-stack-cockpit-category">
+          <summary><span>Handovers</span><small>Manual checkpoint history · no timed capture callback</small></summary>
         <section className="ai-stack-panel ai-stack-checkpoint-panel" aria-labelledby="handover-heading">
           <div className="ai-stack-section-heading"><div><h2 id="handover-heading">Shared handover / checkpoint</h2><p className="ai-stack-help">Manual save only · five-minute target is a reminder, not automatic capture. No quota detection or automatic AI transfer/start.</p></div><span className="ai-stack-status">Manual</span></div>
           <div className="handover-copy-action">
@@ -957,16 +989,22 @@ export function AIStackPage() {
             {!handoversQuery.isLoading && !handoversQuery.isError && !latestHandover && <p className="ai-stack-help">No saved checkpoint yet. Save one first; no handover packet will be fabricated.</p>}
             <p className="ai-stack-help" role="status" aria-live="polite">{handoverCopyStatus}</p>
           </div>
+          <details className="ai-stack-on-demand">
+            <summary>Save a checkpoint</summary>
           <form className="work-handover-form" onSubmit={(event) => { event.preventDefault(); const {task_id,work_item_id,...rest}=handoverFields; handoverMutation.mutate({ project_key: handoverKey, ...rest, ...(task_id?{task_id:Number(task_id)}:{}), ...(work_item_id?{work_item_id:Number(work_item_id)}:{}) }); }}>
             <label>Project<select value={handoverKey} onChange={(e)=>setHandoverKey(e.target.value)}>{managedAreas.filter((a)=>a.key!=="finance").map((a)=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
             {(["status","completed_work","next_action","blockers","verification","recovery_note","branch","commit_ref","task_id","work_item_id"] as const).map((field)=><label key={field}>{field.replaceAll("_"," ")}<input type={field.endsWith("_id")?"number":"text"} min={field.endsWith("_id")?1:undefined} required={["status","completed_work","next_action","recovery_note"].includes(field)} value={handoverFields[field]} onChange={(e)=>setHandoverFields({...handoverFields,[field]:e.target.value})}/></label>)}
             <button type="submit" className="work-toggle" disabled={handoverMutation.isPending}>Save checkpoint</button>
           </form>
+          </details>
           {handoverMutation.isError && <p role="alert">{handoverMutation.error.message}</p>}
           <div className="work-handover-history">{(handoversQuery.data ?? []).slice(0,6).map((h)=><article key={h.id}><strong>{managedAreas.find((a)=>a.key===h.project_key)?.label ?? h.project_key} · {h.status}</strong><small>{new Date(h.created_at).toLocaleString()} · task {h.task_id ?? h.work_item_id ?? "Unknown"} · branch {h.branch || "Unknown"} · commit {h.commit_ref || "Unknown"}</small><p>Done: {h.completed_work}</p><p>Next: {h.next_action}</p><p>Blockers: {h.blockers || "None recorded"} · Verification: {h.verification || "Unknown"}</p><p>Recovery: {h.recovery_note}</p><button className="work-toggle" type="button" disabled={resumeMutation.isPending} onClick={()=>resumeMutation.mutate(h.id)}>Resume from checkpoint</button></article>)}</div>
           {resumeMutation.isError&&<p role="alert">{resumeMutation.error.message}</p>}
           <ol className="work-audit-list">{(handoverEventsQuery.data??[]).slice(0,12).map(e=><li key={e.id}>Checkpoint #{e.checkpoint_id} · {e.event_type} · {new Date(e.created_at).toLocaleString()}</li>)}</ol>
         </section>
+        </details>
+        <details className="ai-stack-cockpit-category">
+          <summary><span>Decisions / history</span><small>Saved suggestions, approval queue and append-only history</small></summary>
         <section className="ai-stack-panel ai-stack-workqueue-panel" aria-labelledby="work-queue-heading">
           <div className="ai-stack-section-heading"><div><h2 id="work-queue-heading">Next work · owner approval</h2><p className="ai-stack-help">Saved Heimdall reports only · viewing this queue makes no model calls.</p></div><span className="ai-stack-status">No agent starts</span></div>
           <section className="managed-work-card" aria-labelledby="activation-heading">
@@ -976,6 +1014,8 @@ export function AIStackPage() {
               <ul>{(readinessQuery.data?.blockers ?? ["Checking activation requirements…"]).map((blocker,index)=><li key={index}>{blocker}</li>)}</ul>
               <p><b>Automatic pickup:</b> OFF. {readinessQuery.data?.background_worker_blocker}</p>
               <p>Cursor API secret: {readinessQuery.data?.secret_present ? "Present (value hidden)" : "Missing"}. This does not verify that the key is valid.</p>
+              <details className="ai-stack-on-demand">
+                <summary>Owner setup and dispatch configuration</summary>
               <form className="work-item-form" onSubmit={e=>{e.preventDefault();dispatchConfigMutation.mutate({...dispatchConfig,enabled:false,selected_model_id:dispatchConfig.selected_model_id||null});}}>
                 <h4>Owner setup checks</h4>
                 {([
@@ -994,6 +1034,7 @@ export function AIStackPage() {
                 {devBypass&&<p role="note">Configuration changes require a real authenticated owner session; development auth bypass is not accepted.</p>}
                 {dispatchConfigMutation.isError&&<p role="alert">{dispatchConfigMutation.error.message}</p>}
               </form>
+              </details>
               <p>{readinessQuery.data?.finance_hold}</p><p>{readinessQuery.data?.local_limits}</p>
             </>}
             <h3>DDG Control outcome · owner approval pending</h3>
@@ -1010,6 +1051,8 @@ export function AIStackPage() {
             <p>{report.summary}</p><p><b>Suggested next action:</b> {report.next_action}</p>
             {report.project_slug==="finance" ? <span className="ai-stack-help">Held until Claude review · no Finance work starts here.</span> : <button type="button" className="work-toggle" onClick={()=>{const outcome=outcomesQuery.data?.outcomes.find(o=>o.project_key===report.project_slug&&o.status==="pending_approval");const gate=outcome?.gates[0];setWorkFields({...workFields,project_key:report.project_slug,title:report.next_action.slice(0,160),objective:report.next_action,outcome:report.summary,outcome_id:outcome?String(outcome.id):"",gate_key:gate?.key??""});}}>Use saved report in draft</button>}
           </article>)}
+          <details className="ai-stack-on-demand">
+            <summary>Create a bounded task draft</summary>
           <form id="work-item-creator" className="work-item-form" onSubmit={(event)=>{event.preventDefault();createWorkMutation.mutate({
             project_key:workFields.project_key,title:workFields.title,objective:workFields.objective,outcome:workFields.outcome,
             checklist:workFields.checklist.split("\n").map(x=>x.trim()).filter(Boolean),
@@ -1029,6 +1072,7 @@ export function AIStackPage() {
             <p className="ai-stack-help">Planning records stay visible while OFF; new work can only be queued for an ON, incomplete project.</p>
             <button className="work-toggle" disabled={createWorkMutation.isPending || controlsQuery.data?.controls.find(c=>c.project_key===workFields.project_key)?.enabled !== true || controlsQuery.data?.controls.find(c=>c.project_key===workFields.project_key)?.completed === true}>Queue for Markus’ approval</button>
           </form>
+          </details>
           {createWorkMutation.isError && <p role="alert">{createWorkMutation.error.message}</p>}
           {workItemsQuery.isError ? <p role="alert">Could not load approval queue or task history.</p> : (workItemsQuery.data?.items ?? []).map(item=><article className="managed-work-card" key={item.id}>
             <div className="ai-stack-section-heading"><div><strong>{managedAreas.find(a=>a.key===item.project_key)?.label} · {item.title}</strong><p>{item.status.replaceAll("_"," ")} · attempt {item.attempts}/{item.max_attempts} · due {new Date(item.deadline).toLocaleString()}</p></div>
@@ -1045,6 +1089,7 @@ export function AIStackPage() {
           {[createWorkMutation,approveWorkMutation,moveWorkMutation].some(m=>m.isError)&&<p role="alert">Work action failed; current saved state is unchanged. Refresh before retrying.</p>}
           <h3>Append-only task history</h3><ol className="work-audit-list">{(workItemsQuery.data?.events??[]).slice(0,30).map(e=><li key={e.id}>#{e.work_item_id} · {e.event_type} · {e.actor} · {new Date(e.created_at).toLocaleString()}</li>)}</ol>
         </section>
+        </details>
         <p className="ai-stack-footnote">
           Cursor status is read-only. Managed work is dashboard-mediated, waits for owner approval, and does not start agents or switch providers automatically.
         </p>
