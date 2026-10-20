@@ -2730,3 +2730,8 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
 .ledger-runs article { margin:8px 0; }
 .ledger-runs h4 { margin:0; font-size:13px; }
 .work-ledger :is(summary,select,button):focus-visible { outline:3px solid var(--cockpit-link); outline-offset:3px; }
+
+/* Explicitly scoped block control; never presented as verified external cancellation. */
+.work-block-all { margin:16px 0 12px; padding:14px; border:1px solid var(--glass-border); border-left:3px solid #FF2BD6; border-radius:12px; background:var(--cockpit-inset); color:var(--cockpit-ink); }
+.work-block-all>.work-toggle { border-color:#FF2BD6; min-height:44px; }
+.work-block-all [role='status'] p { margin:8px 0; font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
