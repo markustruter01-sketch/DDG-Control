@@ -124,7 +124,7 @@ export function DecisionsPage() {
             <h2 id="decision-history-title">Decision history</h2>
             
           </div>
-          {isLoading ? (
+          {historyLoading ? (
             <div className="decision-history-skeleton" role="status" aria-label="Loading decision history" />
           ) : historyError ? (
             <div className="task-query-error" role="alert"><p>{serverErrorText(historyError, 'Unable to load decision history.')}</p><button className="task-secondary-button" type="button" onClick={() => { void Promise.all([approvedQuery.refetch(), declinedQuery.refetch()]); }}>Retry history</button></div>
