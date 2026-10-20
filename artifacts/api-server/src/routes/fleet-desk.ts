@@ -146,7 +146,7 @@ router.post("/fleet/questions", requireRealOwnerSession, async (req, res): Promi
     }
     // OFF alone does not prevent the owner saving a question; this grants no work.
     const scope = await resolveScope(b.project_key, b.work_item_id ?? null, b.plan_version ?? null, b.outcome_version ?? null, tx);
-    if ("error" in scope) return questionConflict(scope.error);
+    if ("error" in scope) return questionConflict(scope.error ?? "Question context is unavailable. Refresh before saving.");
     const [prior] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
       .where(eq(managedFleetQuestionsTable.question_key, b.request_id)).limit(1);
     // Do not disclose a prior question from an unrelated project or plan.
