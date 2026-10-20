@@ -2532,3 +2532,53 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
 @media(max-width:380px) {
  .atlas-map-canvas { padding:18px 10px; }
 }
+
+/* Owner reference: translucent frosted glass over nature, not opaque white cards. */
+:root {
+  --glass-surface:rgba(11,31,42,.50);
+  --glass-border:rgba(210,239,250,.26);
+  --cockpit-inset:rgba(11,31,42,.24);
+  --ddg-glass-blur:20px;
+}
+:root[data-theme='day'] {
+  --glass-surface:rgba(244,249,252,.58);
+  --glass-border:rgba(255,255,255,.6);
+  --cockpit-inset:rgba(244,249,252,.26);
+}
+:root .home-cockpit :is(.home-health-panel,.home-attention-panel,.home-performance-panel,.home-activity-panel,.home-cockpit-heading,.home-section-title,.decision-card,.decision-history-row),
+:root .atlas-map-panel,
+:root .ai-stack-main :is(.ai-stack-summary-card,.ai-stack-summary-foot,.ai-stack-cockpit-category,.ai-stack-panel,.ai-stack-stat),
+:root .fleet-shell,
+:root .home-shell .project-tile,
+:root .report-item {
+  background:var(--glass-surface);
+  border:1px solid var(--glass-border);
+  backdrop-filter:blur(var(--ddg-glass-blur)) saturate(115%);
+  -webkit-backdrop-filter:blur(var(--ddg-glass-blur)) saturate(115%);
+  box-shadow:0 10px 28px rgba(6,19,26,.12),inset 0 1px 0 rgba(255,255,255,.22);
+}
+:root .home-cockpit :is(.home-health-status>div,.home-finance-panel .finance-kpi-card,.home-attention-list a,.home-social-venture,.home-agent-item),
+:root :is(.ai-stack-control-row,.managed-work-card,.work-handover-history article,.fleet-context-card,.fleet-panel) {
+  background:var(--cockpit-inset);
+  border-color:var(--glass-border);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+:root .home-cockpit .company-map-home-link { background:var(--cockpit-inset); }
+:root .topbar { background:rgba(11,31,42,.56); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); }
+:root[data-theme='day'] .topbar { background:rgba(244,249,252,.6); }
+:root .floating-navigation { background:rgba(11,31,42,.58); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); }
+:root[data-theme='day'] .floating-navigation { background:rgba(244,249,252,.58); }
+:root .atlas-map-panel { color:var(--cockpit-ink); }
+/* Keep the chosen central landscape clear; only its labels need frosted backing. */
+:root .atlas-map-canvas .atlas-node strong,
+:root .atlas-map-canvas .atlas-node small {
+  background:rgba(247,251,255,.78);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+:root:not([data-theme='day']) .home-cockpit :is(h1,h2,h3,strong) { text-shadow:0 1px 2px rgba(6,19,26,.35); }
+@supports not (backdrop-filter:blur(1px)) {
+ :root { --glass-surface:rgba(11,31,42,.94); --cockpit-inset:rgba(11,31,42,.86); }
+ :root[data-theme='day'] { --glass-surface:rgba(244,249,252,.95); --cockpit-inset:rgba(244,249,252,.88); }
+}
