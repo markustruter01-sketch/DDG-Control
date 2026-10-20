@@ -196,3 +196,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Added collapsible Company work board ABOVE Fleet Desk using existing workItemsQuery/controlsQuery only. Per-project held/ON/OFF/unknown state, saved-task counts, review/completed record counts, task links and blocker text. Finance stays held, Music not added as an executable area. Errors are not empty-success states.
 - This is a summary of existing saved tasks, not the full durable company planning/context/agent-access feature. Counts are not finish-line progress. No new schema/API, provider calls, model usage or execution authority.
 - No tests, typecheck/build, rendered/mobile, real-owner or live checks performed. Bundle inbox, SVG/logo and work overview for one integration checkpoint; do not call verified/complete yet.
+
+## 2026-10-20 Durable project context and finite delivery-plan slice
+
+- Added DDG_CONTROL_CONTEXT.md and AGENTS pointer so authorized future Control tasks have durable owner requirements, source-truth distinctions, boundaries and handover path in this repository. This does not imply other chats/accounts automatically read or acknowledge them.
+- Added versioned ddg-control-delivery-plan.ts and collapsed DeliveryPlan UI in AI Stack: milestone A visibility/control, B verified automation, later bounded proposals. Every item has evidence/state and finish checks. No invented accepted/live status or numerical completion percentage.
+- Existing saved work overview and execution records remain distinct. This repository plan is not a new approval, worker queue, cross-project data grant, runtime import or agent access API. Read-only planning view; no model calls.
+- Real owner/live/mobile/render/build/typecheck verification remains outstanding; no tests run. Bundle with pending inbox/navigation/branding for integration rather than per-commit pulls.
