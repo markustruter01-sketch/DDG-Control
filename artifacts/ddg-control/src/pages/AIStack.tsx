@@ -498,6 +498,43 @@ function DetailDialog({
   );
 }
 
+
+function CompanyWorkOverview({ items, controls, loading, failed, onRetry }: {
+  items: WorkItem[];
+  controls: Control[];
+  loading: boolean;
+  failed: boolean;
+  onRetry: () => void;
+}) {
+  const completed = items.filter((item) => item.status === "completed").length;
+  const awaiting = items.filter((item) => item.status === "pending_approval" || item.status === "needs_owner").length;
+  return (
+    <details className="ai-stack-cockpit-category company-work-overview">
+      <summary><strong>Company work board</strong><small>{loading ? "Loading saved work…" : failed ? "Unavailable" : `${items.length} task records · ${awaiting} need review`}</small></summary>
+      <p className="ai-stack-help">One view of the existing saved tasks. Task counts are not project completion, approval, or proof an agent is running.</p>
+      {loading ? <p role="status">Loading work records…</p> : failed ? <div role="alert"><p>Work records unavailable. No empty or complete state is assumed.</p><button type="button" className="work-toggle" onClick={onRetry}>Retry</button></div> : (
+        <>
+          <div className="company-work-totals"><span><strong>{items.length}</strong> saved tasks</span><span><strong>{completed}</strong> recorded complete</span><span><strong>{awaiting}</strong> owner review</span></div>
+          <div className="company-work-grid">{managedAreas.map((area) => {
+            const savedControl = controls.find((control) => control.project_key === area.key);
+            const tasks = items.filter((item) => item.project_key === area.key);
+            return <section className="company-work-project" key={area.key}>
+              <header><h3>{area.label}</h3><span>{area.key === "finance" ? "HELD · Claude review" : !savedControl ? "Control unknown" : savedControl.completed ? "Recorded complete" : savedControl.enabled ? "Work ON" : "Work OFF"}</span></header>
+              {tasks.length === 0 ? <p>No saved tasks. This does not mean the project is finished.</p> : <ul>{tasks.map((task) => (
+                <li key={task.id}><a href={`#work-item-${task.id}`}><strong>{task.title}</strong><span>{task.status.replaceAll("_", " ")}</span></a>
+                  {task.dispatch_block_reason && <small>{task.dispatch_block_reason}</small>}
+                </li>
+              ))}</ul>}
+              <a href="#work-controls-heading">View project controls →</a>
+            </section>;
+          })}</div>
+        </>
+      )}
+      <p className="ai-stack-help">Company-wide planning documents and external chat updates are not automatically imported. Agent-scoped access and durable shared context remain pending.</p>
+    </details>
+  );
+}
+
 export function AIStackPage() {
   const devBypass = useContext(DevAuthBypassContext);
   const queryClient = useQueryClient();
@@ -668,6 +705,13 @@ export function AIStackPage() {
           </article>
         </section>
 
+        <CompanyWorkOverview
+          items={workItemsQuery.data?.items ?? []}
+          controls={controlsQuery.data?.controls ?? []}
+          loading={workItemsQuery.isLoading || controlsQuery.isLoading}
+          failed={workItemsQuery.isError || controlsQuery.isError}
+          onRetry={() => { void Promise.all([workItemsQuery.refetch(), controlsQuery.refetch()]); }}
+        />
         <FleetDesk
           projects={managedAreas.map((area)=>({key:area.key,label:area.label,enabled:controlsQuery.data?.controls.find((control)=>control.project_key===area.key)?.enabled??false,financeHeld:area.key==="finance"}))}
           tasks={(workItemsQuery.data?.items??[]).filter((item)=>item.project_key===fleetProjectKey).map((item)=>({id:item.id,project_key:item.project_key,title:item.title,status:item.status,plan_version:item.plan_version??1,outcome_id:item.outcome_id,outcome_version:outcomesQuery.data?.outcomes.find((outcome)=>outcome.id===item.outcome_id)?.version??null}))}
@@ -1073,7 +1117,7 @@ export function AIStackPage() {
           </form>
           </details>
           {createWorkMutation.isError && <p role="alert">{createWorkMutation.error.message}</p>}
-          {workItemsQuery.isError ? <p role="alert">Could not load approval queue or task history.</p> : (workItemsQuery.data?.items ?? []).map(item=><article className="managed-work-card" key={item.id}>
+          {workItemsQuery.isError ? <p role="alert">Could not load approval queue or task history.</p> : (workItemsQuery.data?.items ?? []).map(item=><article className="managed-work-card" id={`work-item-${item.id}`} key={item.id}>
             <div className="ai-stack-section-heading"><div><strong>{managedAreas.find(a=>a.key===item.project_key)?.label} · {item.title}</strong><p>{item.status.replaceAll("_"," ")} · attempt {item.attempts}/{item.max_attempts} · due {new Date(item.deadline).toLocaleString()}</p></div>
               {item.status==="pending_approval"&&<button className="work-toggle" disabled={devBypass||!readinessQuery.data?.dispatch_enabled||outcomesQuery.data?.outcomes.find(o=>o.id===item.outcome_id)?.status!=="approved"||approveWorkMutation.isPending} title="Requires real owner approval, approved outcome, project ON, and verified dispatch readiness." onClick={()=>approveWorkMutation.mutate(item.id)}>Approve</button>}
               {item.status==="approved"&&<button className="work-toggle" disabled={devBypass||!readinessQuery.data?.dispatch_enabled||dispatchMutation.isPending} onClick={()=>dispatchMutation.mutate(item.id)}>Start Cursor Cloud Agent</button>}
