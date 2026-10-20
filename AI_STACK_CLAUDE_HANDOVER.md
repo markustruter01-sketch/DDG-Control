@@ -135,3 +135,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - No approval mutation, backend, worker, credentials, production data, Finance strategy or Music changes. Existing decision workflow remains unchanged; viewing is not approval.
 - Missing outcome/time/recovery fields are not invented by this visual change. Authorization audit remains outstanding.
 - No tests, build or typecheck run. Rendered desktop/mobile, real owner session, accessibility and live deployment remain unverified. Do not publish based solely on these source edits.
+
+## 2026-10-20 Owner-reported regression corrections
+
+- Owner screenshots exposed a Decisions runtime crash: stale isLoading reference after splitting pending/history queries. Changed remaining reference to historyLoading.
+- Day Home used dark glass with navy text. Added paired semantic foreground/surface tokens, consistent Home/Decisions text, larger supporting type, visible navigation labels, and day work-card surfaces. This is a focused corrective pass, not whole-site visual acceptance.
+- Owner explicitly rejected nested main scrolling. Removed viewport-locked grid/inner scrolling; document now grows naturally, with fixed dock and bottom safe-space reservation so final content remains reachable.
+- Source changes saved on existing PR2 branch; no deployment, approval/backend or business-repository changes. No tests/build/typecheck run. Replit exact-revision preview requested; rendered acceptance and real-owner/live behavior remain outstanding. Do not mark complete until observed.
