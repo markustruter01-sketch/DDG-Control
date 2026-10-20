@@ -1,5 +1,8 @@
 # AI Stack dashboard handover for Claude
 
+> Latest checkpoint,20October: recovery source98ed9fe has Replit-reported API/frontend typecheck/build passes and dark DEV desktop/mobile captures. Day/interaction/owner/live acceptance is still open. Separate draft PR3 contains owner-only notification read receipts and an UNAPPLIED additive migration; no merge/deployment. See DDG_CONTROL_CONTEXT.md and delivery snapshot2026-10-20.2 first. Earlier sections below, including the original Scope, are historical and do not establish current permissions or verification.
+
+
 ## Scope
 
 This change adds a separate `/ai-stack` dashboard page with read-only Cursor Cloud Agent status and token usage. Existing business pages and the existing `/agents` page were not intentionally changed. The page does not launch, stop, or modify agents, make model calls, or switch providers. It never reads or displays API keys.
@@ -244,3 +247,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Inbox badge counts pending decisions independently of read state.20/page, bounded receipt queries, no polling. Links only navigate; explicit Mark read saves. Unknown/error states do not claim saved read state. Existing exact decision links remain.
 - Prepared additive SQL only: no migration, database seed or production mutation executed. Missing-table/API error leaves decision navigation usable and read state Unknown. Do not apply broad schema push/force or infer approval from this proposal. See NOTIFICATION_READ_RECEIPTS.md for release/acceptance/recovery.
 - Independent source review found navigation-save feedback loss and check-constraint naming mismatch; both corrected before delivery. Source inspection is not runtime verification. No tests added/run, compilation, screenshot acceptance, merge or deployment performed for this proposal.
+
+## 2026-10-20 Recovery verification result received
+
+- Follow-up read the existing completed Replit verification, without rerunning checks: clean codex/decisions-cockpit98ed9fe at capture time; expected revision present. API/frontend TypeScript and direct API/dashboard builds passed. No tests; root workspace/mockup build skipped. Vite large-chunk advisory about907kB remains.
+- Home, Decisions, AI Stack full-page captures at1280px/402px in DARK DEV mode; no reported browser errors. Cursor polling disabled;0/4areas ON,4saved events,0dispatches. Day mode, filters, scroll, handover/ledger disclosures and real owner/live were not interacted with or accepted.
+- Attempt to inspect workspace through the separate in-app browser reached a public404 at the known canonical URL, so it supplied no dashboard UI evidence; do not treat that as an app failure or a passed interaction check.
+- Updated durable context and delivery snapshot to evidence version2026-10-20.2, with no owner-accepted status. PR3 is mergeable per GitHub metadata but remains draft/unmerged; no migration or preview branch switch.

@@ -15,7 +15,7 @@ Updated 20 October 2026. Scope: this dashboard repository. This context records 
 - First-principles visual explanation, little text, optional deeper detail. Consistent compact cockpit across businesses.
 - First view: health, performance, agent work, roughly one-fifth for attention. Unknown/stale is not healthy.
 - Chosen design Concept03 Company Atlas: central company map, left real metrics including profit/social footprint, right decisions, lower charts. Glacier/nature scenery with translucent frosted glass; sharp central landscape and blurred edges.
-- Exact supplied creative glitch mark for Control UI; white transparent mark for professional documents. Minimal SVG project icons; no generative redraw of official marks.
+- Exact supplied creative glitch mark for Control UI; white transparent mark for professional documents. Minimal SVG project icons; no generative redraw of official marks. Preserve the latest owner visual edits: fixed Emma nature background, lighter glass, header/overview marks removed and core mark retained; do not silently restore earlier logo/rotation requests.
 - Exactly nine employee roles: Heimdall GM/COO, Freya marketing, Tyr projects, Plutus finance/analytics, Hermes operations, Mimir scientist/skeptic, Daedalus R&D, Harald chief of staff, Njord ventures. Roles are not nine active coding models.
 - Tiny approved mythic pixel characters, full feet, four/five split around five solo circular buttons; Home centred. Sprites/animation are pending; no fake employee updates.
 - Creative scope: Freya-edited League ranked/ARAM Mayhem YouTube clips, experimental music not ready to publish, other bounded creative income ideas. No realized monetization claim. Company social reporting covers all businesses.
@@ -33,7 +33,9 @@ Updated 20 October 2026. Scope: this dashboard repository. This context records 
 
 ## Current code and gaps
 
-Source in the codex/decisions-cockpit review branch includes Atlas/branding, manual checkpoints/Fleet Desk and managed control code reported by Replit, then Codex decision/inbox/work overview/plan additions. Latest bundle has NOT had independent rendered/build/typecheck acceptance. Development bypass screenshots do not prove real owner or production operation.
+Recovery revision98ed9fe on codex/decisions-cockpit now has Replit-reported API/frontend TypeScript and direct-build passes. Home, Decisions and AI Stack were captured on desktop/mobile in dark DEV mode without reported browser errors. No tests ran; root workspace build was skipped. Day mode, actual interaction/end-scroll, signed-in owner and live acceptance remain unverified. Reports are development evidence, not independent production proof.
+
+The source-only notification receipt proposal is isolated on codex/notification-receipts (draft PR3), targeting decisions-cockpit, not main. It adds owner-only metadata receipts and content-version binding; no migration, compilation, merge or deployment has been performed for that proposal. Do not apply its prepared additive SQL until the exact approved database target, backup and review permission are established. Source-reviewed code is not a completed persistent notification integration.
 
 Unfinished: actual durable worker/pickup, verified usage/permissions, recoverable timed checkpoints, cross-provider handover, durable scoped system notifications, employee ingress, independent peer review, central context distribution/acknowledgements, production sprite assets, account-level analytics and final review/release.
 
