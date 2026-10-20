@@ -57,3 +57,10 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Need: current approval posts only task ID, so a stale owner screen could approve a later plan revision. This must be corrected before adding plan revision.
 - Approach: explicit expected plan/outcome versions in the existing approval request; check under existing locks before idempotent approval; record versions in approval event. Show plan version in task card. No new approval workflow.
 - Keep: outcome/readiness/Finance/question/repository guards and hard-false dispatch blocks. Missing/old client versions fail closed. Source-only; no tests, compilation, approvals, database/provider operations or release.
+
+##21October — Rejected proposal revision
+- Need confirmed: rejected gate task cannot be replaced under existing uniqueness.
+- Reuse stable task ID + existing plan version, atomic before/after event history and owner draft form; no new table/queue/model call.
+- Refuse all execution/provider evidence and open blocking questions; preserve bindings/attempts and worker hard-false guards. Explicit version-bound fresh approval remains separate.
+- Context-bound UI drafts, clear zero spend/deadline/reason/confirmation and loaded history.
+- Source only; no tests, compilation/runtime/peer/owner/live evidence or data/provider operations.

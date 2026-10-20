@@ -273,6 +273,102 @@ router.post("/work-items", requireRealOwnerSession, async (req, res): Promise<vo
   res.status(201).json(result.item);
 });
 
+/** A rejected, never-executed proposal can be revised without replacing its gate identity. */
+router.post("/work-items/:id/revise-plan", requireRealOwnerSession, async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  const b = req.body;
+  const outerKeys = ["expected_plan_version", "expected_outcome_id", "expected_outcome_version", "reason", "plan"];
+  const planKeys = ["title", "objective", "outcome", "checklist", "acceptance_checks", "deadline", "time_limit_minutes", "max_attempts", "spend_limit_cents", "stop_condition"];
+  const validText = (value: unknown, max: number): value is string => typeof value === "string" && value.trim().length > 0 && value.length <= max;
+  const validList = (value: unknown): value is string[] => Array.isArray(value) && value.length > 0 && value.length <= 20 && value.every((entry) => validText(entry, 500));
+  if (!Number.isSafeInteger(id) || id < 1 || !b || typeof b !== "object" || Array.isArray(b) ||
+      Object.keys(b).some((key) => !outerKeys.includes(key)) ||
+      !Number.isSafeInteger(b.expected_plan_version) || b.expected_plan_version < 1 ||
+      !Number.isSafeInteger(b.expected_outcome_id) || b.expected_outcome_id < 1 ||
+      !Number.isSafeInteger(b.expected_outcome_version) || b.expected_outcome_version < 1 ||
+      !validText(b.reason, 1000) || !b.plan || typeof b.plan !== "object" || Array.isArray(b.plan) ||
+      Object.keys(b.plan).some((key) => !planKeys.includes(key))) {
+    res.status(400).json({ error: "Provide the exact reviewed task/outcome versions, a revision reason and a complete proposed plan." }); return;
+  }
+  const p = b.plan;
+  if (!validText(p.title, 160) || !validText(p.objective, 1000) || !validText(p.outcome, 1000) ||
+      !validList(p.checklist) || !validList(p.acceptance_checks) || !validText(p.stop_condition, 1000) ||
+      typeof p.deadline !== "string" || !Number.isFinite(Date.parse(p.deadline)) || Date.parse(p.deadline) <= Date.now() ||
+      !Number.isInteger(p.time_limit_minutes) || p.time_limit_minutes < 5 || p.time_limit_minutes > 1440 ||
+      !Number.isInteger(p.max_attempts) || p.max_attempts < 1 || p.max_attempts > 10 || p.spend_limit_cents !== 0) {
+    res.status(400).json({ error: "Plan needs bounded text/checklists, a future deadline, 5–1440 minutes, 1–10 attempts, zero spend and a stop condition." }); return;
+  }
+  const credentialLike = /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|(?:gh[pousr]_[A-Za-z0-9]{20,}|xai-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,}|Bearer\s+[A-Za-z0-9._-]{16,})/i;
+  if (credentialLike.test(JSON.stringify({ reason: b.reason, plan: p }))) {
+    res.status(400).json({ error: "Do not store credential-like text in a plan revision." }); return;
+  }
+  const result = await db.transaction(async (tx) => {
+    const locked = await lockWorkItem(tx, id);
+    if (!locked) return { kind: "missing" as const };
+    const { item, control } = locked;
+    if (isProjectWorkHeld(item.project_key) || control.completed) return { kind: "held" as const };
+    if (item.status !== "rejected") return { kind: "state" as const };
+    if (item.outcome_id === null || (item.plan_version ?? 1) !== b.expected_plan_version || item.outcome_id !== b.expected_outcome_id ||
+        !Number.isSafeInteger(item.plan_version) || item.plan_version < 1 || item.plan_version >= 2147483647) return { kind: "stale" as const };
+    // This action is never an execution recovery, attempt reset or provider stop.
+    if (item.attempts !== 0 || item.started_at || item.branch || item.commit_ref || item.review_link ||
+        item.result.trim() || item.acceptance_evidence.trim()) return { kind: "history" as const };
+    const [dispatch] = await tx.select({ id: managedWorkDispatchesTable.id }).from(managedWorkDispatchesTable)
+      .where(eq(managedWorkDispatchesTable.work_item_id, id)).limit(1);
+    if (dispatch) return { kind: "history" as const };
+    const [outcome] = await tx.select().from(managedWorkOutcomesTable).where(eq(managedWorkOutcomesTable.id, item.outcome_id)).limit(1);
+    if (!outcome || outcome.project_key !== item.project_key || outcome.version !== b.expected_outcome_version ||
+        !["pending_approval", "approved"].includes(outcome.status) || !item.gate_key ||
+        !Array.isArray(outcome.gates) || !outcome.gates.some((gate) => gate?.key === item.gate_key) ||
+        !item.repository?.trim() || !item.target_branch?.trim()) return { kind: "outcome" as const };
+    // Do not escape an unresolved question by changing the task plan version.
+    const [question] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
+      .where(and(eq(managedFleetQuestionsTable.project_key, item.project_key), eq(managedFleetQuestionsTable.work_item_id, id),
+        eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
+    if (question) return { kind: "question" as const };
+    if (Date.parse(p.deadline) <= Date.now()) return { kind: "deadline" as const };
+    const previous = {
+      plan_version: item.plan_version, status: item.status, title: item.title, objective: item.objective, outcome: item.outcome,
+      checklist: item.checklist, acceptance_checks: item.acceptance_checks, deadline: item.deadline.toISOString(),
+      time_limit_minutes: item.time_limit_minutes, max_attempts: item.max_attempts, attempts: item.attempts,
+      spend_limit_cents: item.spend_limit_cents, stop_condition: item.stop_condition,
+      outcome_id: item.outcome_id, gate_key: item.gate_key, repository: item.repository, target_branch: item.target_branch,
+    };
+    if (credentialLike.test(JSON.stringify(previous))) return { kind: "sensitive" as const };
+    const next = {
+      title: p.title.trim(), objective: p.objective.trim(), outcome: p.outcome.trim(),
+      checklist: p.checklist.map((entry: string) => entry.trim()), acceptance_checks: p.acceptance_checks.map((entry: string) => entry.trim()),
+      deadline: new Date(p.deadline), time_limit_minutes: p.time_limit_minutes, max_attempts: p.max_attempts,
+      spend_limit_cents: 0, stop_condition: p.stop_condition.trim(), plan_version: item.plan_version + 1,
+      status: "pending_approval", dispatch_state: "disabled",
+      dispatch_block_reason: "Revised plan requires fresh owner approval and verified dispatch readiness.",
+    };
+    const [saved] = await tx.update(managedWorkItemsTable).set({ ...next, updated_at: new Date() })
+      .where(eq(managedWorkItemsTable.id, id)).returning();
+    await tx.insert(managedWorkEventsTable).values({
+      work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "rejected_plan_revised",
+      from_status: "rejected", to_status: "pending_approval",
+      details: { reason: b.reason.trim(), previous_plan: previous,
+        proposed_plan: { ...previous, ...next, deadline: next.deadline.toISOString() },
+        outcome_version: outcome.version, execution_requested: false, approval_granted: false, work_enabled: control.enabled },
+    });
+    return { kind: "ok" as const, item: saved };
+  });
+  if (result.kind !== "ok") {
+    const messages = {
+      missing: "Task not found.", held: "Project is held or complete; revision is blocked.",
+      state: "Only a rejected proposal can be revised here.", stale: "Task/outcome identity or plan version changed. Refresh before revising.",
+      history: "This task has execution or result evidence. This action cannot recover, erase or restart it.",
+      outcome: "The unchanged outcome/gate/repository binding must still be valid and match the reviewed outcome version.",
+      question: "Resolve open blocking questions before revising; a new version cannot bypass them.",
+      deadline: "The proposed deadline is no longer in the future.", sensitive: "The saved plan needs a separate sensitive-data review before it can be copied into revision history.",
+    };
+    res.status(result.kind === "missing" ? 404 : result.kind === "held" || result.kind === "question" ? 423 : 409)
+      .json({ error: messages[result.kind] }); return;
+  }
+  res.json({ item: result.item, approval_granted: false, agent_started: false, note: "Revised plan saved for fresh approval. No worker started." });
+});
+
 router.post("/work-items/:id/approve", requireRealOwnerSession, async (req, res): Promise<void> => {
   const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
   const b = req.body;

@@ -4,6 +4,7 @@ import { DevAuthBypassContext, Header } from "@/components/header";
 import FleetDesk from "@/components/FleetDesk";
 import { DeliveryPlan } from "@/components/DeliveryPlan";
 import { WorkLedger } from "@/components/WorkLedger";
+import { RejectedPlanRevision } from "@/components/RejectedPlanRevision";
 import { writeHandoverPacket, type HandoverPacketRecord } from "@/lib/handover-packet";
 import { Link } from "wouter";
 
@@ -111,7 +112,7 @@ async function resumeHandover(id:number) {
   if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Checkpoint cannot be resumed");
   return r.json();
 }
-type WorkItem = { id:number; project_key:string; title:string; objective:string; outcome:string; checklist:string[]; acceptance_checks:string[]; acceptance_evidence:string; result:string; deadline:string; time_limit_minutes:number; max_attempts:number; attempts:number; spend_limit_cents:number; stop_condition:string; status:string; plan_version?:number; branch:string|null; commit_ref:string|null; review_link:string|null; outcome_id:number|null; gate_key:string|null; repository:string|null; target_branch:string|null; dispatch_state:string; dispatch_block_reason:string };
+type WorkItem = { id:number; project_key:string; title:string; objective:string; outcome:string; checklist:string[]; acceptance_checks:string[]; acceptance_evidence:string; result:string; deadline:string; time_limit_minutes:number; max_attempts:number; attempts:number; started_at:string|null; spend_limit_cents:number; stop_condition:string; status:string; plan_version?:number; branch:string|null; commit_ref:string|null; review_link:string|null; outcome_id:number|null; gate_key:string|null; repository:string|null; target_branch:string|null; dispatch_state:string; dispatch_block_reason:string };
 async function getWorkItems() {
   const r = await fetch("/api/work-items", { cache:"no-store" });
   if (!r.ok) throw new Error("Work queue unavailable");
@@ -1186,6 +1187,18 @@ export function AIStackPage() {
             {(workItemsQuery.data?.dispatches??[]).filter(d=>d.work_item_id===item.id).map(d=><p key={d.id}>Dispatch #{d.id} · {d.provider}/{d.model_id||"model unknown"} · {d.status} ({d.provider_status||"provider status unknown"}) · agent {d.agent_id||"Unknown"} · run {d.run_id||"Unknown"} · {d.started_at}{d.error_summary?` · ${d.error_summary}`:""}</p>)}
             <p className="ai-stack-help">Task status is an owner record. Closing it does not confirm an external run has stopped.</p>
             <p><b>Dispatch:</b> {(workItemsQuery.data?.dispatches??[]).some(d=>d.work_item_id===item.id) ? item.dispatch_state : "Not dispatched · see activation blockers above."}</p>
+            <RejectedPlanRevision
+              item={item}
+              outcome={outcomesQuery.isError ? undefined : outcomesQuery.data?.outcomes.find((outcome) => outcome.id === item.outcome_id)}
+              completed={controlsQuery.isError ? null : controlsQuery.data?.controls.find((control) => control.project_key === item.project_key)?.completed ?? null}
+              devBypass={devBypass}
+              hasDispatch={(workItemsQuery.data?.dispatches ?? []).some((run) => run.work_item_id === item.id)}
+              events={(workItemsQuery.data?.events ?? []).filter((event) => event.work_item_id === item.id)}
+              onSaved={() => Promise.all([
+                queryClient.invalidateQueries({ queryKey: ["work-items"] }),
+                queryClient.invalidateQueries({ queryKey: ["fleet-thread"] }),
+              ])}
+            />
           </article>)}
           {[createWorkMutation,approveWorkMutation,moveWorkMutation].some(m=>m.isError)&&<p role="alert">Work action failed or its response is unconfirmed. Reload saved records before retrying.</p>}
           <h3>Append-only task history</h3><ol className="work-audit-list">{(workItemsQuery.data?.events??[]).slice(0,30).map(e=><li key={e.id}>#{e.work_item_id} · {e.event_type} · {e.actor} · {new Date(e.created_at).toLocaleString()}</li>)}</ol>
