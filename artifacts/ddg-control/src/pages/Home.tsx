@@ -10,6 +10,7 @@ import {
   getListProjectMetricsQueryKey,
   getListProjectsQueryKey,
   useGetFinanceSummary,
+  useGetSocialSummary,
   useGetCattleDogCoffeeProfit,
   useGetProjectFinanceFleetLatest,
   useListDecisions,
@@ -184,6 +185,7 @@ function CompanyAtlas({ projects }: { projects: Project[] }) {
 }
 
 export function Home() {
+  const socialSummaryQuery = useGetSocialSummary();
   const projectsQuery = useListProjects({
     query: { queryKey: getListProjectsQueryKey() },
   });
@@ -226,6 +228,8 @@ export function Home() {
     '--home-background': `url("${import.meta.env.BASE_URL}dashboard-background.jpg")`,
   } as CSSProperties;
   const projects = projectsQuery.data ?? [];
+  const socialReadings = socialSummaryQuery.data?.ventures.flatMap((venture) => venture.platforms) ?? [];
+  const socialSourceDates = socialReadings.map((reading) => reading.captured_on).filter(Boolean).sort();
   const reportChanges = (agentUpdatesQuery.data ?? []).flatMap(
     (update: LatestAgentProjectUpdate) => {
       const previous = update.previous;
@@ -298,6 +302,7 @@ export function Home() {
                 <small>{projectsQuery.isError ? 'Unable to read project registry.' : 'Registry count · not a live-service status'}</small>
               </div>
               <div><span>Profit · last 30 days</span><strong>{financeSummaryQuery.isLoading ? '…' : financeSummaryQuery.isError || !financeSummaryQuery.data ? 'Unknown' : formatFinanceCents(financeSummaryQuery.data.profit_30d_cents)}</strong><small>Reported total · source details below</small></div>
+              <div><span>Social footprint</span><strong>{socialSummaryQuery.isLoading ? '…' : socialSummaryQuery.isError || socialReadings.length === 0 ? 'Unknown' : formatFigure(socialSummaryQuery.data!.total_followers, 'count')}</strong><small>{socialReadings.length > 0 ? `Summed followers · oldest reading ${socialSourceDates[0] ?? 'Unknown'}` : 'No saved readings'} · not unique people</small></div>
               <div><span>Employee roster</span><strong>9</strong><small>Named roles · not active worker count</small></div>
             </div>
             {projectsQuery.isError ? (
