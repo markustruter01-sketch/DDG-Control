@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useContext, useEffect, useState } from "react";
 import { DevAuthBypassContext, Header } from "@/components/header";
 import FleetDesk from "@/components/FleetDesk";
+import { DeliveryPlan } from "@/components/DeliveryPlan";
 import { writeHandoverPacket, type HandoverPacketRecord } from "@/lib/handover-packet";
 import { Link } from "wouter";
 
@@ -705,6 +706,7 @@ export function AIStackPage() {
           </article>
         </section>
 
+        <DeliveryPlan />
         <CompanyWorkOverview
           items={workItemsQuery.data?.items ?? []}
           controls={controlsQuery.data?.controls ?? []}
