@@ -155,12 +155,24 @@ function FinanceSummaryBar({
 }
 
 
+
+function AtlasIcon({ kind }: { kind: string }) {
+  const paths: Record<string, string> = {
+    fitness: 'M6 8v8m3-10v12m6-12v12m3-10v8M9 12h6M4 10v4m16-4v4',
+    finance: 'M4 20h16M7 16v-5m5 5V5m5 11V8',
+    creative: 'm5 17-1 4 4-1L20 8l-4-4L5 17Zm9-11 4 4M5 17l3 3',
+    coffee: 'M4 7h12v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V7Zm12 1h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1',
+    music: 'M9 18V5l10-2v13M9 8l10-2M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm10-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z',
+  };
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d={paths[kind] ?? paths.creative} /></svg>;
+}
+
 function CompanyAtlas({ projects }: { projects: Project[] }) {
-  const node = (slug: string, label: string, symbol: string, position: string, note: string) => {
+  const node = (slug: string, label: string, position: string, note: string) => {
     const project = projects.find((item) => item.slug === slug);
     return (
       <details key={slug} className={`atlas-node atlas-node-${position}`}>
-        <summary><span className="atlas-node-icon" aria-hidden="true">{symbol}</span><strong>{label}</strong><small>{note}</small></summary>
+        <summary><span className="atlas-node-icon" aria-hidden="true"><AtlasIcon kind={position} /></span><strong>{label}</strong><small>{note}</small></summary>
         <span className="atlas-node-detail">{project ? <Link href={`/projects/${project.slug}`}>Open project →</Link> : <Link href="/organisation">View context →</Link>}</span>
       </details>
     );
@@ -171,12 +183,12 @@ function CompanyAtlas({ projects }: { projects: Project[] }) {
       <div className="atlas-map-legend"><span>○ Company structure</span><span>┄ Unverified data path</span></div>
       <div className="atlas-map-canvas">
         <svg className="atlas-cables" viewBox="0 0 800 460" preserveAspectRatio="none" aria-hidden="true"><path d="M400 230 Q260 210 240 100 M400 230 Q530 190 560 95 M400 230 Q240 310 140 260 M400 230 Q570 330 650 270 M400 230 L400 370" /></svg>
-        {node('hypest', 'Hypest', '↗', 'fitness', 'Fitness')}
-        {node('ddg-finance', 'DDG Finance', '≋', 'finance', 'Held · Claude review')}
-        {node('creative', 'Creative', '✧', 'creative', 'Gaming · music experiments')}
-        {node('cattle-dog-coffee', 'Cattle Dog Coffee', '☕', 'coffee', 'DDG Coffee')}
-        {node('ddg-music', 'DDG Music', '♫', 'music', 'Undecided · unchanged')}
-        <Link className="atlas-node atlas-node-core" href="/ai-stack"><span className="atlas-node-icon" aria-hidden="true">⌘</span><strong>DDG Control</strong><small>Control platform</small></Link>
+        {node('hypest', 'Hypest', 'fitness', 'Fitness')}
+        {node('ddg-finance', 'DDG Finance', 'finance', 'Held · Claude review')}
+        {node('creative', 'Creative', 'creative', 'Gaming · music experiments')}
+        {node('cattle-dog-coffee', 'Cattle Dog Coffee', 'coffee', 'DDG Coffee')}
+        {node('ddg-music', 'DDG Music', 'music', 'Undecided · unchanged')}
+        <Link className="atlas-node atlas-node-core" href="/ai-stack"><span className="atlas-node-icon" aria-hidden="true"><img className="atlas-core-logo" src={`${import.meta.env.BASE_URL}ddg-creative-glitch-original.png`} alt="" width="62" height="62" /></span><strong>DDG Control</strong><small>Control platform</small></Link>
       </div>
       <p className="atlas-evidence-note">Agreed company structure. Transfer observation is not connected; cables do not claim live traffic.</p>
     </section>
@@ -271,6 +283,7 @@ export function Home() {
             <p className="eyebrow">Company overview</p>
             <h1 className="home-title">Company overview</h1>
           </div>
+          <img className="overview-glitch-logo" src={`${import.meta.env.BASE_URL}ddg-creative-glitch-original.png`} alt="Digital Dynamics Group" width="102" height="102" />
           <Link className="company-map-home-link" href="/organisation#company-map-title" data-testid="link-company-map">
             <span><strong>Company Map</strong><small>People, systems, projects and delivery gaps</small></span>
             <span aria-hidden="true">→</span>
