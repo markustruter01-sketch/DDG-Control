@@ -169,7 +169,7 @@ function CompanyAtlas({ projects }: { projects: Project[] }) {
     <section className="atlas-map-panel" aria-labelledby="atlas-title">
       <div className="atlas-map-heading"><div><p className="home-section-kicker">People · systems · projects</p><h2 id="atlas-title">Company Atlas</h2></div><Link href="/organisation">Explore connections →</Link></div>
       <div className="atlas-map-legend"><span>○ Company structure</span><span>┄ Unverified data path</span></div>
-      <div className="atlas-map-canvas">
+      <div className="atlas-map-canvas" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}atlas-glacier-v1.jpg")` }}>
         <svg className="atlas-cables" viewBox="0 0 800 460" preserveAspectRatio="none" aria-hidden="true"><path d="M400 230 Q260 225 245 90 M400 230 Q530 230 560 90 M400 230 Q230 340 110 260 M400 230 Q580 350 675 260 M400 230 L400 385" /></svg>
         {node('hypest', 'Hypest', '↗', 'fitness', 'Fitness')}
         {node('ddg-finance', 'DDG Finance', '≋', 'finance', 'Held · Claude review')}
