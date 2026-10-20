@@ -26,7 +26,7 @@ import { PROJECT_HEADLINE_METRIC } from '@workspace/project-constants';
 import { Header } from '@/components/header';
 import { SocialBar } from '@/components/SocialBar';
 import { serverErrorText } from '@/lib/errors';
-import { formatAgo, formatCurrentDisplayName, formatFigure, formatFinanceCents } from '@/lib/format';
+import { formatAgo, formatCurrentDisplayName, formatFigure, formatFinanceCents, formatBrisbaneDateTime } from '@/lib/format';
 
 function Sparkline({ rows }: { rows: DailySalesRow[] }) {
   if (rows.length < 2) return null;
@@ -270,8 +270,10 @@ export function Home() {
   );
   const pendingDecisions = pendingDecisionsQuery.data ?? [];
   const flaggedUpdates = latestUpdates.filter((update) => update.status_light === 'red');
+  const attentionCoverageReady = !pendingDecisionsQuery.isLoading && !pendingDecisionsQuery.isError &&
+    !agentUpdatesQuery.isLoading && !agentUpdatesQuery.isError;
   const formatSourceDate = (value: string | null) => value
-    ? new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Australia/Brisbane' }).format(new Date(value))
+    ? formatBrisbaneDateTime(value)
     : 'Source date Unknown';
 
   return (
@@ -333,21 +335,25 @@ export function Home() {
                 <p className="home-section-kicker">Owner review</p>
                 <h2 id="home-attention-title">Needs attention</h2>
               </div>
-              <span className="home-attention-count">{pendingDecisions.length + flaggedUpdates.length}</span>
+              <span className="home-attention-count" aria-label={attentionCoverageReady ? 'Items in available decision and report records' : 'Attention count unknown: source coverage incomplete'}>{attentionCoverageReady ? pendingDecisions.length + flaggedUpdates.length : '?'}</span>
             </div>
-            {pendingDecisionsQuery.isLoading ? <p className="home-unknown-state" role="status">Checking decisions…</p>
-              : pendingDecisionsQuery.isError ? <p className="home-unknown-state" role="alert">Decision queue unavailable.</p>
-                : pendingDecisions.length === 0 && flaggedUpdates.length === 0 ? <p className="home-unknown-state">No pending decisions or red report flags in the available records.</p>
-                  : (
-                    <ul className="home-attention-list">
-                      {pendingDecisions.slice(0, 3).map((decision) => (
-                        <li key={decision.id}><Link href="/decisions"><span>{projects.find((project) => project.slug === decision.project_slug)?.name ?? decision.project_slug}</span><strong>{formatCurrentDisplayName(decision.title)}</strong><small>Owner decision · {decision.urgency} urgency</small></Link></li>
-                      ))}
-                      {flaggedUpdates.slice(0, 2).map((update) => (
-                        <li key={`flag-${update.project_slug}`}><Link href={`/projects/${update.project_slug}`}><span>{projects.find((project) => project.slug === update.project_slug)?.name ?? update.project_slug}</span><strong>Red status in saved Heimdall report</strong><small>{formatCurrentDisplayName(update.next_action)}</small></Link></li>
-                      ))}
-                    </ul>
-                  )}
+            <p className="home-panel-caption">Saved decisions and report flags only; not a live company health check.</p>
+            {pendingDecisionsQuery.isLoading && <p className="home-unknown-state" role="status">Checking decisions…</p>}
+            {pendingDecisionsQuery.isError && <div className="home-unknown-state" role="alert">Decision queue unavailable. <button className="retry-button" type="button" onClick={() => void pendingDecisionsQuery.refetch()}>Retry decisions</button></div>}
+            {agentUpdatesQuery.isLoading && <p className="home-unknown-state" role="status">Checking report flags…</p>}
+            {agentUpdatesQuery.isError && <div className="home-unknown-state" role="alert">Report flags unavailable. Attention coverage is incomplete. <button className="retry-button" type="button" onClick={() => void agentUpdatesQuery.refetch()}>Retry reports</button></div>}
+            {attentionCoverageReady && pendingDecisions.length === 0 && flaggedUpdates.length === 0 &&
+              <p className="home-unknown-state">No pending decisions or red report flags in the available records.</p>}
+            {((!pendingDecisionsQuery.isError && pendingDecisions.length > 0) || (!agentUpdatesQuery.isError && flaggedUpdates.length > 0)) && (
+              <ul className="home-attention-list">
+                {!pendingDecisionsQuery.isError && pendingDecisions.slice(0, 3).map((decision) => (
+                  <li key={decision.id}><Link href={`/decisions#decision-${decision.id}`}><span>{projects.find((project) => project.slug === decision.project_slug)?.name ?? decision.project_slug}</span><strong>{formatCurrentDisplayName(decision.title)}</strong><small>Owner decision · {decision.urgency} urgency</small></Link></li>
+                ))}
+                {!agentUpdatesQuery.isError && flaggedUpdates.slice(0, 2).map((update) => (
+                  <li key={`flag-${update.project_slug}`}><Link href={`/projects/${update.project_slug}`}><span>{projects.find((project) => project.slug === update.project_slug)?.name ?? update.project_slug}</span><strong>Red status in saved Heimdall report</strong><small>{formatCurrentDisplayName(update.next_action)} · {formatSourceDate(update.created_at)}</small></Link></li>
+                ))}
+              </ul>
+            )}
             <Link className="home-panel-link" href="/decisions">Open decision records →</Link>
           </aside>
         </section>

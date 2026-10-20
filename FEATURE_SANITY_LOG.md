@@ -18,3 +18,11 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Improvement after source review: explicit Mark read saves; links only navigate, avoiding lost save feedback on navigation. SQL/schema constraint names aligned.
 - Keep: exact decision links, separate pending-action status, existing authorization and worker blocks.
 - Limits: additive migration remains unapplied. Source review is complete; actual build/database/cross-device acceptance must be recorded, not assumed from source.
+
+##21October — Home attention source coverage
+
+- Need: source inspection found Home can display no red report flags while the report query failed, and show zero before both sources load.
+- Approach: reuse current decision/report queries; unknown badge and separate loading/error/retry states until coverage is available. Keep healthy source records usable during partial failure. State that saved records are not live company health.
+- Useful improvements: exact decision deep links; saved red flags show source date using the existing invalid-date-safe formatter.
+- Keep: approved Atlas/glass/layout, API contracts, record order and limits, urgency values, no polling or new services. No inferred P0 incident labels or automatic action.
+- Evidence: source inspection only. Compilation, interaction, owner acceptance and live release pending. No tests, database/provider calls, migration, merge or deployment.
