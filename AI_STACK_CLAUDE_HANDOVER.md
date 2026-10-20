@@ -142,3 +142,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Day Home used dark glass with navy text. Added paired semantic foreground/surface tokens, consistent Home/Decisions text, larger supporting type, visible navigation labels, and day work-card surfaces. This is a focused corrective pass, not whole-site visual acceptance.
 - Owner explicitly rejected nested main scrolling. Removed viewport-locked grid/inner scrolling; document now grows naturally, with fixed dock and bottom safe-space reservation so final content remains reachable.
 - Source changes saved on existing PR2 branch; no deployment, approval/backend or business-repository changes. No tests/build/typecheck run. Replit exact-revision preview requested; rendered acceptance and real-owner/live behavior remain outstanding. Do not mark complete until observed.
+
+## 2026-10-20 Approved Company Atlas first source slice
+
+- Owner chose Concept03: left metrics, central company structure map, right attention, lower finance/social panels. Codex added this first Home source layout with real reported profit and nine named-role count (not active agents).
+- Map has accessible expandable nodes and existing project/context links; dashed cables explicitly represent agreed structural relationships, NOT verified data paths. No fabricated activity, health scores, workload percentages or animation. Finance remains labelled held; Music unchanged.
+- Exact glacier photography, official logo, approved mythology sprites and event-backed transfer animation remain outstanding. Existing finance/social panels retained below; per-business metric attribution and live transfer ingress are not invented.
+- No tests/build/typecheck/render checks performed in this slice. Same PR2 branch; do not merge/publish before review. Previous regression fixes still require preview/owner verification.
