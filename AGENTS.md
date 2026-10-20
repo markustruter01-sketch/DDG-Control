@@ -34,6 +34,18 @@ These rules apply to coding agents working in this repository.
 - Do not claim tests passed unless they were actually run. Do not add or run tests unless the owner asks, or the task specifically requires them.
 - Stop safely if model availability, billing, permissions, task scope, or data sensitivity is unclear.
 
+## Cursor Cloud
+
+This local copy is for agents. It is not the live site.
+
+- Open the control page at http://127.0.0.1:3000
+- A green line saying "DEV: login off" is expected
+- The API listens on port 8080. The page listens on port 26196. Port 3000 joins them
+- PostgreSQL 16 is local. Login shells already have `DATABASE_URL`
+- Node.js is 24. Use pnpm
+- Check types with `pnpm run typecheck`
+- Build with `PORT=26196 BASE_PATH=/ pnpm run build`
+
 ## Weekly model review
 
 - Review public coding and reasoning benchmarks every Monday in Australia/Sydney time.
