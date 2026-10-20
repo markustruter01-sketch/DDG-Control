@@ -13,7 +13,7 @@ import {
   type TaskUpdate,
 } from '@workspace/api-client-react';
 import { TASK_STATUSES, TASK_STATUS_LABELS, type TaskStatus } from '@workspace/project-constants';
-import { formatCurrentDisplayName } from '@/lib/format';
+import { formatCurrentDisplayName, formatTaskActorName } from '@/lib/format';
 import { serverErrorText } from '@/lib/errors';
 import { formatCompletedDate, formatDueDate } from '@/lib/format';
 
@@ -84,16 +84,16 @@ function TaskEditorForm({
         />
       </label>
       <label className="task-field">
-        <span>Owner</span>
+        <span>Task owner (saved actor)</span>
         <select
           required
           value={draft.ownerId}
           onChange={(event) => onChange('ownerId', event.target.value)}
           data-testid="select-task-owner"
         >
-          <option value="">Select a member</option>
+          <option value="">Select a saved actor</option>
           {members.map((member) => (
-            <option key={member.id} value={member.id}>{formatCurrentDisplayName(member.name)}</option>
+            <option key={member.id} value={member.id}>{formatTaskActorName(member.name)}</option>
           ))}
         </select>
       </label>
@@ -188,7 +188,7 @@ export function ProjectTodo({ slug }: { slug: string }) {
   const [draft, setDraft] = useState<TaskDraft>(emptyTaskDraft);
   const tasks = tasksQuery.data ?? [];
   const members = membersQuery.data ?? [];
-  const memberNames = new Map(members.map((member) => [member.id, formatCurrentDisplayName(member.name)] as const));
+  const memberNames = new Map(members.map((member) => [member.id, formatTaskActorName(member.name)] as const));
   const groupedTasks = TASK_STATUSES
     .map((status) => ({
       status,

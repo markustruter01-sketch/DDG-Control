@@ -8,6 +8,11 @@ export function formatCurrentDisplayName(value: string): string {
     .replace(/\bOLLIE\b/g, 'HEIMDALL');
 }
 
+/** Saved database actors are not proof of a connected company employee. */
+export function formatTaskActorName(name: string): string {
+  return name === 'Ollie' ? 'Heimdall report writer (legacy actor)' : name;
+}
+
 export function dollarsToCents(value: string): number {
   if (!/^\d+(\.\d{1,2})?$/.test(value)) {
     throw new Error('Enter an amount like 12.34');

@@ -43,6 +43,12 @@ The versioned plan is contextual; existing database tasks/approvals remain their
 
 ## Working arrangement
 
+Before each new feature, record a sanity check: confirm the need, compare a simple suitable approach and alternatives, preserve working parts, and note useful improvements and acceptance gaps. See FEATURE_SANITY_LOG.md. Code in coherent batches; Replit syncs/previews only when a batch is ready.
+
 Codex is primary coder. Preserve older dirty local checkout and owner Replit changes. GitHub carries reviewed source. Replit is a pull/preview/hosting environment; agent Git network has timed out while manual UI sync worked. Bundle coherent delivery instead of asking for every commit. Never force-push/reset or overwrite work to remove a blocker.
 
 User updates every five minutes during automatic work. Three unanswered requests for the same required owner action trigger standby/paused heartbeat; silence is not approval. Human return resets the count. This chat automation is not proof DDG Control's worker automation exists.
+
+## Pending identity correction
+
+The nine-role presentation roster is separate from database task actors. The employee-identity source proposal stops bulk startup roster insertion and canonicalizes presentation while preserving existing IDs/history and legacy report-writer lookup. It does not migrate member records or configure employee access. Read-only actor/reference inventory and independent/runtime review remain required before cleanup or release.

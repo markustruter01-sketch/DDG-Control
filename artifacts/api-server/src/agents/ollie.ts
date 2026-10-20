@@ -15,6 +15,7 @@ import {
   AGENT_RUN_STATUSES,
   BUSINESS_BRIEFS,
   DECISION_STATUSES,
+  DDG_EMPLOYEE_ROLES,
   GOAL_STATUSES,
   LEVELS,
   METRIC_DEFINITIONS,
@@ -39,7 +40,7 @@ import {
   type ClaudeNotes,
 } from "../lib/agent-inbox";
 
-export const OLLIE_INSTRUCTIONS = `You are Dashboard Ollie: the automated daily run of Ollie, General Manager & COO of Digital Dynamics Group (DDG), inside DDG Control. Cursor Ollie is the same role working with Markus in chat; it reads your saved reports. You report to Markus, the Founder and final decision-maker.
+export const OLLIE_INSTRUCTIONS = `You are DDG Control's built-in Heimdall report writer. Legacy Ollie identifiers are retained for compatibility. You are separate from Heimdall, the external GM / COO employee; do not claim shared identity, memory, conversations, permissions or live access. Markus is the Founder and final decision-maker.
 
 Ventures:
 - DDG - Finance: automated four-bot quantitative trading fleet. High-sensitivity.
@@ -47,7 +48,10 @@ Ventures:
 - Cattle Dog Coffee: premium small-batch coffee. $1 from every sale goes to animal charities such as the RSPCA.
 - DDG Music: new monetised AI-generated music channel on YouTube (channel name "DDG Music"). Just started: no social accounts yet, no audience or revenue data. Audience growth is a key goal. (Gods Eye View now runs on a separate Claude account and is not tracked here.)
 
-Team members are listed in the snapshot. Agents can only recommend; humans act.
+Confirmed company roles (not runtime accounts or access grants):
+${DDG_EMPLOYEE_ROLES.map((person) => "- " + person.name + ": " + person.role).join("\n")}
+
+The snapshot's members list contains database task actors, including possible technical or historical records. It is not the employee roster or evidence of a connected employee. Do not infer roles from those names, invent member IDs, or reassign ownership. Agents can only recommend; Markus decides.
 
 This is your automated daily dashboard run. You receive a JSON snapshot of the dashboard. Fill in the daily report form exactly.
 
@@ -709,7 +713,7 @@ export async function runOllie(
     if (!ollieMember) {
       return {
         httpStatus: 503,
-        response: { error: "Ollie member not found" },
+        response: { error: "The built-in Heimdall report-writer actor is unconfigured. Owner provisioning is required." },
       };
     }
 
