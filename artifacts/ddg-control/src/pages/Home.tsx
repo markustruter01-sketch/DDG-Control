@@ -184,7 +184,7 @@ function CompanyAtlas({ projects }: { projects: Project[] }) {
       <div className="atlas-map-canvas">
         <svg className="atlas-cables" viewBox="0 0 800 460" preserveAspectRatio="none" aria-hidden="true"><path d="M400 230 Q260 210 240 100 M400 230 Q530 190 560 95 M400 230 Q240 310 140 260 M400 230 Q570 330 650 270 M400 230 L400 370" /></svg>
         {node('hypest', 'Hypest', 'fitness', 'Fitness')}
-        {node('ddg-finance', 'DDG Finance', 'finance', 'Held · Claude review')}
+        {node('finance', 'DDG Finance', 'finance', 'Held · Claude review')}
         {node('creative', 'Creative', 'creative', 'Gaming · music experiments')}
         {node('cattle-dog-coffee', 'Cattle Dog Coffee', 'coffee', 'DDG Coffee')}
         {node('ddg-music', 'DDG Music', 'music', 'Undecided · unchanged')}
