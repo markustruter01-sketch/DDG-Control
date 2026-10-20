@@ -2629,3 +2629,32 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
  :root .atlas-map-panel .atlas-map-canvas { min-height:0; }
  .atlas-map-canvas .atlas-node { transform:none; }
 }
+
+/* Shared stroke icons remain independent of scenery for interaction and animation. */
+.atlas-node-icon>svg { width:28px; height:28px; display:block; }
+.atlas-node-core .atlas-node-icon { overflow:hidden; }
+.atlas-core-logo { display:block; width:62px; height:62px; object-fit:contain; }
+:root .atlas-home .home-cockpit-heading {
+ position:relative; display:grid;
+ grid-template-columns:minmax(0,1fr) 112px minmax(0,1fr);
+ align-items:center; min-height:118px; gap:16px;
+}
+.overview-glitch-logo {
+ display:block; width:102px; height:102px; object-fit:contain;
+ justify-self:center; border-radius:10px;
+}
+.atlas-home .home-cockpit-heading>.company-map-home-link { justify-self:end; max-width:100%; }
+@media(max-width:700px) {
+ :root .atlas-home .home-cockpit-heading { grid-template-columns:minmax(0,1fr) 112px minmax(0,1fr); gap:8px; padding:10px; }
+ .atlas-home .home-cockpit-heading .home-title { font-size:19px; }
+ .atlas-home .home-cockpit-heading>.company-map-home-link { width:auto; padding:9px; }
+ .atlas-home .home-cockpit-heading>.company-map-home-link small { display:none; }
+ .atlas-core-logo { width:46px; height:46px; }
+ .atlas-node-icon>svg { width:24px; height:24px; }
+}
+@media(max-width:440px) {
+ :root .atlas-home .home-cockpit-heading { grid-template-columns:minmax(0,1fr) 112px minmax(0,1fr); gap:5px; }
+ .atlas-home .home-cockpit-heading .eyebrow { font-size:9px; }
+ .atlas-home .home-cockpit-heading .home-title { font-size:16px; }
+ .atlas-home .home-cockpit-heading>.company-map-home-link { font-size:11px; padding:7px; }
+}
