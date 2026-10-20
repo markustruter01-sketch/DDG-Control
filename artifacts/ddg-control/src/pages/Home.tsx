@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import { Link } from 'wouter';
 import {
   getGetFinanceSummaryQueryKey,
@@ -224,9 +223,6 @@ export function Home() {
   const coffeeSalesQuery = useListProjectDailySales(coffeeSlug, {
     query: { queryKey: getListProjectDailySalesQueryKey(coffeeSlug) },
   });
-  const backgroundStyle = {
-    '--home-background': `url("${import.meta.env.BASE_URL}dashboard-background.jpg")`,
-  } as CSSProperties;
   const projects = projectsQuery.data ?? [];
   const socialReadings = socialSummaryQuery.data?.ventures.flatMap((venture) => venture.platforms) ?? [];
   const socialSourceDates = socialReadings.map((reading) => reading.captured_on).filter(Boolean).sort();
@@ -267,7 +263,7 @@ export function Home() {
     : 'Source date Unknown';
 
   return (
-    <div className="app-shell home-shell" style={backgroundStyle}>
+    <div className="app-shell home-shell">
       <Header />
       <main className="page-wrap home-main home-cockpit atlas-home">
         <div className="home-cockpit-heading">
