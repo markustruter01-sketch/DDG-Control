@@ -127,3 +127,11 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Finance summaries use the existing finance summary endpoint. Periods are labelled (30 days/next-month estimate); the response has no source timestamp, so finance source date is explicitly Unknown. Social figures show saved source and capture date, label manual entries, and state that summed platform followers are not unique people. Missing social readings are Unknown, not zero.
 - Project cards and latest saved report records use existing data/hooks only; no routes, APIs, schema, provider calls, workers, or production data were changed. Finance hold and DDG Music remain unchanged.
 - Checklist status: Home cockpit is built in the development workspace; source/UI review is not a full functional test, and no new test/build/typecheck was run at owner request. Owner-session and production/live verification remain unverified. Other redesigned pages remain pending.
+
+## 2026-10-20 Codex Decisions cockpit slice
+
+- Codex is now primary coder. Branch codex/decisions-cockpit starts at Replit Home commit 809e24113c3e7956887c13068af905dc1a022c5c; older local dirty checkout preserved.
+- Decisions uses shared Glacier Glitch cockpit panels, project filtering, source-record queue counts, collapsed pending recommendations and collapsed history. History failure is displayed rather than reported as an empty successful history; pending records load independently from history failures.
+- No approval mutation, backend, worker, credentials, production data, Finance strategy or Music changes. Existing decision workflow remains unchanged; viewing is not approval.
+- Missing outcome/time/recovery fields are not invented by this visual change. Authorization audit remains outstanding.
+- No tests, build or typecheck run. Rendered desktop/mobile, real owner session, accessibility and live deployment remain unverified. Do not publish based solely on these source edits.
