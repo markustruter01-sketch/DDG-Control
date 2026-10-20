@@ -162,3 +162,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Added public/atlas-glacier-v1.jpg, a synthetic decorative landscape derived using built-in image generation from approved Concept03. It is not an authentic location photograph. Local full source/prompt recorded under output/company-atlas. Asset JPEG522776bytes, dimensions preserved from generated original.
 - Central Atlas canvas now references it using BASE_URL, with cover placement and legible solid-backed labels. Global owner-selected background rotation remains untouched. Cables are still structural/dashed, not a live event animation.
 - No tests/build/render/production verification performed. Pull/review needed; do not call screenshot-matching complete. Finance/Music and permissions unchanged.
+
+## 2026-10-20 Owner glass-material correction
+
+- Finance screenshot supplied as visual reference ONLY; no Finance repository edits. Owner prefers visibly translucent frosted glass over nature rather than opaque white panels; supersedes previous near-opaque day-surface choice.
+- DDG Control shared cockpit surfaces now use day58% white/night50% navy tint and20px backdrop blur, lighter inset surfaces, thin luminous borders. Atlas scenery remains clear under readable frosted labels. These CSS starting values are not measured opacity matching of the screenshot.
+- No rendered contrast/accessibility or day/night/mobile verification yet; no tests/build performed. Fall back to opaque readable surfaces where backdrop blur is unavailable. Preserve backgrounds, data, work holds and source truth.
+- Deferred backlog: later investigate useful open-source alternatives and lawful interoperability/reverse-engineering options for complex tools, with license/cost/security checks; no research or implementation now.
