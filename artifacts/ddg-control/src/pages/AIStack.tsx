@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from "react";
 import { DevAuthBypassContext, Header } from "@/components/header";
 import FleetDesk from "@/components/FleetDesk";
 import { DeliveryPlan } from "@/components/DeliveryPlan";
+import { WorkLedger } from "@/components/WorkLedger";
 import { writeHandoverPacket, type HandoverPacketRecord } from "@/lib/handover-packet";
 import { Link } from "wouter";
 
@@ -720,6 +721,7 @@ export function AIStackPage() {
           </article>
         </section>
 
+        <WorkLedger data={workItemsQuery.data} loading={workItemsQuery.isLoading} failed={workItemsQuery.isError} onRetry={() => { void workItemsQuery.refetch(); }} />
         <DeliveryPlan />
         <CompanyWorkOverview
           items={workItemsQuery.data?.items ?? []}
