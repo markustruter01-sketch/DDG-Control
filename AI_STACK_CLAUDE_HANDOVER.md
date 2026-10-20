@@ -210,3 +210,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Finance Atlas node uses actual existing finance project slug, not ddg-finance. No repository rename, Finance source or strategy edit.
 - Work overview links now explicitly expand enclosing details and focus existing task/control content. They do not change selected task context, authorize work or bypass Fleet Desk binding.
 - Pending bundle: centered SVG/logo visuals, saved-decision inbox/deep-link behavior, work overview, finite shared plan/context and directory corrections. Source review only; no tests/build/typecheck/render checks run. One owner pull/preview integration now appropriate before continuing dependent visual work.
+
+## 2026-10-20 Preserve owner visual descendant and expose saved ledger
+
+- Owner pushed1a18fb0990f66dbc0ed17085de72ec27c01c11b4; verified branch head before coding. Preserved fixed Emma background, lighter glass, removed header/overview logos and remaining core mark; do not restore prior visual choices silently.
+- Added WorkLedger UI using existing work-items query only: project/task filters, paged event display, actual dispatch provider/model/run/agent identities and user-triggered JSON metadata export. No raw event details/prompts/free-text task bodies exported. Events are not assigned a model by guessing from nearby runs; attribution gaps and reasoning gaps explicit.
+- This is an inspector, not a new durable/immutable ledger or proof of company-wide coverage. No edit/delete controls or task mutations. External/unknown events remain unobserved; no new provider calls or polling.
+- No build/typecheck/tests/render/live verification performed; bundle with next source batch before required integration.
