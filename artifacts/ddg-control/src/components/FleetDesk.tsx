@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
-type FleetProject = { key: string; label: string; enabled: boolean; financeHeld: boolean };
+type FleetProject = { key: string; label: string; enabled: boolean; financeHeld: boolean; completed: boolean | null };
 type FleetTask = {
   id: number;
   project_key: string;
@@ -153,6 +153,16 @@ export default function FleetDesk({
   );
   const selectedTask = availableTasks.find((task) => task.id === selectedTaskId);
   const currentContext = `${selectedProjectKey}|${selectedTask?.id ?? "none"}|${selectedTask?.plan_version ?? "none"}|${selectedTask?.outcome_version ?? "none"}`;
+  const questionWriteBlocker = !canAnswer ? "A verified owner session is required; development preview cannot save questions or answers."
+    : !selectedProject ? "Select an available project first."
+    : selectedProject.financeHeld ? "Finance is held for review. Question and answer changes are blocked."
+    : selectedProject.completed === true ? "This project is complete. Question and answer changes are blocked."
+    : selectedProject.completed === null ? "Project control state is unavailable. Refresh before saving."
+    : loading || error ? "Conversation state is unavailable or refreshing. Wait for current records before saving."
+    : selectedTaskId !== null && !selectedTask ? "The selected task is not in the loaded records. Select it again before saving."
+    : "";
+  const canWriteQuestions = questionWriteBlocker === "";
+
   const messageRetargeted = !!message.trim() && !!messageContext && messageContext !== currentContext;
   const questionRetargeted = !!(questionText.trim() || questionOptions.trim() || recommendation.trim()) && !!questionContext && questionContext !== currentContext;
   useEffect(() => {
@@ -173,7 +183,7 @@ export default function FleetDesk({
 
   async function saveMessage(kind: "draft" | "note") {
     const body = message.trim();
-    if (!body || !selectedProjectKey) return;
+    if (!body || !selectedProjectKey || busy || messageRetargeted || (selectedTaskId !== null && !selectedTask)) return;
     setBusy("message");
     setFeedback("");
     try {
@@ -199,7 +209,7 @@ export default function FleetDesk({
   async function createQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const options = questionOptions.split("\n").map((option) => option.trim()).filter(Boolean);
-    if (!questionText.trim() || options.length < 2 || !selectedProjectKey) return;
+    if (!canWriteQuestions || busy || questionRetargeted || !questionText.trim() || options.length < 2 || options.length > 4 || new Set(options).size !== options.length) return;
     setBusy("question");
     setFeedback("");
     try {
@@ -229,7 +239,7 @@ export default function FleetDesk({
 
   async function answerQuestion(question: ThreadQuestion) {
     const answer = answers[question.id];
-    if (!answer?.selected) return;
+    if (!canWriteQuestions || busy || !answer?.selected || question.status !== "open") return;
     setBusy(`answer-${question.id}`);
     setFeedback("");
     try {
@@ -333,7 +343,7 @@ export default function FleetDesk({
         <div className="fleet-context">
           <div className="fleet-context-card">
             <label htmlFor="fleet-project">Current project</label>
-            <select id="fleet-project" value={selectedProjectKey} onChange={(event) => onSelectProject(event.target.value)}>
+            <select id="fleet-project" disabled={!!busy} value={selectedProjectKey} onChange={(event) => onSelectProject(event.target.value)}>
               {projects.length === 0 && <option value="">No projects available</option>}
               {projects.map((project) => <option key={project.key} value={project.key}>{project.label}</option>)}
             </select>
@@ -344,7 +354,7 @@ export default function FleetDesk({
           </div>
           <div className="fleet-context-card">
             <label htmlFor="fleet-task">Current task</label>
-            <select id="fleet-task" value={selectedTask?.id ?? ""} onChange={(event) => onSelectTask(event.target.value ? Number(event.target.value) : null)}>
+            <select id="fleet-task" disabled={!!busy} value={selectedTask?.id ?? ""} onChange={(event) => onSelectTask(event.target.value ? Number(event.target.value) : null)}>
               <option value="">No task selected</option>
               {availableTasks.map((task) => <option key={task.id} value={task.id}>#{task.id} · {task.title}</option>)}
             </select>
@@ -408,14 +418,14 @@ export default function FleetDesk({
                   <summary>Add a dashboard note</summary>
                 <form className="fleet-form" onSubmit={(event) => { event.preventDefault(); void saveMessage("draft"); }}>
                 <label htmlFor="fleet-message">Add to this project’s notebook</label>
-                <textarea id="fleet-message" value={message} onChange={(event) => { if(!message.trim() && event.target.value.trim()) setMessageContext(currentContext); if(!event.target.value.trim()) setMessageContext(""); setMessage(event.target.value); }} placeholder="Write a short draft or dashboard note…" />
+                <textarea id="fleet-message" disabled={!!busy} value={message} onChange={(event) => { if(!message.trim() && event.target.value.trim()) setMessageContext(currentContext); if(!event.target.value.trim()) setMessageContext(""); setMessage(event.target.value); }} placeholder="Write a short draft or dashboard note…" />
                 {messageRetargeted && <p className="fleet-status error" role="alert">This draft belongs to an earlier project/task version. It will not be retargeted. Clear it or return to its original context.</p>}
                 {messageRetargeted && <button type="button" className="fleet-button secondary" onClick={() => {setMessage("");setMessageContext("");}}>Clear draft</button>}
                 <div className="fleet-actions">
-                  <button className="fleet-button" type="submit" disabled={busy === "message" || !message.trim() || !selectedProjectKey || messageRetargeted}>
+                  <button className="fleet-button" type="submit" disabled={!!busy || (selectedTaskId !== null && !selectedTask) || !message.trim() || !selectedProjectKey || messageRetargeted}>
                     {busy === "message" ? "Saving…" : "Save draft"}
                   </button>
-                  <button className="fleet-button secondary" type="button" disabled={busy === "message" || !message.trim() || !selectedProjectKey || messageRetargeted} onClick={() => void saveMessage("note")}>
+                  <button className="fleet-button secondary" type="button" disabled={!!busy || (selectedTaskId !== null && !selectedTask) || !message.trim() || !selectedProjectKey || messageRetargeted} onClick={() => void saveMessage("note")}>
                     Save dashboard note
                   </button>
                 </div>
@@ -450,19 +460,20 @@ export default function FleetDesk({
             <section className="fleet-panel" aria-labelledby="fleet-question-create-title">
               <div className="fleet-panel-heading"><h3 id="fleet-question-create-title">Ask the owner</h3></div>
               <p className="fleet-copy">Record a decision request against the current project and task context.</p>
+              {questionWriteBlocker && <p className="fleet-note" role="note">{questionWriteBlocker}</p>}
               <details className="fleet-form-disclosure">
                 <summary>Create an owner question</summary>
               <form className="fleet-form" onSubmit={(event) => void createQuestion(event)}>
                 <label htmlFor="fleet-question">Question</label>
-                <textarea className="short" id="fleet-question" value={questionText} onChange={(event) => {if(!questionContext && event.target.value.trim())setQuestionContext(currentContext);setQuestionText(event.target.value);}} required placeholder="What needs an owner decision?" />
+                <textarea className="short" id="fleet-question" disabled={!!busy} value={questionText} onChange={(event) => {if(!questionContext && event.target.value.trim())setQuestionContext(currentContext);setQuestionText(event.target.value);}} required placeholder="What needs an owner decision?" />
                 <label htmlFor="fleet-options">Options · one per line, at least two</label>
-                <textarea className="short" id="fleet-options" value={questionOptions} onChange={(event) => {if(!questionContext && event.target.value.trim())setQuestionContext(currentContext);setQuestionOptions(event.target.value);}} required placeholder={"Option one\nOption two"} />
+                <textarea className="short" id="fleet-options" disabled={!!busy} value={questionOptions} onChange={(event) => {if(!questionContext && event.target.value.trim())setQuestionContext(currentContext);setQuestionOptions(event.target.value);}} required placeholder={"Option one\nOption two"} />
                 <label htmlFor="fleet-recommendation">Recommendation</label>
-                <input id="fleet-recommendation" value={recommendation} onChange={(event) => {if(!questionContext && event.target.value.trim())setQuestionContext(currentContext);setRecommendation(event.target.value);}} required placeholder="Recommended option and reason" />
-                <label><span><input type="checkbox" checked={blocksWork} onChange={(event) => setBlocksWork(event.target.checked)} /> This blocks work</span></label>
+                <input id="fleet-recommendation" disabled={!!busy} value={recommendation} onChange={(event) => {if(!questionContext && event.target.value.trim())setQuestionContext(currentContext);setRecommendation(event.target.value);}} required placeholder="Recommended option and reason" />
+                <label><span><input type="checkbox" disabled={!!busy} checked={blocksWork} onChange={(event) => setBlocksWork(event.target.checked)} /> This blocks work</span></label>
                 {questionRetargeted && <p className="fleet-status error" role="alert">This question belongs to an earlier project/task version. Clear it or return to the original context.</p>}
                 {questionRetargeted && <button type="button" className="fleet-button secondary" onClick={() => {setQuestionText("");setQuestionOptions("");setRecommendation("");setQuestionContext("");}}>Clear question</button>}
-                <button className="fleet-button" disabled={busy === "question" || !selectedProjectKey || questionRetargeted || questionOptions.split("\n").filter((item) => item.trim()).length < 2}>
+                <button className="fleet-button" disabled={!canWriteQuestions || !!busy || !selectedProjectKey || questionRetargeted || questionOptions.split("\n").filter((item) => item.trim()).length < 2}>
                   {busy === "question" ? "Saving…" : "Save owner question"}
                 </button>
               </form>
@@ -497,17 +508,17 @@ export default function FleetDesk({
                   </details>}
                   <div className="fleet-answer">
                     <label className="fleet-label" htmlFor={`fleet-answer-${question.id}`}>Record an owner answer</label>
-                    {!canAnswer && <p className="fleet-note">A verified owner session is required to record an answer; development bypass does not count.</p>}
+                    {questionWriteBlocker && <p className="fleet-note">{questionWriteBlocker}</p>}
                     <div className="fleet-answer-row">
-                      <select id={`fleet-answer-${question.id}`} value={answer.selected} onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: { ...answer, selected: event.target.value } }))}>
+                      <select id={`fleet-answer-${question.id}`} disabled={!canWriteQuestions || !!busy} value={answer.selected} onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: { ...answer, selected: event.target.value } }))}>
                         <option value="">Choose an option</option>
                         {question.options.map((option, index) => <option key={`${option}-${index}`} value={option}>{option}</option>)}
                       </select>
-                      <button type="button" className="fleet-button" disabled={!canAnswer || !answer.selected || busy === `answer-${question.id}`} onClick={() => void answerQuestion(question)}>
+                      <button type="button" className="fleet-button" disabled={!canWriteQuestions || !answer.selected || !!busy} onClick={() => void answerQuestion(question)}>
                         {busy === `answer-${question.id}` ? "Saving…" : "Record answer"}
                       </button>
                     </div>
-                    <input aria-label={`Comment for question ${question.id}`} value={answer.comment} onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: { ...answer, comment: event.target.value } }))} placeholder="Optional note" />
+                    <input aria-label={`Comment for question ${question.id}`} disabled={!canWriteQuestions || !!busy} value={answer.comment} onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: { ...answer, comment: event.target.value } }))} placeholder="Optional note" />
                     <p className="fleet-note">An answer records the owner’s choice only. It does not resume, approve, merge, deploy, or spend.</p>
                   </div>
                 </article>;

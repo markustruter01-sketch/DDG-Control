@@ -754,7 +754,7 @@ export function AIStackPage() {
           onRetry={() => { void Promise.all([workItemsQuery.refetch(), controlsQuery.refetch()]); }}
         />
         <FleetDesk
-          projects={managedAreas.map((area)=>({key:area.key,label:area.label,enabled:controlsQuery.data?.controls.find((control)=>control.project_key===area.key)?.enabled??false,financeHeld:area.key==="finance"}))}
+          projects={managedAreas.map((area)=>({key:area.key,label:area.label,enabled:controlsQuery.data?.controls.find((control)=>control.project_key===area.key)?.enabled??false,financeHeld:area.key==="finance",completed:controlsQuery.isError?null:controlsQuery.data?.controls.find((control)=>control.project_key===area.key)?.completed??null}))}
           tasks={(workItemsQuery.data?.items??[]).filter((item)=>item.project_key===fleetProjectKey).map((item)=>({id:item.id,project_key:item.project_key,title:item.title,status:item.status,plan_version:item.plan_version??1,outcome_id:item.outcome_id,outcome_version:outcomesQuery.data?.outcomes.find((outcome)=>outcome.id===item.outcome_id)?.version??null}))}
           savedReports={savedReportsQuery.data??[]}
           thread={fleetThread}

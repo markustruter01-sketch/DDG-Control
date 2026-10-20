@@ -47,3 +47,8 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Keep: existing data/schema/IDs, current response meaning, stale-version checks, no automatic approval/resume, all dispatch-hard-false guards. No separate queue or model calls.
 - Improvement: real-owner-only creation and held Finance/completed-project checks. OFF alone permits safe owner questions, not execution.
 - Limits: no claim of provider interruption or full synchronization across all writers. Tests, compilation, independent peer review and runtime evidence remain pending.
+
+##21October — Question UI compatibility
+- Need: creation button remained enabled in DEV/held/completed contexts despite new server rejection. Editable fields/context switching during save could lose a newer draft on success.
+- Approach: reuse owner/Finance and actual control state, expose specific blockers, guard handlers and freeze save inputs/context during requests. Keep task-ID adapter, layout and draft-retargeting logic.
+- Limits: source only, no tests/compilation/interaction checks yet; browser gating never replaces server authorization.
