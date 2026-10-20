@@ -154,6 +154,35 @@ function FinanceSummaryBar({
   );
 }
 
+
+function CompanyAtlas({ projects }: { projects: Project[] }) {
+  const node = (slug: string, label: string, symbol: string, position: string, note: string) => {
+    const project = projects.find((item) => item.slug === slug);
+    return (
+      <details key={slug} className={`atlas-node atlas-node-${position}`}>
+        <summary><span className="atlas-node-icon" aria-hidden="true">{symbol}</span><strong>{label}</strong><small>{note}</small></summary>
+        <span className="atlas-node-detail">{project ? <Link href={`/projects/${project.slug}`}>Open project →</Link> : <Link href="/organisation">View context →</Link>}</span>
+      </details>
+    );
+  };
+  return (
+    <section className="atlas-map-panel" aria-labelledby="atlas-title">
+      <div className="atlas-map-heading"><div><p className="home-section-kicker">People · systems · projects</p><h2 id="atlas-title">Company Atlas</h2></div><Link href="/organisation">Explore connections →</Link></div>
+      <div className="atlas-map-legend"><span>○ Company structure</span><span>┄ Unverified data path</span></div>
+      <div className="atlas-map-canvas">
+        <svg className="atlas-cables" viewBox="0 0 800 460" preserveAspectRatio="none" aria-hidden="true"><path d="M400 230 Q260 225 245 90 M400 230 Q530 230 560 90 M400 230 Q230 340 110 260 M400 230 Q580 350 675 260 M400 230 L400 385" /></svg>
+        {node('hypest', 'Hypest', '↗', 'fitness', 'Fitness')}
+        {node('ddg-finance', 'DDG Finance', '≋', 'finance', 'Held · Claude review')}
+        {node('creative', 'Creative', '✧', 'creative', 'Gaming · music experiments')}
+        {node('cattle-dog-coffee', 'Cattle Dog Coffee', '☕', 'coffee', 'DDG Coffee')}
+        {node('ddg-music', 'DDG Music', '♫', 'music', 'Undecided · unchanged')}
+        <Link className="atlas-node atlas-node-core" href="/ai-stack"><span className="atlas-node-icon" aria-hidden="true">⌘</span><strong>DDG Control</strong><small>Control platform</small></Link>
+      </div>
+      <p className="atlas-evidence-note">Agreed company structure. Transfer observation is not connected; cables do not claim live traffic.</p>
+    </section>
+  );
+}
+
 export function Home() {
   const projectsQuery = useListProjects({
     query: { queryKey: getListProjectsQueryKey() },
@@ -236,11 +265,11 @@ export function Home() {
   return (
     <div className="app-shell home-shell" style={backgroundStyle}>
       <Header />
-      <main className="page-wrap home-main home-cockpit">
+      <main className="page-wrap home-main home-cockpit atlas-home">
         <div className="home-cockpit-heading">
           <div>
             <p className="eyebrow">Company overview</p>
-            <h1 className="home-title">Home</h1>
+            <h1 className="home-title">Company overview</h1>
           </div>
           <Link className="company-map-home-link" href="/organisation#company-map-title" data-testid="link-company-map">
             <span><strong>Company Map</strong><small>People, systems, projects and delivery gaps</small></span>
@@ -253,7 +282,7 @@ export function Home() {
             <div className="home-panel-heading">
               <div>
                 <p className="home-section-kicker">1 · Company health</p>
-                <h2>Project register</h2>
+                <h2>At a glance</h2>
               </div>
               <Link className="home-panel-link" href="/organisation">Company Map</Link>
             </div>
@@ -268,6 +297,8 @@ export function Home() {
                 <strong>{projectsQuery.isLoading ? '…' : projectsQuery.isError ? 'Unknown' : projects.length}</strong>
                 <small>{projectsQuery.isError ? 'Unable to read project registry.' : 'Registry count · not a live-service status'}</small>
               </div>
+              <div><span>Profit · last 30 days</span><strong>{financeSummaryQuery.isLoading ? '…' : financeSummaryQuery.isError || !financeSummaryQuery.data ? 'Unknown' : formatFinanceCents(financeSummaryQuery.data.profit_30d_cents)}</strong><small>Reported total · source details below</small></div>
+              <div><span>Employee roster</span><strong>9</strong><small>Named roles · not active worker count</small></div>
             </div>
             {projectsQuery.isError ? (
               <p className="home-unknown-state" role="alert">Project status unavailable.</p>
@@ -282,6 +313,7 @@ export function Home() {
             ) : projectsQuery.isLoading ? <p className="home-unknown-state" role="status">Loading project registry…</p> : <p className="home-unknown-state">No project records returned.</p>}
           </article>
 
+          <CompanyAtlas projects={projects} />
           <aside className="home-attention-panel" aria-labelledby="home-attention-title">
             <div className="home-panel-heading">
               <div>
