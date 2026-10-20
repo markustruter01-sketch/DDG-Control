@@ -89,13 +89,17 @@ function AddSocialNumbers({ projects, onDone }: { projects: Project[]; onDone: (
 export function SocialBar({ projects }: { projects: Project[] }) {
   const query = useGetSocialSummary();
   const [adding, setAdding] = useState(false);
-  const summary = query.data;
+  const summary = query.isError ? undefined : query.data;
   const name = (slug: string) => projects.find((project) => project.slug === slug)?.name ?? slug;
   const platformRows = summary?.ventures.flatMap((venture) => venture.platforms.map((platform) => ({
     ...platform,
     project_slug: venture.project_slug,
   }))) ?? [];
   const maxFollowers = Math.max(1, ...platformRows.map((platform) => platform.followers));
+  const recordedVentures = summary?.ventures.filter((venture) => venture.platforms.length > 0) ?? [];
+  const missingVentures = summary?.ventures.filter((venture) => venture.platforms.length === 0) ?? [];
+  const captureDates = platformRows.map((platform) => platform.captured_on).filter(Boolean).sort();
+
 
   return (
     <section className="home-performance-panel home-social-panel social-summary" aria-labelledby="home-social-title" data-testid="social-summary">
@@ -109,11 +113,21 @@ export function SocialBar({ projects }: { projects: Project[] }) {
         )}
       </div>
       <p className="home-social-note">Saved platform snapshots; source and capture date appear below. Manual entries are labelled. Counts are summed, not deduplicated people; missing coverage is Unknown.</p>
+      {summary && (
+        <details className="home-source-details">
+          <summary>Saved coverage · {recordedVentures.length} of {summary.ventures.length} registered ventures have readings</summary>
+          <p>{platformRows.length} business/platform readings. Individual accounts and shared-account overlap are not identified; complete company coverage is Unknown.</p>
+          <p>Oldest capture: {captureDates[0] || 'Unknown'}. Capture dates describe saved readings, not a live connection or a last sync.</p>
+          {missingVentures.length > 0 && <p>No saved readings: {missingVentures.map((venture) => name(venture.project_slug)).join(', ')}. This does not establish whether those ventures have social accounts.</p>}
+          <p>Totals can include overlapping audiences. Platform-specific measures and verified account connections remain to be configured.</p>
+        </details>
+      )}
+
       {adding && <AddSocialNumbers projects={projects} onDone={() => setAdding(false)} />}
       {summary && platformRows.length > 0 && (
         <>
           <div className="home-social-total">
-            <span>Tracked profile followers · sum of available readings</span>
+            <span>Reported follower total · partial saved coverage</span>
             <strong>{formatFigure(summary.total_followers, 'count')}</strong>
           </div>
           <div className="home-social-list">

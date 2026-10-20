@@ -26,3 +26,10 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Useful improvements: exact decision deep links; saved red flags show source date using the existing invalid-date-safe formatter.
 - Keep: approved Atlas/glass/layout, API contracts, record order and limits, urgency values, no polling or new services. No inferred P0 incident labels or automatic action.
 - Evidence: source inspection only. Compilation, interaction, owner acceptance and live release pending. No tests, database/provider calls, migration, merge or deployment.
+
+##21October — Social coverage visibility
+
+- Sanity check: retain working manual snapshot entry, missing-value handling, source labels, totals and per-platform detail. The existing data groups by venture/platform, not an actual account registry, so complete company coverage and overlap are unknown.
+- Bounded improvement: collapsed coverage summary counts registered ventures with readings; lists missing ventures, oldest capture and explicit account/overlap/sync limits. A failed summary query does not present cached totals as current.
+- No arbitrary freshness threshold, invented account identities, deduplication claim, external analytics calls or new schema. Registration, source-native metrics and read-only account ingestion remain separate owner-reviewed work.
+- Source inspection only. No tests, compilation, database/provider operations, merge or deployment; queue for coherent batch.
