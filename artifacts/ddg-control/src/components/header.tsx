@@ -82,6 +82,7 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
     <>
       <header className="topbar">
         <Link href="/" className="brand" data-testid="link-home-brand">
+          <span className="brand-logo-backing"><img className="brand-official-logo" src={`${import.meta.env.BASE_URL}ddg-professional-white-transparent.png`} alt="" width="34" height="34" /></span>
           <span>DDG Control</span>
         </Link>
         <div className="topbar-actions">
@@ -115,8 +116,8 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
       <nav className="floating-navigation" aria-label="Primary navigation">
         <Link
           href="/#project-list"
-          className={`floating-nav-control${location === '/' ? ' is-current' : ''}`}
-          aria-current={location === '/' ? 'page' : undefined}
+          className={`floating-nav-control${location.startsWith('/projects/') ? ' is-current' : ''}`}
+          aria-current={location.startsWith('/projects/') ? 'page' : undefined}
           onClick={() => {
             if (location === '/') {
               window.requestAnimationFrame(() => {
