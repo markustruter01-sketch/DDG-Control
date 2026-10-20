@@ -217,3 +217,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Added WorkLedger UI using existing work-items query only: project/task filters, paged event display, actual dispatch provider/model/run/agent identities and user-triggered JSON metadata export. No raw event details/prompts/free-text task bodies exported. Events are not assigned a model by guessing from nearby runs; attribution gaps and reasoning gaps explicit.
 - This is an inspector, not a new durable/immutable ledger or proof of company-wide coverage. No edit/delete controls or task mutations. External/unknown events remain unobserved; no new provider calls or polling.
 - No build/typecheck/tests/render/live verification performed; bundle with next source batch before required integration.
+
+## 2026-10-20 Owner control boundary and block-all source
+
+- Source review found work-control PATCH and project-complete POST relied on general requireAuth, which accepts DEV bypass. Added requireRealOwnerSession to both. UI disables corresponding buttons in DEV bypass; existing schema and saved work unchanged.
+- Added real-owner POST /work-stop with explicit action. Transaction switches all managed project flags and dispatch config OFF, appends work-control audits and events for open tasks, returns unresolved submitting/running/needs-owner dispatch identities. No schema migration or provider calls. No task/run falsely marked stopped or complete.
+- UI says Block all dashboard work, NOT Stop all agents. External/in-flight cancellation is neither requested nor verified. Full durable stop latch/provider acknowledgement, cancellation/race protection and restart policy remain outstanding. Dispatch already remains blocked by its existing unverified hard-wall-clock guard; this change does not enable it.
+- No tests, API/frontend typechecks, build, real-owner/database mutation or rendered checks run. Need bundled integration, compilation and actual auth/transaction verification before release. Do not exercise live mutations without owner authority. Finance/Music and no-charge rules preserved.
