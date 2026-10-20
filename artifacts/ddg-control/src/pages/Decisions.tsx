@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useState } from 'react';
 import { Link } from 'wouter';
 import {
@@ -46,6 +47,15 @@ export function DecisionsPage() {
   const visibleHistory = sortedHistory.filter((decision) => projectFilter === 'all' || decision.project_slug === projectFilter);
   const historyLoading = approvedQuery.isLoading || declinedQuery.isLoading;
   const historyError = approvedQuery.error ?? declinedQuery.error;
+  useEffect(() => {
+    const match = /^#decision-(\\d+)$/.exec(window.location.hash);
+    if (!match || pendingQuery.isLoading) return;
+    const target = document.getElementById(`decision-${match[1]}`);
+    if (!(target instanceof HTMLDetailsElement)) return;
+    target.open = true;
+    target.scrollIntoView({ behavior: 'auto', block: 'center' });
+    target.querySelector('summary')?.focus();
+  }, [pendingQuery.isLoading, pendingQuery.data]);
 
   return (
     <div className="app-shell">
@@ -91,7 +101,7 @@ export function DecisionsPage() {
           ) : (
             <div className="decision-list" data-testid="list-pending-decisions">
               {visiblePending.map((decision) => (
-                  <details className="decision-card" key={decision.id} data-testid={`card-decision-${decision.id}`}>
+                  <details className="decision-card" id={`decision-${decision.id}`} key={decision.id} data-testid={`card-decision-${decision.id}`}>
                     <summary className="decision-card-top">
                       <div>
                         <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
