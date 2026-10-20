@@ -189,3 +189,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Read markers are in-memory only, reset on reload and are honestly labelled; no claim of durable notification backend or cross-device history. Other alerts and employee message ingress remain disconnected, not fabricated. Reuses query key/cache rather than adding provider calls or polling.
 - Decisions source expands/focuses anchor target on arrival after data loads. Full deep-link navigation, settled data/error behavior, screen-reader/mobile and day/night render checks remain outstanding; no tests/build/typecheck run.
 - Owner requested larger coherent coding batches and Replit pulls only when needed; bundle this with pending SVG/centred-logo source and do not prompt per small commit. Avatar dock structure and approved sprite production remain pending, not implemented by this slice.
+
+## 2026-10-20 Bundled inbox navigation and saved-work overview
+
+- Source review found over-escaped decision-anchor regex; replaced with numeric character-class matching. Added same-page custom focus/hash/popstate handling, clearing project filter for requested records, resolved-history expansion and honest missing-record notice. No approval/restart side effects. Needs actual navigation verification.
+- Added collapsible Company work board ABOVE Fleet Desk using existing workItemsQuery/controlsQuery only. Per-project held/ON/OFF/unknown state, saved-task counts, review/completed record counts, task links and blocker text. Finance stays held, Music not added as an executable area. Errors are not empty-success states.
+- This is a summary of existing saved tasks, not the full durable company planning/context/agent-access feature. Counts are not finish-line progress. No new schema/API, provider calls, model usage or execution authority.
+- No tests, typecheck/build, rendered/mobile, real-owner or live checks performed. Bundle inbox, SVG/logo and work overview for one integration checkpoint; do not call verified/complete yet.
