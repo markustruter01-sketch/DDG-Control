@@ -2682,3 +2682,25 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
 :root[data-theme='day'] .notification-view-all { color:#00647E; }
 :root .topbar { position:relative; z-index:210; overflow:visible; }
 @media(max-width:560px) { .notification-panel { position:fixed; top:82px; right:12px; } }
+
+/* Saved work overview reuses records and control state without new execution authority. */
+.company-work-overview { padding:0 14px 12px; }
+.company-work-totals { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0; }
+.company-work-totals>span { display:grid; gap:4px; min-width:130px; padding:10px 14px; border:1px solid var(--glass-border); border-radius:12px; background:var(--cockpit-inset); font-size:12px; color:var(--cockpit-muted); }
+.company-work-totals strong { color:var(--cockpit-ink); font-size:25px; }
+.company-work-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.company-work-project { min-width:0; padding:14px; background:var(--cockpit-inset); color:var(--cockpit-ink); border:1px solid var(--glass-border); border-radius:14px; }
+.company-work-project header { display:flex; align-items:start; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.company-work-project h3 { margin:0; font-size:15px; }
+.company-work-project header>span { font:600 11px/1.5 var(--app-font-mono); color:var(--cockpit-link); }
+.company-work-project p { color:var(--cockpit-muted); font-size:13px; line-height:1.5; }
+.company-work-project ul { display:grid; gap:8px; list-style:none; margin:12px 0; padding:0; }
+.company-work-project li { padding:10px 0; border-bottom:1px solid var(--glass-border); }
+.company-work-project li>a { display:flex; gap:12px; flex-wrap:wrap; align-items:baseline; justify-content:space-between; color:var(--cockpit-ink); }
+.company-work-project li strong { font-size:13px; }
+.company-work-project li span,.company-work-project small { color:var(--cockpit-muted); font-size:12px; }
+.company-work-project small { display:block; margin-top:6px; overflow-wrap:anywhere; }
+.company-work-project>a { color:var(--cockpit-link); font-size:12px; font-weight:700; }
+.company-work-overview a:focus-visible { outline:3px solid var(--cockpit-link); outline-offset:3px; }
+.managed-work-card[id] { scroll-margin-top:20px; }
+@media(max-width:700px) { .company-work-grid { grid-template-columns:1fr; } }
