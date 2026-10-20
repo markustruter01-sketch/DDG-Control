@@ -63,6 +63,21 @@ async function getWorkControls() {
   if (!r.ok) throw new Error("Work controls unavailable");
   return r.json() as Promise<{ controls: Control[]; audit: Array<{ id: number; project_key: string; enabled: boolean; created_at: string }> }>;
 }
+
+type WorkBlockResult = {
+  dashboard_work_blocked: boolean;
+  affected_task_records: number;
+  unresolved_dispatches: Array<{ id: number; work_item_id: number; project_key: string; agent_id: string | null; run_id: string | null; status: string }>;
+  message: string;
+};
+async function blockAllDashboardWork(): Promise<WorkBlockResult> {
+  const response = await fetch("/api/work-stop", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "block_all_managed_work" }),
+  });
+  if (!response.ok) throw new Error("Could not confirm blocking dashboard work. Refresh the saved controls before retrying.");
+  return response.json() as Promise<WorkBlockResult>;
+}
 async function saveWorkControl(input: { key: string; enabled: boolean }) {
   const r = await fetch(`/api/work-controls/${encodeURIComponent(input.key)}`, {
     method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -575,6 +590,14 @@ export function AIStackPage() {
     model_label:fleetThreadRaw?.model_label??"Unknown",
     delivery_blocker:fleetThreadRaw?.delivery_blocker??"Provider messaging unavailable; content remains dashboard-only.",
   };
+  const blockAllMutation = useMutation({
+    mutationFn: blockAllDashboardWork,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["work-controls"] });
+      void queryClient.invalidateQueries({ queryKey: ["work-readiness"] });
+      void queryClient.invalidateQueries({ queryKey: ["work-items"] });
+    },
+  });
   const controlMutation = useMutation({
     mutationFn: saveWorkControl,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["work-controls"] }),
@@ -1021,16 +1044,28 @@ export function AIStackPage() {
                 const enabled = control?.enabled === true;
                 return <div className="ai-stack-control-row" key={area.key}>
                   <strong>{area.label}</strong><span className={enabled ? "work-state is-on" : "work-state"}>{control?.completed ? "COMPLETED" : enabled ? "ON" : "OFF"}</span>
-                  <button type="button" className={`work-toggle ${enabled ? "is-on" : ""}`} aria-pressed={enabled} disabled={controlMutation.isPending || !controlsQuery.data || control?.completed || (area.key === "finance" && !enabled)} title={area.key === "finance" && !enabled ? "Finance remains OFF until Claude review" : undefined} onClick={() => {
+                  <button type="button" className={`work-toggle ${enabled ? "is-on" : ""}`} aria-pressed={enabled} disabled={devBypass || blockAllMutation.isPending || controlMutation.isPending || !controlsQuery.data || control?.completed || (area.key === "finance" && !enabled)} title={area.key === "finance" && !enabled ? "Finance remains OFF until Claude review" : undefined} onClick={() => {
                     const next = !enabled;
                     if (window.confirm(`Markus, confirm ${next ? "ON" : "OFF"} for ${area.label}?`)) controlMutation.mutate({ key: area.key, enabled: next });
                   }}>{enabled ? "Turn OFF" : area.key === "finance" ? "Claude review required" : "Turn ON"}</button>
-                  {!control?.completed && area.key !== "finance" && <button type="button" className="work-toggle" disabled={completeMutation.isPending} onClick={()=>{if(window.confirm(`Mark ${area.label} complete? This stops new suggested work.`)) completeMutation.mutate(area.key);}}>Mark complete</button>}
+                  {!control?.completed && area.key !== "finance" && <button type="button" className="work-toggle" disabled={devBypass || blockAllMutation.isPending || completeMutation.isPending} onClick={()=>{if(window.confirm(`Mark ${area.label} complete? This stops new suggested work.`)) completeMutation.mutate(area.key);}}>Mark complete</button>}
                 </div>;
               })}
               <div className="ai-stack-control-row is-undecided"><strong>DDG Music</strong><span>Undecided · unchanged</span></div>
             </div>
           )}
+          <div className="work-block-all">
+            <button type="button" className="work-toggle" disabled={devBypass || blockAllMutation.isPending || controlMutation.isPending || completeMutation.isPending}
+              onClick={() => { if (window.confirm("Block all dashboard work? This turns project controls and dispatch OFF. It does not cancel external or already-submitting agents. Review those separately.")) blockAllMutation.mutate(); }}>
+              {blockAllMutation.isPending ? "Blocking dashboard work…" : "Block all dashboard work"}
+            </button>
+            <p className="ai-stack-help">Requires a real owner login. External runs are not cancelled by this control. Full stop-and-acknowledgement automation remains pending.</p>
+            {devBypass && <p className="ai-stack-help">Development preview cannot change project controls or mark projects complete.</p>}
+            {blockAllMutation.isError && <p role="alert">Block not confirmed. Read the saved project and provider states before retrying.</p>}
+            {blockAllMutation.isSuccess && <div role="status"><p>{blockAllMutation.data.message}</p>
+              {blockAllMutation.data.unresolved_dispatches.map((run) => <p key={run.id}>Unconfirmed external state: dispatch #{run.id} · task #{run.work_item_id} · {run.project_key} · {run.status} · agent {run.agent_id || "Unknown"} · run {run.run_id || "Unknown"}</p>)}
+            </div>}
+          </div>
           {controlMutation.isError && <p className="ai-stack-error" role="alert">{controlMutation.error.message}</p>}
           {completeMutation.isError && <p className="ai-stack-error" role="alert">{completeMutation.error.message}</p>}
           <h3>Owner change history</h3>
