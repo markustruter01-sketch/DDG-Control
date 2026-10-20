@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
 import {
   getListDecisionsQueryKey,
@@ -47,15 +46,44 @@ export function DecisionsPage() {
   const visibleHistory = sortedHistory.filter((decision) => projectFilter === 'all' || decision.project_slug === projectFilter);
   const historyLoading = approvedQuery.isLoading || declinedQuery.isLoading;
   const historyError = approvedQuery.error ?? declinedQuery.error;
+  const [focusRequest, setFocusRequest] = useState(() => ({
+    id: /^#decision-([0-9]+)$/.exec(window.location.hash)?.[1] ?? null,
+    version: 0,
+  }));
+  const [focusNotice, setFocusNotice] = useState<string | null>(null);
   useEffect(() => {
-    const match = /^#decision-(\\d+)$/.exec(window.location.hash);
-    if (!match || pendingQuery.isLoading) return;
-    const target = document.getElementById(`decision-${match[1]}`);
-    if (!(target instanceof HTMLDetailsElement)) return;
-    target.open = true;
-    target.scrollIntoView({ behavior: 'auto', block: 'center' });
-    target.querySelector('summary')?.focus();
-  }, [pendingQuery.isLoading, pendingQuery.data]);
+    function requestFocus(event: Event) {
+      const requested = event instanceof CustomEvent && typeof event.detail === 'number'
+        ? String(event.detail)
+        : /^#decision-([0-9]+)$/.exec(window.location.hash)?.[1] ?? null;
+      if (!requested || !/^[0-9]+$/.test(requested)) return;
+      setProjectFilter('all');
+      setFocusNotice(null);
+      setFocusRequest((previous) => ({ id: requested, version: previous.version + 1 }));
+    }
+    window.addEventListener('hashchange', requestFocus);
+    window.addEventListener('popstate', requestFocus);
+    window.addEventListener('ddg:decision-focus', requestFocus);
+    return () => {
+      window.removeEventListener('hashchange', requestFocus);
+      window.removeEventListener('popstate', requestFocus);
+      window.removeEventListener('ddg:decision-focus', requestFocus);
+    };
+  }, []);
+  useEffect(() => {
+    if (!focusRequest.id || projectFilter !== 'all' || pendingQuery.isLoading || historyLoading) return;
+    const target = document.getElementById(`decision-${focusRequest.id}`);
+    if (target instanceof HTMLElement) {
+      if (target instanceof HTMLDetailsElement) target.open = true;
+      const history = target.closest('details.decision-history');
+      if (history instanceof HTMLDetailsElement) history.open = true;
+      target.scrollIntoView({ behavior: 'auto', block: 'center' });
+      (target.querySelector('summary') ?? target).focus();
+      setFocusNotice(null);
+    } else if (!pendingQuery.isError && !historyError) {
+      setFocusNotice('This decision is no longer available in the current records. Nothing has been approved or restarted.');
+    }
+  }, [focusRequest, projectFilter, pendingQuery.isLoading, pendingQuery.isError, pendingQuery.data, historyLoading, historyError, approvedQuery.data, declinedQuery.data]);
 
   return (
     <div className="app-shell">
@@ -68,6 +96,7 @@ export function DecisionsPage() {
           <p className="detail-description">Review the queue. Open a card for the full recommendation.</p>
         </div>
 
+        {focusNotice && <p className="home-unknown-state" role="status">{focusNotice}</p>}
         <section className="home-health-panel" aria-label="Decision overview">
           <div className="home-health-status">
             <div><span>Waiting for you</span><strong>{pendingQuery.isLoading ? '…' : pendingQuery.isError ? 'Unknown' : pending.length}</strong><small>Saved pending records</small></div>
@@ -143,7 +172,7 @@ export function DecisionsPage() {
           ) : (
             <div className="decision-history-list" data-testid="list-decision-history">
               {visibleHistory.map((decision) => (
-                <article className="decision-history-row" key={decision.id} data-testid={`history-decision-${decision.id}`}>
+                <article className="decision-history-row" id={`decision-${decision.id}`} tabIndex={-1} key={decision.id} data-testid={`history-decision-${decision.id}`}>
                   <div className="history-decision-copy">
                     <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
                     <h3>{formatCurrentDisplayName(decision.title)}</h3>
