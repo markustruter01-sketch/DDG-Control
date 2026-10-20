@@ -2713,3 +2713,20 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
 .delivery-rules>summary { min-height:44px; cursor:pointer; font-size:13px; }
 .delivery-plan :is(summary,select):focus-visible { outline:3px solid var(--cockpit-link); outline-offset:3px; }
 @media(max-width:700px) { .delivery-item-grid { grid-template-columns:1fr; } }
+
+/* Scoped view of existing ledger records, not simulated live activity. */
+.work-ledger { padding:0 14px 14px; }
+.ledger-filters { display:flex; flex-wrap:wrap; gap:12px; align-items:end; margin:14px 0; }
+.ledger-filters label { display:grid; gap:6px; flex:1 1 180px; min-width:0; color:var(--cockpit-ink); font-size:13px; }
+.ledger-filters select { width:100%; max-width:100%; min-height:44px; padding:8px 10px; border:1px solid var(--glass-border); border-radius:10px; background:var(--cockpit-inset); color:var(--cockpit-ink); font:inherit; }
+.ledger-events { padding:0; margin:12px 0; list-style:none; display:grid; gap:8px; }
+.ledger-events li,.ledger-runs article { padding:12px; border:1px solid var(--glass-border); border-radius:12px; background:var(--cockpit-inset); color:var(--cockpit-ink); overflow-wrap:anywhere; }
+.ledger-events li>div { display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; }
+.ledger-events strong { font-size:13px; }
+.ledger-events p,.ledger-runs p { margin:7px 0; font-size:12px; line-height:1.5; }
+.ledger-events small,.ledger-events time,.ledger-runs time { color:var(--cockpit-muted); font-size:11px; line-height:1.5; }
+.ledger-runs { margin:14px 0; color:var(--cockpit-ink); }
+.ledger-runs>summary { cursor:pointer; min-height:44px; padding:10px 0; font-size:13px; font-weight:700; }
+.ledger-runs article { margin:8px 0; }
+.ledger-runs h4 { margin:0; font-size:13px; }
+.work-ledger :is(summary,select,button):focus-visible { outline:3px solid var(--cockpit-link); outline-offset:3px; }
