@@ -149,3 +149,9 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Map has accessible expandable nodes and existing project/context links; dashed cables explicitly represent agreed structural relationships, NOT verified data paths. No fabricated activity, health scores, workload percentages or animation. Finance remains labelled held; Music unchanged.
 - Exact glacier photography, official logo, approved mythology sprites and event-backed transfer animation remain outstanding. Existing finance/social panels retained below; per-business metric attribution and live transfer ingress are not invented.
 - No tests/build/typecheck/render checks performed in this slice. Same PR2 branch; do not merge/publish before review. Previous regression fixes still require preview/owner verification.
+
+## 2026-10-20 Exact logo and navigation source update
+
+- Exact professional transparent PNG is committed under public/ddg-professional-white-transparent.png; Git blob095ff41fba011696b4da0083ff03871f1f08499e matches the local original. Header now references it through BASE_URL. Navy backing is CSS layout, not baked into/recoloring the logo. Existing text supplies accessible brand name; image is decorative to avoid repetition.
+- Projects active styling now applies to project detail routes rather than incorrectly marking both Projects and Home selected on Home. Project anchor behavior is preserved.
+- No render/build/test checks performed. Replit Git delivery still needs working UI pull; source is not a claim of live brand rollout. Atlas image/sprites/transfer feed and other page acceptance remain pending.
