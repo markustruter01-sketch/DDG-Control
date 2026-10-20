@@ -86,9 +86,9 @@ export function CompanyMap() {
   const selectedLink = companyMapLinks.find((link) => link.id === selectedLinkId) ?? null;
   const connectedLinks = selectedNode ? companyMapLinks.filter((link) => link.from === selectedNode.id || link.to === selectedNode.id) : [];
   const overviewCounts = [
-    { view: "People" as const, count: companyMapNodes.filter((node) => node.kind === "person").length, note: "9 named roles · possible tenth bot unresolved" },
+    { view: "People" as const, count: companyMapNodes.filter((node) => node.kind === "person" && node.id !== "person-markus").length, note: "9 confirmed employees · founder listed separately" },
     { view: "Systems" as const, count: companyMapNodes.filter((node) => node.kind === "system").length, note: "Connected, partial, planned and blocked paths separated" },
-    { view: "Projects" as const, count: companyMapNodes.filter((node) => node.kind === "project").length, note: "Music preserved · creative operations unresolved" },
+    { view: "Projects" as const, count: companyMapNodes.filter((node) => node.kind === "project").length, note: "Music preserved · Creative scope confirmed" },
   ];
 
   return (
@@ -176,7 +176,7 @@ export function CompanyMap() {
 
       <details className="cm-evidence-key"><summary>Evidence, account and source limits</summary>
         <p><b>Live checked timestamps are owner-supplied Codex metadata from 20 October 2026, not checks performed by this map.</b> Reported GitHub facts prove metadata access only—not Cursor permissions, billing, model inclusion, deployments or runtime health.</p>
-        <p>Owner reports nine or ten Grokbots on Grokbot/Cursor. Nine employee roles are listed; a tenth identity and runtime/account relationships are unknown. Employee roles are not coding workers, providers or models.</p>
+        <p>The complete employee roster is nine, plus Markus as founder. Runtime/account connections remain unverified. Employee roles are not coding workers, providers or models.</p>
         <p>Cursor extra usage OFF is owner-confirmed in the task context. The reported downgrade to the lowest paid tier in about 22 days is not an account read; exact plan names, prices, date and Cloud Agent/model inclusion remain unverified. Do not clear readiness from this report.</p>
         <p>Finance remains held until actual Claude review and explicit Markus release. Thursday 22 October midday Brisbane is an owner-reported return, not an automatic release date. DDG Music remains unchanged.</p>
         <p>Viewing/searching this map makes no model or provider call. The only optional request is an authenticated read of existing DDG Control work items to show real task IDs. There is no scoped company-plan export for agents yet.</p>
