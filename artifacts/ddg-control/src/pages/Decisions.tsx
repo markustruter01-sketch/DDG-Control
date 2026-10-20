@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'wouter';
 import {
   getListDecisionsQueryKey,
@@ -30,7 +31,9 @@ export function DecisionsPage() {
   const projectsQuery = useListProjects({
     query: { queryKey: getListProjectsQueryKey() },
   });
+  const [projectFilter, setProjectFilter] = useState('all');
   const pending = pendingQuery.data ?? [];
+  const visiblePending = pending.filter((decision) => projectFilter === 'all' || decision.project_slug === projectFilter);
   const projectNames = new Map((projectsQuery.data ?? []).map((project) => [project.slug, project.name]));
   const sortedHistory: DecisionWithNames[] = [
     ...(approvedQuery.data ?? []),
@@ -40,48 +43,62 @@ export function DecisionsPage() {
     const bTime = b.decided_at ? new Date(b.decided_at).getTime() : 0;
     return bTime - aTime;
   });
-  const isLoading = pendingQuery.isLoading || approvedQuery.isLoading || declinedQuery.isLoading;
-  const queryError = pendingQuery.error ?? approvedQuery.error ?? declinedQuery.error;
+  const visibleHistory = sortedHistory.filter((decision) => projectFilter === 'all' || decision.project_slug === projectFilter);
+  const historyLoading = approvedQuery.isLoading || declinedQuery.isLoading;
+  const historyError = approvedQuery.error ?? declinedQuery.error;
 
   return (
     <div className="app-shell">
       <Header />
-      <main className="page-wrap detail-main decisions-main">
+      <main className="page-wrap detail-main decisions-main home-cockpit">
         <Link className="back-link" href="/" data-testid="link-decisions-home">← Home</Link>
-        <div className="detail-heading decisions-heading">
+        <div className="detail-heading decisions-heading home-cockpit-heading">
           <p className="eyebrow">Review queue</p>
           <h1 className="detail-title">Decisions</h1>
-          <p className="detail-description">Heimdall’s recommendations, ready for your call.</p>
-          <p className="cursor-decision-cta">Decide with Heimdall in Cursor</p>
+          <p className="detail-description">Review the queue. Open a card for the full recommendation.</p>
         </div>
 
-        <section className="decision-section" aria-labelledby="pending-decisions-title">
+        <section className="home-health-panel" aria-label="Decision overview">
+          <div className="home-health-status">
+            <div><span>Waiting for you</span><strong>{pendingQuery.isLoading ? '…' : pendingQuery.isError ? 'Unknown' : pending.length}</strong><small>Saved pending records</small></div>
+            <div><span>Resolved</span><strong>{historyLoading ? '…' : historyError ? 'Unknown' : sortedHistory.length}</strong><small>Approved and declined records</small></div>
+          </div>
+          <label className="home-source-details" htmlFor="decision-project-filter">Project</label>
+          <select id="decision-project-filter" value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)}>
+            <option value="all">All projects</option>
+            {[...new Set([...projectNames.keys(), ...pending.map((decision) => decision.project_slug), ...sortedHistory.map((decision) => decision.project_slug)])].map((slug) => <option key={slug} value={slug}>{projectNames.get(slug) ?? slug}</option>)}
+          </select>
+          {projectsQuery.isError && <p className="home-unknown-state">Project names unavailable; repository labels shown where needed.</p>}
+          <p className="home-unknown-state">Opening a card does not approve work. Use the existing decision workflow with Heimdall; this page does not start agents.</p>
+        </section>
+
+        <section className="decision-section home-health-panel" aria-labelledby="pending-decisions-title">
           <div className="decision-section-heading">
             <h2 id="pending-decisions-title">Waiting for review</h2>
-            {!pendingQuery.isLoading && <span className="decision-count">{pending.length} pending</span>}
+            {!pendingQuery.isLoading && !pendingQuery.isError && <span className="decision-count">{visiblePending.length} shown</span>}
           </div>
-          {isLoading ? (
+          {pendingQuery.isLoading ? (
             <div className="decision-skeleton" role="status" aria-label="Loading decisions"><span /><span /></div>
-          ) : queryError ? (
+          ) : pendingQuery.isError ? (
             <div className="task-query-error" role="alert">
-              <p>{serverErrorText(queryError, 'Unable to load decisions.')}</p>
+              <p>{serverErrorText(pendingQuery.error, 'Unable to load decisions.')}</p>
               <button className="task-secondary-button" type="button" onClick={() => {
                 void Promise.all([pendingQuery.refetch(), approvedQuery.refetch(), declinedQuery.refetch()]);
               }}>Retry</button>
             </div>
-          ) : pending.length === 0 ? (
-            <p className="decision-empty" data-testid="status-no-decisions">No decisions waiting</p>
+          ) : visiblePending.length === 0 ? (
+            <p className="decision-empty" data-testid="status-no-decisions">{projectFilter === 'all' ? 'No decisions waiting' : 'No pending decisions for this project'}</p>
           ) : (
             <div className="decision-list" data-testid="list-pending-decisions">
-              {pending.map((decision) => (
-                  <article className="decision-card" key={decision.id} data-testid={`card-decision-${decision.id}`}>
-                    <div className="decision-card-top">
+              {visiblePending.map((decision) => (
+                  <details className="decision-card" key={decision.id} data-testid={`card-decision-${decision.id}`}>
+                    <summary className="decision-card-top">
                       <div>
                         <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
                         <h3 className="decision-title">{formatCurrentDisplayName(decision.title)}</h3>
                       </div>
                       <span className={`decision-urgency urgency-${decision.urgency}`}>{decision.urgency} urgency</span>
-                    </div>
+                    </summary>
                     <p className="decision-recommendation">{formatCurrentDisplayName(decision.recommendation)}</p>
                     <dl className="decision-facts">
                       <div><dt>Cost</dt><dd>{decision.cost_estimate_aud == null ? 'Cost unknown' : `${new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(decision.cost_estimate_aud)} est.`}</dd></div>
@@ -95,24 +112,27 @@ export function DecisionsPage() {
                       <span>Decided via: {decision.decided_via ?? 'Not recorded'}</span>
                     </div>
                     {decision.note && <p className="history-note">{formatCurrentDisplayName(decision.note)}</p>}
-                  </article>
+                  </details>
                 ))}
             </div>
           )}
         </section>
 
-        <section className="decision-history" aria-labelledby="decision-history-title">
+        <details className="decision-history home-health-panel">
+          <summary className="decision-section-heading"><strong>Decision history</strong><span>{historyLoading ? 'Loading…' : historyError ? 'Unavailable' : `${visibleHistory.length} records`}</span></summary>
           <div className="decision-section-heading">
             <h2 id="decision-history-title">Decision history</h2>
-            <span className="decision-count">{sortedHistory.length} resolved</span>
+            
           </div>
           {isLoading ? (
             <div className="decision-history-skeleton" role="status" aria-label="Loading decision history" />
-          ) : sortedHistory.length === 0 ? (
+          ) : historyError ? (
+            <div className="task-query-error" role="alert"><p>{serverErrorText(historyError, 'Unable to load decision history.')}</p><button className="task-secondary-button" type="button" onClick={() => { void Promise.all([approvedQuery.refetch(), declinedQuery.refetch()]); }}>Retry history</button></div>
+          ) : visibleHistory.length === 0 ? (
             <p className="decision-empty">No decisions recorded yet</p>
           ) : (
             <div className="decision-history-list" data-testid="list-decision-history">
-              {sortedHistory.map((decision) => (
+              {visibleHistory.map((decision) => (
                 <article className="decision-history-row" key={decision.id} data-testid={`history-decision-${decision.id}`}>
                   <div className="history-decision-copy">
                     <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
@@ -133,7 +153,7 @@ export function DecisionsPage() {
               ))}
             </div>
           )}
-        </section>
+        </details>
       </main>
     </div>
   );
