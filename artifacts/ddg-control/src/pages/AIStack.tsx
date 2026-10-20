@@ -500,6 +500,20 @@ function DetailDialog({
 }
 
 
+
+function revealSavedWork(id: string) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  let ancestor = target.parentElement;
+  while (ancestor) {
+    if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
+    ancestor = ancestor.parentElement;
+  }
+  target.tabIndex = -1;
+  target.scrollIntoView({ behavior: "auto", block: "center" });
+  target.focus({ preventScroll: true });
+}
+
 function CompanyWorkOverview({ items, controls, loading, failed, onRetry }: {
   items: WorkItem[];
   controls: Control[];
@@ -522,11 +536,11 @@ function CompanyWorkOverview({ items, controls, loading, failed, onRetry }: {
             return <section className="company-work-project" key={area.key}>
               <header><h3>{area.label}</h3><span>{area.key === "finance" ? "HELD · Claude review" : !savedControl ? "Control unknown" : savedControl.completed ? "Recorded complete" : savedControl.enabled ? "Work ON" : "Work OFF"}</span></header>
               {tasks.length === 0 ? <p>No saved tasks. This does not mean the project is finished.</p> : <ul>{tasks.map((task) => (
-                <li key={task.id}><a href={`#work-item-${task.id}`}><strong>{task.title}</strong><span>{task.status.replaceAll("_", " ")}</span></a>
+                <li key={task.id}><a href={`#work-item-${task.id}`} onClick={() => revealSavedWork(`work-item-${task.id}`)}><strong>{task.title}</strong><span>{task.status.replaceAll("_", " ")}</span></a>
                   {task.dispatch_block_reason && <small>{task.dispatch_block_reason}</small>}
                 </li>
               ))}</ul>}
-              <a href="#work-controls-heading">View project controls →</a>
+              <a href="#work-controls-heading" onClick={() => revealSavedWork("work-controls-heading")}>View project controls →</a>
             </section>;
           })}</div>
         </>
