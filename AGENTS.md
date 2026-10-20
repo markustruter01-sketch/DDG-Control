@@ -39,3 +39,7 @@ These rules apply to coding agents working in this repository.
 - Review public coding and reasoning benchmarks every Monday in Australia/Sydney time.
 - Record the date, model/version, benchmark and score, source, Cursor availability, and whether use is included in the owner's current plan.
 - Change the priority order only among models confirmed to be included. Ask before adding a model that could cost extra.
+
+## Durable DDG Control context
+
+For an approved DDG Control task, read DDG_CONTROL_CONTEXT.md and the relevant AI_STACK_CLAUDE_HANDOVER.md entry before planning changes. The finite delivery plan is artifacts/ddg-control/src/lib/ddg-control-delivery-plan.ts. These are context, not execution/merge/deploy authority or permission to access business repositories. This is the Control dashboard: do not infer approval to edit Finance strategies from a legacy fake-money strategy reference. Preserve Finance hold and DDG Music. Do not claim source records or development bypass previews prove live acceptance. Do not import unrelated company/personal context into a worker task.
