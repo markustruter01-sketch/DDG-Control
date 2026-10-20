@@ -2429,3 +2429,62 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
   .home-bar-row { grid-template-columns:minmax(0,1fr) auto; }
   .home-bar-row .home-bar-track { grid-column:1/-1; grid-row:2; }
 }
+
+/* Owner-selected Company Atlas structure, using existing data rather than sample scores. */
+.atlas-home .home-overview-grid { grid-template-columns:minmax(170px,.72fr) minmax(0,3fr) minmax(220px,1fr); align-items:stretch; }
+.atlas-home .home-overview-grid>.home-health-panel { padding:14px; }
+.atlas-home .home-health-status { grid-template-columns:1fr; }
+.atlas-home .home-health-status strong { font-size:26px; }
+.atlas-home .home-status-list { display:none; }
+.atlas-home .home-cockpit-heading { padding:8px 14px; }
+.atlas-home .home-title { font-size:24px; }
+.atlas-map-panel { border:1px solid var(--glass-border); border-radius:16px; background:var(--glass-surface); color:var(--cockpit-ink); padding:16px; min-width:0; }
+.atlas-map-heading { display:flex; justify-content:space-between; gap:12px; align-items:start; }
+.atlas-map-heading h2 { margin:0; font-size:22px; letter-spacing:-.03em; }
+.atlas-map-heading>a { color:var(--cockpit-link); font-size:12px; padding:8px 0; }
+.atlas-map-legend { display:flex; flex-wrap:wrap; gap:14px; margin-top:12px; color:var(--cockpit-muted); font-size:12px; }
+.atlas-map-canvas { position:relative; min-height:440px; margin-top:10px; border-radius:12px; background:radial-gradient(ellipse at center,rgba(124,201,232,.2),transparent 70%); }
+.atlas-cables { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+.atlas-cables path { fill:none; stroke:var(--cockpit-link); stroke-width:1.5; stroke-dasharray:5 6; opacity:.55; vector-effect:non-scaling-stroke; }
+.atlas-node { position:absolute; transform:translate(-50%,-50%); width:136px; z-index:1; text-align:center; font-size:13px; color:var(--cockpit-ink); }
+.atlas-node summary { display:flex; flex-direction:column; align-items:center; list-style:none; cursor:pointer; gap:5px; }
+.atlas-node summary::-webkit-details-marker { display:none; }
+.atlas-node-icon { display:grid; place-items:center; width:58px; height:58px; border-radius:50%; background:#007A99; color:#FFF; border:3px solid #F7FBFF; outline:1px solid #7CC9E8; font-size:28px; box-shadow:0 5px 18px rgba(0,122,153,.18); }
+.atlas-node small { display:block; color:var(--cockpit-muted); font-size:12px; }
+.atlas-node strong { display:block; margin-top:5px; }
+.atlas-node-core { left:50%; top:50%; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.atlas-node-core .atlas-node-icon { width:76px; height:76px; background:#0B1F2A; }
+.atlas-node-fitness { left:30.6%; top:19.6%; }
+.atlas-node-finance { left:70%; top:19.6%; }
+.atlas-node-finance .atlas-node-icon { background:#3E5A69; }
+.atlas-node-creative { left:13.8%; top:56.5%; }
+.atlas-node-coffee { left:84.4%; top:56.5%; }
+.atlas-node-music { left:50%; top:83.7%; }
+.atlas-node-detail { display:block; padding:9px; border-radius:8px; background:var(--cockpit-inset); border:1px solid var(--glass-border); }
+.atlas-node-detail a { color:var(--cockpit-link); }
+.atlas-node summary:focus-visible,.atlas-node-core:focus-visible { outline:3px solid var(--cockpit-link); outline-offset:4px; border-radius:8px; }
+.atlas-evidence-note { color:var(--cockpit-muted); font-size:12px; margin:10px 0 0; line-height:1.5; }
+.atlas-home .home-overview-grid .home-attention-panel { min-width:0; }
+.atlas-home .home-performance-grid { grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); }
+@media(max-width:1100px) {
+ .atlas-home .home-overview-grid { grid-template-columns:minmax(150px,.75fr) minmax(0,3fr); }
+ .atlas-home .home-overview-grid>.home-attention-panel { grid-column:1/-1; }
+}
+@media(max-width:700px) {
+ .atlas-home .home-overview-grid,.atlas-home .home-performance-grid { grid-template-columns:minmax(0,1fr); }
+ .atlas-home .home-health-status { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .atlas-map-canvas { min-height:410px; }
+ .atlas-map-heading { flex-wrap:wrap; }
+ .atlas-node { width:100px; font-size:12px; }
+ .atlas-node-icon { width:44px; height:44px; font-size:23px; }
+ .atlas-node-core .atlas-node-icon { width:58px; height:58px; }
+ .atlas-node-creative { left:17%; }
+ .atlas-node-coffee { left:83%; }
+ .atlas-node small { font-size:11px; }
+}
+@media(max-width:380px) {
+ .atlas-map-canvas { min-height:0; display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:14px 0; }
+ .atlas-cables { display:none; }
+ .atlas-map-canvas .atlas-node { position:static; transform:none; width:auto; }
+ .atlas-node-core { grid-column:1/-1; grid-row:1; }
+}
