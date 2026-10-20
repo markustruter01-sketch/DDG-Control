@@ -80,43 +80,64 @@ function FinanceSummaryBar({
       ? '–'
       : formatFigure(summary.customers, 'count')
     : placeholder;
+  const scale = Math.max(summary?.revenue_30d_cents ?? 0, summary?.expenses_30d_cents ?? 0, 1);
 
   return (
-    <section className="finance-summary" aria-label="Company-wide key figures" data-testid="finance-summary">
-      <div className="finance-kpi-grid">
+    <section className="home-performance-panel home-finance-panel" aria-labelledby="home-finance-title" data-testid="finance-summary">
+      <div className="home-panel-heading">
+        <div>
+          <p className="home-section-kicker">Business performance</p>
+          <h2 id="home-finance-title">Finance</h2>
+        </div>
+        <Link className="home-panel-link" href="/finances">Open Finance</Link>
+      </div>
+      <div className="home-finance-metrics">
         <FinanceKpiCard
           testId="finance-kpi-profit"
-          label="Profit · last 30 days"
+          label="Profit · 30 days"
           value={summary ? formatFinanceCents(summary.profit_30d_cents) : placeholder}
           detail={`Revenue ${summary ? formatFigure(summary.revenue_30d_cents, 'aud_cents') : placeholder}`}
           negative={Boolean(summary && summary.profit_30d_cents < 0)}
         />
         <FinanceKpiCard
-          testId="finance-kpi-debt"
-          label="Debt"
-          value={summary ? formatFigure(summary.debt_cents, 'aud_cents') : placeholder}
-          detail=" "
+          testId="finance-kpi-expected-profit"
+          label="Expected profit · next month"
+          value={summary ? formatFinanceCents(summary.expected_profit_next_month_cents) : placeholder}
+          detail={`Estimate · revenue ${summary ? formatFigure(summary.expected_revenue_next_month_cents, 'aud_cents') : placeholder}`}
+          negative={Boolean(summary && summary.expected_profit_next_month_cents < 0)}
+        />
+        <FinanceKpiCard
+          testId="finance-kpi-customers"
+          label="Online customers · 30 days"
+          value={customerCount}
+          detail="Cattle Dog Coffee · Stripe"
         />
         <FinanceKpiCard
           testId="finance-kpi-expenses"
           label="Expected expenses · next month"
           value={summary ? formatFigure(summary.expected_expenses_next_month_cents, 'aud_cents') : placeholder}
-          detail=" "
+          detail="Estimate"
         />
         <FinanceKpiCard
-          testId="finance-kpi-expected-profit"
-          label="Expected profit · next month"
-          value={summary ? formatFinanceCents(summary.expected_profit_next_month_cents) : placeholder}
-          detail={`Expected revenue ${summary ? formatFigure(summary.expected_revenue_next_month_cents, 'aud_cents') : placeholder} · estimate`}
-          negative={Boolean(summary && summary.expected_profit_next_month_cents < 0)}
-        />
-        <FinanceKpiCard
-          testId="finance-kpi-customers"
-          label="Online customers · last 30 days"
-          value={customerCount}
-          detail="Cattle Dog Coffee, Stripe only"
+          testId="finance-kpi-debt"
+          label="Debt · current"
+          value={summary ? formatFigure(summary.debt_cents, 'aud_cents') : placeholder}
+          detail="Source date Unknown"
         />
       </div>
+      <div className="home-performance-bars" aria-label="Revenue and expenses comparison">
+        <div className="home-bar-row">
+          <span>Revenue · last 30 days</span>
+          <div className="home-bar-track"><i className="home-bar-revenue" style={{ width: `${summary ? (summary.revenue_30d_cents / scale) * 100 : 0}%` }} /></div>
+          <strong>{summary ? formatFigure(summary.revenue_30d_cents, 'aud_cents') : placeholder}</strong>
+        </div>
+        <div className="home-bar-row">
+          <span>Expenses · last 30 days</span>
+          <div className="home-bar-track"><i className="home-bar-expenses" style={{ width: `${summary ? (summary.expenses_30d_cents / scale) * 100 : 0}%` }} /></div>
+          <strong>{summary ? formatFigure(summary.expenses_30d_cents, 'aud_cents') : placeholder}</strong>
+        </div>
+      </div>
+      <p className="home-chart-caption">Bars compare reported revenue and expenses over the same 30-day window; they are not a trend.</p>
       {isLoading && <p className="finance-summary-state" role="status">Loading company figures…</p>}
       {error != null && (
         <div className="finance-summary-state finance-summary-error" role="alert">
@@ -124,6 +145,11 @@ function FinanceSummaryBar({
           <button className="retry-button" type="button" onClick={onRetry}>Retry</button>
         </div>
       )}
+      <details className="home-source-details">
+        <summary>Periods and source notes</summary>
+        <p>Revenue, expenses and profit: last 30 days. Expected values: next-month estimate. Finance response does not provide a source timestamp; source date is Unknown.</p>
+        {summary?.notes.map((note, index) => <p key={`${index}-${note}`}>{note}</p>)}
+      </details>
     </section>
   );
 }
@@ -198,31 +224,127 @@ export function Home() {
       }];
     },
   );
+  const latestUpdates = [...(agentUpdatesQuery.data ?? [])].sort((a, b) =>
+    new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
+  );
+  const pendingDecisions = pendingDecisionsQuery.data ?? [];
+  const flaggedUpdates = latestUpdates.filter((update) => update.status_light === 'red');
+  const formatSourceDate = (value: string | null) => value
+    ? new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Australia/Brisbane' }).format(new Date(value))
+    : 'Source date Unknown';
 
   return (
     <div className="app-shell home-shell" style={backgroundStyle}>
       <Header />
-      <main className="page-wrap home-main">
-        <p className="eyebrow">Control panel</p>
-        <h1 className="home-title">Projects</h1>
-        <FinanceSummaryBar
-          summary={financeSummaryQuery.data}
-          isLoading={financeSummaryQuery.isLoading}
-          error={financeSummaryQuery.isError ? financeSummaryQuery.error : null}
-          onRetry={() => void financeSummaryQuery.refetch()}
-        />
-        <SocialBar projects={projects} />
-        <Link className="company-map-home-link" href="/organisation#company-map-title" data-testid="link-company-map">
-          <span><strong>Company Map</strong><small>People, systems, projects and delivery gaps</small></span>
-          <span aria-hidden="true">→</span>
-        </Link>
-        {(pendingDecisionsQuery.data?.length ?? 0) > 0 && (
-          <Link className="decisions-waiting" href="/decisions" data-testid="link-decisions-waiting">
-            Decisions waiting: {pendingDecisionsQuery.data?.length}
+      <main className="page-wrap home-main home-cockpit">
+        <div className="home-cockpit-heading">
+          <div>
+            <p className="eyebrow">Company overview</p>
+            <h1 className="home-title">Home</h1>
+          </div>
+          <Link className="company-map-home-link" href="/organisation#company-map-title" data-testid="link-company-map">
+            <span><strong>Company Map</strong><small>People, systems, projects and delivery gaps</small></span>
             <span aria-hidden="true">→</span>
           </Link>
-        )}
-        <div className="section-rule" id="project-list" data-testid="section-project-list"><span>Projects</span></div>
+        </div>
+
+        <section className="home-overview-grid" aria-label="Company health and attention">
+          <article className="home-health-panel">
+            <div className="home-panel-heading">
+              <div>
+                <p className="home-section-kicker">1 · Company health</p>
+                <h2>Project register</h2>
+              </div>
+              <Link className="home-panel-link" href="/organisation">Company Map</Link>
+            </div>
+            <div className="home-health-status">
+              <div>
+                <span>Service health</span>
+                <strong>Unknown</strong>
+                <small>No dependency-health check is available on this dashboard.</small>
+              </div>
+              <div>
+                <span>Project records</span>
+                <strong>{projectsQuery.isLoading ? '…' : projectsQuery.isError ? 'Unknown' : projects.length}</strong>
+                <small>{projectsQuery.isError ? 'Unable to read project registry.' : 'Registry count · not a live-service status'}</small>
+              </div>
+            </div>
+            {projectsQuery.isError ? (
+              <p className="home-unknown-state" role="alert">Project status unavailable.</p>
+            ) : projects.length > 0 ? (
+              <div className="home-status-list">
+                {projects.map((project) => (
+                  <Link key={project.id} href={`/projects/${project.slug}`} className="home-status-item">
+                    <span>{project.name}</span><strong>{project.status}</strong>
+                  </Link>
+                ))}
+              </div>
+            ) : projectsQuery.isLoading ? <p className="home-unknown-state" role="status">Loading project registry…</p> : <p className="home-unknown-state">No project records returned.</p>}
+          </article>
+
+          <aside className="home-attention-panel" aria-labelledby="home-attention-title">
+            <div className="home-panel-heading">
+              <div>
+                <p className="home-section-kicker">Owner review</p>
+                <h2 id="home-attention-title">Needs attention</h2>
+              </div>
+              <span className="home-attention-count">{pendingDecisions.length + flaggedUpdates.length}</span>
+            </div>
+            {pendingDecisionsQuery.isLoading ? <p className="home-unknown-state" role="status">Checking decisions…</p>
+              : pendingDecisionsQuery.isError ? <p className="home-unknown-state" role="alert">Decision queue unavailable.</p>
+                : pendingDecisions.length === 0 && flaggedUpdates.length === 0 ? <p className="home-unknown-state">No pending decisions or red report flags in the available records.</p>
+                  : (
+                    <ul className="home-attention-list">
+                      {pendingDecisions.slice(0, 3).map((decision) => (
+                        <li key={decision.id}><Link href="/decisions"><span>{projects.find((project) => project.slug === decision.project_slug)?.name ?? decision.project_slug}</span><strong>{formatCurrentDisplayName(decision.title)}</strong><small>Owner decision · {decision.urgency} urgency</small></Link></li>
+                      ))}
+                      {flaggedUpdates.slice(0, 2).map((update) => (
+                        <li key={`flag-${update.project_slug}`}><Link href={`/projects/${update.project_slug}`}><span>{projects.find((project) => project.slug === update.project_slug)?.name ?? update.project_slug}</span><strong>Red status in saved Heimdall report</strong><small>{formatCurrentDisplayName(update.next_action)}</small></Link></li>
+                      ))}
+                    </ul>
+                  )}
+            <Link className="home-panel-link" href="/decisions">Open decision records →</Link>
+          </aside>
+        </section>
+
+        <section aria-label="Business performance">
+          <div className="home-section-title">
+            <p className="home-section-kicker">2 · Business performance</p>
+            <p>Periods and source coverage are shown with each figure.</p>
+          </div>
+          <div className="home-performance-grid">
+            <FinanceSummaryBar
+              summary={financeSummaryQuery.data}
+              isLoading={financeSummaryQuery.isLoading}
+              error={financeSummaryQuery.isError ? financeSummaryQuery.error : null}
+              onRetry={() => void financeSummaryQuery.refetch()}
+            />
+            <SocialBar projects={projects} />
+          </div>
+        </section>
+
+        <section className="home-activity-panel" aria-labelledby="home-activity-title">
+          <div className="home-panel-heading">
+            <div>
+              <p className="home-section-kicker">3 · Agent activity</p>
+              <h2 id="home-activity-title">Latest saved project updates</h2>
+              <p className="home-panel-caption">Heimdall report records; these do not prove a worker is active.</p>
+            </div>
+            <Link className="home-panel-link" href="/ai-stack">Open AI Stack</Link>
+          </div>
+          {agentUpdatesQuery.isLoading ? <p className="home-unknown-state" role="status">Loading saved updates…</p>
+            : agentUpdatesQuery.isError ? <div className="home-unknown-state" role="alert">Saved updates unavailable. <button className="retry-button" type="button" onClick={() => void agentUpdatesQuery.refetch()}>Retry</button></div>
+              : latestUpdates.length === 0 ? <p className="home-unknown-state">Unknown · no saved project updates.</p>
+                : <div className="home-agent-list">{latestUpdates.slice(0, 4).map((update) => (
+                  <Link key={update.project_slug} href={`/projects/${update.project_slug}`} className="home-agent-item">
+                    <span className={`home-agent-status status-${update.status_light}`}>{update.status_light}</span>
+                    <span className="home-agent-copy"><strong>{projects.find((project) => project.slug === update.project_slug)?.name ?? update.project_slug}</strong><small>{formatCurrentDisplayName(update.next_action)}</small></span>
+                    <time>{formatSourceDate(update.created_at)}</time>
+                  </Link>
+                ))}</div>}
+        </section>
+
+        <div className="section-rule" id="project-list" data-testid="section-project-list"><span>Projects · open a project</span></div>
 
         {projectsQuery.isLoading ? (
           <section className="state-panel" aria-live="polite" data-testid="status-projects-loading">
@@ -325,7 +447,8 @@ export function Home() {
           </section>
         )}
 
-        <section className="report-section" aria-labelledby="report-title" data-testid="section-since-report">
+        <details className="report-section home-report-disclosure" data-testid="section-since-report">
+          <summary>Since last report · saved comparisons</summary>
           <div className="report-heading">
             <div>
               <p className="eyebrow">Heimdall’s latest comparison</p>
@@ -360,7 +483,7 @@ export function Home() {
               ))}
             </div>
           )}
-        </section>
+        </details>
       </main>
     </div>
   );

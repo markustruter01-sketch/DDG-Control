@@ -119,3 +119,11 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - No content, routes, data, auth, project controls, or work behavior were removed or changed. Finance remains OFF/held; DDG Music remains unchanged.
 - The broader redesign backlog remains: Home, Organisation/Company Map, Agents, Decisions, Finance, project detail, auth and shared loading/error/empty states still need page-by-page visual review. Exact logo assets remain unavailable in-app.
 - This correction was visually checked in the development preview at desktop and mobile sizes after the layout change. No new tests, typecheck, or build were run per owner instruction. Owner-signed-in and production behavior remain unverified; no publish or production data change occurred.
+
+## 2026-10-20 Home company cockpit slice
+
+- Home (`/`) now presents company health first, business performance second, and saved project/Heimdall report activity third. Existing project links/cards, Company Map link, decision queue, social snapshot entry, and “Since last report” remain available.
+- The health card reports project registry statuses separately from service health; operational service health stays Unknown because no dependency health source is available. Attention items link to existing pending Decisions records and saved red Heimdall report flags; no new approval source was added.
+- Finance summaries use the existing finance summary endpoint. Periods are labelled (30 days/next-month estimate); the response has no source timestamp, so finance source date is explicitly Unknown. Social figures show saved source and capture date, label manual entries, and state that summed platform followers are not unique people. Missing social readings are Unknown, not zero.
+- Project cards and latest saved report records use existing data/hooks only; no routes, APIs, schema, provider calls, workers, or production data were changed. Finance hold and DDG Music remain unchanged.
+- Checklist status: Home cockpit is built in the development workspace; source/UI review is not a full functional test, and no new test/build/typecheck was run at owner request. Owner-session and production/live verification remain unverified. Other redesigned pages remain pending.
