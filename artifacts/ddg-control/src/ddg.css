@@ -2704,3 +2704,21 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
 .company-work-overview a:focus-visible { outline:3px solid var(--cockpit-link); outline-offset:3px; }
 .managed-work-card[id] { scroll-margin-top:20px; }
 @media(max-width:700px) { .company-work-grid { grid-template-columns:1fr; } }
+
+/* Versioned delivery context, deliberately separate from task execution controls. */
+.delivery-plan { padding:0 14px 12px; }
+.delivery-plan>label { display:block; margin:12px 0 6px; font-size:13px; color:var(--cockpit-ink); }
+.delivery-plan>select { min-height:44px; padding:8px 12px; max-width:100%; background:var(--cockpit-inset); color:var(--cockpit-ink); border:1px solid var(--glass-border); border-radius:10px; font:inherit; }
+.delivery-item-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:14px; }
+.delivery-item { min-width:0; padding:12px; background:var(--cockpit-inset); border:1px solid var(--glass-border); border-radius:12px; color:var(--cockpit-ink); }
+.delivery-item>summary { display:grid; grid-template-columns:auto minmax(0,1fr); gap:7px 10px; cursor:pointer; min-height:52px; }
+.delivery-id { font:600 11px/1.5 var(--app-font-mono); color:var(--cockpit-link); }
+.delivery-item strong { font-size:13px; line-height:1.4; }
+.delivery-state { grid-column:2; font-size:11px; color:var(--cockpit-muted); }
+.delivery-item h3 { font-size:13px; }
+.delivery-evidence,.delivery-item li,.delivery-rules li { font-size:12px; line-height:1.6; color:var(--cockpit-muted); overflow-wrap:anywhere; }
+.delivery-item ul,.delivery-rules ul { padding-left:20px; }
+.delivery-rules { margin:14px 0 8px; color:var(--cockpit-ink); }
+.delivery-rules>summary { min-height:44px; cursor:pointer; font-size:13px; }
+.delivery-plan :is(summary,select):focus-visible { outline:3px solid var(--cockpit-link); outline-offset:3px; }
+@media(max-width:700px) { .delivery-item-grid { grid-template-columns:1fr; } }
