@@ -79,11 +79,12 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
   }, [location]);
 
   return (
-    <header className="topbar">
-      <Link href="/" className="brand" data-testid="link-home-brand">
-        <span>DDG Control</span>
-      </Link>
-      <div className="topbar-actions">
+    <>
+      <header className="topbar">
+        <Link href="/" className="brand" data-testid="link-home-brand">
+          <span>DDG Control</span>
+        </Link>
+        <div className="topbar-actions">
         <button
           className="theme-toggle"
           type="button"
@@ -109,7 +110,8 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
             {logoutMutation.isPending ? 'Logging out…' : 'Log out'}
           </button>
         )}
-      </div>
+        </div>
+      </header>
       <nav className="floating-navigation" aria-label="Primary navigation">
         <Link
           href="/#project-list"
@@ -176,6 +178,6 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
           <span className="floating-nav-label">Finance</span>
         </Link>
       </nav>
-    </header>
+    </>
   );
 }

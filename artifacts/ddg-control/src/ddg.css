@@ -2152,3 +2152,41 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 }
 :root[data-theme='day'] .home-shell .project-tile .tile-fact,:root[data-theme='day'] .org-person-role,:root[data-theme='day'] .metric-card>span { color:#3E5A69; }
 :root[data-theme='day'] .home-shell .project-tile .tile-name,:root[data-theme='day'] .home-shell .project-tile .tile-fact strong { color:#0B1F2A; }
+
+/* Reserve a real footer row for the primary dock; scrolling stays in main, never behind it. */
+.app-shell {
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+  height:100dvh;
+  min-height:0;
+  overflow:hidden;
+  padding-bottom:0!important;
+}
+body:has(.dev-auth-banner) .app-shell { height:calc(100dvh - 28px); }
+.app-shell>.topbar { grid-row:1; }
+.app-shell>.page-wrap {
+  grid-row:2;
+  min-height:0;
+  max-height:100%;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+.app-shell>.floating-navigation {
+  position:static!important;
+  inset:auto!important;
+  grid-row:3;
+  justify-self:center;
+  align-self:center;
+  transform:none!important;
+  z-index:80;
+  width:min(460px,calc(100vw - 24px));
+  margin:0 auto;
+  padding:6px 7px calc(6px + env(safe-area-inset-bottom));
+  box-sizing:border-box;
+}
+.ai-stack-main { padding-bottom:20px; }
+@media(max-width:560px) {
+  .app-shell>.floating-navigation { width:calc(100vw - 12px); padding:4px 0 calc(6px + env(safe-area-inset-bottom)); }
+}
