@@ -182,3 +182,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Replaced mixed Atlas text/emoji symbols with consistent24-unit minimalist stroked SVG icons. Kept icons as interactive DOM layers, not baked into scenery, to retain accessible controls and future animation.
 - Added exact glitch PNG centred in Company overview header at102px (3x prior34px mark), and fitted it within the central black Atlas node above DDG Control. The existing small topbar mark remains. Source logo pixels unchanged.
 - Responsive header uses balanced side columns to maintain centred logo. No rendered/mobile/day/night/build/test verification performed; source-ready only. Earlier Replit source c3a06403 was confirmed clean/visible in dev preview, not live. Loading profit placeholder is not a confirmed inconsistency without settled-request evidence.
+
+## 2026-10-20 Saved-decision inbox first functional slice
+
+- Added shared header notification inbox driven ONLY by existing pending decisions query. Explicit loading/error/empty states, unread markers, outside-click/Escape close, keyboard trigger and links to exact pending decision anchors. Reading never changes decision approval or starts work.
+- Read markers are in-memory only, reset on reload and are honestly labelled; no claim of durable notification backend or cross-device history. Other alerts and employee message ingress remain disconnected, not fabricated. Reuses query key/cache rather than adding provider calls or polling.
+- Decisions source expands/focuses anchor target on arrival after data loads. Full deep-link navigation, settled data/error behavior, screen-reader/mobile and day/night render checks remain outstanding; no tests/build/typecheck run.
+- Owner requested larger coherent coding batches and Replit pulls only when needed; bundle this with pending SVG/centred-logo source and do not prompt per small commit. Avatar dock structure and approved sprite production remain pending, not implemented by this slice.
