@@ -631,13 +631,16 @@ export function AIStackPage() {
             <span
               className={`ai-stack-live-dot ${agentsQuery.data?.status === "connected" ? "is-live" : ""}`}
             />
-            {devBypass
+            <span className="ai-stack-refresh-label">{devBypass
               ? "Cursor polling disabled in development bypass"
               : agentsQuery.isFetching
               ? "Checking…"
               : agentsQuery.data?.checkedAt
                 ? `Updated ${new Date(agentsQuery.data.checkedAt).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}`
-                : "Status not checked"}
+                : "Status not checked"}</span>
+            <nav className="ai-stack-context-links" aria-label="Related pages">
+              <Link href="/agents">Agent records</Link><Link href="/organisation">Company Map</Link>
+            </nav>
           </div>
         </div>
 
@@ -663,10 +666,6 @@ export function AIStackPage() {
               <i style={{ width: hasTokenTotals ? "100%" : "0%" }} />
             </div>
           </article>
-          <div className="ai-stack-summary-foot">
-            <span className={`ai-stack-freshness${cursorFreshness.startsWith("Stale") ? " is-stale" : ""}`}><i aria-hidden="true" />{cursorFreshness}</span>
-            <nav aria-label="Related pages"><Link href="/agents">Agent records</Link><Link href="/organisation">Company Map</Link></nav>
-          </div>
         </section>
 
         <FleetDesk
@@ -688,7 +687,7 @@ export function AIStackPage() {
         />
 
         <div className="ai-stack-dashboard-grid">
-          <details className="ai-stack-cockpit-category" open>
+          <details className="ai-stack-cockpit-category">
             <summary><span>Agent activity</span><small>{cursorConnected ? `${activeCount} active · ${attentionCount} need review` : cursorFreshness}</small></summary>
           <section
             className="ai-stack-panel ai-stack-work-panel"

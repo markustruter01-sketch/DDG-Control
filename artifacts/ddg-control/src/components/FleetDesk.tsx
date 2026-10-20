@@ -355,8 +355,41 @@ export default function FleetDesk({
           </div>
         </div>
 
+        <details className="fleet-collapsible fleet-proposal-disclosure">
+          <summary>Propose next work</summary>
+          <section className="fleet-panel" aria-labelledby="fleet-proposal-title">
+            <div className="fleet-panel-heading"><h3 id="fleet-proposal-title">Propose next work</h3></div>
+            <p className="fleet-copy">Preview one saved report for one project, then pass that report to the owner callback. Finance and DDG Music are excluded.</p>
+            <div className="fleet-form">
+              <label htmlFor="fleet-proposal-project">Project</label>
+              <select id="fleet-proposal-project" value={proposalProject} onChange={(event) => { setProposalProject(event.target.value); setProposalReportIndex(""); }}>
+                <option value="">Choose a project</option>
+                {projects.filter((project) => !/finance|ddg[\s_-]*music/.test(`${project.key} ${project.label}`.toLowerCase())).map((project) => <option key={project.key} value={project.key}>{project.label}</option>)}
+              </select>
+              <label htmlFor="fleet-proposal-report">Saved report</label>
+              <select id="fleet-proposal-report" value={proposalReportIndex} onChange={(event) => setProposalReportIndex(event.target.value)} disabled={!proposalProject || currentProposalReports.length === 0}>
+                <option value="">Choose a report</option>
+                {currentProposalReports.map((report, index) => <option key={`${report.project_slug}-${index}`} value={index}>{report.priority ? `${report.priority} · ` : ""}{report.summary.slice(0, 90)}</option>)}
+              </select>
+            </div>
+            {proposalReport ? <div className="fleet-report-preview" aria-live="polite">
+              <strong>Preview · {proposalReport.project_slug}</strong>
+              <p>{proposalReport.summary}</p>
+              <p><strong>Next action:</strong> {proposalReport.next_action}</p>
+              {proposalReport.priority && <small>Priority: {proposalReport.priority}</small>}
+              <div className="fleet-actions" style={{ marginTop: 9 }}>
+                <button className="fleet-button" type="button" onClick={() => onProposeNextWork(proposalReport)}>Propose this next work</button>
+              </div>
+            </div> : <p className="fleet-copy">{proposalProject ? "No saved reports are available for this project." : "Choose a project to see its saved reports."}</p>}
+          </section>
+        </details>
+
         <div className="fleet-grid">
           <div className="fleet-column">
+            <details className="fleet-collapsible">
+              <summary>More Fleet Desk</summary>
+            <details className="fleet-collapsible">
+              <summary>Operations conversation</summary>
             <section className="fleet-panel" aria-labelledby="fleet-conversation-title">
               <div className="fleet-panel-heading">
                 <h3 id="fleet-conversation-title">Operations conversation</h3>
@@ -371,7 +404,9 @@ export default function FleetDesk({
                 {" "}Any active-provider-run text is queued only for possible owner follow-up; it does not cancel or alter an active run.
               </p>
               <p className="fleet-copy">Voice: planned, not active. No ChatGPT quota signal or automatic provider switch is connected.</p>
-              <form className="fleet-form" onSubmit={(event) => { event.preventDefault(); void saveMessage("draft"); }}>
+                <details className="fleet-form-disclosure">
+                  <summary>Add a dashboard note</summary>
+                <form className="fleet-form" onSubmit={(event) => { event.preventDefault(); void saveMessage("draft"); }}>
                 <label htmlFor="fleet-message">Add to this project’s notebook</label>
                 <textarea id="fleet-message" value={message} onChange={(event) => { if(!message.trim() && event.target.value.trim()) setMessageContext(currentContext); if(!event.target.value.trim()) setMessageContext(""); setMessage(event.target.value); }} placeholder="Write a short draft or dashboard note…" />
                 {messageRetargeted && <p className="fleet-status error" role="alert">This draft belongs to an earlier project/task version. It will not be retargeted. Clear it or return to its original context.</p>}
@@ -385,6 +420,7 @@ export default function FleetDesk({
                   </button>
                 </div>
               </form>
+                </details>
               {feedback && <p className={`fleet-status${error ? " error" : ""}`} role="status">{feedback}</p>}
               {orderedMessages.length > 0 ? (
                 <>
@@ -407,10 +443,15 @@ export default function FleetDesk({
                 </>
               ) : <p className="fleet-copy">No saved conversation yet. Notes stay in this dashboard until an owner decides what to do with them.</p>}
             </section>
+            </details>
 
+            <details className="fleet-collapsible">
+              <summary>Ask the owner</summary>
             <section className="fleet-panel" aria-labelledby="fleet-question-create-title">
               <div className="fleet-panel-heading"><h3 id="fleet-question-create-title">Ask the owner</h3></div>
               <p className="fleet-copy">Record a decision request against the current project and task context.</p>
+              <details className="fleet-form-disclosure">
+                <summary>Create an owner question</summary>
               <form className="fleet-form" onSubmit={(event) => void createQuestion(event)}>
                 <label htmlFor="fleet-question">Question</label>
                 <textarea className="short" id="fleet-question" value={questionText} onChange={(event) => {if(!questionContext && event.target.value.trim())setQuestionContext(currentContext);setQuestionText(event.target.value);}} required placeholder="What needs an owner decision?" />
@@ -425,7 +466,10 @@ export default function FleetDesk({
                   {busy === "question" ? "Saving…" : "Save owner question"}
                 </button>
               </form>
+              </details>
             </section>
+            </details>
+            </details>
           </div>
 
           <div className="fleet-column">
@@ -478,31 +522,6 @@ export default function FleetDesk({
               </details>}
             </section>
 
-            <section className="fleet-panel" aria-labelledby="fleet-proposal-title">
-              <div className="fleet-panel-heading"><h3 id="fleet-proposal-title">Propose next work</h3></div>
-              <p className="fleet-copy">Preview one saved report for one project, then pass that report to the owner callback. Finance and DDG Music are excluded.</p>
-              <div className="fleet-form">
-                <label htmlFor="fleet-proposal-project">Project</label>
-                <select id="fleet-proposal-project" value={proposalProject} onChange={(event) => { setProposalProject(event.target.value); setProposalReportIndex(""); }}>
-                  <option value="">Choose a project</option>
-                  {projects.filter((project) => !/finance|ddg[\s_-]*music/.test(`${project.key} ${project.label}`.toLowerCase())).map((project) => <option key={project.key} value={project.key}>{project.label}</option>)}
-                </select>
-                <label htmlFor="fleet-proposal-report">Saved report</label>
-                <select id="fleet-proposal-report" value={proposalReportIndex} onChange={(event) => setProposalReportIndex(event.target.value)} disabled={!proposalProject || currentProposalReports.length === 0}>
-                  <option value="">Choose a report</option>
-                  {currentProposalReports.map((report, index) => <option key={`${report.project_slug}-${index}`} value={index}>{report.priority ? `${report.priority} · ` : ""}{report.summary.slice(0, 90)}</option>)}
-                </select>
-              </div>
-              {proposalReport ? <div className="fleet-report-preview" aria-live="polite">
-                <strong>Preview · {proposalReport.project_slug}</strong>
-                <p>{proposalReport.summary}</p>
-                <p><strong>Next action:</strong> {proposalReport.next_action}</p>
-                {proposalReport.priority && <small>Priority: {proposalReport.priority}</small>}
-                <div className="fleet-actions" style={{ marginTop: 9 }}>
-                  <button className="fleet-button" type="button" onClick={() => onProposeNextWork(proposalReport)}>Propose this next work</button>
-                </div>
-              </div> : <p className="fleet-copy">{proposalProject ? "No saved reports are available for this project." : "Choose a project to see its saved reports."}</p>}
-            </section>
           </div>
         </div>
       </div>
