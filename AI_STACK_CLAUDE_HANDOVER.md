@@ -155,3 +155,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Exact professional transparent PNG is committed under public/ddg-professional-white-transparent.png; Git blob095ff41fba011696b4da0083ff03871f1f08499e matches the local original. Header now references it through BASE_URL. Navy backing is CSS layout, not baked into/recoloring the logo. Existing text supplies accessible brand name; image is decorative to avoid repetition.
 - Projects active styling now applies to project detail routes rather than incorrectly marking both Projects and Home selected on Home. Project anchor behavior is preserved.
 - No render/build/test checks performed. Replit Git delivery still needs working UI pull; source is not a claim of live brand rollout. Atlas image/sprites/transfer feed and other page acceptance remain pending.
+
+## 2026-10-20 Preserve owner backgrounds and restore Atlas glacier
+
+- Confirmed owner background commit f1b739e on GitHub before editing; preserved main.tsx three-image random/60-second rotation and Home override removal.
+- Added public/atlas-glacier-v1.jpg, a synthetic decorative landscape derived using built-in image generation from approved Concept03. It is not an authentic location photograph. Local full source/prompt recorded under output/company-atlas. Asset JPEG522776bytes, dimensions preserved from generated original.
+- Central Atlas canvas now references it using BASE_URL, with cover placement and legible solid-backed labels. Global owner-selected background rotation remains untouched. Cables are still structural/dashed, not a live event animation.
+- No tests/build/render/production verification performed. Pull/review needed; do not call screenshot-matching complete. Finance/Music and permissions unchanged.
