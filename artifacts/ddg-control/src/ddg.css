@@ -937,17 +937,17 @@ button:focus-visible, a:focus-visible { outline: 2px solid hsl(var(--accent)); o
   background-image: var(--home-background);
 }
 :root[data-theme='day'] .home-shell .project-tile {
-  background-color: rgba(255, 255, 255, .39);
+  background-color: rgba(255, 255, 255, .31);
   border-color: rgba(44, 57, 49, .2);
   box-shadow: 0 14px 38px rgba(29, 39, 33, .16), inset 0 1px 0 rgba(255, 255, 255, .86);
 }
 :root[data-theme='day'] .home-shell .project-tile:hover {
   border-color: rgba(44, 57, 49, .32);
-  background-color: rgba(255, 255, 255, .47);
+  background-color: rgba(255, 255, 255, .38);
   box-shadow: 0 18px 44px rgba(29, 39, 33, .2), inset 0 1px 0 rgba(255, 255, 255, .95);
 }
 :root[data-theme='day'] .report-item {
-  background: rgba(255, 255, 255, .41);
+  background: rgba(255, 255, 255, .33);
 }
 :root[data-theme='day'] .agent-light-dot {
   border-color: rgba(28, 36, 31, .48);
@@ -2536,9 +2536,9 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
   --ddg-glass-blur:20px;
 }
 :root[data-theme='day'] {
-  --glass-surface:rgba(244,249,252,.29);
+  --glass-surface:rgba(244,249,252,.23);
   --glass-border:rgba(255,255,255,.6);
-  --cockpit-inset:rgba(244,249,252,.13);
+  --cockpit-inset:rgba(244,249,252,.10);
 }
 :root .home-cockpit :is(.home-health-panel,.home-attention-panel,.home-performance-panel,.home-activity-panel,.home-cockpit-heading,.home-section-title,.decision-card,.decision-history-row),
 :root .atlas-map-panel,
@@ -2561,21 +2561,21 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
 }
 :root .home-cockpit .company-map-home-link { background:var(--cockpit-inset); }
 :root .topbar { background:rgba(11,31,42,.56); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); }
-:root[data-theme='day'] .topbar { background:rgba(244,249,252,.30); }
+:root[data-theme='day'] .topbar { background:rgba(244,249,252,.24); }
 :root .floating-navigation { background:rgba(11,31,42,.58); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); }
-:root[data-theme='day'] .floating-navigation { background:rgba(244,249,252,.29); }
+:root[data-theme='day'] .floating-navigation { background:rgba(244,249,252,.23); }
 :root .atlas-map-panel { color:var(--cockpit-ink); }
 /* Keep the chosen central landscape clear; only its labels need frosted backing. */
 :root .atlas-map-canvas .atlas-node strong,
 :root .atlas-map-canvas .atlas-node small {
-  background:rgba(247,251,255,.39);
+  background:rgba(247,251,255,.31);
   backdrop-filter:blur(10px);
   -webkit-backdrop-filter:blur(10px);
 }
 :root:not([data-theme='day']) .home-cockpit :is(h1,h2,h3,strong) { text-shadow:0 1px 2px rgba(6,19,26,.35); }
 @supports not (backdrop-filter:blur(1px)) {
  :root { --glass-surface:rgba(11,31,42,.94); --cockpit-inset:rgba(11,31,42,.86); }
- :root[data-theme='day'] { --glass-surface:rgba(244,249,252,.48); --cockpit-inset:rgba(244,249,252,.44); }
+ :root[data-theme='day'] { --glass-surface:rgba(244,249,252,.38); --cockpit-inset:rgba(244,249,252,.35); }
 }
 
 /* Full-frame Atlas landscape with a sharp centre and graduated frosted edges. */
@@ -2594,7 +2594,7 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
 .atlas-map-panel>.atlas-map-legend,
 .atlas-map-panel>.atlas-evidence-note {
  position:relative; z-index:2; color:#0B1F2A;
- background:rgba(244,249,252,.33); backdrop-filter:blur(14px);
+ background:rgba(244,249,252,.26); backdrop-filter:blur(14px);
  -webkit-backdrop-filter:blur(14px); border-radius:10px; padding:8px 10px;
 }
 :root .atlas-map-panel .atlas-map-heading h2 { color:#0B1F2A; text-shadow:none; }
