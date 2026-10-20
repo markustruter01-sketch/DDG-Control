@@ -176,3 +176,9 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Glacier image moved from inset canvas to full Atlas panel. A masked blurred duplicate creates gradual edge frosting while centre remains sharp; real heading/node layers remain usable. Adjusted node/cable anchors and contact shadows as a first terrain-alignment pass. Exact peak alignment still needs rendered review across aspect ratios; not claimed finished.
 - Small magenta highlights on owner-attention edge/count, central control-node ring, report disclosure and decision badge. No full-panel magenta tint or animated fake activity.
 - No rendered/build/test/live verification in this pass. Preserve owner global backgrounds; no Finance/Music/backend changes.
+
+## 2026-10-20 SVG and centred glitch-mark pass
+
+- Replaced mixed Atlas text/emoji symbols with consistent24-unit minimalist stroked SVG icons. Kept icons as interactive DOM layers, not baked into scenery, to retain accessible controls and future animation.
+- Added exact glitch PNG centred in Company overview header at102px (3x prior34px mark), and fitted it within the central black Atlas node above DDG Control. The existing small topbar mark remains. Source logo pixels unchanged.
+- Responsive header uses balanced side columns to maintain centred logo. No rendered/mobile/day/night/build/test verification performed; source-ready only. Earlier Replit source c3a06403 was confirmed clean/visible in dev preview, not live. Loading profit placeholder is not a confirmed inconsistency without settled-request evidence.
