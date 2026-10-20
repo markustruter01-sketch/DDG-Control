@@ -33,3 +33,10 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Bounded improvement: collapsed coverage summary counts registered ventures with readings; lists missing ventures, oldest capture and explicit account/overlap/sync limits. A failed summary query does not present cached totals as current.
 - No arbitrary freshness threshold, invented account identities, deduplication claim, external analytics calls or new schema. Registration, source-native metrics and read-only account ingestion remain separate owner-reviewed work.
 - Source inspection only. No tests, compilation, database/provider operations, merge or deployment; queue for coherent batch.
+
+##21October — Activity-ledger coverage
+
+- Need: the inspector filters events/runs through loaded task IDs, silently excluding unassociated records. Refresh can also leave a selected project/task absent, yielding an empty export.
+- Approach: preserve API, filters and metadata-only export; disclose excluded unassociated counts in the all-records view and state export limitations. Mark missing filter selection explicitly with a reset action; disable export until a valid selection.
+- No guessed project attribution, raw payload exposure, new database/query, model call or tamper-proof claim. This does not fetch missing records or prove complete company history.
+- Source inspected only. No tests, compilation, interaction, owner/live acceptance, database/provider operations, merge/deploy.

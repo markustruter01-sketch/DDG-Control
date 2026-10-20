@@ -18,10 +18,17 @@ export function WorkLedger({ data, loading, failed, onRetry }: Props) {
   const projects = [...new Set(tasks.map((item) => item.project_key))].sort();
   const selectedTasks = tasks.filter((item) => (project === 'all' || item.project_key === project) && (task === 'all' || String(item.id) === task));
   const taskIds = new Set(selectedTasks.map((item) => item.id));
+  const loadedTaskIds = new Set(tasks.map((item) => item.id));
+  const unassociatedEvents = (data?.events ?? []).filter((event) => !loadedTaskIds.has(event.work_item_id)).length;
+  const unassociatedRuns = (data?.dispatches ?? []).filter((run) => !loadedTaskIds.has(run.work_item_id)).length;
+  const invalidSelection = (project !== 'all' && !projects.includes(project)) ||
+    (task !== 'all' && !tasks.some((item) => String(item.id) === task && (project === 'all' || item.project_key === project)));
+  function resetSelection() { setProject('all'); setTask('all'); setLimit(50); }
+
   const events = (data?.events ?? []).filter((event) => taskIds.has(event.work_item_id)).sort((a,b) => (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0));
   const dispatches = (data?.dispatches ?? []).filter((run) => taskIds.has(run.work_item_id));
   function exportSnapshot() {
-    if (!data || loading || failed) return;
+    if (!data || loading || failed || invalidSelection) return;
     const snapshot = {
       format_version: 1,
       exported_at: new Date().toISOString(),
@@ -30,7 +37,7 @@ export function WorkLedger({ data, loading, failed, onRetry }: Props) {
       tasks: selectedTasks.map(({ id, project_key, repository, branch, commit_ref }) => ({ id, project_key, repository, branch, commit_ref })),
       events: events.map(({ id, work_item_id, actor, event_type, created_at }) => ({ id, work_item_id, actor, event_type, created_at })),
       dispatches: dispatches.map(({ id, work_item_id, provider, model_id, agent_id, run_id, provider_status, status, branch, started_at }) => ({ id, work_item_id, provider, model_id, agent_id, run_id, provider_status, status, branch, started_at })),
-      limitations: ['No raw event payloads, prompts, credentials or task free text included.', 'Run model identity is not automatically assigned to surrounding events.', 'This export is not a signed or independently tamper-verified audit.'],
+      limitations: ['No raw event payloads, prompts, credentials or task free text included.', 'Run model identity is not automatically assigned to surrounding events.', 'This export is not a signed or independently tamper-verified audit.', 'Loaded events or dispatches without matching loaded task metadata are excluded; this export does not establish complete history.'],
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' }));
     const link = document.createElement('a');
@@ -41,16 +48,18 @@ export function WorkLedger({ data, loading, failed, onRetry }: Props) {
   }
   return (
     <details className="ai-stack-cockpit-category work-ledger" id="work-ledger">
-      <summary><strong>Activity ledger</strong><small>{loading ? 'Loading…' : failed ? 'Unavailable' : `${events.length} saved events · ${dispatches.length} dispatch records`}</small></summary>
+      <summary><strong>Activity ledger</strong><small>{loading ? 'Loading…' : failed ? 'Unavailable' : `${events.length} matching events · ${dispatches.length} matching dispatches`}</small></summary>
       <p className="ai-stack-help">Saved task actions and dispatch identities. Model/provider are shown only on their actual run records. Missing attribution and decision reasons are not inferred.</p>
       {loading ? <p role="status">Loading ledger…</p> : failed ? <div role="alert"><p>Ledger unavailable; this is not an empty successful history.</p><button type="button" className="work-toggle" onClick={onRetry}>Retry</button></div> : <>
+        {invalidSelection && <div role="status"><p>The selected project or task is no longer in the loaded records. This does not establish deletion or completion.</p><button type="button" className="work-toggle" onClick={resetSelection}>Show all loaded records</button></div>}
+        {project === 'all' && task === 'all' && (unassociatedEvents > 0 || unassociatedRuns > 0) && <p className="ai-stack-help" role="status">{unassociatedEvents} loaded events and {unassociatedRuns} loaded dispatches lack matching task metadata. They are excluded from this view and export; history coverage is incomplete.</p>}
         <div className="ledger-filters">
           <label>Project<select value={project} onChange={(event) => { setProject(event.target.value); setTask('all'); setLimit(50); }}><option value="all">All loaded projects</option>{projects.map((key) => <option key={key} value={key}>{key}</option>)}</select></label>
           <label>Task<select value={task} onChange={(event) => { setTask(event.target.value); setLimit(50); }}><option value="all">All matching tasks</option>{tasks.filter((item) => project === 'all' || item.project_key === project).map((item) => <option key={item.id} value={item.id}>#{item.id} {item.title}</option>)}</select></label>
-          <button type="button" className="work-toggle" onClick={exportSnapshot} disabled={!data}>Export selected records</button>
+          <button type="button" className="work-toggle" onClick={exportSnapshot} disabled={!data || invalidSelection}>Export selected records</button>
         </div>
         <h3>Task events</h3>
-        {events.length === 0 ? <p className="ai-stack-help">No events in the loaded selection. Unconnected systems are not covered.</p> : <ol className="ledger-events">{events.slice(0,limit).map((event) => {
+        {events.length === 0 ? <p className="ai-stack-help">No matching events in the loaded selection. Missing task metadata and unconnected systems are not covered.</p> : <ol className="ledger-events">{events.slice(0,limit).map((event) => {
           const item = tasks.find((candidate) => candidate.id === event.work_item_id);
           return <li key={event.id}><div><strong>{event.event_type.replaceAll('_',' ')}</strong><time dateTime={event.created_at}>{timeLabel(event.created_at)} · Brisbane</time></div><p>Task #{event.work_item_id} · {item?.project_key ?? 'Project unknown'} · Actor: {event.actor || 'Unknown'}</p><small>Event #{event.id} · Model/reason attribution not established by this event view.</small></li>;
         })}</ol>}
