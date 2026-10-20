@@ -203,3 +203,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Added versioned ddg-control-delivery-plan.ts and collapsed DeliveryPlan UI in AI Stack: milestone A visibility/control, B verified automation, later bounded proposals. Every item has evidence/state and finish checks. No invented accepted/live status or numerical completion percentage.
 - Existing saved work overview and execution records remain distinct. This repository plan is not a new approval, worker queue, cross-project data grant, runtime import or agent access API. Read-only planning view; no model calls.
 - Real owner/live/mobile/render/build/typecheck verification remains outstanding; no tests run. Bundle with pending inbox/navigation/branding for integration rather than per-commit pulls.
+
+## 2026-10-20 Source consistency review before bundled integration
+
+- Corrected stale company-map possible-tenth entry, exact-nine UI copy and Creative owner-reported scope. Unknown runtime/account links stay unverified. Organisation directory now derives confirmed people from the same map registry, no venture names presented as employees. Founder separate.
+- Finance Atlas node uses actual existing finance project slug, not ddg-finance. No repository rename, Finance source or strategy edit.
+- Work overview links now explicitly expand enclosing details and focus existing task/control content. They do not change selected task context, authorize work or bypass Fleet Desk binding.
+- Pending bundle: centered SVG/logo visuals, saved-decision inbox/deep-link behavior, work overview, finite shared plan/context and directory corrections. Source review only; no tests/build/typecheck/render checks run. One owner pull/preview integration now appropriate before continuing dependent visual work.
