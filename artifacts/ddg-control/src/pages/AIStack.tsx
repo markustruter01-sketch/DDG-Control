@@ -178,8 +178,9 @@ async function createWorkItem(data: Record<string, unknown>) {
   if (!r.ok) throw new Error((await r.json().catch(()=>null))?.error ?? "Could not queue work");
   return r.json();
 }
-async function approveWorkItem(id:number) {
-  const r=await fetch(`/api/work-items/${id}/approve`,{method:"POST"});
+async function approveWorkItem(input:{id:number;expected_plan_version:number;expected_outcome_version:number}) {
+  const { id, ...versions } = input;
+  const r=await fetch(`/api/work-items/${id}/approve`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(versions)});
   if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error ?? "Approval failed");
   return r.json();
 }
@@ -1173,8 +1174,8 @@ export function AIStackPage() {
           </details>
           {createWorkMutation.isError && <p role="alert">{createWorkMutation.error.message}</p>}
           {workItemsQuery.isError ? <p role="alert">Could not load approval queue or task history.</p> : (workItemsQuery.data?.items ?? []).map(item=><article className="managed-work-card" id={`work-item-${item.id}`} key={item.id}>
-            <div className="ai-stack-section-heading"><div><strong>{managedAreas.find(a=>a.key===item.project_key)?.label} · {item.title}</strong><p>{item.status.replaceAll("_"," ")} · attempt {item.attempts}/{item.max_attempts} · due {new Date(item.deadline).toLocaleString()}</p></div>
-              {item.status==="pending_approval"&&<button className="work-toggle" disabled={devBypass||!readinessQuery.data?.dispatch_enabled||outcomesQuery.data?.outcomes.find(o=>o.id===item.outcome_id)?.status!=="approved"||approveWorkMutation.isPending} title="Requires real owner approval, approved outcome, project ON, and verified dispatch readiness." onClick={()=>approveWorkMutation.mutate(item.id)}>Approve</button>}
+            <div className="ai-stack-section-heading"><div><strong>{managedAreas.find(a=>a.key===item.project_key)?.label} · {item.title}</strong><p>{item.status.replaceAll("_"," ")} · Plan v{item.plan_version??1} · attempt {item.attempts}/{item.max_attempts} · due {new Date(item.deadline).toLocaleString()}</p></div>
+              {item.status==="pending_approval"&&<button className="work-toggle" disabled={devBypass||!readinessQuery.data?.dispatch_enabled||outcomesQuery.data?.outcomes.find(o=>o.id===item.outcome_id)?.status!=="approved"||approveWorkMutation.isPending} title="Requires real owner approval, approved outcome, project ON, and verified dispatch readiness." onClick={()=>{const outcome=outcomesQuery.data?.outcomes.find(o=>o.id===item.outcome_id);if(outcome)approveWorkMutation.mutate({id:item.id,expected_plan_version:item.plan_version??1,expected_outcome_version:outcome.version});}}>Approve</button>}
               {item.status==="approved"&&<button className="work-toggle" disabled={devBypass||!readinessQuery.data?.dispatch_enabled||dispatchMutation.isPending} onClick={()=>dispatchMutation.mutate(item.id)}>Start Cursor Cloud Agent</button>}
               {item.status==="in_progress"&&<div className="work-actions"><button disabled={devBypass || moveWorkMutation.isPending} onClick={()=>moveWorkMutation.mutate({id:item.id,status:"needs_owner"})}>Needs owner</button><button disabled={devBypass || moveWorkMutation.isPending} onClick={()=>moveWorkMutation.mutate({id:item.id,status:"failed"})}>Mark failed</button><button disabled={devBypass || moveWorkMutation.isPending} onClick={()=>{const evidence=window.prompt("Enter acceptance evidence before completion:");if(evidence?.trim()) moveWorkMutation.mutate({id:item.id,status:"completed",acceptance_evidence:evidence});}}>Mark complete</button></div>}
               {["pending_approval","approved","needs_owner","failed"].includes(item.status)&&<button type="button" className="work-toggle" disabled={devBypass || moveWorkMutation.isPending || item.project_key==="finance"} onClick={()=>{if(window.confirm("Close this task record as rejected? This does not stop any external agent.")) moveWorkMutation.mutate({id:item.id,status:"rejected"});}}>Reject task record</button>}

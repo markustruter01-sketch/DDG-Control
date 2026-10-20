@@ -275,6 +275,13 @@ router.post("/work-items", requireRealOwnerSession, async (req, res): Promise<vo
 
 router.post("/work-items/:id/approve", requireRealOwnerSession, async (req, res): Promise<void> => {
   const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  const b = req.body;
+  if (!Number.isSafeInteger(id) || id < 1 || !b || typeof b !== "object" || Array.isArray(b) ||
+      Object.keys(b).some((key) => !["expected_plan_version", "expected_outcome_version"].includes(key)) ||
+      !Number.isSafeInteger(b.expected_plan_version) || b.expected_plan_version < 1 ||
+      !Number.isSafeInteger(b.expected_outcome_version) || b.expected_outcome_version < 1) {
+    res.status(400).json({ error: "Select the exact task plan and outcome versions before approving." }); return;
+  }
   const readiness = dispatchReadiness(await readDispatchConfig());
   if (!readiness.dispatch_enabled) {
     res.status(423).json({ error: "Approval is held until dispatch readiness is verified.", blockers: readiness.blockers });
@@ -285,27 +292,30 @@ router.post("/work-items/:id/approve", requireRealOwnerSession, async (req, res)
     if (!locked) return { kind: "missing" as const };
     const { item, control } = locked;
     if ((item.project_key === "finance" && FINANCE_REVIEW_REQUIRED) || !control.enabled || control.completed) return { kind: "off" as const };
+    const [outcome] = item.outcome_id
+      ? await tx.select().from(managedWorkOutcomesTable).where(eq(managedWorkOutcomesTable.id, item.outcome_id)).limit(1)
+      : [];
+    if (!outcome || outcome.project_key !== item.project_key || outcome.status !== "approved") return { kind: "state" as const };
+    if ((item.plan_version ?? 1) !== b.expected_plan_version || outcome.version !== b.expected_outcome_version) {
+      return { kind: "stale" as const };
+    }
     if (item.status === "approved") return { kind: "ok" as const, item };
     if (item.status !== "pending_approval") return { kind: "state" as const };
     const [blockingQuestion] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
       .where(and(eq(managedFleetQuestionsTable.project_key, item.project_key), eq(managedFleetQuestionsTable.work_item_id, item.id),
         eq(managedFleetQuestionsTable.plan_version, item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
     if (blockingQuestion) return { kind: "question" as const };
-    if (item.outcome_id) {
-      const [outcome] = await tx.select().from(managedWorkOutcomesTable).where(eq(managedWorkOutcomesTable.id, item.outcome_id)).limit(1);
-      if (!outcome || outcome.project_key !== item.project_key || outcome.status !== "approved") return { kind: "state" as const };
-    } else return { kind: "state" as const };
     const [active] = await tx.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable).where(and(eq(managedWorkItemsTable.project_key, item.project_key), inArray(managedWorkItemsTable.status, ["approved", "in_progress"]))).limit(1);
     if (active) return { kind: "duplicate" as const };
     const [activeRepo] = await tx.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable).where(and(eq(managedWorkItemsTable.repository, item.repository!), ne(managedWorkItemsTable.id, id), inArray(managedWorkItemsTable.status, ["approved", "in_progress"]))).limit(1);
     if (item.repository && activeRepo) return { kind: "duplicate" as const };
     const [updated] = await tx.update(managedWorkItemsTable).set({ status: "approved", updated_at: new Date() }).where(eq(managedWorkItemsTable.id, id)).returning();
-    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "approved", from_status: item.status, to_status: "approved" });
+    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "approved", from_status: item.status, to_status: "approved", details: { plan_version: item.plan_version ?? 1, outcome_id: outcome.id, outcome_version: outcome.version } });
     return { kind: "ok" as const, item: updated };
   });
   if (result.kind !== "ok") {
     const status = result.kind === "missing" ? 404 : result.kind === "off" || result.kind === "question" ? 423 : 409;
-    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "question" ? "A blocking owner question is still open for this task version." : result.kind === "duplicate" ? "An active work item already exists for this project or repository." : result.kind === "state" ? "Outcome must be owner-approved before its task can be approved." : "Work item not found." });
+    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "question" ? "A blocking owner question is still open for this task version." : result.kind === "duplicate" ? "An active work item already exists for this project or repository." : result.kind === "stale" ? "The task plan or outcome changed. Refresh and review the current versions before approving." : result.kind === "state" ? "Outcome must be owner-approved before its task can be approved." : "Work item not found." });
     return;
   }
   res.json(result.item);

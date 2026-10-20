@@ -52,3 +52,8 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Need: creation button remained enabled in DEV/held/completed contexts despite new server rejection. Editable fields/context switching during save could lose a newer draft on success.
 - Approach: reuse owner/Finance and actual control state, expose specific blockers, guard handlers and freeze save inputs/context during requests. Keep task-ID adapter, layout and draft-retargeting logic.
 - Limits: source only, no tests/compilation/interaction checks yet; browser gating never replaces server authorization.
+
+##21October — Version-bound task approval
+- Need: current approval posts only task ID, so a stale owner screen could approve a later plan revision. This must be corrected before adding plan revision.
+- Approach: explicit expected plan/outcome versions in the existing approval request; check under existing locks before idempotent approval; record versions in approval event. Show plan version in task card. No new approval workflow.
+- Keep: outcome/readiness/Finance/question/repository guards and hard-false dispatch blocks. Missing/old client versions fail closed. Source-only; no tests, compilation, approvals, database/provider operations or release.

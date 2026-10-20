@@ -18,3 +18,6 @@ Rejected-plan revision is not implemented by this proposal. Old approval/questio
 
 ## UI companion
 Fleet Desk now explains and disables question/answer saves in DEV, held Finance, completed/unknown controls, missing task and unavailable thread contexts. Save handlers recheck the same local conditions. Project/task selectors and editable save fields freeze while a request is in flight; overlapping callbacks are guarded, so success cannot silently clear a newly typed draft in another context. Existing parent mapping from work_item_id to task_id was checked and preserved. Browser/runtime verification is still pending; the server remains authoritative.
+
+## Approval version prerequisite
+Task approval now requires the exact displayed plan and outcome versions, rechecked under the project/task lock, including repeated approval requests. UI sends these versions and displays the plan number. Approval events retain the actual accepted versions. Old clients without version bindings fail closed. Outcome/readiness/Finance/question and worker-block guards remain. This closes a source-level prerequisite for future rejected-plan revisions; revision itself is still unimplemented. No new compilation or runtime evidence.
