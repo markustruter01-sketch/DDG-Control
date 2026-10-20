@@ -40,3 +40,10 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Approach: preserve API, filters and metadata-only export; disclose excluded unassociated counts in the all-records view and state export limitations. Mark missing filter selection explicitly with a reset action; disable export until a valid selection.
 - No guessed project attribution, raw payload exposure, new database/query, model call or tamper-proof claim. This does not fetch missing records or prove complete company history.
 - Source inspected only. No tests, compilation, interaction, owner/live acceptance, database/provider operations, merge/deploy.
+
+##21October — Atomic owner question history
+- Need: partial answer/history writes, approval race and duplicate-question disclosure found in exact1146a10 source.
+- Approach: existing project-first lock, transaction-scoped version reads, question row lock for answers, atomic state/history writes and generic duplicate conflicts.
+- Keep: existing data/schema/IDs, current response meaning, stale-version checks, no automatic approval/resume, all dispatch-hard-false guards. No separate queue or model calls.
+- Improvement: real-owner-only creation and held Finance/completed-project checks. OFF alone permits safe owner questions, not execution.
+- Limits: no claim of provider interruption or full synchronization across all writers. Tests, compilation, independent peer review and runtime evidence remain pending.

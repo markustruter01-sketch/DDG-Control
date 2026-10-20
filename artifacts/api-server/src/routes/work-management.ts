@@ -65,6 +65,10 @@ export function hasWorkControl(key: string): key is WorkKey {
   return WORK_KEYS.includes(key as WorkKey);
 }
 
+export function isProjectWorkHeld(key: string): boolean {
+  return key === "finance" && FINANCE_REVIEW_REQUIRED;
+}
+
 export async function isProjectWorkEnabled(key: string): Promise<boolean> {
   if (!hasWorkControl(key)) return false;
   if (key === "finance" && FINANCE_REVIEW_REQUIRED) return false;
@@ -73,10 +77,10 @@ export async function isProjectWorkEnabled(key: string): Promise<boolean> {
   return row?.enabled === true && row.completed === false;
 }
 
-type WorkTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type WorkTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** Serialize project record changes: control first, then outcome/task rows. */
-async function lockWorkControl(tx: WorkTransaction, key: string) {
+export async function lockWorkControl(tx: WorkTransaction, key: string) {
   await tx.insert(projectWorkControlsTable).values({ project_key: key }).onConflictDoNothing();
   const [control] = await tx.select().from(projectWorkControlsTable)
     .where(eq(projectWorkControlsTable.project_key, key)).for("update").limit(1);
