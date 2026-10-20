@@ -169,3 +169,10 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - DDG Control shared cockpit surfaces now use day58% white/night50% navy tint and20px backdrop blur, lighter inset surfaces, thin luminous borders. Atlas scenery remains clear under readable frosted labels. These CSS starting values are not measured opacity matching of the screenshot.
 - No rendered contrast/accessibility or day/night/mobile verification yet; no tests/build performed. Fall back to opaque readable surfaces where backdrop blur is unavailable. Preserve backgrounds, data, work holds and source truth.
 - Deferred backlog: later investigate useful open-source alternatives and lawful interoperability/reverse-engineering options for complex tools, with license/cost/security checks; no research or implementation now.
+
+## 2026-10-20 Owner Atlas framing and creative-logo request
+
+- Owner requested the exact creative glitch mark for DDG Control UI. Added unchanged PNG blob a759c5a9e1a0139aba14257740ff6e94fd1e858b; header uses it. Professional document logo unchanged.
+- Glacier image moved from inset canvas to full Atlas panel. A masked blurred duplicate creates gradual edge frosting while centre remains sharp; real heading/node layers remain usable. Adjusted node/cable anchors and contact shadows as a first terrain-alignment pass. Exact peak alignment still needs rendered review across aspect ratios; not claimed finished.
+- Small magenta highlights on owner-attention edge/count, central control-node ring, report disclosure and decision badge. No full-panel magenta tint or animated fake activity.
+- No rendered/build/test/live verification in this pass. Preserve owner global backgrounds; no Finance/Music/backend changes.
