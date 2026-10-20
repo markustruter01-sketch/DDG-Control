@@ -393,7 +393,48 @@ router.get("/work-controls", async (_req, res): Promise<void> => {
   res.json({ controls, audit });
 });
 
-router.patch("/work-controls/:key", async (req, res): Promise<void> => {
+
+/** Blocks managed dashboard starts; does not claim provider cancellation. */
+router.post("/work-stop", requireRealOwnerSession, async (req, res): Promise<void> => {
+  if (req.body?.action !== "block_all_managed_work") {
+    res.status(400).json({ error: "Explicitly confirm blocking all managed dashboard work." });
+    return;
+  }
+  const saved = await db.transaction(async (tx) => {
+    await tx.insert(managedWorkDispatchConfigTable).values({ id: 1, enabled: false })
+      .onConflictDoUpdate({ target: managedWorkDispatchConfigTable.id, set: { enabled: false, updated_by: "Markus", updated_at: new Date() } });
+    for (const key of WORK_KEYS) {
+      await tx.insert(projectWorkControlsTable).values({ project_key: key, enabled: false })
+        .onConflictDoUpdate({ target: projectWorkControlsTable.project_key, set: { enabled: false, updated_by: "Markus", updated_at: new Date() } });
+      await tx.insert(projectWorkAuditTable).values({ project_key: key, enabled: false, owner_confirmed: true, event_type: "all_dashboard_work_blocked" });
+    }
+    const open = await tx.select().from(managedWorkItemsTable)
+      .where(inArray(managedWorkItemsTable.status, ["approved", "in_progress", "needs_owner"]));
+    for (const item of open) {
+      await tx.insert(managedWorkEventsTable).values({
+        work_item_id: item.id, project_key: item.project_key, actor: "Markus",
+        event_type: "all_dashboard_work_blocked", from_status: item.status, to_status: item.status,
+        details: { project_controls_disabled: true, dispatch_disabled: true, provider_cancellation: "not_requested_or_verified" },
+      });
+    }
+    const unresolved = await tx.select({
+      id: managedWorkDispatchesTable.id, work_item_id: managedWorkDispatchesTable.work_item_id,
+      project_key: managedWorkDispatchesTable.project_key, agent_id: managedWorkDispatchesTable.agent_id,
+      run_id: managedWorkDispatchesTable.run_id, status: managedWorkDispatchesTable.status,
+    }).from(managedWorkDispatchesTable)
+      .where(inArray(managedWorkDispatchesTable.status, ["submitting", "running", "needs_owner"]));
+    return { affected_task_records: open.length, unresolved_dispatches: unresolved };
+  });
+  res.json({
+    dashboard_work_blocked: true,
+    blocked_project_keys: WORK_KEYS,
+    ...saved,
+    provider_cancellation: "not_requested_or_verified",
+    message: "All managed project controls and dispatch are OFF. In-flight or external work may still be running. Review provider controls manually; no task was marked stopped or completed.",
+  });
+});
+
+router.patch("/work-controls/:key", requireRealOwnerSession, async (req, res): Promise<void> => {
   const key = Array.isArray(req.params.key) ? req.params.key[0] : req.params.key;
   if (!WORK_KEYS.includes(key as WorkKey) || typeof req.body?.enabled !== "boolean") {
     res.status(400).json({ error: "Choose a valid work area and enabled state." });
@@ -415,13 +456,13 @@ router.patch("/work-controls/:key", async (req, res): Promise<void> => {
       .onConflictDoUpdate({ target: projectWorkControlsTable.project_key, set: { enabled, updated_by: "Markus", updated_at: new Date() } });
     await tx.insert(projectWorkAuditTable).values({ project_key: key, enabled, owner_confirmed: true, event_type: enabled ? "work_enabled" : "work_disabled" });
   });
-  // This router is mounted after requireAuth; identity comes from the verified
-  // session, never from a client-supplied confirmation field.
+  // Consequential work-control changes require a real owner session,
+  // never a client confirmation flag or development auth bypass.
   const [control] = await db.select().from(projectWorkControlsTable).where(eq(projectWorkControlsTable.project_key, key)).limit(1);
   res.json(control);
 });
 
-router.post("/work-controls/:key/complete", async (req, res): Promise<void> => {
+router.post("/work-controls/:key/complete", requireRealOwnerSession, async (req, res): Promise<void> => {
   const key = Array.isArray(req.params.key) ? req.params.key[0] : req.params.key;
   if (!WORK_KEYS.includes(key as WorkKey)) { res.status(404).json({ error: "Unknown project." }); return; }
   const [open] = await db.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable)
