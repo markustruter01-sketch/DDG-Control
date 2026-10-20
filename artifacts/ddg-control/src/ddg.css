@@ -2153,43 +2153,43 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 :root[data-theme='day'] .home-shell .project-tile .tile-fact,:root[data-theme='day'] .org-person-role,:root[data-theme='day'] .metric-card>span { color:#3E5A69; }
 :root[data-theme='day'] .home-shell .project-tile .tile-name,:root[data-theme='day'] .home-shell .project-tile .tile-fact strong { color:#0B1F2A; }
 
-/* Reserve a real footer row for the primary dock; scrolling stays in main, never behind it. */
-.app-shell {
-  display:grid;
-  grid-template-rows:auto minmax(0,1fr) auto;
-  height:100dvh;
-  min-height:0;
-  overflow:hidden;
-  padding-bottom:0!important;
+/* The document scrolls naturally; reserve space for the floating dock. */
+.app-shell,
+body:has(.dev-auth-banner) .app-shell {
+  display:flex;
+  flex-direction:column;
+  height:auto;
+  min-height:100dvh;
+  overflow:visible;
+  padding-bottom:calc(112px + env(safe-area-inset-bottom))!important;
 }
-body:has(.dev-auth-banner) .app-shell { height:calc(100dvh - 28px); }
-.app-shell>.topbar { grid-row:1; }
+html,body,#root { height:auto; min-height:100%; overflow:visible; }
 .app-shell>.page-wrap {
-  grid-row:2;
+  flex:1 0 auto;
   min-height:0;
-  max-height:100%;
-  overflow-x:hidden;
-  overflow-y:auto;
-  overscroll-behavior:contain;
-  scrollbar-gutter:stable;
+  max-height:none;
+  overflow:visible;
+  scrollbar-gutter:auto;
 }
 .app-shell>.floating-navigation {
-  position:static!important;
-  inset:auto!important;
-  grid-row:3;
-  justify-self:center;
-  align-self:center;
-  transform:none!important;
+  position:fixed!important;
+  top:auto!important;
+  bottom:0!important;
+  left:50%!important;
+  right:auto!important;
+  transform:translateX(-50%)!important;
   z-index:80;
-  width:min(460px,calc(100vw - 24px));
-  margin:0 auto;
-  padding:6px 7px calc(6px + env(safe-area-inset-bottom));
+  width:min(460px,calc(100vw - 16px));
+  margin:0;
+  padding:8px 8px calc(8px + env(safe-area-inset-bottom));
   box-sizing:border-box;
+  background:rgba(11,31,42,.96);
+  border:1px solid rgba(124,201,232,.3);
+  border-bottom:0;
+  border-radius:20px 20px 0 0;
+  backdrop-filter:blur(16px);
 }
-.ai-stack-main { padding-bottom:20px; }
-@media(max-width:560px) {
-  .app-shell>.floating-navigation { width:calc(100vw - 12px); padding:4px 0 calc(6px + env(safe-area-inset-bottom)); }
-}
+.ai-stack-main { padding-bottom:24px; }
 
 /* Home cockpit: source-first summaries, with attention kept visible beside health. */
 .home-cockpit {
@@ -2335,4 +2335,97 @@ body:has(.dev-auth-banner) .app-shell { height:calc(100dvh - 28px); }
   .home-section-title { display:block; }
   .home-bar-row { grid-template-columns:minmax(90px,.7fr) minmax(50px,1fr) auto; gap:6px; font-size:9px; }
   .home-health-panel,.home-attention-panel,.home-performance-panel,.home-activity-panel { padding:12px; }
+}
+
+/* Shared cockpit theme pairs: foreground and surface always change together. */
+:root {
+  --cockpit-ink:#F7FBFF;
+  --cockpit-muted:#C5D7E0;
+  --cockpit-link:#7CC9E8;
+  --cockpit-inset:rgba(6,19,26,.65);
+}
+:root[data-theme='day'] {
+  --glass-surface:rgba(247,251,255,.96);
+  --glass-border:rgba(0,122,153,.28);
+  --cockpit-ink:#0B1F2A;
+  --cockpit-muted:#3E5A69;
+  --cockpit-link:#00647E;
+  --cockpit-inset:#EAF3F8;
+}
+:root .home-cockpit :is(.home-health-panel,.home-attention-panel,.home-performance-panel,.home-activity-panel,.home-cockpit-heading,.home-section-title,.decision-card,.decision-history-row) {
+  background:var(--glass-surface);
+  color:var(--cockpit-ink);
+  border-color:var(--glass-border);
+  border-radius:16px;
+}
+:root .home-cockpit :is(h1,h2,h3,strong,.decision-title,.decision-recommendation,.decision-facts dd,.history-decision-copy h3) {
+  color:var(--cockpit-ink);
+}
+:root .home-cockpit :is(.home-panel-caption,.home-unknown-state,.home-social-note,.home-chart-caption,.home-source-details,.home-agent-copy small,.home-agent-item time,.home-social-platform p,.home-social-platform small,.home-social-total span,.home-health-status span,.home-health-status small,.home-attention-list span,.home-attention-list small,.home-finance-panel .finance-kpi-label,.home-finance-panel .finance-kpi-detail,.home-bar-row>span,.home-section-title>p:last-child,.history-note,.decision-origin,.decision-facts dt,.decision-empty,.detail-description) {
+  color:var(--cockpit-muted);
+  font-size:13px;
+  line-height:1.5;
+}
+:root .home-cockpit :is(.home-health-status>div,.home-finance-panel .finance-kpi-card,.home-attention-list a,.home-social-venture,.home-agent-item) {
+  background:var(--cockpit-inset);
+  color:var(--cockpit-ink);
+}
+:root .home-cockpit :is(.home-section-kicker,.eyebrow,.home-panel-link,.home-source-details summary,.home-status-item strong,.decision-project) {
+  color:var(--cockpit-link);
+}
+:root .home-cockpit .company-map-home-link {
+  background:var(--cockpit-inset);
+  color:var(--cockpit-ink);
+}
+:root .home-cockpit .company-map-home-link small { color:var(--cockpit-muted); }
+:root .home-cockpit .home-panel-heading h2,
+:root .home-cockpit .home-social-panel h2 { font-size:19px; }
+:root .home-cockpit .home-social-platform-top,
+:root .home-cockpit .home-agent-copy strong,
+:root .home-cockpit .home-attention-list strong,
+:root .home-cockpit .home-status-item { font-size:13px; }
+:root .home-cockpit .home-bar-row { font-size:13px; }
+:root .home-cockpit .home-bar-row>strong { font-size:12px; }
+:root .home-cockpit .home-finance-panel .finance-kpi-value { font-size:21px; }
+:root .home-cockpit .home-finance-panel .finance-kpi-label { font-size:11px; }
+:root .home-cockpit .home-finance-panel .finance-kpi-detail { font-size:12px; }
+:root .home-cockpit .home-social-panel { margin-top:0; }
+:root .home-cockpit .home-section-kicker { font:600 11px/1.5 var(--app-font-mono); letter-spacing:.06em; margin:0 0 5px; }
+:root .home-cockpit .task-secondary-button {
+  min-height:44px;
+  background:var(--cockpit-inset);
+  color:var(--cockpit-ink);
+  border-color:var(--glass-border);
+}
+:root .home-cockpit :is(select,input,textarea) {
+  background:var(--cockpit-inset);
+  color:var(--cockpit-ink);
+  border:1px solid var(--glass-border);
+  border-radius:10px;
+  padding:10px 12px;
+  min-height:44px;
+  max-width:100%;
+  font:inherit;
+}
+:root .decisions-main .home-cockpit-heading { display:block; }
+:root .decisions-main .detail-title { margin:4px 0; font-size:32px; }
+:root .decisions-main label[for='decision-project-filter'] { display:block; margin:14px 0 6px; }
+:root .decisions-main .decision-card>summary { cursor:pointer; min-height:48px; gap:12px; }
+:root .decisions-main .decision-card>summary::before { content:'▸'; color:var(--cockpit-link); }
+:root .decisions-main .decision-card[open]>summary::before { content:'▾'; }
+:root .decisions-main .decision-history>summary { cursor:pointer; min-height:44px; }
+:root .decisions-main :is(summary,select,button,a):focus-visible { outline:3px solid var(--cockpit-link); outline-offset:3px; }
+:root .floating-navigation .floating-nav-label { color:#F7FBFF; text-shadow:none; font-size:12px; }
+:root .floating-navigation .floating-nav-control.is-current .floating-nav-icon {
+  background:#007A99; color:#FFF; border-color:#7CC9E8;
+}
+:root[data-theme='day'] .floating-navigation { background:rgba(247,251,255,.98); border-color:#9ABACB; }
+:root[data-theme='day'] .floating-navigation .floating-nav-label { color:#0B1F2A; }
+:root[data-theme='day'] :is(.ai-stack-control-row,.managed-work-card,.work-handover-history article) {
+  background:#EAF3F8; color:#0B1F2A;
+}
+@media(max-width:560px) {
+  .home-cockpit { width:calc(100% - 24px); }
+  .home-bar-row { grid-template-columns:minmax(0,1fr) auto; }
+  .home-bar-row .home-bar-track { grid-column:1/-1; grid-row:2; }
 }
