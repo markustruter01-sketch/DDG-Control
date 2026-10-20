@@ -7,6 +7,7 @@ import {
 } from '@workspace/api-client-react';
 import { Link, useLocation } from 'wouter';
 import { setAuthenticationRequired } from './auth';
+import { NotificationInbox } from './NotificationInbox';
 
 type ColorMode = 'dark' | 'day';
 
@@ -86,6 +87,7 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
           <span>DDG Control</span>
         </Link>
         <div className="topbar-actions">
+        <NotificationInbox />
         <button
           className="theme-toggle"
           type="button"
