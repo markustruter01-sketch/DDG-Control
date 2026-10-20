@@ -86,7 +86,7 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
           <span>DDG Control</span>
         </Link>
         <div className="topbar-actions">
-        <NotificationInbox />
+        <NotificationInbox devBypass={devBypass} />
         <button
           className="theme-toggle"
           type="button"
