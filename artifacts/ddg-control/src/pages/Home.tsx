@@ -283,7 +283,6 @@ export function Home() {
             <p className="eyebrow">Company overview</p>
             <h1 className="home-title">Company overview</h1>
           </div>
-          <img className="overview-glitch-logo" src={`${import.meta.env.BASE_URL}ddg-creative-glitch-original.png`} alt="Digital Dynamics Group" width="102" height="102" />
           <Link className="company-map-home-link" href="/organisation#company-map-title" data-testid="link-company-map">
             <span><strong>Company Map</strong><small>People, systems, projects and delivery gaps</small></span>
             <span aria-hidden="true">→</span>
