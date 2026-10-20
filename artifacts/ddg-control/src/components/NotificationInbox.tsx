@@ -58,7 +58,7 @@ export function NotificationInbox() {
               : decisions.length === 0 ? <p>No pending decision records. Other system alerts are not connected here yet.</p>
                 : <ul className="notification-list">{decisions.map((decision) => (
                   <li key={decision.id} className={readIds.has(decision.id) ? 'notification-read' : 'notification-unread'}>
-                    <Link href={`/decisions#decision-${decision.id}`} onClick={() => { markRead(decision.id); setOpen(false); }}>
+                    <Link href={`/decisions#decision-${decision.id}`} onClick={() => { markRead(decision.id); setOpen(false); window.setTimeout(() => window.dispatchEvent(new CustomEvent('ddg:decision-focus', { detail: decision.id })), 0); }}>
                       <span className="notification-meta">{decision.project_slug} · {decision.urgency} urgency</span>
                       <strong>{formatCurrentDisplayName(decision.title)}</strong>
                       <small>{readIds.has(decision.id) ? 'Read · still needs a decision' : 'Unread · review record'} →</small>
