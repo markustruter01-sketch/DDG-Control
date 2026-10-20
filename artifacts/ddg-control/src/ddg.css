@@ -2498,3 +2498,37 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
  .brand-logo-backing { width:34px; height:34px; flex-basis:34px; }
  .brand-official-logo { width:30px; height:30px; }
 }
+
+/* Concept03 glacier is central scenery; global owner-selected rotation remains intact. */
+.atlas-map-canvas {
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  border:1px solid rgba(124,201,232,.35);
+  isolation:isolate;
+}
+.atlas-map-canvas::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:rgba(244,249,252,.12);
+  pointer-events:none;
+  z-index:-1;
+}
+.atlas-map-canvas .atlas-cables { filter:drop-shadow(0 1px 1px #F7FBFF); }
+.atlas-map-canvas .atlas-cables path { stroke:#007A99; opacity:.9; stroke-width:2; }
+.atlas-map-canvas .atlas-node strong,
+.atlas-map-canvas .atlas-node small {
+  background:rgba(247,251,255,.94);
+  color:#0B1F2A;
+  border-radius:6px;
+  padding:3px 6px;
+  box-decoration-break:clone;
+}
+.atlas-map-canvas .atlas-node small { color:#3E5A69; }
+.atlas-map-canvas .atlas-node-detail { background:#F7FBFF; color:#0B1F2A; }
+.atlas-map-canvas .atlas-node-detail a { color:#00647E; }
+@media(max-width:380px) {
+ .atlas-map-canvas { padding:18px 10px; }
+}
