@@ -52,3 +52,7 @@ User updates every five minutes during automatic work. Three unanswered requests
 ## Pending identity correction
 
 The nine-role presentation roster is separate from database task actors. The employee-identity source proposal stops bulk startup roster insertion and canonicalizes presentation while preserving existing IDs/history and legacy report-writer lookup. It does not migrate member records or configure employee access. Read-only actor/reference inventory and independent/runtime review remain required before cleanup or release.
+
+## Owner main-integration instruction —21October2026
+
+Owner explicitly directed all current Codex DDG Control work merged to main, confirmed Codex primary coder, and removed waiting for Claude for this Control project. This does not release DDG Finance or authorize production publishing/database changes. Consolidated PR6 preserves the complete development chain. Future Replit updates should use main, avoiding repeated feature-branch switches. Automatic schema push was removed from the post-merge hook after source audit; migrations remain separate and notification table isolation/recovery conditions remain unmet. See MERGE_TO_MAIN_CHECKPOINT.md for source/build limits; newest rejected-plan feature remains uncompiled until actual evidence.

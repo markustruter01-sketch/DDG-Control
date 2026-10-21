@@ -1,4 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 pnpm install --frozen-lockfile
-pnpm --filter db push
+# Schema changes require a reviewed migration against an approved database.
+printf '%s\n' 'Dependencies updated. Database schema was not changed; migrations are a separate approved action.'
