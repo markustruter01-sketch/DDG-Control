@@ -1,6 +1,6 @@
 # Legacy decision safety batch
 
-Base: main a1da391a0f3921ee6499a51e7fee797ec35d1d5f. Source proposal only; compilation and runtime acceptance outstanding.
+Base: reconciled main ae839a6401a4085ce4cb6e67151b4809129dd80f. GitHub independently verified its tree6222771f131ca2c985595efa6dad6740c564177e and two-image-only delta from the earlier base. That base passed worker-reported types/builds; this safety patch has not. Source proposal only; compilation and runtime acceptance outstanding.
 
 ## Sanity check
 
