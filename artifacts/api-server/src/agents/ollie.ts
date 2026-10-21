@@ -18,6 +18,8 @@ import {
   DDG_EMPLOYEE_ROLES,
   GOAL_STATUSES,
   LEVELS,
+  LEGACY_REPORT_GENERATION_ENABLED,
+  LEGACY_REPORT_GENERATION_BLOCKER,
   METRIC_DEFINITIONS,
   PRIORITY_CALLS,
   STATUS_LIGHTS,
@@ -694,6 +696,10 @@ export function ollieReplyMarkdown(
 export async function runOllie(
   options: { force?: boolean } = {},
 ): Promise<OllieRunOutcome> {
+  // Central guard covers manual and cron callers before DB or provider work.
+  if (!LEGACY_REPORT_GENERATION_ENABLED) {
+    return { httpStatus: 503, response: { error: LEGACY_REPORT_GENERATION_BLOCKER } };
+  }
   for (const key of WORK_KEYS) {
     if (!(await isProjectWorkEnabled(key))) {
       return { httpStatus: 423, response: { error: "Project work controls are OFF; recommendations and agent updates are paused." } };

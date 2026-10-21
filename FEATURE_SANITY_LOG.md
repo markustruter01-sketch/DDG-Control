@@ -125,3 +125,9 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 ##21October - Coherent main preview batch
 - Combine reviewed dock source with current main route loading so Replit can preview on stable main. Resolve only appended sanity-log conflict by preserving both histories; source files do not conflict.
 - Static sprite rendering and compilation are recorded. Merge permission covers source integration; browser layout/owner/live acceptance stays a separate unmet gate. Do not publish from this merge.
+
+
+##21October - Legacy report spending boundary
+- Need: runOllie still contains a paid xAI request protected indirectly by project OFF checks; it has no explicit approved-budget gate and the Agents button is enabled. No provider call or key inspection performed in this audit.
+- Add source-locked shared false policy before any run DB/provider work, covering manual/cron callers. UI disables invocation with the same reason, preserves saved history; keys/ON flags cannot authorize spending. Manual run route additionally requires real owner, DEV bypass insufficient.
+- Preserve existing cron authentication, contracts/history, Finance hold and separate Cursor safety guards. No model selection, external budget/eligibility claim, migration or provider operation. Type/build checks only, no tests/runtime calls.

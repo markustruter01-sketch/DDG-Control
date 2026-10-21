@@ -10,6 +10,7 @@ import {
 import { Header } from '@/components/header';
 import { serverErrorText } from '@/lib/errors';
 import { formatBrisbaneDateTime, formatCurrentDisplayName } from '@/lib/format';
+import { LEGACY_REPORT_GENERATION_ENABLED, LEGACY_REPORT_GENERATION_BLOCKER } from '@workspace/project-constants';
 
 type CursorModelsResponse = {
   status: 'not_configured' | 'connected';
@@ -78,16 +79,18 @@ export function AgentsPage() {
             <button
               className="task-primary-button"
               type="button"
-              disabled={runMutation.isPending}
+              disabled={!LEGACY_REPORT_GENERATION_ENABLED || runMutation.isPending}
               onClick={() => {
+                if (!LEGACY_REPORT_GENERATION_ENABLED) return;
                 setRunNotice(null);
                 runMutation.mutate({ data: {} });
               }}
               data-testid="button-run-ollie"
             >
-              {runMutation.isPending ? 'Running…' : 'Run Heimdall now'}
+              {!LEGACY_REPORT_GENERATION_ENABLED ? 'Report generation paused' : runMutation.isPending ? 'Running…' : 'Run Heimdall now'}
             </button>
           </div>
+          {!LEGACY_REPORT_GENERATION_ENABLED && <p className="agents-run-notice" role="note">{LEGACY_REPORT_GENERATION_BLOCKER}</p>}
           {runNotice && (
             <p
               className={runNotice.isError ? 'agents-run-notice agents-run-notice-error' : 'agents-run-notice'}
