@@ -18,6 +18,287 @@ import { runOllie } from "../agents/ollie";
 
 const router: IRouter = Router();
 
+type CursorModel = {
+  id: string;
+  displayName: string;
+  description?: string;
+};
+
+type CursorAgentSnapshot = {
+  id: string;
+  name: string;
+  agentStatus: string;
+  runStatus: string | null;
+  updatedAt: string | null;
+  repositories: string[];
+  result: string | null;
+  branches: Array<{
+    repository: string;
+    branch: string | null;
+    pullRequest: string | null;
+  }>;
+  totalTokens: number | null;
+  tokenUsage: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+    totalTokens: number;
+  } | null;
+  agentUrl: string | null;
+  note: string | null;
+};
+
+let cursorAgentsCache:
+  | {
+      expiresAt: number;
+      value: {
+        status: "connected";
+        checkedAt: string;
+        agents: CursorAgentSnapshot[];
+      };
+    }
+  | undefined;
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function numberValue(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+async function cursorGet(apiKey: string, path: string): Promise<unknown> {
+  const response = await fetch(`https://api.cursor.com/v1${path}`, {
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`,
+      Accept: "application/json",
+    },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) throw new Error("Cursor read request failed");
+  return response.json() as Promise<unknown>;
+}
+
+router.get("/cursor/cloud-agents", async (_req, res): Promise<void> => {
+  const apiKey = process.env.CURSOR_API_KEY?.trim();
+  if (!apiKey) {
+    res.json({ status: "not_configured", checkedAt: null, agents: [] });
+    return;
+  }
+
+  if (cursorAgentsCache && cursorAgentsCache.expiresAt > Date.now()) {
+    res.json(cursorAgentsCache.value);
+    return;
+  }
+
+  try {
+    const agentPayload = await cursorGet(
+      apiKey,
+      "/agents?limit=8&includeArchived=false",
+    );
+    const rawAgents =
+      isObject(agentPayload) && Array.isArray(agentPayload.items)
+        ? agentPayload.items
+        : [];
+
+    const agents = await Promise.all(
+      rawAgents.flatMap((rawAgent): Promise<CursorAgentSnapshot>[] => {
+        if (!isObject(rawAgent) || typeof rawAgent.id !== "string") return [];
+        const id = rawAgent.id;
+        const latestRunId = stringValue(rawAgent.latestRunId);
+
+        return [
+          (async () => {
+            try {
+              const [agentInfo, runInfo, usageInfo] = await Promise.all([
+                cursorGet(apiKey, `/agents/${encodeURIComponent(id)}`),
+                latestRunId
+                  ? cursorGet(
+                      apiKey,
+                      `/agents/${encodeURIComponent(id)}/runs/${encodeURIComponent(latestRunId)}`,
+                    )
+                  : Promise.resolve(null),
+                latestRunId
+                  ? cursorGet(
+                      apiKey,
+                      `/agents/${encodeURIComponent(id)}/usage?runId=${encodeURIComponent(latestRunId)}`,
+                    )
+                  : Promise.resolve(null),
+              ]);
+
+              const details = isObject(agentInfo) ? agentInfo : {};
+              const run = isObject(runInfo) ? runInfo : {};
+              const repos = Array.isArray(details.repos) ? details.repos : [];
+              const rawUsage =
+                isObject(usageInfo) && isObject(usageInfo.totalUsage)
+                  ? usageInfo.totalUsage
+                  : null;
+              const usageValues = rawUsage
+                ? {
+                    inputTokens: numberValue(rawUsage.inputTokens),
+                    outputTokens: numberValue(rawUsage.outputTokens),
+                    cacheReadTokens: numberValue(rawUsage.cacheReadTokens),
+                    cacheWriteTokens: numberValue(rawUsage.cacheWriteTokens),
+                    totalTokens: numberValue(rawUsage.totalTokens),
+                  }
+                : null;
+              const tokenUsage =
+                usageValues &&
+                Object.values(usageValues).every((value) => value !== null)
+                  ? {
+                      inputTokens: usageValues.inputTokens!,
+                      outputTokens: usageValues.outputTokens!,
+                      cacheReadTokens: usageValues.cacheReadTokens!,
+                      cacheWriteTokens: usageValues.cacheWriteTokens!,
+                      totalTokens: usageValues.totalTokens!,
+                    }
+                  : null;
+              const git = isObject(run.git) ? run.git : {};
+              const branches = Array.isArray(git.branches)
+                ? git.branches.flatMap(
+                    (branch): CursorAgentSnapshot["branches"] => {
+                      if (!isObject(branch)) return [];
+                      return [
+                        {
+                          repository:
+                            stringValue(branch.repoUrl) ?? "Repository",
+                          branch: stringValue(branch.branch),
+                          pullRequest: stringValue(branch.prUrl),
+                        },
+                      ];
+                    },
+                  )
+                : [];
+
+              return {
+                id,
+                name: stringValue(rawAgent.name) ?? "Cursor agent",
+                agentStatus:
+                  stringValue(details.status) ??
+                  stringValue(rawAgent.status) ??
+                  "UNKNOWN",
+                runStatus: stringValue(run.status),
+                updatedAt:
+                  stringValue(run.updatedAt) ?? stringValue(rawAgent.updatedAt),
+                repositories: repos.flatMap((repo): string[] =>
+                  isObject(repo) && typeof repo.url === "string"
+                    ? [repo.url]
+                    : [],
+                ),
+                result: stringValue(run.result)?.slice(0, 2000) ?? null,
+                branches,
+                totalTokens: tokenUsage?.totalTokens ?? null,
+                tokenUsage,
+                agentUrl: stringValue(details.url) ?? stringValue(rawAgent.url),
+                note: null,
+              };
+            } catch {
+              return {
+                id,
+                name: stringValue(rawAgent.name) ?? "Cursor agent",
+                agentStatus: stringValue(rawAgent.status) ?? "UNKNOWN",
+                runStatus: null,
+                updatedAt: stringValue(rawAgent.updatedAt),
+                repositories: [],
+                result: null,
+                branches: [],
+                totalTokens: null,
+                tokenUsage: null,
+                agentUrl: stringValue(rawAgent.url),
+                note: "Cursor could not provide this agent's latest run details.",
+              };
+            }
+          })(),
+        ];
+      }),
+    );
+
+    const value = {
+      status: "connected" as const,
+      checkedAt: new Date().toISOString(),
+      agents,
+    };
+    cursorAgentsCache = { expiresAt: Date.now() + 30_000, value };
+    res.json(value);
+  } catch {
+    res.status(502).json({
+      error:
+        "Could not read Cursor Cloud Agent status. Check the API key and try again.",
+    });
+  }
+});
+
+router.get("/cursor/models", async (_req, res): Promise<void> => {
+  const apiKey = process.env.CURSOR_API_KEY?.trim();
+  if (!apiKey) {
+    res.json({ status: "not_configured", models: [] satisfies CursorModel[] });
+    return;
+  }
+
+  try {
+    const response = await fetch("https://api.cursor.com/v1/models", {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`,
+        Accept: "application/json",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!response.ok) {
+      res
+        .status(502)
+        .json({ error: "Cursor could not provide its model list." });
+      return;
+    }
+
+    const payload: unknown = await response.json();
+    if (
+      payload === null ||
+      typeof payload !== "object" ||
+      !("items" in payload) ||
+      !Array.isArray(payload.items)
+    ) {
+      res
+        .status(502)
+        .json({ error: "Cursor returned an unreadable model list." });
+      return;
+    }
+
+    const models = payload.items.flatMap((item): CursorModel[] => {
+      if (
+        item === null ||
+        typeof item !== "object" ||
+        !("id" in item) ||
+        typeof item.id !== "string" ||
+        !("displayName" in item) ||
+        typeof item.displayName !== "string"
+      ) {
+        return [];
+      }
+      return [
+        {
+          id: item.id,
+          displayName: item.displayName,
+          ...("description" in item && typeof item.description === "string"
+            ? { description: item.description }
+            : {}),
+        },
+      ];
+    });
+
+    res.json({ status: "connected", models });
+  } catch {
+    res
+      .status(502)
+      .json({ error: "Could not contact Cursor to get its model list." });
+  }
+});
+
 export type LatestUpdateRisk = {
   text: string;
   severity: string | null;
@@ -123,10 +404,7 @@ router.get("/agent-updates/latest", async (_req, res): Promise<void> => {
       agentRunsTable,
       eq(agentProjectUpdatesTable.run_id, agentRunsTable.id),
     )
-    .innerJoin(
-      membersTable,
-      eq(agentRunsTable.member_id, membersTable.id),
-    )
+    .innerJoin(membersTable, eq(agentRunsTable.member_id, membersTable.id))
     .where(eq(membersTable.name, "Ollie"))
     .orderBy(
       desc(agentRunsTable.started_at),

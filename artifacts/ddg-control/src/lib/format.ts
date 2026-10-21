@@ -2,6 +2,17 @@ export function formatFinanceCents(value: number): string {
   return formatCurrencyCents(value, 'AUD');
 }
 
+export function formatCurrentDisplayName(value: string): string {
+  return value
+    .replace(/\bOllie\b/g, 'Heimdall')
+    .replace(/\bOLLIE\b/g, 'HEIMDALL');
+}
+
+/** Saved database actors are not proof of a connected company employee. */
+export function formatTaskActorName(name: string): string {
+  return name === 'Ollie' ? 'Heimdall report writer (legacy actor)' : name;
+}
+
 export function dollarsToCents(value: string): number {
   if (!/^\d+(\.\d{1,2})?$/.test(value)) {
     throw new Error('Enter an amount like 12.34');
