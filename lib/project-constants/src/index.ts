@@ -1,3 +1,6 @@
+import { DDG_EMPLOYEE_ROLES } from "./employee-roles";
+export { DDG_EMPLOYEE_ROLES, type DdgEmployeeRole, type DdgEmployeeRoleId } from "./employee-roles";
+
 export const PROJECT_STATUSES = ["unset", "active", "building", "paused"] as const;
 
 export const TASK_STATUSES = [
@@ -54,37 +57,13 @@ export const NOTE_KINDS = ["risk", "incident", "update"] as const;
 
 export const EXPENSE_KINDS = ["recurring_monthly", "one_off"] as const;
 
+/** Compatibility presentation export. NEVER use a role roster to seed accounts. */
 export const ORG_CHART = [
   { name: "Markus", role: "Founder", group: "founder" },
-  { name: "Ollie", role: "General Manager & COO", group: "gm" },
-  { name: "Harald", role: "Chief of Staff", group: "corporate" },
-  { name: "Hermes", role: "Operations Manager", group: "corporate" },
-  { name: "Plutus", role: "Finance & Analytics Manager", group: "corporate" },
-  { name: "Freya", role: "Marketing Director", group: "corporate" },
-  {
-    name: "DDG Finance",
-    role: "Venture Manager",
-    group: "venture",
-    project_slug: "finance",
-  },
-  {
-    name: "DDG Hypest",
-    role: "Venture Manager",
-    group: "venture",
-    project_slug: "hypest",
-  },
-  {
-    name: "DDG Coffee",
-    role: "Venture Manager",
-    group: "venture",
-    project_slug: "cattle-dog-coffee",
-  },
-  {
-    name: "DDG Venture",
-    role: "Venture Manager",
-    group: "venture",
-    project_slug: "ddg-music",
-  },
+  ...DDG_EMPLOYEE_ROLES.map((person) => ({
+    name: person.name, role: person.role,
+    group: person.id === "person-heimdall-gm" ? "gm" : "corporate",
+  })),
 ] as const;
 
 export const PRINCIPLES = [
@@ -94,7 +73,7 @@ export const PRINCIPLES = [
   "WE DO NOT PUNISH MISTAKES. WE PUNISH LYING AND COWARDICE.",
   "OVERALL COMPANY SUCCESS COMES FIRST.",
   "YOU ARE ALLOWED TO THINK BEFORE YOU ARE ALLOWED TO ACT.",
-  "OLLIE MANAGES THE ORGANISATION. MARKUS MAKES THE CONSEQUENTIAL DECISIONS. EMPLOYEES EXECUTE APPROVED ACTIONS.",
+  "HEIMDALL IS THE GM / COO. MARKUS MAKES THE CONSEQUENTIAL DECISIONS. EMPLOYEES EXECUTE APPROVED ACTIONS.",
   "REVENUE BEFORE EXPENDITURE. CREATIVITY BEFORE CAPITAL. FREE BEFORE PAID.",
 ] as const;
 
@@ -157,3 +136,5 @@ export const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
   x: "X",
   linkedin: "LinkedIn",
 };
+
+export { decisionNotificationPayload, type DecisionNotificationSource } from "./decision-notifications";

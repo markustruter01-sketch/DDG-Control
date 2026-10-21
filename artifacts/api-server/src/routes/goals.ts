@@ -9,6 +9,7 @@ import {
   UpdateGoalResponse,
 } from "@workspace/api-zod";
 import { db, goalsTable, projectsTable, type Goal } from "@workspace/db";
+import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
 import {
   GOAL_STATUSES,
   type GoalStatus,
@@ -176,6 +177,10 @@ router.post("/projects/:slug/goals", async (req, res): Promise<void> => {
     res.status(404).json({ error: "not found" });
     return;
   }
+  if (hasWorkControl(params.data.slug) && !(await isProjectWorkEnabled(params.data.slug))) {
+    res.status(423).json({ error: "Project work is OFF. Outcome changes are paused." });
+    return;
+  }
 
   const body = requestBodyRecord(req.body);
   if (!body) {
@@ -243,6 +248,12 @@ router.patch("/goals/:id", async (req, res): Promise<void> => {
 
   if (!existing) {
     res.status(404).json({ error: "not found" });
+    return;
+  }
+  const [project] = await db.select({ slug: projectsTable.slug })
+    .from(projectsTable).where(eq(projectsTable.id, existing.project_id)).limit(1);
+  if (!project || (hasWorkControl(project.slug) && !(await isProjectWorkEnabled(project.slug)))) {
+    res.status(423).json({ error: "Project work is OFF. Outcome changes are paused." });
     return;
   }
 

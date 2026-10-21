@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
 import {
   getListDecisionsQueryKey,
@@ -8,10 +9,10 @@ import {
 } from '@workspace/api-client-react';
 import { Header } from '@/components/header';
 import { serverErrorText } from '@/lib/errors';
-import { formatBrisbaneDateTime, formatDueDate } from '@/lib/format';
+import { formatBrisbaneDateTime, formatCurrentDisplayName, formatDueDate } from '@/lib/format';
 
 export function sourceLabelForDecision(source: string): string {
-  return source === 'ollie_daily' ? 'Ollie daily' : source === 'cursor' ? 'Cursor' : source;
+  return source === 'ollie_daily' ? 'Heimdall daily' : source === 'cursor' ? 'Cursor' : source;
 }
 
 export function DecisionsPage() {
@@ -30,7 +31,9 @@ export function DecisionsPage() {
   const projectsQuery = useListProjects({
     query: { queryKey: getListProjectsQueryKey() },
   });
+  const [projectFilter, setProjectFilter] = useState('all');
   const pending = pendingQuery.data ?? [];
+  const visiblePending = pending.filter((decision) => projectFilter === 'all' || decision.project_slug === projectFilter);
   const projectNames = new Map((projectsQuery.data ?? []).map((project) => [project.slug, project.name]));
   const sortedHistory: DecisionWithNames[] = [
     ...(approvedQuery.data ?? []),
@@ -40,84 +43,140 @@ export function DecisionsPage() {
     const bTime = b.decided_at ? new Date(b.decided_at).getTime() : 0;
     return bTime - aTime;
   });
-  const isLoading = pendingQuery.isLoading || approvedQuery.isLoading || declinedQuery.isLoading;
-  const queryError = pendingQuery.error ?? approvedQuery.error ?? declinedQuery.error;
+  const visibleHistory = sortedHistory.filter((decision) => projectFilter === 'all' || decision.project_slug === projectFilter);
+  const historyLoading = approvedQuery.isLoading || declinedQuery.isLoading;
+  const historyError = approvedQuery.error ?? declinedQuery.error;
+  const [focusRequest, setFocusRequest] = useState(() => ({
+    id: /^#decision-([0-9]+)$/.exec(window.location.hash)?.[1] ?? null,
+    version: 0,
+  }));
+  const [focusNotice, setFocusNotice] = useState<string | null>(null);
+  useEffect(() => {
+    function requestFocus(event: Event) {
+      const requested = event instanceof CustomEvent && typeof event.detail === 'number'
+        ? String(event.detail)
+        : /^#decision-([0-9]+)$/.exec(window.location.hash)?.[1] ?? null;
+      if (!requested || !/^[0-9]+$/.test(requested)) return;
+      setProjectFilter('all');
+      setFocusNotice(null);
+      setFocusRequest((previous) => ({ id: requested, version: previous.version + 1 }));
+    }
+    window.addEventListener('hashchange', requestFocus);
+    window.addEventListener('popstate', requestFocus);
+    window.addEventListener('ddg:decision-focus', requestFocus);
+    return () => {
+      window.removeEventListener('hashchange', requestFocus);
+      window.removeEventListener('popstate', requestFocus);
+      window.removeEventListener('ddg:decision-focus', requestFocus);
+    };
+  }, []);
+  useEffect(() => {
+    if (!focusRequest.id || projectFilter !== 'all' || pendingQuery.isLoading || historyLoading) return;
+    const target = document.getElementById(`decision-${focusRequest.id}`);
+    if (target instanceof HTMLElement) {
+      if (target instanceof HTMLDetailsElement) target.open = true;
+      const history = target.closest('details.decision-history');
+      if (history instanceof HTMLDetailsElement) history.open = true;
+      target.scrollIntoView({ behavior: 'auto', block: 'center' });
+      (target.querySelector('summary') ?? target).focus();
+      setFocusNotice(null);
+    } else if (!pendingQuery.isError && !historyError) {
+      setFocusNotice('This decision is no longer available in the current records. Nothing has been approved or restarted.');
+    }
+  }, [focusRequest, projectFilter, pendingQuery.isLoading, pendingQuery.isError, pendingQuery.data, historyLoading, historyError, approvedQuery.data, declinedQuery.data]);
 
   return (
     <div className="app-shell">
       <Header />
-      <main className="page-wrap detail-main decisions-main">
+      <main className="page-wrap detail-main decisions-main home-cockpit">
         <Link className="back-link" href="/" data-testid="link-decisions-home">← Home</Link>
-        <div className="detail-heading decisions-heading">
+        <div className="detail-heading decisions-heading home-cockpit-heading">
           <p className="eyebrow">Review queue</p>
           <h1 className="detail-title">Decisions</h1>
-          <p className="detail-description">Ollie’s recommendations, ready for your call.</p>
-          <p className="cursor-decision-cta">Decide with Ollie in Cursor</p>
+          <p className="detail-description">Review the queue. Open a card for the full recommendation.</p>
         </div>
 
-        <section className="decision-section" aria-labelledby="pending-decisions-title">
+        {focusNotice && <p className="home-unknown-state" role="status">{focusNotice}</p>}
+        <section className="home-health-panel" aria-label="Decision overview">
+          <div className="home-health-status">
+            <div><span>Waiting for you</span><strong>{pendingQuery.isLoading ? '…' : pendingQuery.isError ? 'Unknown' : pending.length}</strong><small>Saved pending records</small></div>
+            <div><span>Resolved</span><strong>{historyLoading ? '…' : historyError ? 'Unknown' : sortedHistory.length}</strong><small>Approved and declined records</small></div>
+          </div>
+          <label className="home-source-details" htmlFor="decision-project-filter">Project</label>
+          <select id="decision-project-filter" value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)}>
+            <option value="all">All projects</option>
+            {[...new Set([...projectNames.keys(), ...pending.map((decision) => decision.project_slug), ...sortedHistory.map((decision) => decision.project_slug)])].map((slug) => <option key={slug} value={slug}>{projectNames.get(slug) ?? slug}</option>)}
+          </select>
+          {projectsQuery.isError && <p className="home-unknown-state">Project names unavailable; repository labels shown where needed.</p>}
+          <p className="home-unknown-state">Opening a card does not approve work. Use the existing decision workflow with Heimdall; this page does not start agents.</p>
+        </section>
+
+        <section className="decision-section home-health-panel" aria-labelledby="pending-decisions-title">
           <div className="decision-section-heading">
             <h2 id="pending-decisions-title">Waiting for review</h2>
-            {!pendingQuery.isLoading && <span className="decision-count">{pending.length} pending</span>}
+            {!pendingQuery.isLoading && !pendingQuery.isError && <span className="decision-count">{visiblePending.length} shown</span>}
           </div>
-          {isLoading ? (
+          {pendingQuery.isLoading ? (
             <div className="decision-skeleton" role="status" aria-label="Loading decisions"><span /><span /></div>
-          ) : queryError ? (
+          ) : pendingQuery.isError ? (
             <div className="task-query-error" role="alert">
-              <p>{serverErrorText(queryError, 'Unable to load decisions.')}</p>
+              <p>{serverErrorText(pendingQuery.error, 'Unable to load decisions.')}</p>
               <button className="task-secondary-button" type="button" onClick={() => {
                 void Promise.all([pendingQuery.refetch(), approvedQuery.refetch(), declinedQuery.refetch()]);
               }}>Retry</button>
             </div>
-          ) : pending.length === 0 ? (
-            <p className="decision-empty" data-testid="status-no-decisions">No decisions waiting</p>
+          ) : visiblePending.length === 0 ? (
+            <p className="decision-empty" data-testid="status-no-decisions">{projectFilter === 'all' ? 'No decisions waiting' : 'No pending decisions for this project'}</p>
           ) : (
             <div className="decision-list" data-testid="list-pending-decisions">
-              {pending.map((decision) => (
-                  <article className="decision-card" key={decision.id} data-testid={`card-decision-${decision.id}`}>
-                    <div className="decision-card-top">
+              {visiblePending.map((decision) => (
+                  <details className="decision-card" id={`decision-${decision.id}`} key={decision.id} data-testid={`card-decision-${decision.id}`}>
+                    <summary className="decision-card-top">
                       <div>
                         <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
-                        <h3 className="decision-title">{decision.title}</h3>
+                        <h3 className="decision-title">{formatCurrentDisplayName(decision.title)}</h3>
                       </div>
                       <span className={`decision-urgency urgency-${decision.urgency}`}>{decision.urgency} urgency</span>
-                    </div>
-                    <p className="decision-recommendation">{decision.recommendation}</p>
+                    </summary>
+                    <p className="decision-recommendation">{formatCurrentDisplayName(decision.recommendation)}</p>
                     <dl className="decision-facts">
                       <div><dt>Cost</dt><dd>{decision.cost_estimate_aud == null ? 'Cost unknown' : `${new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(decision.cost_estimate_aud)} est.`}</dd></div>
                       <div><dt>Risk</dt><dd>{decision.risk}</dd></div>
                       <div><dt>Confidence</dt><dd>{decision.confidence}</dd></div>
-                      <div><dt>Owner</dt><dd>{decision.owner_name}</dd></div>
+                      <div><dt>Owner</dt><dd>{formatCurrentDisplayName(decision.owner_name)}</dd></div>
                       <div><dt>Due</dt><dd>{decision.due_date ? formatDueDate(decision.due_date) : 'Date unavailable'}</dd></div>
                     </dl>
                     <div className="decision-origin">
                       <span>Source: {sourceLabelForDecision(decision.source)}</span>
                       <span>Decided via: {decision.decided_via ?? 'Not recorded'}</span>
                     </div>
-                    {decision.note && <p className="history-note">{decision.note}</p>}
-                  </article>
+                    {decision.note && <p className="history-note">{formatCurrentDisplayName(decision.note)}</p>}
+                  </details>
                 ))}
             </div>
           )}
         </section>
 
-        <section className="decision-history" aria-labelledby="decision-history-title">
+        <details className="decision-history home-health-panel">
+          <summary className="decision-section-heading"><strong>Decision history</strong><span>{historyLoading ? 'Loading…' : historyError ? 'Unavailable' : `${visibleHistory.length} records`}</span></summary>
           <div className="decision-section-heading">
             <h2 id="decision-history-title">Decision history</h2>
-            <span className="decision-count">{sortedHistory.length} resolved</span>
+            
           </div>
-          {isLoading ? (
+          {historyLoading ? (
             <div className="decision-history-skeleton" role="status" aria-label="Loading decision history" />
-          ) : sortedHistory.length === 0 ? (
+          ) : historyError ? (
+            <div className="task-query-error" role="alert"><p>{serverErrorText(historyError, 'Unable to load decision history.')}</p><button className="task-secondary-button" type="button" onClick={() => { void Promise.all([approvedQuery.refetch(), declinedQuery.refetch()]); }}>Retry history</button></div>
+          ) : visibleHistory.length === 0 ? (
             <p className="decision-empty">No decisions recorded yet</p>
           ) : (
             <div className="decision-history-list" data-testid="list-decision-history">
-              {sortedHistory.map((decision) => (
-                <article className="decision-history-row" key={decision.id} data-testid={`history-decision-${decision.id}`}>
+              {visibleHistory.map((decision) => (
+                <article className="decision-history-row" id={`decision-${decision.id}`} tabIndex={-1} key={decision.id} data-testid={`history-decision-${decision.id}`}>
                   <div className="history-decision-copy">
                     <p className="decision-project">{projectNames.get(decision.project_slug) ?? decision.project_slug}</p>
-                    <h3>{decision.title}</h3>
-                    {decision.note && <p className="history-note">{decision.note}</p>}
+                    <h3>{formatCurrentDisplayName(decision.title)}</h3>
+                    {decision.note && <p className="history-note">{formatCurrentDisplayName(decision.note)}</p>}
                     <p className="history-note">Source: {sourceLabelForDecision(decision.source)} · Decided via: {decision.decided_via ?? 'Not recorded'}</p>
                   </div>
                   <div className="history-decision-meta">
@@ -133,7 +192,7 @@ export function DecisionsPage() {
               ))}
             </div>
           )}
-        </section>
+        </details>
       </main>
     </div>
   );

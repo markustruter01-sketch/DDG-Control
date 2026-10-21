@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import { Link } from 'wouter';
 import {
   getGetFinanceSummaryQueryKey,
@@ -10,6 +9,7 @@ import {
   getListProjectMetricsQueryKey,
   getListProjectsQueryKey,
   useGetFinanceSummary,
+  useGetSocialSummary,
   useGetCattleDogCoffeeProfit,
   useGetProjectFinanceFleetLatest,
   useListDecisions,
@@ -26,7 +26,7 @@ import { PROJECT_HEADLINE_METRIC } from '@workspace/project-constants';
 import { Header } from '@/components/header';
 import { SocialBar } from '@/components/SocialBar';
 import { serverErrorText } from '@/lib/errors';
-import { formatAgo, formatFigure, formatFinanceCents } from '@/lib/format';
+import { formatAgo, formatCurrentDisplayName, formatFigure, formatFinanceCents, formatBrisbaneDateTime } from '@/lib/format';
 
 function Sparkline({ rows }: { rows: DailySalesRow[] }) {
   if (rows.length < 2) return null;
@@ -65,66 +65,79 @@ function FinanceKpiCard({
 
 function FinanceSummaryBar({
   summary,
-  projects,
   isLoading,
   error,
   onRetry,
-  updatedAt,
 }: {
   summary: FinanceSummaryResponse | undefined;
-  projects: Project[];
-  updatedAt: number;
   isLoading: boolean;
   error: unknown;
   onRetry: () => void;
 }) {
-  const missingRevenueProjects = (summary?.ventures_without_revenue_source ?? []).map(
-    (slug) => projects.find((project) => project.slug === slug)?.name ?? slug,
-  );
   const placeholder = isLoading ? '…' : '—';
   const customerCount = summary
     ? summary.customers === null
       ? '–'
       : formatFigure(summary.customers, 'count')
     : placeholder;
+  const scale = Math.max(summary?.revenue_30d_cents ?? 0, summary?.expenses_30d_cents ?? 0, 1);
 
   return (
-    <section className="finance-summary" aria-label="Company-wide key figures" data-testid="finance-summary">
-      <div className="finance-kpi-grid">
+    <section className="home-performance-panel home-finance-panel" aria-labelledby="home-finance-title" data-testid="finance-summary">
+      <div className="home-panel-heading">
+        <div>
+          <p className="home-section-kicker">Business performance</p>
+          <h2 id="home-finance-title">Finance</h2>
+        </div>
+        <Link className="home-panel-link" href="/finances">Open Finance</Link>
+      </div>
+      <div className="home-finance-metrics">
         <FinanceKpiCard
           testId="finance-kpi-profit"
-          label="Profit · last 30 days"
+          label="Profit · 30 days"
           value={summary ? formatFinanceCents(summary.profit_30d_cents) : placeholder}
           detail={`Revenue ${summary ? formatFigure(summary.revenue_30d_cents, 'aud_cents') : placeholder}`}
           negative={Boolean(summary && summary.profit_30d_cents < 0)}
         />
         <FinanceKpiCard
-          testId="finance-kpi-debt"
-          label="Debt"
-          value={summary ? formatFigure(summary.debt_cents, 'aud_cents') : placeholder}
-          detail=" "
+          testId="finance-kpi-expected-profit"
+          label="Expected profit · next month"
+          value={summary ? formatFinanceCents(summary.expected_profit_next_month_cents) : placeholder}
+          detail={`Estimate · revenue ${summary ? formatFigure(summary.expected_revenue_next_month_cents, 'aud_cents') : placeholder}`}
+          negative={Boolean(summary && summary.expected_profit_next_month_cents < 0)}
+        />
+        <FinanceKpiCard
+          testId="finance-kpi-customers"
+          label="Online customers · 30 days"
+          value={customerCount}
+          detail="Cattle Dog Coffee · Stripe"
         />
         <FinanceKpiCard
           testId="finance-kpi-expenses"
           label="Expected expenses · next month"
           value={summary ? formatFigure(summary.expected_expenses_next_month_cents, 'aud_cents') : placeholder}
-          detail=" "
+          detail="Estimate"
         />
         <FinanceKpiCard
-          testId="finance-kpi-expected-profit"
-          label="Expected profit · next month"
-          value={summary ? formatFinanceCents(summary.expected_profit_next_month_cents) : placeholder}
-          detail={`Expected revenue ${summary ? formatFigure(summary.expected_revenue_next_month_cents, 'aud_cents') : placeholder} · estimate`}
-          negative={Boolean(summary && summary.expected_profit_next_month_cents < 0)}
-        />
-        <FinanceKpiCard
-          testId="finance-kpi-customers"
-          label="Online customers · last 30 days"
-          value={customerCount}
-          detail="Cattle Dog Coffee, Stripe only"
+          testId="finance-kpi-debt"
+          label="Debt · current"
+          value={summary ? formatFigure(summary.debt_cents, 'aud_cents') : placeholder}
+          detail="Source date Unknown"
         />
       </div>
-      {summary && <p className="finance-partial-line" data-testid="finance-summary-updated">Updated {formatAgo(updatedAt)}</p>}
+      <div className="home-performance-bars" aria-label="Revenue and expenses comparison">
+        <div className="home-bar-row">
+          <span>Revenue · last 30 days</span>
+          <div className="home-bar-track"><i className="home-bar-revenue" style={{ width: `${summary ? (summary.revenue_30d_cents / scale) * 100 : 0}%` }} /></div>
+          <strong>{summary ? formatFigure(summary.revenue_30d_cents, 'aud_cents') : placeholder}</strong>
+        </div>
+        <div className="home-bar-row">
+          <span>Expenses · last 30 days</span>
+          <div className="home-bar-track"><i className="home-bar-expenses" style={{ width: `${summary ? (summary.expenses_30d_cents / scale) * 100 : 0}%` }} /></div>
+          <strong>{summary ? formatFigure(summary.expenses_30d_cents, 'aud_cents') : placeholder}</strong>
+        </div>
+      </div>
+      <p className="home-chart-caption">Bars compare reported revenue and expenses over the same 30-day window; they are not a trend.</p>
       {isLoading && <p className="finance-summary-state" role="status">Loading company figures…</p>}
       {error != null && (
         <div className="finance-summary-state finance-summary-error" role="alert">
@@ -132,21 +145,58 @@ function FinanceSummaryBar({
           <button className="retry-button" type="button" onClick={onRetry}>Retry</button>
         </div>
       )}
-      {missingRevenueProjects.length > 0 && (
-        <p className="finance-partial-line">
-          Partial: no revenue data for {missingRevenueProjects.join(', ')}
-        </p>
-      )}
-      {summary && summary.notes.length > 0 && (
-        <ul className="finance-summary-notes">
-          {summary.notes.map((note) => <li key={note}>{note}</li>)}
-        </ul>
-      )}
+      <details className="home-source-details">
+        <summary>Periods and source notes</summary>
+        <p>Revenue, expenses and profit: last 30 days. Expected values: next-month estimate. Finance response does not provide a source timestamp; source date is Unknown.</p>
+        {summary?.notes.map((note, index) => <p key={`${index}-${note}`}>{note}</p>)}
+      </details>
+    </section>
+  );
+}
+
+
+
+function AtlasIcon({ kind }: { kind: string }) {
+  const paths: Record<string, string> = {
+    fitness: 'M6 8v8m3-10v12m6-12v12m3-10v8M9 12h6M4 10v4m16-4v4',
+    finance: 'M4 20h16M7 16v-5m5 5V5m5 11V8',
+    creative: 'm5 17-1 4 4-1L20 8l-4-4L5 17Zm9-11 4 4M5 17l3 3',
+    coffee: 'M4 7h12v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V7Zm12 1h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1',
+    music: 'M9 18V5l10-2v13M9 8l10-2M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm10-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z',
+  };
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d={paths[kind] ?? paths.creative} /></svg>;
+}
+
+function CompanyAtlas({ projects }: { projects: Project[] }) {
+  const node = (slug: string, label: string, position: string, note: string) => {
+    const project = projects.find((item) => item.slug === slug);
+    return (
+      <details key={slug} className={`atlas-node atlas-node-${position}`}>
+        <summary><span className="atlas-node-icon" aria-hidden="true"><AtlasIcon kind={position} /></span><strong>{label}</strong><small>{note}</small></summary>
+        <span className="atlas-node-detail">{project ? <Link href={`/projects/${project.slug}`}>Open project →</Link> : <Link href="/organisation">View context →</Link>}</span>
+      </details>
+    );
+  };
+  return (
+    <section className="atlas-map-panel" aria-labelledby="atlas-title" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}atlas-glacier-v1.jpg")` }}>
+      <div className="atlas-map-heading"><div><p className="home-section-kicker">People · systems · projects</p><h2 id="atlas-title">Company Atlas</h2></div><Link href="/organisation">Explore connections →</Link></div>
+      <div className="atlas-map-legend"><span>○ Company structure</span><span>┄ Unverified data path</span></div>
+      <div className="atlas-map-canvas">
+        <svg className="atlas-cables" viewBox="0 0 800 460" preserveAspectRatio="none" aria-hidden="true"><path d="M400 230 Q260 210 240 100 M400 230 Q530 190 560 95 M400 230 Q240 310 140 260 M400 230 Q570 330 650 270 M400 230 L400 370" /></svg>
+        {node('hypest', 'Hypest', 'fitness', 'Fitness')}
+        {node('finance', 'DDG Finance', 'finance', 'Held · Claude review')}
+        {node('creative', 'Creative', 'creative', 'Gaming · music experiments')}
+        {node('cattle-dog-coffee', 'Cattle Dog Coffee', 'coffee', 'DDG Coffee')}
+        {node('ddg-music', 'DDG Music', 'music', 'Undecided · unchanged')}
+        <Link className="atlas-node atlas-node-core" href="/ai-stack"><span className="atlas-node-icon" aria-hidden="true"><img className="atlas-core-logo" src={`${import.meta.env.BASE_URL}ddg-creative-glitch-original.png`} alt="" width="62" height="62" /></span><strong>DDG Control</strong><small>Control platform</small></Link>
+      </div>
+      <p className="atlas-evidence-note">Agreed company structure. Transfer observation is not connected; cables do not claim live traffic.</p>
     </section>
   );
 }
 
 export function Home() {
+  const socialSummaryQuery = useGetSocialSummary();
   const projectsQuery = useListProjects({
     query: { queryKey: getListProjectsQueryKey() },
   });
@@ -185,10 +235,9 @@ export function Home() {
   const coffeeSalesQuery = useListProjectDailySales(coffeeSlug, {
     query: { queryKey: getListProjectDailySalesQueryKey(coffeeSlug) },
   });
-  const backgroundStyle = {
-    '--home-background': `url("${import.meta.env.BASE_URL}dashboard-background.jpg")`,
-  } as CSSProperties;
   const projects = projectsQuery.data ?? [];
+  const socialReadings = socialSummaryQuery.data?.ventures.flatMap((venture) => venture.platforms) ?? [];
+  const socialSourceDates = socialReadings.map((reading) => reading.captured_on).filter(Boolean).sort();
   const reportChanges = (agentUpdatesQuery.data ?? []).flatMap(
     (update: LatestAgentProjectUpdate) => {
       const previous = update.previous;
@@ -205,7 +254,7 @@ export function Home() {
         differences.push(`Priority: ${previous.priority} → ${update.priority}`);
       }
       if (previous.next_action !== update.next_action) {
-        differences.push(`Next action changed: ${update.next_action}`);
+        differences.push(`Next action changed: ${formatCurrentDisplayName(update.next_action)}`);
       }
       if (differences.length === 0) return [];
       const project = projects.find((item) => item.slug === update.project_slug);
@@ -216,29 +265,137 @@ export function Home() {
       }];
     },
   );
+  const latestUpdates = [...(agentUpdatesQuery.data ?? [])].sort((a, b) =>
+    new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
+  );
+  const pendingDecisions = pendingDecisionsQuery.data ?? [];
+  const flaggedUpdates = latestUpdates.filter((update) => update.status_light === 'red');
+  const attentionCoverageReady = !pendingDecisionsQuery.isLoading && !pendingDecisionsQuery.isError &&
+    !agentUpdatesQuery.isLoading && !agentUpdatesQuery.isError;
+  const formatSourceDate = (value: string | null) => value
+    ? formatBrisbaneDateTime(value)
+    : 'Source date Unknown';
 
   return (
-    <div className="app-shell home-shell" style={backgroundStyle}>
+    <div className="app-shell home-shell">
       <Header />
-      <main className="page-wrap home-main">
-        <p className="eyebrow">Control panel</p>
-        <h1 className="home-title">Projects</h1>
-        <FinanceSummaryBar
-          summary={financeSummaryQuery.data}
-          projects={projects}
-          isLoading={financeSummaryQuery.isLoading}
-          error={financeSummaryQuery.isError ? financeSummaryQuery.error : null}
-          onRetry={() => void financeSummaryQuery.refetch()}
-          updatedAt={financeSummaryQuery.dataUpdatedAt}
-        />
-        <SocialBar projects={projects} />
-        {(pendingDecisionsQuery.data?.length ?? 0) > 0 && (
-          <Link className="decisions-waiting" href="/decisions" data-testid="link-decisions-waiting">
-            Decisions waiting: {pendingDecisionsQuery.data?.length}
+      <main className="page-wrap home-main home-cockpit atlas-home">
+        <div className="home-cockpit-heading">
+          <div>
+            <p className="eyebrow">Company overview</p>
+            <h1 className="home-title">Company overview</h1>
+          </div>
+          <Link className="company-map-home-link" href="/organisation#company-map-title" data-testid="link-company-map">
+            <span><strong>Company Map</strong><small>People, systems, projects and delivery gaps</small></span>
             <span aria-hidden="true">→</span>
           </Link>
-        )}
-        <div className="section-rule"><span>Projects</span></div>
+        </div>
+
+        <section className="home-overview-grid" aria-label="Company health and attention">
+          <article className="home-health-panel">
+            <div className="home-panel-heading">
+              <div>
+                <p className="home-section-kicker">1 · Company health</p>
+                <h2>At a glance</h2>
+              </div>
+              <Link className="home-panel-link" href="/organisation">Company Map</Link>
+            </div>
+            <div className="home-health-status">
+              <div>
+                <span>Service health</span>
+                <strong>Unknown</strong>
+                <small>No dependency-health check is available on this dashboard.</small>
+              </div>
+              <div>
+                <span>Project records</span>
+                <strong>{projectsQuery.isLoading ? '…' : projectsQuery.isError ? 'Unknown' : projects.length}</strong>
+                <small>{projectsQuery.isError ? 'Unable to read project registry.' : 'Registry count · not a live-service status'}</small>
+              </div>
+              <div><span>Profit · last 30 days</span><strong>{financeSummaryQuery.isLoading ? '…' : financeSummaryQuery.isError || !financeSummaryQuery.data ? 'Unknown' : formatFinanceCents(financeSummaryQuery.data.profit_30d_cents)}</strong><small>Reported total · source details below</small></div>
+              <div><span>Social footprint</span><strong>{socialSummaryQuery.isLoading ? '…' : socialSummaryQuery.isError || socialReadings.length === 0 ? 'Unknown' : formatFigure(socialSummaryQuery.data!.total_followers, 'count')}</strong><small>{socialReadings.length > 0 ? `Summed followers · oldest reading ${socialSourceDates[0] ?? 'Unknown'}` : 'No saved readings'} · not unique people</small></div>
+              <div><span>Employee roster</span><strong>9</strong><small>Named roles · not active worker count</small></div>
+            </div>
+            {projectsQuery.isError ? (
+              <p className="home-unknown-state" role="alert">Project status unavailable.</p>
+            ) : projects.length > 0 ? (
+              <div className="home-status-list">
+                {projects.map((project) => (
+                  <Link key={project.id} href={`/projects/${project.slug}`} className="home-status-item">
+                    <span>{project.name}</span><strong>{project.status}</strong>
+                  </Link>
+                ))}
+              </div>
+            ) : projectsQuery.isLoading ? <p className="home-unknown-state" role="status">Loading project registry…</p> : <p className="home-unknown-state">No project records returned.</p>}
+          </article>
+
+          <CompanyAtlas projects={projects} />
+          <aside className="home-attention-panel" aria-labelledby="home-attention-title">
+            <div className="home-panel-heading">
+              <div>
+                <p className="home-section-kicker">Owner review</p>
+                <h2 id="home-attention-title">Needs attention</h2>
+              </div>
+              <span className="home-attention-count" aria-label={attentionCoverageReady ? 'Items in available decision and report records' : 'Attention count unknown: source coverage incomplete'}>{attentionCoverageReady ? pendingDecisions.length + flaggedUpdates.length : '?'}</span>
+            </div>
+            <p className="home-panel-caption">Saved decisions and report flags only; not a live company health check.</p>
+            {pendingDecisionsQuery.isLoading && <p className="home-unknown-state" role="status">Checking decisions…</p>}
+            {pendingDecisionsQuery.isError && <div className="home-unknown-state" role="alert">Decision queue unavailable. <button className="retry-button" type="button" onClick={() => void pendingDecisionsQuery.refetch()}>Retry decisions</button></div>}
+            {agentUpdatesQuery.isLoading && <p className="home-unknown-state" role="status">Checking report flags…</p>}
+            {agentUpdatesQuery.isError && <div className="home-unknown-state" role="alert">Report flags unavailable. Attention coverage is incomplete. <button className="retry-button" type="button" onClick={() => void agentUpdatesQuery.refetch()}>Retry reports</button></div>}
+            {attentionCoverageReady && pendingDecisions.length === 0 && flaggedUpdates.length === 0 &&
+              <p className="home-unknown-state">No pending decisions or red report flags in the available records.</p>}
+            {((!pendingDecisionsQuery.isError && pendingDecisions.length > 0) || (!agentUpdatesQuery.isError && flaggedUpdates.length > 0)) && (
+              <ul className="home-attention-list">
+                {!pendingDecisionsQuery.isError && pendingDecisions.slice(0, 3).map((decision) => (
+                  <li key={decision.id}><Link href={`/decisions#decision-${decision.id}`}><span>{projects.find((project) => project.slug === decision.project_slug)?.name ?? decision.project_slug}</span><strong>{formatCurrentDisplayName(decision.title)}</strong><small>Owner decision · {decision.urgency} urgency</small></Link></li>
+                ))}
+                {!agentUpdatesQuery.isError && flaggedUpdates.slice(0, 2).map((update) => (
+                  <li key={`flag-${update.project_slug}`}><Link href={`/projects/${update.project_slug}`}><span>{projects.find((project) => project.slug === update.project_slug)?.name ?? update.project_slug}</span><strong>Red status in saved Heimdall report</strong><small>{formatCurrentDisplayName(update.next_action)} · {formatSourceDate(update.created_at)}</small></Link></li>
+                ))}
+              </ul>
+            )}
+            <Link className="home-panel-link" href="/decisions">Open decision records →</Link>
+          </aside>
+        </section>
+
+        <section aria-label="Business performance">
+          <div className="home-section-title">
+            <p className="home-section-kicker">2 · Business performance</p>
+            <p>Periods and source coverage are shown with each figure.</p>
+          </div>
+          <div className="home-performance-grid">
+            <FinanceSummaryBar
+              summary={financeSummaryQuery.data}
+              isLoading={financeSummaryQuery.isLoading}
+              error={financeSummaryQuery.isError ? financeSummaryQuery.error : null}
+              onRetry={() => void financeSummaryQuery.refetch()}
+            />
+            <SocialBar projects={projects} />
+          </div>
+        </section>
+
+        <section className="home-activity-panel" aria-labelledby="home-activity-title">
+          <div className="home-panel-heading">
+            <div>
+              <p className="home-section-kicker">3 · Agent activity</p>
+              <h2 id="home-activity-title">Latest saved project updates</h2>
+              <p className="home-panel-caption">Heimdall report records; these do not prove a worker is active.</p>
+            </div>
+            <Link className="home-panel-link" href="/ai-stack">Open AI Stack</Link>
+          </div>
+          {agentUpdatesQuery.isLoading ? <p className="home-unknown-state" role="status">Loading saved updates…</p>
+            : agentUpdatesQuery.isError ? <div className="home-unknown-state" role="alert">Saved updates unavailable. <button className="retry-button" type="button" onClick={() => void agentUpdatesQuery.refetch()}>Retry</button></div>
+              : latestUpdates.length === 0 ? <p className="home-unknown-state">Unknown · no saved project updates.</p>
+                : <div className="home-agent-list">{latestUpdates.slice(0, 4).map((update) => (
+                  <Link key={update.project_slug} href={`/projects/${update.project_slug}`} className="home-agent-item">
+                    <span className={`home-agent-status status-${update.status_light}`}>{update.status_light}</span>
+                    <span className="home-agent-copy"><strong>{projects.find((project) => project.slug === update.project_slug)?.name ?? update.project_slug}</strong><small>{formatCurrentDisplayName(update.next_action)}</small></span>
+                    <time>{formatSourceDate(update.created_at)}</time>
+                  </Link>
+                ))}</div>}
+        </section>
+
+        <div className="section-rule" id="project-list" data-testid="section-project-list"><span>Projects · open a project</span></div>
 
         {projectsQuery.isLoading ? (
           <section className="state-panel" aria-live="polite" data-testid="status-projects-loading">
@@ -298,8 +455,8 @@ export function Home() {
                       {latestUpdate && (
                         <span
                           className={`agent-light-dot agent-light-${latestUpdate.status_light}`}
-                          title={`Ollie: ${latestUpdate.status_light}`}
-                          aria-label={`Ollie's status light: ${latestUpdate.status_light}`}
+                          title={`Heimdall: ${latestUpdate.status_light}`}
+                          aria-label={`Heimdall's status light: ${latestUpdate.status_light}`}
                           data-testid={`agent-light-${project.slug}`}
                         />
                       )}
@@ -328,7 +485,7 @@ export function Home() {
                     )}
                     {project.slug === coffeeSlug && <Sparkline rows={dailySales} />}
                     <p className="tile-fact">
-                      <strong>Next action:</strong> {latestUpdate?.next_action ?? 'No data yet'}
+                      <strong>Next action:</strong> {latestUpdate ? formatCurrentDisplayName(latestUpdate.next_action) : 'No data yet'}
                     </p>
                   </div>
                 </Link>
@@ -341,10 +498,11 @@ export function Home() {
           </section>
         )}
 
-        <section className="report-section" aria-labelledby="report-title" data-testid="section-since-report">
+        <details className="report-section home-report-disclosure" data-testid="section-since-report">
+          <summary>Since last report · saved comparisons</summary>
           <div className="report-heading">
             <div>
-              <p className="eyebrow">Ollie’s latest comparison</p>
+              <p className="eyebrow">Heimdall’s latest comparison</p>
               <h2 id="report-title" className="report-title">Since last report</h2>
             </div>
           </div>
@@ -376,7 +534,7 @@ export function Home() {
               ))}
             </div>
           )}
-        </section>
+        </details>
       </main>
     </div>
   );

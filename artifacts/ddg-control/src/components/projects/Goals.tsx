@@ -13,6 +13,7 @@ import {
 } from '@workspace/api-client-react';
 import { GOAL_STATUSES, GOAL_STATUS_LABELS, BUSINESS_BRIEFS, type GoalStatus } from '@workspace/project-constants';
 import { serverErrorText } from '@/lib/errors';
+import { formatCurrentDisplayName } from '@/lib/format';
 import { formatBrisbaneDateTime, formatCompletedDate, formatDueDate } from '@/lib/format';
 
 type GoalDraft = {
@@ -260,16 +261,16 @@ export function ProjectGoals({ slug }: { slug: string }) {
   return (
     <section className="goal-workspace" data-testid="section-project-goals">
       <aside className="agent-latest-box" data-testid="box-ollie-latest">
-        <h2 className="todo-group-title">Ollie's latest</h2>
+        <h2 className="todo-group-title">Heimdall's latest</h2>
         {agentUpdatesQuery.isLoading ? (
-          <p className="task-state-message" role="status">Loading Ollie's latest…</p>
+          <p className="task-state-message" role="status">Loading Heimdall's latest…</p>
         ) : agentUpdatesQuery.isError ? (
           <p className="task-form-error" role="alert">
-            {serverErrorText(agentUpdatesQuery.error, "Unable to load Ollie's latest report.")}
+            {serverErrorText(agentUpdatesQuery.error, "Unable to load Heimdall's latest report.")}
           </p>
         ) : !latestUpdate ? (
           <p className="task-state-message" data-testid="status-no-ollie-report">
-            No report from Ollie yet
+            No report from Heimdall yet
           </p>
         ) : (
           <>
@@ -287,7 +288,7 @@ export function ProjectGoals({ slug }: { slug: string }) {
               )}
             </div>
             <p className="agent-update-summary" data-testid={`agent-overview-summary-${slug}`}>
-              {latestUpdate.summary}
+              {formatCurrentDisplayName(latestUpdate.summary)}
             </p>
             <div className="agent-update-risks">
               <strong>Risks</strong>
@@ -295,7 +296,7 @@ export function ProjectGoals({ slug }: { slug: string }) {
                 <ul>
                   {latestUpdate.risks.map((risk, index) => (
                     <li key={`${risk.text}-${index}`}>
-                      {risk.text}
+                      {formatCurrentDisplayName(risk.text)}
                       {risk.severity && <span className={`risk-severity severity-${risk.severity}`}>{risk.severity}</span>}
                     </li>
                   ))}
@@ -314,7 +315,7 @@ export function ProjectGoals({ slug }: { slug: string }) {
       {businessBrief && (
         <aside className="business-brief-card" data-testid={`business-brief-${slug}`}>
           <h2>Business brief · updated {businessBrief.updated}</h2>
-          <p>{businessBrief.text}</p>
+          <p>{formatCurrentDisplayName(businessBrief.text)}</p>
         </aside>
       )}
 
