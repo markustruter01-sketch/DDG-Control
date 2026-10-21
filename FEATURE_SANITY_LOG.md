@@ -85,7 +85,11 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Compile changed frontend; browser keyboard/form/route/mobile and owner acceptance remain separate. No tests, database or production actions.
 
 
-##21October — Delivery evidence snapshot
-- Need: in-app snapshot still describes merged receipt source as a separate draft and merged Control source as a review branch. Correct stale status text using recorded exact revision/check evidence.
-- Keep: existing delivery IDs, states, acceptance criteria and layout; no completed milestone or live claim. No new API/worker/data operations.
-- Explicitly retain unapplied conditional-development migration, unverified real-owner/runtime/provider gates and missing sprite/ingress evidence. This snapshot is versioned context, not a live status feed or authority.
+##21October - Delivery evidence snapshot
+- Need: in-app snapshot describes merged receipt source as a separate draft and merged Control source as a review branch. Correct status using recorded source/check evidence.
+- Keep delivery IDs, states, criteria, layout and unapplied conditional migration/runtime gates. No live acceptance or new API/worker operations.
+
+##21October - Projects navigation focus and reduced motion
+- Need: Projects dock navigation scrolls but leaves keyboard focus behind and forces smooth motion. Reuse one reveal helper, focus existing target without a tab stop, and honor reduced-motion preference.
+- Keep layout, routes, records and safe-area padding. Browser focus/touch/screen-reader/mobile acceptance remains open; no new queries, calls or writes.
+- Restored original UTF-8 log bytes before appending these entries; corrected local Windows encoding before delivery.
