@@ -40,6 +40,18 @@ function PageLoading() {
   </div>;
 }
 
+function PageUnavailable() {
+  return <div className="app-shell">
+    <Header />
+    <main className="page-wrap detail-main">
+      <h1 className="state-title" role="alert">Page unavailable</h1>
+      <p className="state-copy">Use navigation to open another page, or reload to fetch the current app files.</p>
+      <p className="state-copy">Reloading can discard unsaved changes.</p>
+      <button className="task-secondary-button" type="button" onClick={() => window.location.reload()}>Reload app</button>
+    </main>
+  </div>;
+}
+
 function NotFoundPage() {
   return (
     <div className="app-shell">
@@ -56,5 +68,5 @@ function NotFoundPage() {
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
+  return <ErrorBoundary resetKey={location} FallbackComponent={PageUnavailable}>{children}</ErrorBoundary>;
 }

@@ -106,3 +106,5 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Need: compiled dashboard ships every route in one 930.20kB entry bundle. Existing pages are independent route entries; React lazy imports and one accessible loading shell are the simplest suitable reduction in upfront code.
 - Keep exact routes, named page components, auth gate, existing query/data semantics and route-reset error boundary. No prefetch loops, new dependency, provider call, schema or worker change.
 - Build artifact sizes measure code distribution only, not network speed or browser/owner acceptance. Cold-route loading and failed-chunk recovery remain browser acceptance items; no tests run.
+
+- Route-loading review found generic render retry cannot recover a cached lazy-import rejection. Add route-specific branded failure shell with working navigation and explicit Reload app (warns about unsaved changes), no raw internal error text or automatic reload loop. Route changes keep existing reset-key recovery. Browser failure/recovery acceptance remains open.
