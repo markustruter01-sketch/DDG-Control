@@ -77,3 +77,9 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Link to the exact saved card, reveal after task loading on initial navigation/hash/back-forward, and distinguish unavailable versus not-in-loaded-records. Never create a replacement, change approval state or start work.
 - Bound fragments to known headings or positive database task IDs. Handle each navigation once so background refresh does not steal focus. Existing company-board links and queue remain intact.
 - Source/compilation and rendered cross-route/keyboard/mobile acceptance remain separate; no tests or runtime writes are part of this change.
+
+##21October — Project tabs and unknown routes
+- Need: project tabs have tab roles but no arrow/Home/End focus handling, and label-derived IDs contain whitespace, breaking ARIA references. Keep real tab semantics with stable per-instance IDs and one tab stop; arrows move focus only, native Enter/Space/click activates so keyboard exploration does not switch away from a draft form.
+- Revalidate visible tab selection for a different project so a hidden section does not stay selected. Preserve existing tab names, hidden-tab rules, bookmark format, forms and layout.
+- Need: unmatched app routes render no page. Add a shared-shell not-found fallback with Home navigation, without moving routes, exposing URL contents or adding data/model calls.
+- Compile changed frontend; browser keyboard/form/route/mobile and owner acceptance remain separate. No tests, database or production actions.

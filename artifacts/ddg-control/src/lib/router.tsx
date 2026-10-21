@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { Route, Switch, useLocation } from 'wouter';
+import { Link, Route, Switch, useLocation } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { Header } from '@/components/header';
 import { AgentsPage } from '@/pages/Agents';
 import { AIStackPage } from '@/pages/AIStack';
 import { DecisionsPage } from '@/pages/Decisions';
@@ -22,8 +23,23 @@ export function Router() {
         <Route path="/decisions" component={DecisionsPage} />
         <Route path="/finances" component={FinancePage} />
         <Route path="/projects/:slug" component={ProjectDetail} />
+        <Route component={NotFoundPage} />
       </Switch>
     </RoutedErrorBoundary>
+  );
+}
+
+function NotFoundPage() {
+  return (
+    <div className="app-shell">
+      <Header />
+      <main className="page-wrap detail-main not-found">
+        <p className="eyebrow">Unknown page</p>
+        <h1 className="state-title">Page not found</h1>
+        <p className="state-copy">Check the address or return to the company overview.</p>
+        <Link className="back-link" href="/">← Home</Link>
+      </main>
+    </div>
   );
 }
 

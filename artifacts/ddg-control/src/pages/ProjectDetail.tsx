@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Header } from '@/components/header';
 import { queryClient } from '@/lib/query-client';
 import {
@@ -8,7 +8,7 @@ import {
   useUpdateProject,
   type Project,
 } from '@workspace/api-client-react';
-import { PROJECT_STATUSES, PROJECT_TABS, projectTabsFor, type ProjectStatus } from '@workspace/project-constants';
+import { PROJECT_STATUSES, PROJECT_TABS, projectTabsFor, type ProjectStatus, type ProjectTab } from '@workspace/project-constants';
 import { Link, useParams } from 'wouter';
 import { isNotFound, serverErrorText } from '@/lib/errors';
 import { ProjectTodo } from '@/components/projects/Todo';
@@ -26,6 +26,8 @@ export function ProjectDetail() {
       ? 'To-do'
       : PROJECT_TABS[0]
   ));
+  const tabsId = useId();
+  const [focusedTab, setFocusedTab] = useState<ProjectTab | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [draftStatus, setDraftStatus] = useState<ProjectStatus>(PROJECT_STATUSES[0]);
   const [draftDescription, setDraftDescription] = useState('');
@@ -94,6 +96,22 @@ export function ProjectDetail() {
 
   const project = projectQuery.data;
   if (!project) return null;
+  const availableTabs = projectTabsFor(project.slug);
+  const selectedTab = availableTabs.includes(activeTab) ? activeTab : availableTabs[0] ?? PROJECT_TABS[0];
+  const focusableTab = focusedTab && availableTabs.includes(focusedTab) ? focusedTab : selectedTab;
+  const tabId = (tab: ProjectTab) => `${tabsId}-${PROJECT_TABS.indexOf(tab)}`;
+  function moveTabFocus(event: KeyboardEvent<HTMLButtonElement>, tab: ProjectTab) {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const index = availableTabs.indexOf(tab);
+    const nextIndex = event.key === 'ArrowRight' ? (index + 1) % availableTabs.length
+      : event.key === 'ArrowLeft' ? (index + availableTabs.length - 1) % availableTabs.length
+        : event.key === 'Home' ? 0 : event.key === 'End' ? availableTabs.length - 1 : null;
+    if (nextIndex === null) return;
+    event.preventDefault();
+    const next = availableTabs[nextIndex];
+    if (next) document.getElementById(tabId(next))?.focus();
+    // Arrow keys move focus only. Enter/Space or click explicitly changes panel.
+  }
 
   const openEditor = () => {
     updateProjectMutation.reset();
@@ -256,16 +274,19 @@ export function ProjectDetail() {
           </div>
         </section>
         <div className="tab-list" role="tablist" aria-label="Project sections" data-testid="tab-list-project">
-          {projectTabsFor(project.slug).map((tab) => (
+          {availableTabs.map((tab) => (
             <button
               key={tab}
               className="tab-button"
               type="button"
               role="tab"
-              id={`tab-${tab}`}
-              aria-selected={activeTab === tab}
-              aria-controls="project-tab-panel"
-              onClick={() => setActiveTab(tab)}
+              id={tabId(tab)}
+              aria-selected={selectedTab === tab}
+              aria-controls={`${tabsId}-panel`}
+              tabIndex={focusableTab === tab ? 0 : -1}
+              onFocus={() => setFocusedTab(tab)}
+              onKeyDown={(event) => moveTabFocus(event, tab)}
+              onClick={() => { setActiveTab(tab); setFocusedTab(tab); }}
               data-testid={`tab-${tab}`}
             >
               {tab}
@@ -273,23 +294,24 @@ export function ProjectDetail() {
           ))}
         </div>
         <section
-          className={`tab-panel${activeTab === 'To-do' ? ' todo-tab-panel' : activeTab === 'Overview & Goals' ? ' goal-tab-panel' : ' data-tab-panel'}`}
+          className={`tab-panel${selectedTab === 'To-do' ? ' todo-tab-panel' : selectedTab === 'Overview & Goals' ? ' goal-tab-panel' : ' data-tab-panel'}`}
           role="tabpanel"
-          id="project-tab-panel"
-          aria-labelledby={`tab-${activeTab}`}
+          id={`${tabsId}-panel`}
+          aria-labelledby={tabId(selectedTab)}
+          tabIndex={0}
           data-testid="panel-project-tab"
         >
-          {activeTab === 'To-do'
+          {selectedTab === 'To-do'
             ? <ProjectTodo slug={project.slug} />
-            : activeTab === 'Overview & Goals'
+            : selectedTab === 'Overview & Goals'
               ? <><ProjectGoals slug={project.slug} /><OverviewWorkspace slug={project.slug} /></>
-              : activeTab === 'Customers'
+              : selectedTab === 'Customers'
                 ? <CustomerWorkspace slug={project.slug} />
-                : activeTab === 'Revenue & Subscriptions'
+                : selectedTab === 'Revenue & Subscriptions'
                   ? project.slug === 'finance'
                     ? <FinanceFleetWorkspace />
                     : <RevenueWorkspace slug={project.slug} />
-                  : activeTab === 'Agent Activity'
+                  : selectedTab === 'Agent Activity'
                     ? <AgentActivityWorkspace slug={project.slug} />
                     : <NextActionWorkspace slug={project.slug} />}
         </section>
