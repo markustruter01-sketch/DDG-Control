@@ -100,3 +100,11 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Disable read actions while decisions refresh or fail. Keep existing API, source-version server checks, no automatic retries/writes, migration gate and decision navigation.
 - Need: linked-decision effect can repeatedly scroll/focus on background query updates. Handle focus once per navigation version, retaining loading waits, explicit links and error states.
 - Compile/build only; malformed response/browser/runtime and persistence acceptance remain open. No tests, data/provider/migration/release operations.
+
+
+##21October - Load route code when needed
+- Need: compiled dashboard ships every route in one 930.20kB entry bundle. Existing pages are independent route entries; React lazy imports and one accessible loading shell are the simplest suitable reduction in upfront code.
+- Keep exact routes, named page components, auth gate, existing query/data semantics and route-reset error boundary. No prefetch loops, new dependency, provider call, schema or worker change.
+- Build artifact sizes measure code distribution only, not network speed or browser/owner acceptance. Cold-route loading and failed-chunk recovery remain browser acceptance items; no tests run.
+
+- Route-loading review found generic render retry cannot recover a cached lazy-import rejection. Add route-specific branded failure shell with working navigation and explicit Reload app (warns about unsaved changes), no raw internal error text or automatic reload loop. Route changes keep existing reset-key recovery. Browser failure/recovery acceptance remains open.
