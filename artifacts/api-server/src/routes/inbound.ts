@@ -30,7 +30,6 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { desc, eq, ne } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import { decideDecision } from "./decisions";
-import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
 import { getTradingSnapshot } from "../agents/ollie";
 import {
   computeFinanceSummary,
@@ -244,10 +243,6 @@ router.post("/inbound/decisions", async (req, res): Promise<void> => {
       res.status(409).json({ error: "decision is not pending" });
       return;
     }
-    if (outcome.kind === "paused") {
-      res.status(423).json({ error: "Project work is OFF. The decision cannot create work." });
-      return;
-    }
 
     const response = toApiDecision(outcome.decision);
     PostInboundDecisionResponse.parse(response);
@@ -272,16 +267,12 @@ router.post("/inbound/decisions", async (req, res): Promise<void> => {
   }
 
   const [project] = await db
-    .select({ id: projectsTable.id, slug: projectsTable.slug })
+    .select({ id: projectsTable.id })
     .from(projectsTable)
     .where(eq(projectsTable.slug, createInput.project_slug))
     .limit(1);
   if (!project) {
     res.status(400).json({ error: "unknown project" });
-    return;
-  }
-  if (hasWorkControl(project.slug) && !(await isProjectWorkEnabled(project.slug))) {
-    res.status(423).json({ error: "Project work is OFF. New recommendations are paused." });
     return;
   }
 
@@ -329,10 +320,6 @@ router.post("/inbound/decisions", async (req, res): Promise<void> => {
   }
   if (decided.kind === "not-pending") {
     res.status(409).json({ error: "decision is not pending" });
-    return;
-  }
-  if (decided.kind === "paused") {
-    res.status(423).json({ error: "Project work is OFF. The decision cannot create work." });
     return;
   }
 
@@ -387,12 +374,6 @@ router.post("/inbound/tasks/:id/status", async (req, res): Promise<void> => {
     .limit(1);
   if (!existing) {
     res.status(404).json({ error: "not found" });
-    return;
-  }
-  const [taskProject] = await db.select({ slug: projectsTable.slug }).from(projectsTable)
-    .where(eq(projectsTable.id, existing.project_id)).limit(1);
-  if (!taskProject || (hasWorkControl(taskProject.slug) && !(await isProjectWorkEnabled(taskProject.slug)))) {
-    res.status(423).json({ error: "Project work is OFF. Task status updates are paused." });
     return;
   }
 
@@ -458,10 +439,6 @@ router.post("/inbound/notes", async (req, res): Promise<void> => {
     .limit(1);
   if (!project) {
     res.status(400).json({ error: "unknown project" });
-    return;
-  }
-  if (hasWorkControl(project.slug) && !(await isProjectWorkEnabled(project.slug))) {
-    res.status(423).json({ error: "Project work is OFF. New project notes are paused." });
     return;
   }
 

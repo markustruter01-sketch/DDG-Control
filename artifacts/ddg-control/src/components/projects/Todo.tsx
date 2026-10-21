@@ -13,7 +13,6 @@ import {
   type TaskUpdate,
 } from '@workspace/api-client-react';
 import { TASK_STATUSES, TASK_STATUS_LABELS, type TaskStatus } from '@workspace/project-constants';
-import { formatCurrentDisplayName, formatTaskActorName } from '@/lib/format';
 import { serverErrorText } from '@/lib/errors';
 import { formatCompletedDate, formatDueDate } from '@/lib/format';
 
@@ -84,16 +83,16 @@ function TaskEditorForm({
         />
       </label>
       <label className="task-field">
-        <span>Task owner (saved actor)</span>
+        <span>Owner</span>
         <select
           required
           value={draft.ownerId}
           onChange={(event) => onChange('ownerId', event.target.value)}
           data-testid="select-task-owner"
         >
-          <option value="">Select a saved actor</option>
+          <option value="">Select a member</option>
           {members.map((member) => (
-            <option key={member.id} value={member.id}>{formatTaskActorName(member.name)}</option>
+            <option key={member.id} value={member.id}>{member.name}</option>
           ))}
         </select>
       </label>
@@ -188,7 +187,7 @@ export function ProjectTodo({ slug }: { slug: string }) {
   const [draft, setDraft] = useState<TaskDraft>(emptyTaskDraft);
   const tasks = tasksQuery.data ?? [];
   const members = membersQuery.data ?? [];
-  const memberNames = new Map(members.map((member) => [member.id, formatTaskActorName(member.name)] as const));
+  const memberNames = new Map(members.map((member) => [member.id, member.name] as const));
   const groupedTasks = TASK_STATUSES
     .map((status) => ({
       status,
@@ -363,7 +362,7 @@ export function ProjectTodo({ slug }: { slug: string }) {
                       onClick={() => openEditForm(task)}
                       data-testid={`button-edit-task-${task.id}`}
                     >
-                      <span className="todo-task-title">{formatCurrentDisplayName(task.title)}</span>
+                      <span className="todo-task-title">{task.title}</span>
                       <span className="todo-task-meta">
                         <span>{memberNames.get(task.owner_id) ?? 'Unknown owner'}</span>
                         {task.due_date && (

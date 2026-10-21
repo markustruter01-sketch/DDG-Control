@@ -8,13 +8,13 @@ import {
 } from "@workspace/api-zod";
 import {
   MEMBER_KINDS,
+  ORG_CHART,
   PROJECT_STATUSES,
   type ProjectStatus,
 } from "@workspace/project-constants";
 import { eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { zodErrorText } from "./validation";
-import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
 
 const router: IRouter = Router();
 
@@ -51,6 +51,7 @@ const initialProjects: Array<typeof projectsTable.$inferInsert> = [
 
 const initialMembers: Array<typeof membersTable.$inferInsert> = [
   { name: "Markus", kind: MEMBER_KINDS[0] },
+  { name: "Dad", kind: MEMBER_KINDS[0] },
 ];
 
 export async function seedProjectsIfEmpty(): Promise<void> {
@@ -77,13 +78,17 @@ export async function seedProjectsIfEmpty(): Promise<void> {
     .limit(1);
 
   if (existingMembers.length === 0) {
-    await db.insert(membersTable).values(initialMembers)
-      .onConflictDoNothing({ target: membersTable.name });
+    await db.insert(membersTable).values(initialMembers);
   }
 
-  // Company roles are not runtime accounts. Do not create agent members
-  // from a presentation roster on startup. Existing rows/IDs/history remain.
-  // A report-writer actor must be provisioned explicitly by the owner.
+  await db
+    .insert(membersTable)
+    .values(
+      ORG_CHART
+        .filter((member) => member.name !== "Markus")
+        .map(({ name }) => ({ name, kind: MEMBER_KINDS[1] })),
+    )
+    .onConflictDoNothing({ target: membersTable.name });
 }
 
 function toApiProject(project: Project) {
@@ -146,10 +151,6 @@ router.patch("/projects/:slug", async (req, res): Promise<void> => {
 
   if (!existing) {
     res.status(404).json({ error: "not found" });
-    return;
-  }
-  if (hasWorkControl(params.data.slug) && !(await isProjectWorkEnabled(params.data.slug))) {
-    res.status(423).json({ error: "Project work is OFF. Project updates are paused." });
     return;
   }
 

@@ -298,21 +298,4 @@ export const requireAuth: RequestHandler = (req, res, next): void => {
   next();
 };
 
-export const requireRealOwnerSession: RequestHandler = (req, res, next): void => {
-  if (isAuthBypassed()) {
-    res.status(403).json({ error: "A real authenticated owner session is required; development auth bypass is not owner verification." });
-    return;
-  }
-  const configuration = getAuthConfiguration();
-  if (!configuration) {
-    res.status(503).json({ error: "auth not configured" });
-    return;
-  }
-  if (!hasValidSession(req, configuration.sessionSecret)) {
-    res.status(401).json({ error: "not logged in" });
-    return;
-  }
-  next();
-};
-
 export default router;

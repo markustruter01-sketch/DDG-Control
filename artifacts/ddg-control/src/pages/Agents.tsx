@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import {
   getListAgentRunsQueryKey,
@@ -9,32 +9,10 @@ import {
 } from '@workspace/api-client-react';
 import { Header } from '@/components/header';
 import { serverErrorText } from '@/lib/errors';
-import { formatBrisbaneDateTime, formatCurrentDisplayName } from '@/lib/format';
-
-type CursorModelsResponse = {
-  status: 'not_configured' | 'connected';
-  models: Array<{ id: string; displayName: string; description?: string }>;
-};
-
-async function loadCursorModels(): Promise<CursorModelsResponse> {
-  const response = await fetch('/api/cursor/models', {
-    headers: { Accept: 'application/json' },
-    cache: 'no-store',
-  });
-  if (!response.ok) {
-    throw new Error('Unable to read Cursor models. Check the API key and try again.');
-  }
-  return response.json() as Promise<CursorModelsResponse>;
-}
+import { formatBrisbaneDateTime } from '@/lib/format';
 
 export function AgentsPage() {
   const client = useQueryClient();
-  const cursorModelsQuery = useQuery({
-    queryKey: ['cursor-models'],
-    queryFn: loadCursorModels,
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
   const runsQuery = useListAgentRuns({
     query: { queryKey: getListAgentRunsQueryKey() },
   });
@@ -43,7 +21,7 @@ export function AgentsPage() {
     mutation: {
       onSuccess: async (run) => {
         setRunNotice({
-          text: `Run status: ${run.status}${run.error ? ` — ${formatCurrentDisplayName(run.error)}` : ''}`,
+          text: `Run status: ${run.status}${run.error ? ` — ${run.error}` : ''}`,
           isError: run.status === 'error' || run.status === 'invalid',
         });
         await Promise.all([
@@ -53,7 +31,7 @@ export function AgentsPage() {
       },
       onError: (error) => {
         setRunNotice({
-          text: serverErrorText(error, 'Unable to run Heimdall.'),
+          text: serverErrorText(error, 'Unable to run Ollie.'),
           isError: true,
         });
       },
@@ -74,7 +52,7 @@ export function AgentsPage() {
 
         <section className="agents-run-panel" aria-labelledby="agents-run-title">
           <div className="agents-run-toolbar">
-            <h2 id="agents-run-title" className="todo-group-title">Heimdall</h2>
+            <h2 id="agents-run-title" className="todo-group-title">Ollie</h2>
             <button
               className="task-primary-button"
               type="button"
@@ -85,7 +63,7 @@ export function AgentsPage() {
               }}
               data-testid="button-run-ollie"
             >
-              {runMutation.isPending ? 'Running…' : 'Run Heimdall now'}
+              {runMutation.isPending ? 'Running…' : 'Run Ollie now'}
             </button>
           </div>
           {runNotice && (
@@ -95,49 +73,6 @@ export function AgentsPage() {
               data-testid="status-ollie-run"
             >
               {runNotice.text}
-            </p>
-          )}
-        </section>
-
-        <section className="agents-run-panel" aria-labelledby="cursor-models-title">
-          <div className="agents-run-toolbar">
-            <h2 id="cursor-models-title" className="todo-group-title">Cursor models</h2>
-            <button
-              className="task-secondary-button"
-              type="button"
-              disabled={cursorModelsQuery.isFetching}
-              onClick={() => void cursorModelsQuery.refetch()}
-              data-testid="button-refresh-cursor-models"
-            >
-              {cursorModelsQuery.isFetching ? 'Checking…' : 'Check models'}
-            </button>
-          </div>
-          <p className="agents-run-notice">
-            This is a read-only check. It does not start an agent. A model appearing here does not prove its use is included in your plan; check Cursor billing before starting any coding task.
-          </p>
-          {cursorModelsQuery.isLoading ? (
-            <p className="task-state-message" role="status">Checking Cursor connection…</p>
-          ) : cursorModelsQuery.isError ? (
-            <p className="agents-run-notice agents-run-notice-error" role="alert">
-              {serverErrorText(cursorModelsQuery.error, 'Unable to check Cursor models.')}
-            </p>
-          ) : cursorModelsQuery.data?.status === 'not_configured' ? (
-            <p className="task-state-message" data-testid="status-cursor-not-configured">
-              Cursor is not connected yet. Add CURSOR_API_KEY to Replit Secrets to check available models. Never put the key in this page or in GitHub.
-            </p>
-          ) : cursorModelsQuery.data?.models.length ? (
-            <ul className="cursor-model-list" data-testid="list-cursor-models">
-              {cursorModelsQuery.data.models.map((model) => (
-                <li key={model.id}>
-                  <strong>{model.displayName}</strong>
-                  <code>{model.id}</code>
-                  {model.description && <span>{model.description}</span>}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="task-state-message" data-testid="status-no-cursor-models">
-              Cursor is connected, but it returned no models.
             </p>
           )}
         </section>
@@ -166,7 +101,7 @@ export function AgentsPage() {
               {runs.map((run) => (
                 <li className="agents-run-card" key={run.id} data-testid={`card-agent-run-${run.id}`}>
                   <div className="agents-run-header">
-                    <strong>{formatCurrentDisplayName(run.member_name)}</strong>
+                    <strong>{run.member_name}</strong>
                     <span className={`agents-run-status agents-run-status-${run.status}`}>
                       {run.status}
                     </span>

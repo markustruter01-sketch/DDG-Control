@@ -23,7 +23,6 @@ import {
   requestBodyRecord,
   zodErrorText,
 } from "./validation";
-import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
 
 const router: IRouter = Router();
 
@@ -93,11 +92,6 @@ async function decideWithinTransaction(
   }
   if (decision.status !== DECISION_STATUSES[0]) {
     return { kind: "not-pending" as const };
-  }
-  const [project] = await tx.select({ slug: projectsTable.slug })
-    .from(projectsTable).where(eq(projectsTable.id, decision.project_id)).limit(1);
-  if (!project || (hasWorkControl(project.slug) && !(await isProjectWorkEnabled(project.slug)))) {
-    return { kind: "paused" as const };
   }
 
   let taskId: number | null = null;
@@ -240,10 +234,6 @@ router.post("/decisions/:id/approve", async (req, res): Promise<void> => {
     res.status(409).json({ error: "decision is not pending" });
     return;
   }
-  if (outcome.kind === "paused") {
-    res.status(423).json({ error: "Project work is OFF. Turn it ON before approving work." });
-    return;
-  }
   res.json(toApiDecision(outcome.decision));
 });
 
@@ -273,10 +263,6 @@ router.post("/decisions/:id/decline", async (req, res): Promise<void> => {
   }
   if (outcome.kind === "not-pending") {
     res.status(409).json({ error: "decision is not pending" });
-    return;
-  }
-  if (outcome.kind === "paused") {
-    res.status(423).json({ error: "Project work is OFF. The decision cannot create work." });
     return;
   }
   res.json(toApiDecision(outcome.decision));

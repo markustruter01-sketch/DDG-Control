@@ -23,7 +23,6 @@ import type {
   AgentRun,
   AgentRunWithMember,
   CattleDogCoffeeProfitResponse,
-  CursorModelsResponse,
   DailySalesResponse,
   Decision,
   DecisionActionBody,
@@ -1665,7 +1664,7 @@ export const getListProjectOllieHistoryUrl = (slug: string,) => {
 }
 
 /**
- * @summary Get the latest 30 Heimdall updates for a project
+ * @summary Get the latest 30 Ollie updates for a project
  */
 export const listProjectOllieHistory = async (slug: string, options?: Parameters<typeof customFetch>[1]): Promise<OllieHistoryResponse> => {
 
@@ -1712,7 +1711,7 @@ export type ListProjectOllieHistoryQueryError = ErrorType<Error>
 
 
 /**
- * @summary Get the latest 30 Heimdall updates for a project
+ * @summary Get the latest 30 Ollie updates for a project
  */
 
 export function useListProjectOllieHistory<TData = Awaited<ReturnType<typeof listProjectOllieHistory>>, TError = ErrorType<Error>>(
@@ -1819,7 +1818,7 @@ export const getRunOllieUrl = () => {
 }
 
 /**
- * @summary Run Heimdall's daily dashboard report
+ * @summary Run Ollie's daily dashboard report
  */
 export const runOllie = async (ollieRunRequest: OllieRunRequest, options?: Parameters<typeof customFetch>[1]): Promise<AgentRun> => {
 
@@ -1885,7 +1884,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type RunOllieMutationVariables = {data: BodyType<OllieRunRequest>}
 
     /**
- * @summary Run Heimdall's daily dashboard report
+ * @summary Run Ollie's daily dashboard report
  */
 export const useRunOllie = <TError = ErrorType<Error>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runOllie>>, TError,RunOllieMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1898,84 +1897,6 @@ export const useRunOllie = <TError = ErrorType<Error>,
       return useMutation(getRunOllieMutationOptions(options));
     }
 
-export const getListCursorModelsUrl = () => {
-
-
-
-
-  return `/api/cursor/models`
-}
-
-/**
- * Read-only model discovery. This does not start an agent or confirm model billing is included in the user's plan.
- * @summary Read the Cursor Cloud Agent models available to this account
- */
-export const listCursorModels = async ( options?: Parameters<typeof customFetch>[1]): Promise<CursorModelsResponse> => {
-
-  return customFetch<CursorModelsResponse>(getListCursorModelsUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListCursorModelsQueryKey = () => {
-    return [
-    `/api/cursor/models`
-    ] as const;
-    }
-
-
-export const getListCursorModelsQueryOptions = <TData = Awaited<ReturnType<typeof listCursorModels>>, TError = ErrorType<Error>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCursorModels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListCursorModelsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCursorModels>>> = ({ signal }) => listCursorModels({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCursorModels>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListCursorModelsQueryResult = NonNullable<Awaited<ReturnType<typeof listCursorModels>>>
-export type ListCursorModelsQueryError = ErrorType<Error>
-
-
-/**
- * @summary Read the Cursor Cloud Agent models available to this account
- */
-
-export function useListCursorModels<TData = Awaited<ReturnType<typeof listCursorModels>>, TError = ErrorType<Error>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCursorModels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListCursorModelsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
 export const getRunOllieCronUrl = () => {
 
 
@@ -1985,7 +1906,7 @@ export const getRunOllieCronUrl = () => {
 }
 
 /**
- * @summary Run Heimdall's daily dashboard report with a scheduler token
+ * @summary Run Ollie's daily dashboard report with a scheduler token
  */
 export const runOllieCron = async ( options?: Parameters<typeof customFetch>[1]): Promise<AgentRun> => {
 
@@ -2037,7 +1958,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
     /**
- * @summary Run Heimdall's daily dashboard report with a scheduler token
+ * @summary Run Ollie's daily dashboard report with a scheduler token
  */
 export const useRunOllieCron = <TError = ErrorType<Error>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runOllieCron>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -2136,7 +2057,7 @@ export const getListLatestAgentUpdatesUrl = () => {
 }
 
 /**
- * @summary List the latest Heimdall update for each project
+ * @summary List the latest Ollie update for each project
  */
 export const listLatestAgentUpdates = async ( options?: Parameters<typeof customFetch>[1]): Promise<LatestAgentProjectUpdate[]> => {
 
@@ -2183,7 +2104,7 @@ export type ListLatestAgentUpdatesQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List the latest Heimdall update for each project
+ * @summary List the latest Ollie update for each project
  */
 
 export function useListLatestAgentUpdates<TData = Awaited<ReturnType<typeof listLatestAgentUpdates>>, TError = ErrorType<unknown>>(

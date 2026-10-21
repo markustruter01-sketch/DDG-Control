@@ -16,13 +16,13 @@ import {
 import { TASK_STATUS_LABELS, type TaskStatus } from '@workspace/project-constants';
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { serverErrorText } from '@/lib/errors';
-import { formatBrisbaneDateTime, formatCurrentDisplayName, formatDueDate } from '@/lib/format';
+import { formatBrisbaneDateTime, formatDueDate } from '@/lib/format';
 import { sourceLabelForDecision } from '@/pages/Decisions';
 import { ChartFrame, FinanceTradingHealth } from '@/components/projects/Data';
 
 function OllieTimeline({ rows, loading, error }: { rows: OllieHistoryRow[]; loading: boolean; error: unknown }) {
-  if (loading) return <p className="task-state-message" role="status">Loading Heimdall status history…</p>;
-  if (error) return <p className="data-error" role="alert">{serverErrorText(error, 'Unable to load Heimdall status history.')}</p>;
+  if (loading) return <p className="task-state-message" role="status">Loading Ollie status history…</p>;
+  if (error) return <p className="data-error" role="alert">{serverErrorText(error, 'Unable to load Ollie status history.')}</p>;
   if (!rows.length) return <p className="data-empty">No status history yet</p>;
   return (
     <ol className="status-timeline">
@@ -67,7 +67,7 @@ export function OverviewWorkspace({ slug }: { slug: string }) {
     <div className="overview-data">
       {slug === 'finance' && <FinanceTradingHealth />}
       <section className="agent-latest-box">
-        <h2 className="todo-group-title">Heimdall status history</h2>
+        <h2 className="todo-group-title">Ollie status history</h2>
         <OllieTimeline rows={history.data ?? []} loading={history.isLoading} error={history.error} />
       </section>
       <ChartFrame title="Project tasks by status">
@@ -88,25 +88,25 @@ export function AgentActivityWorkspace({ slug }: { slug: string }) {
     .sort((a, b) => (b.decided_at ?? b.created_at ?? '').localeCompare(a.decided_at ?? a.created_at ?? ''));
   const decisionsError = pending.error ?? approved.error ?? declined.error;
   const decisionsLoading = pending.isLoading || approved.isLoading || declined.isLoading;
-  const sourceLabel = (source: string) => source === 'ollie_daily' ? 'Heimdall daily' : source === 'cursor' ? 'Cursor' : source;
+  const sourceLabel = (source: string) => source === 'ollie_daily' ? 'Ollie daily' : source === 'cursor' ? 'Cursor' : source;
   return (
     <div className="activity-columns">
-      <section className="agent-latest-box"><h2 className="todo-group-title">Heimdall history</h2><OllieTimeline rows={history.data ?? []} loading={history.isLoading} error={history.error} /></section>
+      <section className="agent-latest-box"><h2 className="todo-group-title">Ollie history</h2><OllieTimeline rows={history.data ?? []} loading={history.isLoading} error={history.error} /></section>
       <section className="activity-panel">
         <h2 className="todo-group-title">Project decisions</h2>
         {decisionsLoading ? <p className="task-state-message">Loading decisions…</p> : decisionsError ? <p className="data-error" role="alert">{serverErrorText(decisionsError, 'Unable to load decisions.')}</p> : decisions.length === 0 ? <p className="data-empty">No decisions yet</p> : (
           <div className="activity-list">{decisions.map((decision) => <article className="activity-entry" key={decision.id}>
-            <div className="activity-entry-head"><strong>{formatCurrentDisplayName(decision.title)}</strong><span className={`history-status history-status-${decision.status}`}>{decision.status}</span></div>
-            <p>{formatCurrentDisplayName(decision.recommendation)}</p><div className="activity-meta"><span>Source: {sourceLabel(decision.source)}</span><span>Decided via: {decision.decided_via ?? 'Not recorded'}</span><time>{formatBrisbaneDateTime(decision.decided_at ?? decision.created_at)}</time></div>
+            <div className="activity-entry-head"><strong>{decision.title}</strong><span className={`history-status history-status-${decision.status}`}>{decision.status}</span></div>
+            <p>{decision.recommendation}</p><div className="activity-meta"><span>Source: {sourceLabel(decision.source)}</span><span>Decided via: {decision.decided_via ?? 'Not recorded'}</span><time>{formatBrisbaneDateTime(decision.decided_at ?? decision.created_at)}</time></div>
           </article>)}</div>
         )}
       </section>
       <section className="activity-panel">
         <h2 className="todo-group-title">Project notes</h2>
         {notes.isLoading ? <p className="task-state-message">Loading project notes…</p> : notes.isError ? <p className="data-error" role="alert">{serverErrorText(notes.error, 'Unable to load project notes.')}</p> : (notes.data?.length ?? 0) === 0 ? <p className="data-empty">No notes yet</p> : (
-            <div className="activity-list">{(notes.data ?? []).map((note: ProjectNote) => <article className="activity-entry" key={note.id}>
+          <div className="activity-list">{(notes.data ?? []).map((note: ProjectNote) => <article className="activity-entry" key={note.id}>
             <div className="activity-entry-head"><span>{note.kind}</span><span className={`risk-severity severity-${note.severity}`}>{note.severity}</span></div>
-            <p>{formatCurrentDisplayName(note.text)}</p><time>{formatBrisbaneDateTime(note.created_at)}</time>
+            <p>{note.text}</p><time>{formatBrisbaneDateTime(note.created_at)}</time>
           </article>)}</div>
         )}
       </section>
@@ -129,8 +129,8 @@ export function NextActionWorkspace({ slug }: { slug: string }) {
   return (
     <div className="next-action-workspace">
       <section className="next-action-feature">
-        <p className="eyebrow">Heimdall’s latest recommendation</p>
-        {updates.isLoading ? <p className="task-state-message">Loading next action…</p> : updates.isError ? <p className="data-error" role="alert">{serverErrorText(updates.error, 'Unable to load Heimdall’s recommendation.')}</p> : <h2>{update ? formatCurrentDisplayName(update.next_action) : 'No next action yet'}</h2>}
+        <p className="eyebrow">Ollie’s latest recommendation</p>
+        {updates.isLoading ? <p className="task-state-message">Loading next action…</p> : updates.isError ? <p className="data-error" role="alert">{serverErrorText(updates.error, 'Unable to load Ollie’s recommendation.')}</p> : <h2>{update?.next_action ?? 'No next action yet'}</h2>}
         {update?.created_at && <time>{formatBrisbaneDateTime(update.created_at)}</time>}
       </section>
       <section className="activity-panel">

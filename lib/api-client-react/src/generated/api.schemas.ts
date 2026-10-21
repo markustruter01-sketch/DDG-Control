@@ -441,25 +441,6 @@ export interface Error {
   error: string;
 }
 
-export type CursorModelsResponseStatus = typeof CursorModelsResponseStatus[keyof typeof CursorModelsResponseStatus];
-
-
-export const CursorModelsResponseStatus = {
-  not_configured: 'not_configured',
-  connected: 'connected',
-} as const;
-
-export type CursorModelsResponseModelsItem = {
-  id: string;
-  displayName: string;
-  description?: string;
-};
-
-export interface CursorModelsResponse {
-  status: CursorModelsResponseStatus;
-  models: CursorModelsResponseModelsItem[];
-}
-
 export interface Member {
   id: number;
   name: string;

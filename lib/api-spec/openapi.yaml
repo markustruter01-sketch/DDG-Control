@@ -574,7 +574,7 @@ paths:
     get:
       operationId: listProjectOllieHistory
       tags: [agents]
-      summary: Get the latest 30 Heimdall updates for a project
+      summary: Get the latest 30 Ollie updates for a project
       parameters:
         - name: slug
           in: path
@@ -583,7 +583,7 @@ paths:
             type: string
       responses:
         "200":
-          description: Heimdall update history, oldest update first
+          description: Ollie update history, oldest update first
           content:
             application/json:
               schema:
@@ -622,7 +622,7 @@ paths:
     post:
       operationId: runOllie
       tags: [agents]
-      summary: Run Heimdall's daily dashboard report
+      summary: Run Ollie's daily dashboard report
       requestBody:
         required: true
         content:
@@ -631,7 +631,7 @@ paths:
               $ref: "#/components/schemas/OllieRunRequest"
       responses:
         "200":
-          description: Completed or failed Heimdall run
+          description: Completed or failed Ollie run
           content:
             application/json:
               schema:
@@ -643,32 +643,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "409":
-          description: Heimdall already ran today or is currently running
+          description: Ollie already ran today or is currently running
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
         "503":
-          description: Heimdall or xAI is not configured
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-  /cursor/models:
-    get:
-      operationId: listCursorModels
-      tags: [agents]
-      summary: Read the Cursor Cloud Agent models available to this account
-      description: Read-only model discovery. This does not start an agent or confirm model billing is included in the user's plan.
-      responses:
-        "200":
-          description: Cursor API key is missing or the account's available model list
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CursorModelsResponse"
-        "502":
-          description: Cursor could not return a valid model list
+          description: Ollie or xAI is not configured
           content:
             application/json:
               schema:
@@ -677,10 +658,10 @@ paths:
     post:
       operationId: runOllieCron
       tags: [agents]
-      summary: Run Heimdall's daily dashboard report with a scheduler token
+      summary: Run Ollie's daily dashboard report with a scheduler token
       responses:
         "200":
-          description: Completed or failed Heimdall run
+          description: Completed or failed Ollie run
           content:
             application/json:
               schema:
@@ -692,7 +673,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "409":
-          description: Heimdall already ran today or is currently running
+          description: Ollie already ran today or is currently running
           content:
             application/json:
               schema:
@@ -721,10 +702,10 @@ paths:
     get:
       operationId: listLatestAgentUpdates
       tags: [agents]
-      summary: List the latest Heimdall update for each project
+      summary: List the latest Ollie update for each project
       responses:
         "200":
-          description: Latest Heimdall project updates; projects without updates are omitted
+          description: Latest Ollie project updates; projects without updates are omitted
           content:
             application/json:
               schema:
@@ -1258,7 +1239,7 @@ paths:
         - InboundBearerAuth: []
       responses:
         "200":
-          description: Current state for Heimdall
+          description: Current state for Ollie
           content:
             application/json:
               schema:
@@ -1877,27 +1858,6 @@ components:
         error:
           type: string
       required: [error]
-    CursorModelsResponse:
-      type: object
-      additionalProperties: false
-      properties:
-        status:
-          type: string
-          enum: [not_configured, connected]
-        models:
-          type: array
-          items:
-            type: object
-            additionalProperties: false
-            properties:
-              id:
-                type: string
-              displayName:
-                type: string
-              description:
-                type: string
-            required: [id, displayName]
-      required: [status, models]
     Member:
       type: object
       additionalProperties: false

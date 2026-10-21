@@ -89,78 +89,40 @@ function AddSocialNumbers({ projects, onDone }: { projects: Project[]; onDone: (
 export function SocialBar({ projects }: { projects: Project[] }) {
   const query = useGetSocialSummary();
   const [adding, setAdding] = useState(false);
-  const summary = query.isError ? undefined : query.data;
+  const summary = query.data;
   const name = (slug: string) => projects.find((project) => project.slug === slug)?.name ?? slug;
-  const platformRows = summary?.ventures.flatMap((venture) => venture.platforms.map((platform) => ({
-    ...platform,
-    project_slug: venture.project_slug,
-  }))) ?? [];
-  const maxFollowers = Math.max(1, ...platformRows.map((platform) => platform.followers));
-  const recordedVentures = summary?.ventures.filter((venture) => venture.platforms.length > 0) ?? [];
-  const missingVentures = summary?.ventures.filter((venture) => venture.platforms.length === 0) ?? [];
-  const captureDates = platformRows.map((platform) => platform.captured_on).filter(Boolean).sort();
-
 
   return (
-    <section className="home-performance-panel home-social-panel social-summary" aria-labelledby="home-social-title" data-testid="social-summary">
+    <section className="finance-summary social-summary" aria-label="Social reach" data-testid="social-summary">
       <div className="social-summary-head">
-        <div>
-          <p className="home-section-kicker">Business performance</p>
-          <h2 id="home-social-title">Social reporting</h2>
-        </div>
+        <p className="finance-kpi-label">Social reach · followers</p>
         {!adding && projects.length > 0 && (
           <button className="task-secondary-button" type="button" onClick={() => setAdding(true)} data-testid="button-add-social">Add numbers</button>
         )}
       </div>
-      <p className="home-social-note">Saved platform snapshots; source and capture date appear below. Manual entries are labelled. Counts are summed, not deduplicated people; missing coverage is Unknown.</p>
-      {summary && (
-        <details className="home-source-details">
-          <summary>Saved coverage · {recordedVentures.length} of {summary.ventures.length} registered ventures have readings</summary>
-          <p>{platformRows.length} business/platform readings. Individual accounts and shared-account overlap are not identified; complete company coverage is Unknown.</p>
-          <p>Oldest capture: {captureDates[0] || 'Unknown'}. Capture dates describe saved readings, not a live connection or a last sync.</p>
-          {missingVentures.length > 0 && <p>No saved readings: {missingVentures.map((venture) => name(venture.project_slug)).join(', ')}. This does not establish whether those ventures have social accounts.</p>}
-          <p>Totals can include overlapping audiences. Platform-specific measures and verified account connections remain to be configured.</p>
-        </details>
-      )}
-
       {adding && <AddSocialNumbers projects={projects} onDone={() => setAdding(false)} />}
-      {summary && platformRows.length > 0 && (
-        <>
-          <div className="home-social-total">
-            <span>Reported follower total · partial saved coverage</span>
-            <strong>{formatFigure(summary.total_followers, 'count')}</strong>
-          </div>
-          <div className="home-social-list">
-            {summary.ventures.map((venture) => (
-              <article className="home-social-venture" key={venture.project_slug} data-testid={`social-kpi-${venture.project_slug}`}>
-                <h3>{name(venture.project_slug)}</h3>
-                {venture.platforms.length === 0 ? <p>Unknown · no saved readings</p> : venture.platforms.map((platform) => (
-                  <div className="home-social-platform" key={platform.platform}>
-                    <div className="home-social-platform-top">
-                      <strong>{SOCIAL_PLATFORM_LABELS[platform.platform]}</strong>
-                      <span>{formatFigure(platform.followers, 'count')} followers</span>
-                    </div>
-                    <div className="home-bar-track"><i className="home-bar-social" style={{ width: `${(platform.followers / maxFollowers) * 100}%` }} /></div>
-                    <p>
-                      {platform.source.toLowerCase().includes('manual') ? 'Manual' : platform.source || 'Unknown source'}
-                      {' · captured '}
-                      {platform.captured_on || 'date Unknown'}
-                      {' · '}
-                      {change(platform.followers_change_30d)}
-                    </p>
-                    <small>
-                      Impressions (30d): {platform.impressions_30d == null ? 'Unknown' : formatFigure(platform.impressions_30d, 'count')}
-                      {' · Engagements (30d): '}
-                      {platform.engagements_30d == null ? 'Unknown' : formatFigure(platform.engagements_30d, 'count')}
-                    </small>
-                  </div>
-                ))}
-              </article>
-            ))}
-          </div>
-        </>
+      {summary && (
+        <div className="finance-kpi-grid">
+          <article className="finance-kpi-card" data-testid="social-kpi-total">
+            <p className="finance-kpi-label">All ventures</p>
+            <p className="finance-kpi-value">{formatFigure(summary.total_followers, 'count')}</p>
+            <p className="finance-kpi-detail">Followers, all platforms</p>
+          </article>
+          {summary.ventures.map((venture) => (
+            <article className="finance-kpi-card" key={venture.project_slug} data-testid={`social-kpi-${venture.project_slug}`}>
+              <p className="finance-kpi-label">{name(venture.project_slug)}</p>
+              <p className="finance-kpi-value">{venture.platforms.length ? formatFigure(venture.total_followers, 'count') : '–'}</p>
+              <p className="finance-kpi-detail">
+                {venture.platforms.length === 0
+                  ? 'No numbers yet'
+                  : `${change(venture.followers_change_30d)} · ${venture.platforms
+                      .map((p) => `${SOCIAL_PLATFORM_LABELS[p.platform]} ${formatFigure(p.followers, 'count')}`)
+                      .join(', ')}`}
+              </p>
+            </article>
+          ))}
+        </div>
       )}
-      {summary && platformRows.length === 0 && <p className="home-unknown-state">Unknown · no social readings are saved.</p>}
       {query.isLoading && <p className="finance-summary-state" role="status">Loading social numbers…</p>}
       {query.isError && (
         <div className="finance-summary-state finance-summary-error" role="alert">
