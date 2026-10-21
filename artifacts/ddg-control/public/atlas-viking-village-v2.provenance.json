@@ -1,0 +1,11 @@
+{
+  "sourceMasterSha256": "016fa13d38b0fbc8b8e00440adc406e2e69cddf8afa0ad898a1fb0f9c7c30b86",
+  "master": "AI Stack/output/ddg-avatar/atlas-viking-purple-serpent-v2.png",
+  "briefs": [
+    "AI Stack/output/ddg-avatar/ATLAS_VILLAGE_SERPENT_V2_BRIEF.md",
+    "AI Stack/output/ddg-avatar/ATLAS_PURPLE_SERPENT_BRIEF.md"
+  ],
+  "method": "Built-in imagegen edits: voxel/serpent composition, then owner-requested purple colour refinement;1448x1086, WebP quality90 delivery",
+  "deliveryBytes": 640300,
+  "logo": "Unchanged official creative logo overlaid separately in HTML, never generated"
+}
