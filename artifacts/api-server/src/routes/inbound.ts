@@ -30,7 +30,8 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { desc, eq, ne } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import { decideDecision } from "./decisions";
-import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
+import { requireRealOwnerSession } from "./auth";
+import { hasWorkControl, isProjectWorkEnabled, isProjectWorkHeld, lockWorkControl } from "./work-management";
 import { getTradingSnapshot } from "../agents/ollie";
 import {
   computeFinanceSummary,
@@ -190,7 +191,10 @@ router.post("/inbound/finance/revenue", async (req, res): Promise<void> => {
   res.status(result.status).json(result.data);
 });
 
-router.post("/inbound/decisions", async (req, res): Promise<void> => {
+// An inbound key identifies an integration, not the owner. This legacy
+// endpoint immediately decides records, so both existing key auth and a real
+// owner session are required. Provider-only requests cannot approve themselves.
+router.post("/inbound/decisions", requireRealOwnerSession, async (req, res): Promise<void> => {
   const body = requestBodyRecord(req.body);
   if (!body) {
     res.status(400).json({ error: "request body must be an object" });
@@ -296,6 +300,14 @@ router.post("/inbound/decisions", async (req, res): Promise<void> => {
   }
 
   const decided = await db.transaction(async (tx) => {
+    // Check under the same project lock before inserting. A concurrent OFF or
+    // completion must not leave a new pending record from a refused request.
+    if (hasWorkControl(project.slug)) {
+      const control = await lockWorkControl(tx, project.slug);
+      if (!control.enabled || control.completed || isProjectWorkHeld(project.slug)) {
+        return { kind: "paused" as const };
+      }
+    }
     const [created] = await tx
       .insert(decisionsTable)
       .values({
@@ -492,3 +504,4 @@ router.post("/inbound/notes", async (req, res): Promise<void> => {
 });
 
 export default router;
+
