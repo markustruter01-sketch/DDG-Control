@@ -102,9 +102,26 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Compile/build only; malformed response/browser/runtime and persistence acceptance remain open. No tests, data/provider/migration/release operations.
 
 
+##21October - Approved mythology pixel art source
+- Need: approved nine-character dock has no reusable assets. Inspected approved split-bottom concept and brand rules, reused canonical role IDs.
+- First bounded step: code-native pixel SVG component with nine distinct costume/prop palettes, full feet, optional accessible title and decorative default. No official logo redraw, external asset/service, worker identity or activity claim.
+- Source art is an implementation interpretation of the static concept, pending rendered/owner acceptance. No animation frames, dock integration, message ingress or live-state claim yet; these remain explicit next steps.
+
+
+##21October - Employee presentation dock integration
+- Need: connect nine source sprite variants to approved four-left/five-right desktop layout while retaining existing five navigation buttons. Reuse canonical roster only; no database agent bindings.
+- Native buttons open static role details; mobile uses a bounded scrollable tray. Local hide/quiet preferences, reduced-motion CSS and hidden-document pause govern decorative one-pixel idle movement. No operational bubbles or fake employee activity.
+- Portal fixed cast/panel outside glass header to avoid backdrop-filter containing-block bugs. Empty areas pass clicks; reserve central navigation gap and safe-area feet space. Existing Notifications stays independent.
+- First idle motion only; varied facing/prop frames/neighbor routines and genuine-message ingress are still pending. Rendered small-screen/keyboard/focus/owner acceptance remains open. No tests/data/provider/migration/release actions.
+
+- Dock source review: use a labeled compact Characters icon on narrow headers to avoid adding a long sixth header label; preserve full visible label on wider screens. Keyboard/touch/rendered acceptance remains open.
 ##21October - Load route code when needed
 - Need: compiled dashboard ships every route in one 930.20kB entry bundle. Existing pages are independent route entries; React lazy imports and one accessible loading shell are the simplest suitable reduction in upfront code.
 - Keep exact routes, named page components, auth gate, existing query/data semantics and route-reset error boundary. No prefetch loops, new dependency, provider call, schema or worker change.
 - Build artifact sizes measure code distribution only, not network speed or browser/owner acceptance. Cold-route loading and failed-chunk recovery remain browser acceptance items; no tests run.
 
 - Route-loading review found generic render retry cannot recover a cached lazy-import rejection. Add route-specific branded failure shell with working navigation and explicit Reload app (warns about unsaved changes), no raw internal error text or automatic reload loop. Route changes keep existing reset-key recovery. Browser failure/recovery acceptance remains open.
+
+##21October - Coherent main preview batch
+- Combine reviewed dock source with current main route loading so Replit can preview on stable main. Resolve only appended sanity-log conflict by preserving both histories; source files do not conflict.
+- Static sprite rendering and compilation are recorded. Merge permission covers source integration; browser layout/owner/live acceptance stays a separate unmet gate. Do not publish from this merge.

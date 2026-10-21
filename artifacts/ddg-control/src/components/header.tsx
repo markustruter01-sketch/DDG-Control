@@ -8,6 +8,7 @@ import {
 import { Link, useLocation } from 'wouter';
 import { setAuthenticationRequired } from './auth';
 import { NotificationInbox } from './NotificationInbox';
+import { EmployeeDock } from './EmployeeDock';
 
 type ColorMode = 'dark' | 'day';
 
@@ -94,6 +95,7 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
           <span>DDG Control</span>
         </Link>
         <div className="topbar-actions">
+        <EmployeeDock />
         <NotificationInbox devBypass={devBypass} />
         <button
           className="theme-toggle"
