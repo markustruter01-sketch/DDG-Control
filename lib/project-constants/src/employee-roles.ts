@@ -9,7 +9,7 @@ export const DDG_EMPLOYEE_ROLES = [
   {"id":"person-tyr","name":"Tyr","role":"Project Manager"},
   {"id":"person-plutus","name":"Plutus","role":"Finance / Analytics"},
   {"id":"person-hermes","name":"Hermes","role":"Operations"},
-  {"id":"person-mimir","name":"Mimir","role":"Chief Scientist / Skeptic"},
+  {"id":"person-mimir","name":"Mímir","role":"Chief Scientist / Skeptic"},
   {"id":"person-daedalus","name":"Daedalus","role":"R&D / Invention"},
   {"id":"person-harald","name":"Harald","role":"Chief of Staff"},
   {"id":"person-njord","name":"Njord","role":"Ventures"},
