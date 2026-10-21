@@ -38,6 +38,10 @@
 .employee-detail .employee-sprite { width:108px; height:120px; }
 .employee-detail p { margin:0; }
 .employee-detail small { opacity:.8; }
+.employee-banter { margin-top:12px; }
+.employee-banter button { min-height:44px; padding:8px 12px; border:1px solid #7cc9e866; border-radius:8px; background:#7cc9e812; color:inherit; cursor:pointer; }
+.employee-banter button:focus-visible { outline:2px solid var(--tasman-ice,#7cc9e8); outline-offset:2px; }
+.employee-banter .employee-banter-label { margin-bottom:4px; font-size:11px; opacity:.8; }
 :root[data-theme='day'] .employee-settings { background:rgba(232,244,250,.94); color:#0b1f2a; }
 @media(max-width:1050px) { .employee-cast { display:none; } }
 @media(max-width:420px) { .employee-tray { grid-template-columns:repeat(2,minmax(0,1fr)); } }

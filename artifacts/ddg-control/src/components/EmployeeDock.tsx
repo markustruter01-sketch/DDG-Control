@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { DDG_EMPLOYEE_ROLES, type DdgEmployeeRole } from '@workspace/project-constants';
 import { EmployeeSprite } from './EmployeeSprite';
+import { EMPLOYEE_BANTER } from '../lib/employee-banter';
 import './employee-dock.css';
 
 type Preferences = { hidden: boolean; quiet: boolean };
@@ -18,6 +19,7 @@ export function EmployeeDock() {
   const [preferences, setPreferences] = useState(savedPreferences);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<DdgEmployeeRole | null>(null);
+  const [remarkIndex, setRemarkIndex] = useState<number | null>(null);
   const [visible, setVisible] = useState(() => document.visibilityState === 'visible');
   const panelId = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -51,7 +53,10 @@ export function EmployeeDock() {
     };
   }, [open]);
 
-  function inspect(employee: DdgEmployeeRole) { setSelected(employee); setOpen(true); }
+  function select(employee: DdgEmployeeRole) { setSelected(employee); setRemarkIndex(null); }
+  function inspect(employee: DdgEmployeeRole) { select(employee); setOpen(true); }
+  // Remarks are requested by the owner, never generated on a timer or treated as notifications.
+  useEffect(() => { if (!open) setRemarkIndex(null); }, [open]);
   function character(employee: DdgEmployeeRole, index: number) {
     return <button type="button" className="employee-character" key={employee.id} data-employee={employee.id}
       style={{ animationDelay: `${index * -1.7}s` }}
@@ -87,13 +92,23 @@ export function EmployeeDock() {
       </div>
       <div className="employee-tray" role="group" aria-label="All nine company characters" data-quiet={preferences.quiet || !visible}>
         {DDG_EMPLOYEE_ROLES.map((employee) => <button key={employee.id} type="button"
-          data-employee={employee.id} aria-pressed={selected?.id === employee.id} onClick={() => setSelected(employee)}>
+          data-employee={employee.id} aria-pressed={selected?.id === employee.id} onClick={() => select(employee)}>
           <EmployeeSprite employeeId={employee.id} /><span>{employee.name}<small>{employee.role}</small></span>
         </button>)}
       </div>
       {selected && <div className="employee-detail" role="status">
         <EmployeeSprite employeeId={selected.id} />
         <p><strong>{selected.name}</strong><br />{selected.role}<br /><small>Company character. Live work and messages are not connected.</small></p>
+      </div>}
+      {selected && <div className="employee-banter">
+        <button type="button" onClick={() => setRemarkIndex((value) => value === null ? 0 : (value + 1) % EMPLOYEE_BANTER[selected.id].length)}>
+          {remarkIndex === null ? 'Character remark' : 'Another remark'}
+        </button>
+        {remarkIndex !== null && <>
+          <p className="employee-banter-label">Preset character banter · not a work update</p>
+          <p aria-live="polite" aria-atomic="true">{selected.name}: “{EMPLOYEE_BANTER[selected.id][remarkIndex]}”</p>
+          <button type="button" onClick={() => setRemarkIndex(null)}>Dismiss remark</button>
+        </>}
       </div>}
     </section>}
     </>, document.body)}
