@@ -106,3 +106,10 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Need: approved nine-character dock has no reusable assets. Inspected approved split-bottom concept and brand rules, reused canonical role IDs.
 - First bounded step: code-native pixel SVG component with nine distinct costume/prop palettes, full feet, optional accessible title and decorative default. No official logo redraw, external asset/service, worker identity or activity claim.
 - Source art is an implementation interpretation of the static concept, pending rendered/owner acceptance. No animation frames, dock integration, message ingress or live-state claim yet; these remain explicit next steps.
+
+
+##21October - Employee presentation dock integration
+- Need: connect nine source sprite variants to approved four-left/five-right desktop layout while retaining existing five navigation buttons. Reuse canonical roster only; no database agent bindings.
+- Native buttons open static role details; mobile uses a bounded scrollable tray. Local hide/quiet preferences, reduced-motion CSS and hidden-document pause govern decorative one-pixel idle movement. No operational bubbles or fake employee activity.
+- Portal fixed cast/panel outside glass header to avoid backdrop-filter containing-block bugs. Empty areas pass clicks; reserve central navigation gap and safe-area feet space. Existing Notifications stays independent.
+- First idle motion only; varied facing/prop frames/neighbor routines and genuine-message ingress are still pending. Rendered small-screen/keyboard/focus/owner acceptance remains open. No tests/data/provider/migration/release actions.
