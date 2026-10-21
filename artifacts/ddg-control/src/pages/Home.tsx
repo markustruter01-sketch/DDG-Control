@@ -169,7 +169,7 @@ function CompanyAtlas({ projects }: { projects: Project[] }) {
     <section className="atlas-map-panel atlas-village-panel" aria-labelledby="atlas-title">
       <div className="atlas-map-heading"><div><p className="home-section-kicker">People · systems · projects</p><h2 id="atlas-title">Company Atlas</h2></div><Link href="/organisation">Explore connections →</Link></div>
       <div className="atlas-map-legend"><span>Village paths · company structure</span><span>No live transfer feed</span></div>
-      <div className="atlas-map-canvas atlas-village-canvas" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}atlas-viking-village-v1.webp")` }}>
+      <div className="atlas-map-canvas atlas-village-canvas" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}atlas-viking-village-v2.webp")` }}>
         <img className="atlas-village-flag" src={`${import.meta.env.BASE_URL}ddg-creative-glitch-original.png`} alt="DDG flag on the great hall" />
         {buildings.map((building) => <details key={building.slug} className={`atlas-node atlas-building atlas-node-${building.position}`}>
           <summary><span className="atlas-building-hit" aria-hidden="true" /><strong>{building.label}</strong><small>{building.note}</small></summary>
