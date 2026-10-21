@@ -168,3 +168,10 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Built-in edit creates more blocky terrain/architecture and peripheral world-serpent; targeted second edit changes serpent to purple/magenta/turquoise/gold. Originalv1 and blue study retained; full final PNG/prompts archived. One640300byte WebP delivered under versioned URL with source hash/provenance.
 - Adjust flag overlay and shifted treasury/music/core hotspots to final scene. Exact official creative logo remains a separate unchanged asset; no generated logo or new business identity. No new pulses/data/worker claims; stronger purple is explicitly requested scene art, not global UI recolouring.
 - Existing3x employees/top finance+social/mobile directory and all data/Finance/Music/spending gates retained. Rendered alignment/desktop/mobile acceptance remains open. No tests/provider/backend/DB/release operations or blocked browser/network workaround.
+
+##22October - Resume management features; notification recovery
+- Owner explicitly says animation work is taking too long: retain approved art/basic motion, stop blink/prop experiments and move on. No new avatar edits/generation in this batch.
+- Sanity audit: existing notification inbox correctly separates pending decisions from read receipts, keeps decisions available when markers fail, and version-binds saves. Preserve it; no new inbox/store/schema/employee attribution needed.
+- Gap: Refresh invalidated data but did not rerun browser hashing when its effect dependencies stayed unchanged after failure. Add explicit refresh generation, clear ready versions, rerun cancellable hashing. Gate repeat saves after a mutation error until the owner explicitly refreshes; idempotent server behavior unchanged.
+- UI now describes server-confirmed marker saves rather than promising cross-device persistence before deployed DB readiness is proven. No migration (development approval still conditional), decision approval/action, provider/data operation or runtime test performed.
+- Source/local compilation evidence remains distinct from real-owner recovery/persistence/browser acceptance.
