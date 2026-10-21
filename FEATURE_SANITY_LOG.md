@@ -83,3 +83,9 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Revalidate visible tab selection for a different project so a hidden section does not stay selected. Preserve existing tab names, hidden-tab rules, bookmark format, forms and layout.
 - Need: unmatched app routes render no page. Add a shared-shell not-found fallback with Home navigation, without moving routes, exposing URL contents or adding data/model calls.
 - Compile changed frontend; browser keyboard/form/route/mobile and owner acceptance remain separate. No tests, database or production actions.
+
+
+##21October — Delivery evidence snapshot
+- Need: in-app snapshot still describes merged receipt source as a separate draft and merged Control source as a review branch. Correct stale status text using recorded exact revision/check evidence.
+- Keep: existing delivery IDs, states, acceptance criteria and layout; no completed milestone or live claim. No new API/worker/data operations.
+- Explicitly retain unapplied conditional-development migration, unverified real-owner/runtime/provider gates and missing sprite/ingress evidence. This snapshot is versioned context, not a live status feed or authority.
