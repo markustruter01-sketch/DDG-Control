@@ -60,6 +60,7 @@ export function NotificationInbox({ devBypass = false }: { devBypass?: boolean }
   const [page, setPage] = useState(0);
   const [versions, setVersions] = useState<Versions | null>(null);
   const [versionError, setVersionError] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const panelId = useId();
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -88,7 +89,7 @@ export function NotificationInbox({ devBypass = false }: { devBypass?: boolean }
     }
     void hash();
     return () => { cancelled = true; };
-  }, [snapshot, open, devBypass]);
+  }, [snapshot, open, devBypass, refreshVersion]);
 
   const readyVersions = versions && versions.snapshot === snapshot ? versions.items : null;
   const receipts = useQuery({
@@ -122,7 +123,7 @@ export function NotificationInbox({ devBypass = false }: { devBypass?: boolean }
   function stateFor(id: number) {
     const expected = readyVersions?.find((item) => item.decision_id === id);
     const saved = receipts.data?.items.find((item) => item.decision_id === id);
-    const ready = !devBypass && !query.isError && !query.isFetching && !versionError && !receipts.isError && !receipts.isFetching &&
+    const ready = !devBypass && !query.isError && !query.isFetching && !versionError && !receipts.isError && !receipts.isFetching && !markRead.isError &&
       Boolean(expected && saved && expected.source_version === saved.source_version);
     return { expected, ready, read: ready && Boolean(saved?.read_at) };
   }
@@ -134,8 +135,10 @@ export function NotificationInbox({ devBypass = false }: { devBypass?: boolean }
 
   function refresh() {
     markRead.reset();
+    setVersions(null);
+    setRefreshVersion((value) => value + 1);
     void query.refetch();
-    void client.invalidateQueries({ queryKey: [RECEIPT_KEY] });
+    void client.invalidateQueries({ queryKey: [RECEIPT_KEY], refetchType: 'none' });
   }
 
   return (
@@ -153,10 +156,10 @@ export function NotificationInbox({ devBypass = false }: { devBypass?: boolean }
           <div className="notification-heading"><h2 id={`${panelId}-title`}>Needs your review</h2><button type="button" onClick={() => { setOpen(false); trigger.current?.focus(); }} aria-label="Close notifications">×</button></div>
           <p className="notification-note">Badge counts pending decisions. Reading is not approval; a read record can still need your decision.</p>
           {devBypass ? <p role="note">Preview mode: saved read markers require a real owner sign-in.</p> :
-            <p className="notification-note">Mark read saves across your signed-in devices. Opening a decision leaves its read state unchanged.</p>}
+            <p className="notification-note">Read markers are saved only after server confirmation. Opening a decision leaves its read state unchanged.</p>}
           {versionError && <p role="alert">Read status unavailable in this browser. You can still open decisions; no read marker will be saved.</p>}
           {receipts.isError && <p role="alert">Saved read markers unavailable. Decisions remain unchanged.</p>}
-          {markRead.isError && <p role="alert">{markRead.error.message}</p>}
+          {markRead.isError && <p role="alert">Read marker save is unconfirmed. Refresh records and read status before trying again.</p>}
           {!devBypass && !query.isLoading && decisions.length > 0 && <button type="button" onClick={refresh} disabled={query.isFetching || receipts.isFetching || markRead.isPending}>Refresh records and read status</button>}
           {query.isLoading ? <p role="status">Loading decisions…</p>
             : query.isError ? <div role="alert"><p>Notifications unavailable.</p><button type="button" onClick={() => void query.refetch()}>Retry</button></div>
