@@ -1,5 +1,6 @@
 import { queryClient } from './query-client';
 import { setAuthenticationRequired } from '../components/auth';
+import { formatCurrentDisplayName } from './format';
 
 export function isUnauthorizedError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
@@ -44,8 +45,8 @@ export function serverErrorText(error: unknown, fallback = 'Unable to save proje
       'error' in data &&
       typeof data.error === 'string'
     ) {
-      return data.error;
+      return formatCurrentDisplayName(data.error);
     }
   }
-  return error instanceof Error ? error.message : fallback;
+  return formatCurrentDisplayName(error instanceof Error ? error.message : fallback);
 }

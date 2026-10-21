@@ -20,6 +20,7 @@ import {
 import { MEMBER_KINDS, TASK_STATUSES } from "@workspace/project-constants";
 import { eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
+import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
 import {
   getMissingRequiredFieldError,
   getUnknownFieldError,
@@ -240,6 +241,10 @@ router.post("/projects/:slug/tasks", async (req, res): Promise<void> => {
     return;
   }
 
+  if (hasWorkControl(params.data.slug) && !(await isProjectWorkEnabled(params.data.slug))) {
+    res.status(423).json({ error: "Project work is OFF. Task changes are paused." });
+    return;
+  }
   const status = fields.status ?? TASK_STATUSES[0];
   const values: typeof tasksTable.$inferInsert = {
     project_id: project.id,
@@ -309,6 +314,12 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   }
 
   const fields = parsed.fields;
+  const [taskProject] = await db.select({ slug: projectsTable.slug }).from(projectsTable)
+    .where(eq(projectsTable.id, existing.project_id)).limit(1);
+  if (!taskProject || (hasWorkControl(taskProject.slug) && !(await isProjectWorkEnabled(taskProject.slug)))) {
+    res.status(423).json({ error: "Project work is OFF. Task changes are paused; history remains visible." });
+    return;
+  }
   if (
     Object.hasOwn(fields, "owner_id") &&
     (fields.owner_id === undefined || !(await ownerExists(fields.owner_id)))

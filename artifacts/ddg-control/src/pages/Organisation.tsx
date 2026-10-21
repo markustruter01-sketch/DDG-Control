@@ -1,88 +1,37 @@
 import { Link } from 'wouter';
-import { ORG_CHART, PRINCIPLES } from '@workspace/project-constants';
+import { PRINCIPLES } from '@workspace/project-constants';
 import { Header } from '@/components/header';
+import { formatCurrentDisplayName } from '@/lib/format';
+import { CompanyMap } from '@/components/CompanyMap';
+import { companyMapNodes } from '@/lib/company-map-data';
 
 export function OrganisationPage() {
-  type OrgPerson = (typeof ORG_CHART)[number];
-  type VenturePerson = Extract<OrgPerson, { group: 'venture' }>;
-  const founder = ORG_CHART.filter((person) => person.group === 'founder');
-  const generalManagers = ORG_CHART.filter((person) => person.group === 'gm');
-  const corporateTeam = ORG_CHART.filter((person) => person.group === 'corporate');
-  const ventureManagers = ORG_CHART.filter(
-    (person): person is VenturePerson => person.group === 'venture',
-  );
-
-  const renderPeople = (people: OrgPerson[]) => people.map((person) => (
-    <article className="org-person" key={`${person.group}-${person.name}`}>
-      <span className="org-person-name">{person.name}</span>
-      <span className="org-person-role">{person.role}</span>
-    </article>
-  ));
-
+  const founder = companyMapNodes.find((node) => node.id === 'person-markus');
+  const employees = companyMapNodes.filter((node) => node.kind === 'person' && node.id !== 'person-markus');
   return (
     <div className="app-shell organisation-shell">
       <Header />
       <main className="page-wrap organisation-main">
-        <Link className="back-link" href="/" data-testid="link-organisation-home">← Projects</Link>
+        <Link className="back-link" href="/" data-testid="link-organisation-home">← Home</Link>
         <header className="organisation-heading">
-          <p className="eyebrow">People & accountability</p>
-          <h1 className="home-title">Organisation</h1>
-          <p className="organisation-intro">The team recommending and delivering approved work across DDG.</p>
+          <p className="eyebrow">People and connections</p>
+          <h1 className="home-title">Company Map</h1>
+          <p className="organisation-intro">Nine employees, one founder. Roles do not imply live activity or access permissions.</p>
         </header>
-
+        <CompanyMap />
         <section className="org-chart" aria-labelledby="org-chart-title">
-          <div className="section-rule"><span id="org-chart-title">Operating structure</span></div>
-          <div className="org-tier org-tier-founder">
-            <h2>Founder</h2>
-            <div className="org-people">{renderPeople(founder)}</div>
-          </div>
-          <div className="org-connector" aria-hidden="true" />
-          <div className="org-tier org-tier-gm">
-            <h2>GM</h2>
-            <div className="org-people">{renderPeople(generalManagers)}</div>
-          </div>
-          <div className="org-connector" aria-hidden="true" />
-          <div className="org-branches">
-            <section className="org-branch" aria-labelledby="corporate-title">
-              <div className="org-tier">
-                <h2 id="corporate-title">Corporate team</h2>
-                <div className="org-people">{renderPeople(corporateTeam)}</div>
-              </div>
-            </section>
-            <section className="org-branch" aria-labelledby="ventures-title">
-              <div className="org-tier">
-                <h2 id="ventures-title">Venture managers</h2>
-                <div className="org-people">
-                  {ventureManagers.map((person) => (
-                    <Link
-                      href={`/projects/${person.project_slug}`}
-                      className="org-person org-person-link"
-                      key={`${person.group}-${person.name}`}
-                      data-testid={`link-org-project-${person.project_slug}`}
-                    >
-                      <span className="org-person-name">{person.name}</span>
-                      <span className="org-person-role">{person.role}</span>
-                      <span className="org-project-arrow" aria-hidden="true">↗</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </section>
-          </div>
+          <div className="section-rule"><span id="org-chart-title">Confirmed company directory</span></div>
+          {founder && <div className="org-tier org-tier-founder"><h2>Founder</h2><div className="org-people"><article className="org-person"><span className="org-person-name">{founder.label}</span><span className="org-person-role">{founder.ownerRole}</span></article></div></div>}
+          <div className="org-tier"><h2>Employees · {employees.length}</h2><div className="org-people">{employees.map((person) => (
+            <article className="org-person" key={person.id}><span className="org-person-name">{person.label}</span><span className="org-person-role">{person.ownerRole}</span></article>
+          ))}</div></div>
+          <p className="organisation-note">The external Heimdall GM is separate from the dashboard's report writer. Projects and businesses are not additional employees.</p>
         </section>
-
-        <section className="principles-section" aria-labelledby="principles-title">
-          <div className="section-rule"><span id="principles-title">Principles</span></div>
-          <ol className="principles-list">
-            {PRINCIPLES.map((principle, index) => (
-              <li key={principle}>
-                <span className="principle-index">{String(index + 1).padStart(2, '0')}</span>
-                <span>{principle}</span>
-              </li>
-            ))}
-          </ol>
+        <details className="principles-section">
+          <summary className="section-rule"><span>Operating principles</span></summary>
+          <ol className="principles-list">{PRINCIPLES.map((principle,index) => <li key={principle}><span className="principle-index">{String(index+1).padStart(2,'0')}</span><span>{formatCurrentDisplayName(principle)}</span></li>)}</ol>
           <p className="organisation-note">Agents recommend. Markus decides.</p>
-        </section>
+        </details>
       </main>
     </div>
   );

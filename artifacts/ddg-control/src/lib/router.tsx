@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AgentsPage } from '@/pages/Agents';
+import { AIStackPage } from '@/pages/AIStack';
 import { DecisionsPage } from '@/pages/Decisions';
 import { FinancePage } from '@/pages/Finance';
 import { Home } from '@/pages/Home';
@@ -17,6 +18,7 @@ export function Router() {
         <Route path="/" component={Home} />
         <Route path="/organisation" component={OrganisationPage} />
         <Route path="/agents" component={AgentsPage} />
+        <Route path="/ai-stack" component={AIStackPage} />
         <Route path="/decisions" component={DecisionsPage} />
         <Route path="/finances" component={FinancePage} />
         <Route path="/projects/:slug" component={ProjectDetail} />

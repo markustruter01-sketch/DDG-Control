@@ -428,7 +428,7 @@ export const ListProjectMetricHistoryResponse = zod.array(ListProjectMetricHisto
 
 
 /**
- * @summary Get the latest 30 Ollie updates for a project
+ * @summary Get the latest 30 Heimdall updates for a project
  */
 export const ListProjectOllieHistoryParams = zod.object({
   "slug": zod.coerce.string()
@@ -460,7 +460,7 @@ export const ListProjectNotesResponse = zod.array(ListProjectNotesResponseItem)
 
 
 /**
- * @summary Run Ollie's daily dashboard report
+ * @summary Run Heimdall's daily dashboard report
  */
 export const RunOllieBody = zod.object({
   "force": zod.boolean().optional()
@@ -481,7 +481,21 @@ export const RunOllieResponse = zod.object({
 
 
 /**
- * @summary Run Ollie's daily dashboard report with a scheduler token
+ * Read-only model discovery. This does not start an agent or confirm model billing is included in the user's plan.
+ * @summary Read the Cursor Cloud Agent models available to this account
+ */
+export const ListCursorModelsResponse = zod.object({
+  "status": zod.enum(['not_configured', 'connected']),
+  "models": zod.array(zod.object({
+  "id": zod.string(),
+  "displayName": zod.string(),
+  "description": zod.string().optional()
+}))
+})
+
+
+/**
+ * @summary Run Heimdall's daily dashboard report with a scheduler token
  */
 export const RunOllieCronResponse = zod.object({
   "id": zod.number().int(),
@@ -517,7 +531,7 @@ export const ListAgentRunsResponse = zod.array(ListAgentRunsResponseItem)
 
 
 /**
- * @summary List the latest Ollie update for each project
+ * @summary List the latest Heimdall update for each project
  */
 export const ListLatestAgentUpdatesResponseItem = zod.object({
   "project_slug": zod.string(),
