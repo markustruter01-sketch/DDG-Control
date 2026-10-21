@@ -11,6 +11,14 @@ import { NotificationInbox } from './NotificationInbox';
 
 type ColorMode = 'dark' | 'day';
 
+function revealProjects() {
+  const target = document.getElementById('project-list');
+  if (!target) return;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  target.focus({ preventScroll: true });
+  target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+}
+
 export const DevAuthBypassContext = createContext(false);
 
 const ColorModeContext = createContext<{
@@ -75,7 +83,7 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
   useEffect(() => {
     if (location !== '/' || window.location.hash !== '#project-list') return;
     window.requestAnimationFrame(() => {
-      document.getElementById('project-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      revealProjects();
     });
   }, [location]);
 
@@ -122,7 +130,7 @@ export function Header({ showLogout = true }: { showLogout?: boolean }) {
           onClick={() => {
             if (location === '/') {
               window.requestAnimationFrame(() => {
-                document.getElementById('project-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                revealProjects();
               });
             }
           }}

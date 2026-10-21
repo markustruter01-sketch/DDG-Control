@@ -395,7 +395,7 @@ export function Home() {
                 ))}</div>}
         </section>
 
-        <div className="section-rule" id="project-list" data-testid="section-project-list"><span>Projects · open a project</span></div>
+        <div className="section-rule" id="project-list" tabIndex={-1} data-testid="section-project-list"><span>Projects · open a project</span></div>
 
         {projectsQuery.isLoading ? (
           <section className="state-panel" aria-live="polite" data-testid="status-projects-loading">

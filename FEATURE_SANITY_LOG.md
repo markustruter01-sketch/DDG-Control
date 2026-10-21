@@ -83,3 +83,13 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Revalidate visible tab selection for a different project so a hidden section does not stay selected. Preserve existing tab names, hidden-tab rules, bookmark format, forms and layout.
 - Need: unmatched app routes render no page. Add a shared-shell not-found fallback with Home navigation, without moving routes, exposing URL contents or adding data/model calls.
 - Compile changed frontend; browser keyboard/form/route/mobile and owner acceptance remain separate. No tests, database or production actions.
+
+
+##21October - Delivery evidence snapshot
+- Need: in-app snapshot describes merged receipt source as a separate draft and merged Control source as a review branch. Correct status using recorded source/check evidence.
+- Keep delivery IDs, states, criteria, layout and unapplied conditional migration/runtime gates. No live acceptance or new API/worker operations.
+
+##21October - Projects navigation focus and reduced motion
+- Need: Projects dock navigation scrolls but leaves keyboard focus behind and forces smooth motion. Reuse one reveal helper, focus existing target without a tab stop, and honor reduced-motion preference.
+- Keep layout, routes, records and safe-area padding. Browser focus/touch/screen-reader/mobile acceptance remains open; no new queries, calls or writes.
+- Restored original UTF-8 log bytes before appending these entries; corrected local Windows encoding before delivery.
