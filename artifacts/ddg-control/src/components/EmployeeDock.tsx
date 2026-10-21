@@ -62,8 +62,11 @@ export function EmployeeDock() {
   }
 
   return <div className="employee-presentation" ref={root}>
-    <button type="button" className="theme-toggle" ref={trigger} aria-expanded={open} aria-controls={panelId}
-      onClick={() => setOpen((value) => !value)}>Characters</button>
+    <button type="button" className="theme-toggle employee-toggle" ref={trigger} aria-expanded={open} aria-controls={panelId}
+      aria-label="Company characters and presentation preferences" onClick={() => setOpen((value) => !value)}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="9" cy="7" r="3" /><path d="M3 20v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6m2 10v-3a6 6 0 0 0-2-4" /></svg>
+      <span>Characters</span>
+    </button>
     {createPortal(<>
     {!preferences.hidden && <div ref={cast} className="employee-cast" data-quiet={preferences.quiet || !visible || open}>
       <div className="employee-side employee-side-left" role="group" aria-label="Company characters, first four">

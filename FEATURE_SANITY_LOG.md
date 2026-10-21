@@ -113,3 +113,5 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Native buttons open static role details; mobile uses a bounded scrollable tray. Local hide/quiet preferences, reduced-motion CSS and hidden-document pause govern decorative one-pixel idle movement. No operational bubbles or fake employee activity.
 - Portal fixed cast/panel outside glass header to avoid backdrop-filter containing-block bugs. Empty areas pass clicks; reserve central navigation gap and safe-area feet space. Existing Notifications stays independent.
 - First idle motion only; varied facing/prop frames/neighbor routines and genuine-message ingress are still pending. Rendered small-screen/keyboard/focus/owner acceptance remains open. No tests/data/provider/migration/release actions.
+
+- Dock source review: use a labeled compact Characters icon on narrow headers to avoid adding a long sixth header label; preserve full visible label on wider screens. Keyboard/touch/rendered acceptance remains open.
