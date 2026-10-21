@@ -64,3 +64,22 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Refuse all execution/provider evidence and open blocking questions; preserve bindings/attempts and worker hard-false guards. Explicit version-bound fresh approval remains separate.
 - Context-bound UI drafts, clear zero spend/deadline/reason/confirmation and loaded history.
 - Source only; no tests, compilation/runtime/peer/owner/live evidence or data/provider operations.
+
+##21October — Company Map view filters and task-lookup truth
+- Need: view selectors use tab roles without tab keyboard behavior; use ordinary grouped toggle buttons and native Tab/Enter/Space interaction instead of adding custom focus machinery.
+- Need: task-query loading/failure/malformed responses can be rendered as no matching task. Validate required record fields, distinguish loading/unavailable/loaded, limit absence claims to loaded records, and expose retry.
+- Fetch task references only when findings are expanded; no automatic focus retries. Keep the same API, task records, exact-title/project matching and existing cockpit styling. No agent calls or data writes.
+- Clear selected relationship when changing view/search so detail does not describe hidden prior context. Existing node buttons and source/date drill-down remain.
+- Type/build and rendered keyboard/failure acceptance are separate; no tests or runtime acceptance claimed from source edits.
+
+##21October — Exact work-record links
+- Need: Company Map finding links name a task ID but navigate to the generic queue heading. Existing task cards already have stable work-item anchors and an ancestor-reveal/focus helper; reuse them rather than create another task view or API.
+- Link to the exact saved card, reveal after task loading on initial navigation/hash/back-forward, and distinguish unavailable versus not-in-loaded-records. Never create a replacement, change approval state or start work.
+- Bound fragments to known headings or positive database task IDs. Handle each navigation once so background refresh does not steal focus. Existing company-board links and queue remain intact.
+- Source/compilation and rendered cross-route/keyboard/mobile acceptance remain separate; no tests or runtime writes are part of this change.
+
+##21October — Project tabs and unknown routes
+- Need: project tabs have tab roles but no arrow/Home/End focus handling, and label-derived IDs contain whitespace, breaking ARIA references. Keep real tab semantics with stable per-instance IDs and one tab stop; arrows move focus only, native Enter/Space/click activates so keyboard exploration does not switch away from a draft form.
+- Revalidate visible tab selection for a different project so a hidden section does not stay selected. Preserve existing tab names, hidden-tab rules, bookmark format, forms and layout.
+- Need: unmatched app routes render no page. Add a shared-shell not-found fallback with Home navigation, without moving routes, exposing URL contents or adding data/model calls.
+- Compile changed frontend; browser keyboard/form/route/mobile and owner acceptance remain separate. No tests, database or production actions.

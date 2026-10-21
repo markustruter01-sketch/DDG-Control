@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { DevAuthBypassContext, Header } from "@/components/header";
 import FleetDesk from "@/components/FleetDesk";
 import { DeliveryPlan } from "@/components/DeliveryPlan";
@@ -519,6 +519,13 @@ function DetailDialog({
 
 
 
+function savedWorkFragment(): string | null {
+  const fragment = window.location.hash.slice(1);
+  if (fragment === "work-queue-heading" || fragment === "work-item-creator") return fragment;
+  const match = /^work-item-([1-9]\d*)$/.exec(fragment);
+  return match && Number.isSafeInteger(Number(match[1])) && Number(match[1]) <= 2147483647 ? fragment : null;
+}
+
 function revealSavedWork(id: string) {
   const target = document.getElementById(id);
   if (!target) return;
@@ -575,6 +582,37 @@ export function AIStackPage() {
   const handoversQuery = useQuery({ queryKey: ["work-handovers"], queryFn: getHandovers, retry: false });
   const handoverEventsQuery = useQuery({ queryKey: ["work-handover-events"], queryFn: getHandoverEvents, retry: false });
   const workItemsQuery = useQuery({ queryKey: ["work-items"], queryFn: getWorkItems, retry: false });
+  const [workLinkRequest, setWorkLinkRequest] = useState(() => ({ fragment: savedWorkFragment(), version: 0 }));
+  const [workLinkNotice, setWorkLinkNotice] = useState<string | null>(null);
+  const handledWorkLink = useRef<number | null>(null);
+  useEffect(() => {
+    function requestWorkLink() {
+      setWorkLinkNotice(null);
+      setWorkLinkRequest((previous) => ({ fragment: savedWorkFragment(), version: previous.version + 1 }));
+    }
+    window.addEventListener("hashchange", requestWorkLink);
+    window.addEventListener("popstate", requestWorkLink);
+    return () => {
+      window.removeEventListener("hashchange", requestWorkLink);
+      window.removeEventListener("popstate", requestWorkLink);
+    };
+  }, []);
+  useEffect(() => {
+    if (!workLinkRequest.fragment || handledWorkLink.current === workLinkRequest.version || workItemsQuery.isLoading) return;
+    if (workItemsQuery.isError || !workItemsQuery.data) {
+      setWorkLinkNotice("The linked work record cannot be opened while saved tasks are unavailable. Retry the saved records; nothing has been approved or started.");
+      return;
+    }
+    const target = document.getElementById(workLinkRequest.fragment);
+    if (target) {
+      revealSavedWork(workLinkRequest.fragment);
+      setWorkLinkNotice(null);
+    } else {
+      setWorkLinkNotice("The linked task is not in the loaded records. No replacement task was created and no work was approved or started.");
+    }
+    // Background query refreshes must not steal focus after navigation finishes.
+    handledWorkLink.current = workLinkRequest.version;
+  }, [workLinkRequest, workItemsQuery.isLoading, workItemsQuery.isError, workItemsQuery.data]);
   const outcomesQuery = useQuery({ queryKey: ["work-outcomes"], queryFn: getWorkOutcomes, retry: false });
   const readinessQuery = useQuery({ queryKey: ["work-readiness"], queryFn: getWorkReadiness, retry: false });
   const dispatchConfigMutation=useMutation({mutationFn:saveDispatchConfig,onSuccess:()=>queryClient.invalidateQueries({queryKey:["work-readiness"]})});
@@ -692,6 +730,7 @@ export function AIStackPage() {
     <div className="app-shell">
       <Header />
       <main className="page-wrap detail-main ai-stack-main">
+        {workLinkNotice && <div className="ai-stack-help" role="status"><p>{workLinkNotice}</p>{workItemsQuery.isError && <button type="button" className="work-toggle" disabled={workItemsQuery.isFetching} onClick={() => void workItemsQuery.refetch()}>Retry saved tasks</button>}</div>}
         <div className="ai-stack-heading">
           <div>
             <p className="eyebrow">Control room · dashboard-mediated work</p>
