@@ -100,3 +100,9 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Disable read actions while decisions refresh or fail. Keep existing API, source-version server checks, no automatic retries/writes, migration gate and decision navigation.
 - Need: linked-decision effect can repeatedly scroll/focus on background query updates. Handle focus once per navigation version, retaining loading waits, explicit links and error states.
 - Compile/build only; malformed response/browser/runtime and persistence acceptance remain open. No tests, data/provider/migration/release operations.
+
+
+##21October - Approved mythology pixel art source
+- Need: approved nine-character dock has no reusable assets. Inspected approved split-bottom concept and brand rules, reused canonical role IDs.
+- First bounded step: code-native pixel SVG component with nine distinct costume/prop palettes, full feet, optional accessible title and decorative default. No official logo redraw, external asset/service, worker identity or activity claim.
+- Source art is an implementation interpretation of the static concept, pending rendered/owner acceptance. No animation frames, dock integration, message ingress or live-state claim yet; these remain explicit next steps.
