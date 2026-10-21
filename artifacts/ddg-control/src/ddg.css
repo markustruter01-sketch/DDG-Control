@@ -2740,3 +2740,38 @@ html,body,#root { height:auto; min-height:100%; overflow:visible; }
 .notification-pagination { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:12px 0; font-size:12px; }
 .notification-panel button:disabled { opacity:.55; cursor:not-allowed; }
 .notification-unknown { border-left-style:dashed; }
+
+/*22October owner village Atlas; generated scenery, exact logo remains a separate asset. */
+:root .atlas-village-panel { background:var(--glass-surface); }
+.atlas-village-panel::before { display:none; }
+:root .atlas-village-panel>.atlas-map-heading,
+:root .atlas-village-panel>.atlas-map-legend,
+:root .atlas-village-panel>.atlas-evidence-note { color:var(--cockpit-ink); background:var(--cockpit-inset); }
+:root .atlas-village-panel .atlas-map-heading h2 { color:var(--cockpit-ink); }
+:root .atlas-village-panel .atlas-map-heading a,
+:root .atlas-village-panel .home-section-kicker { color:var(--cockpit-link); }
+:root .atlas-village-panel .atlas-village-canvas { display:block; position:relative; min-height:0; aspect-ratio:4/3; margin:12px 0; padding:0; background-size:100% 100%; background-position:center; background-repeat:no-repeat; border:1px solid #7cc9e855; overflow:visible; }
+.atlas-village-flag { position:absolute; left:53%; top:21.5%; width:6%; height:auto; aspect-ratio:1; object-fit:contain; pointer-events:none; }
+.atlas-village-canvas .atlas-building { width:21%; max-width:190px; transform:translate(-50%,0); font-size:12px; }
+.atlas-building .atlas-building-hit { display:block; width:100%; aspect-ratio:1.8; }
+.atlas-village-canvas .atlas-building summary { gap:1px; }
+:root .atlas-village-canvas .atlas-building strong,
+:root .atlas-village-canvas .atlas-building small { background:rgba(244,249,252,.92); color:#0b1f2a; padding:3px 5px; border-radius:4px; text-shadow:none; }
+.atlas-village-canvas .atlas-building small { font-size:10px; }
+.atlas-village-canvas .atlas-building[open] { z-index:12; }
+.atlas-village-canvas .atlas-node-fitness { left:25%; top:12%; }
+.atlas-village-canvas .atlas-node-finance { left:75%; top:12%; }
+.atlas-village-canvas .atlas-node-creative { left:17%; top:42%; }
+.atlas-village-canvas .atlas-node-coffee { left:84%; top:43%; }
+.atlas-village-canvas .atlas-node-music { left:50%; top:63%; }
+.atlas-village-canvas .atlas-node-core { left:51%; top:33%; width:28%; max-width:240px; }
+.atlas-village-canvas .atlas-node-core .atlas-building-hit { aspect-ratio:1.8; }
+.atlas-village-directory { display:none; }
+.home-headline-performance { margin-bottom:16px; }
+@media(max-width:700px) {
+ .atlas-village-canvas .atlas-building { display:none; }
+ .atlas-village-directory { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+ .atlas-village-directory a { display:flex; flex-direction:column; gap:4px; min-height:44px; padding:10px; border:1px solid var(--glass-border); border-radius:8px; background:var(--cockpit-inset); color:var(--cockpit-ink); }
+ .atlas-village-directory small { color:var(--cockpit-muted); font-size:11px; }
+ .atlas-village-directory a:focus-visible { outline:3px solid var(--cockpit-link); outline-offset:2px; }
+}

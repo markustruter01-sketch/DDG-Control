@@ -4,7 +4,7 @@
 .employee-side-left { right:calc(50% + 250px); }
 .employee-side-right { left:calc(50% + 250px); }
 .employee-character { appearance:none; background:transparent; border:0; padding:4px 0; min-width:44px; min-height:64px; cursor:pointer; pointer-events:auto; animation:employee-idle 16s steps(3,end) infinite; transform-origin:bottom center; }
-.employee-sprite { display:block; width:52px; height:60px; object-fit:contain; object-position:center bottom; image-rendering:pixelated; flex-shrink:0; user-select:none; transform-origin:50% 90%; }
+.employee-sprite { display:block; width:156px; height:180px; object-fit:contain; object-position:center bottom; image-rendering:pixelated; flex-shrink:0; user-select:none; transform-origin:50% 90%; }
 .employee-character:focus-visible,.employee-tray button:focus-visible { outline:2px solid var(--tasman-ice,#7cc9e8); outline-offset:2px; border-radius:5px; }
 .employee-cast[data-quiet='true'] .employee-character { animation:none; }
 .employee-character:hover,.employee-character:focus-visible { animation-play-state:paused; }
@@ -31,11 +31,11 @@
 .employee-tray { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
 .employee-tray button { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; padding:8px 4px; border:1px solid #7cc9e855; border-radius:8px; background:#ffffff0c; color:inherit; font-size:12px; cursor:pointer; }
 .employee-tray button[aria-pressed='true'] { border-color:#ef40c2; background:#ef40c218; }
-.employee-tray .employee-sprite { width:80px; height:88px; }
+.employee-tray .employee-sprite { width:156px; max-width:100%; height:180px; }
 .employee-tray:not([data-quiet='true']) button[aria-pressed='true'] .employee-sprite { animation:employee-greet 700ms steps(4,end) 1; }
 .employee-tray small { display:block; font-size:10px; line-height:1.5; opacity:.85; }
 .employee-detail { display:flex; align-items:center; gap:12px; border-top:1px solid #7cc9e855; padding-top:10px; }
-.employee-detail .employee-sprite { width:108px; height:120px; }
+.employee-detail .employee-sprite { width:156px; max-width:45%; height:180px; }
 .employee-detail p { margin:0; }
 .employee-detail small { opacity:.8; }
 .employee-banter { margin-top:12px; }
@@ -47,3 +47,23 @@
 @media(max-width:420px) { .employee-tray { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:520px) { .employee-toggle { min-width:44px; } .employee-toggle>span { display:none; } }
 @media(prefers-reduced-motion:reduce) { .employee-character,.employee-character .employee-sprite,.employee-tray button .employee-sprite { animation:none !important; } }
+
+/* Owner requested3x artwork. Give the enlarged cast its own shelf above navigation. */
+.employee-tray { grid-template-columns:repeat(2,minmax(0,1fr)); }
+@media(min-width:1051px) {
+ .employee-cast { position:fixed; left:0; right:0; bottom:calc(98px + env(safe-area-inset-bottom)); z-index:79; display:flex; gap:8px; padding:0 12px; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; pointer-events:auto; }
+ .employee-side { position:static; width:auto; max-width:none; flex:0 0 auto; gap:8px; pointer-events:auto; }
+ .employee-side-left { margin-left:auto; }
+ .employee-side-right { margin-right:auto; }
+ .employee-character { width:156px; min-width:156px; min-height:188px; flex:0 0 156px; }
+ :root body .app-shell:has(.employee-presentation) { padding-bottom:calc(316px + env(safe-area-inset-bottom))!important; }
+ html { scroll-padding-bottom:316px; }
+}
+@media(min-width:2200px) {
+ .employee-cast { display:contents; }
+ .employee-side { position:fixed; bottom:calc(3px + env(safe-area-inset-bottom)); width:calc((100vw - 500px)/2); max-width:850px; margin:0; gap:0; pointer-events:none; }
+ .employee-side-left { right:calc(50% + 250px); }
+ .employee-side-right { left:calc(50% + 250px); }
+ :root body .app-shell:has(.employee-presentation) { padding-bottom:calc(208px + env(safe-area-inset-bottom))!important; }
+ html { scroll-padding-bottom:208px; }
+}

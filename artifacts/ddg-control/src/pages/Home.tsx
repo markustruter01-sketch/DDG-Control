@@ -87,7 +87,7 @@ function FinanceSummaryBar({
       <div className="home-panel-heading">
         <div>
           <p className="home-section-kicker">Business performance</p>
-          <h2 id="home-finance-title">Finance</h2>
+          <h2 id="home-finance-title">Company finance</h2>
         </div>
         <Link className="home-panel-link" href="/finances">Open Finance</Link>
       </div>
@@ -156,41 +156,32 @@ function FinanceSummaryBar({
 
 
 
-function AtlasIcon({ kind }: { kind: string }) {
-  const paths: Record<string, string> = {
-    fitness: 'M6 8v8m3-10v12m6-12v12m3-10v8M9 12h6M4 10v4m16-4v4',
-    finance: 'M4 20h16M7 16v-5m5 5V5m5 11V8',
-    creative: 'm5 17-1 4 4-1L20 8l-4-4L5 17Zm9-11 4 4M5 17l3 3',
-    coffee: 'M4 7h12v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V7Zm12 1h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1',
-    music: 'M9 18V5l10-2v13M9 8l10-2M9 18a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Zm10-2a3 3 0 1 1-3-3c1.7 0 3 1.3 3 3Z',
-  };
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d={paths[kind] ?? paths.creative} /></svg>;
-}
-
 function CompanyAtlas({ projects }: { projects: Project[] }) {
-  const node = (slug: string, label: string, position: string, note: string) => {
-    const project = projects.find((item) => item.slug === slug);
-    return (
-      <details key={slug} className={`atlas-node atlas-node-${position}`}>
-        <summary><span className="atlas-node-icon" aria-hidden="true"><AtlasIcon kind={position} /></span><strong>{label}</strong><small>{note}</small></summary>
-        <span className="atlas-node-detail">{project ? <Link href={`/projects/${project.slug}`}>Open project →</Link> : <Link href="/organisation">View context →</Link>}</span>
-      </details>
-    );
-  };
+  const buildings = [
+    { slug: 'hypest', label: 'Hypest', position: 'fitness', note: 'Fitness · training hall' },
+    { slug: 'finance', label: 'DDG Finance', position: 'finance', note: 'Treasury · held for Claude review' },
+    { slug: 'creative', label: 'Creative', position: 'creative', note: 'Workshop · gaming and music experiments' },
+    { slug: 'cattle-dog-coffee', label: 'Cattle Dog Coffee', position: 'coffee', note: 'DDG Coffee · roastery' },
+    { slug: 'ddg-music', label: 'DDG Music', position: 'music', note: 'Skald hall · undecided, unchanged' },
+  ];
+  const destination = (slug: string) => projects.some((project) => project.slug === slug) ? `/projects/${slug}` : '/organisation';
   return (
-    <section className="atlas-map-panel" aria-labelledby="atlas-title" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}atlas-glacier-v1.jpg")` }}>
+    <section className="atlas-map-panel atlas-village-panel" aria-labelledby="atlas-title">
       <div className="atlas-map-heading"><div><p className="home-section-kicker">People · systems · projects</p><h2 id="atlas-title">Company Atlas</h2></div><Link href="/organisation">Explore connections →</Link></div>
-      <div className="atlas-map-legend"><span>○ Company structure</span><span>┄ Unverified data path</span></div>
-      <div className="atlas-map-canvas">
-        <svg className="atlas-cables" viewBox="0 0 800 460" preserveAspectRatio="none" aria-hidden="true"><path d="M400 230 Q260 210 240 100 M400 230 Q530 190 560 95 M400 230 Q240 310 140 260 M400 230 Q570 330 650 270 M400 230 L400 370" /></svg>
-        {node('hypest', 'Hypest', 'fitness', 'Fitness')}
-        {node('finance', 'DDG Finance', 'finance', 'Held · Claude review')}
-        {node('creative', 'Creative', 'creative', 'Gaming · music experiments')}
-        {node('cattle-dog-coffee', 'Cattle Dog Coffee', 'coffee', 'DDG Coffee')}
-        {node('ddg-music', 'DDG Music', 'music', 'Undecided · unchanged')}
-        <Link className="atlas-node atlas-node-core" href="/ai-stack"><span className="atlas-node-icon" aria-hidden="true"><img className="atlas-core-logo" src={`${import.meta.env.BASE_URL}ddg-creative-glitch-original.png`} alt="" width="62" height="62" /></span><strong>DDG Control</strong><small>Control platform</small></Link>
+      <div className="atlas-map-legend"><span>Village paths · company structure</span><span>No live transfer feed</span></div>
+      <div className="atlas-map-canvas atlas-village-canvas" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}atlas-viking-village-v1.webp")` }}>
+        <img className="atlas-village-flag" src={`${import.meta.env.BASE_URL}ddg-creative-glitch-original.png`} alt="DDG flag on the great hall" />
+        {buildings.map((building) => <details key={building.slug} className={`atlas-node atlas-building atlas-node-${building.position}`}>
+          <summary><span className="atlas-building-hit" aria-hidden="true" /><strong>{building.label}</strong><small>{building.note}</small></summary>
+          <span className="atlas-node-detail"><Link href={destination(building.slug)}>Open {building.label} →</Link></span>
+        </details>)}
+        <Link className="atlas-node atlas-building atlas-node-core" href="/ai-stack"><span className="atlas-building-hit" aria-hidden="true" /><strong>DDG great hall</strong><small>DDG Control · company hub</small></Link>
       </div>
-      <p className="atlas-evidence-note">Agreed company structure. Transfer observation is not connected; cables do not claim live traffic.</p>
+      <nav className="atlas-village-directory" aria-label="Village buildings">
+        <Link href="/ai-stack"><strong>DDG great hall</strong><small>DDG Control · company hub</small></Link>
+        {buildings.map((building) => <Link key={building.slug} href={destination(building.slug)}><strong>{building.label}</strong><small>{building.note}</small></Link>)}
+      </nav>
+      <p className="atlas-evidence-note">Illustrated company village. Roads show agreed relationships, not live data transfers or active business operations.</p>
     </section>
   );
 }
@@ -291,11 +282,27 @@ export function Home() {
           </Link>
         </div>
 
+        <section className="home-headline-performance" aria-label="Company finance and social reporting">
+          <div className="home-section-title">
+            <p className="home-section-kicker">1 · Company finance &amp; social reporting</p>
+            <p>Periods and source coverage are shown with each figure.</p>
+          </div>
+          <div className="home-performance-grid">
+            <FinanceSummaryBar
+              summary={financeSummaryQuery.data}
+              isLoading={financeSummaryQuery.isLoading}
+              error={financeSummaryQuery.isError ? financeSummaryQuery.error : null}
+              onRetry={() => void financeSummaryQuery.refetch()}
+            />
+            <SocialBar projects={projects} />
+          </div>
+        </section>
+
         <section className="home-overview-grid" aria-label="Company health and attention">
           <article className="home-health-panel">
             <div className="home-panel-heading">
               <div>
-                <p className="home-section-kicker">1 · Company health</p>
+                <p className="home-section-kicker">2 · Company health</p>
                 <h2>At a glance</h2>
               </div>
               <Link className="home-panel-link" href="/organisation">Company Map</Link>
@@ -311,7 +318,7 @@ export function Home() {
                 <strong>{projectsQuery.isLoading ? '…' : projectsQuery.isError ? 'Unknown' : projects.length}</strong>
                 <small>{projectsQuery.isError ? 'Unable to read project registry.' : 'Registry count · not a live-service status'}</small>
               </div>
-              <div><span>Profit · last 30 days</span><strong>{financeSummaryQuery.isLoading ? '…' : financeSummaryQuery.isError || !financeSummaryQuery.data ? 'Unknown' : formatFinanceCents(financeSummaryQuery.data.profit_30d_cents)}</strong><small>Reported total · source details below</small></div>
+              <div><span>Profit · last 30 days</span><strong>{financeSummaryQuery.isLoading ? '…' : financeSummaryQuery.isError || !financeSummaryQuery.data ? 'Unknown' : formatFinanceCents(financeSummaryQuery.data.profit_30d_cents)}</strong><small>Reported total · headline source details above</small></div>
               <div><span>Social footprint</span><strong>{socialSummaryQuery.isLoading ? '…' : socialSummaryQuery.isError || socialReadings.length === 0 ? 'Unknown' : formatFigure(socialSummaryQuery.data!.total_followers, 'count')}</strong><small>{socialReadings.length > 0 ? `Summed followers · oldest reading ${socialSourceDates[0] ?? 'Unknown'}` : 'No saved readings'} · not unique people</small></div>
               <div><span>Employee roster</span><strong>9</strong><small>Named roles · not active worker count</small></div>
             </div>
@@ -356,22 +363,6 @@ export function Home() {
             )}
             <Link className="home-panel-link" href="/decisions">Open decision records →</Link>
           </aside>
-        </section>
-
-        <section aria-label="Business performance">
-          <div className="home-section-title">
-            <p className="home-section-kicker">2 · Business performance</p>
-            <p>Periods and source coverage are shown with each figure.</p>
-          </div>
-          <div className="home-performance-grid">
-            <FinanceSummaryBar
-              summary={financeSummaryQuery.data}
-              isLoading={financeSummaryQuery.isLoading}
-              error={financeSummaryQuery.isError ? financeSummaryQuery.error : null}
-              onRetry={() => void financeSummaryQuery.refetch()}
-            />
-            <SocialBar projects={projects} />
-          </div>
         </section>
 
         <section className="home-activity-panel" aria-labelledby="home-activity-title">
