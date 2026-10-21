@@ -131,3 +131,9 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Need: runOllie still contains a paid xAI request protected indirectly by project OFF checks; it has no explicit approved-budget gate and the Agents button is enabled. No provider call or key inspection performed in this audit.
 - Add source-locked shared false policy before any run DB/provider work, covering manual/cron callers. UI disables invocation with the same reason, preserves saved history; keys/ON flags cannot authorize spending. Manual run route additionally requires real owner, DEV bypass insufficient.
 - Preserve existing cron authentication, contracts/history, Finance hold and separate Cursor safety guards. No model selection, external budget/eligibility claim, migration or provider operation. Type/build checks only, no tests/runtime calls.
+
+
+##21October - Explicit owner provider observations
+- Need: Agents auto-fetches account model list on mount; AI Stack auto-fetches/polls provider status every60sec in owner mode. Legacy metadata endpoints accept general auth/DEV bypass. Source audit only, no provider request performed.
+- Require real owner at both read endpoints; disable automatic mount/focus/reconnect/interval reads and use explicit one-check buttons. DEV blocked in UI/server. Not-checked/unknown states must not claim connected/zero agents.
+- Preserve saved local histories, existing provider cache/timeouts, no dispatch/model-entitlement/fee claim. Show last-check timestamp instead of a live dot/recent freshness claim that would outlive manual observation. No tests, provider/data/migration/release operations.
