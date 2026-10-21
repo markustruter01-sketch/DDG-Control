@@ -64,3 +64,10 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Refuse all execution/provider evidence and open blocking questions; preserve bindings/attempts and worker hard-false guards. Explicit version-bound fresh approval remains separate.
 - Context-bound UI drafts, clear zero spend/deadline/reason/confirmation and loaded history.
 - Source only; no tests, compilation/runtime/peer/owner/live evidence or data/provider operations.
+
+##21October — Company Map view filters and task-lookup truth
+- Need: view selectors use tab roles without tab keyboard behavior; use ordinary grouped toggle buttons and native Tab/Enter/Space interaction instead of adding custom focus machinery.
+- Need: task-query loading/failure/malformed responses can be rendered as no matching task. Validate required record fields, distinguish loading/unavailable/loaded, limit absence claims to loaded records, and expose retry.
+- Fetch task references only when findings are expanded; no automatic focus retries. Keep the same API, task records, exact-title/project matching and existing cockpit styling. No agent calls or data writes.
+- Clear selected relationship when changing view/search so detail does not describe hidden prior context. Existing node buttons and source/date drill-down remain.
+- Type/build and rendered keyboard/failure acceptance are separate; no tests or runtime acceptance claimed from source edits.

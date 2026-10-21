@@ -15,6 +15,7 @@ import {
 import "./company-map.css";
 
 type ExistingWorkItem = { id: number; title: string; project_key: string; status: string };
+type TaskLookupState = "loading" | "unavailable" | "ready";
 type View = "Overview" | "People" | "Systems" | "Projects";
 
 const evidenceClass: Record<EvidenceCategory, string> = {
@@ -30,8 +31,18 @@ const evidenceClass: Record<EvidenceCategory, string> = {
 async function loadExistingWork(): Promise<ExistingWorkItem[]> {
   const response = await fetch("/api/work-items", { headers: { Accept: "application/json" }, cache: "no-store" });
   if (!response.ok) throw new Error("Existing task links are unavailable.");
-  const data = await response.json() as { items?: ExistingWorkItem[] };
-  return Array.isArray(data.items) ? data.items : [];
+  const data: unknown = await response.json().catch(() => null);
+  const isWorkItem = (value: unknown): value is ExistingWorkItem => {
+    if (!value || typeof value !== "object") return false;
+    const row = value as Record<string, unknown>;
+    return typeof row.id === "number" && Number.isSafeInteger(row.id) && row.id > 0 &&
+      typeof row.title === "string" && typeof row.project_key === "string" && typeof row.status === "string";
+  };
+  if (!data || typeof data !== "object" || !("items" in data) ||
+      !Array.isArray(data.items) || !data.items.every(isWorkItem)) {
+    throw new Error("Existing task response is incomplete or invalid.");
+  }
+  return data.items;
 }
 
 function EvidenceBadge({ category, date }: { category: EvidenceCategory; date: string }) {
@@ -49,21 +60,23 @@ function NodeButton({ node, selected, onSelect }: { node: MapNode; selected: boo
   );
 }
 
-function TaskReferences({ titles, items }: { titles?: string[]; items: ExistingWorkItem[] }) {
+function TaskReferences({ titles, items, lookupState }: { titles?: string[]; items: ExistingWorkItem[]; lookupState: TaskLookupState }) {
   if (!titles?.length) return <p className="cm-no-task">No linked task is recorded for this finding.</p>;
-  const linked = titles.flatMap((title) => items.filter((item) => item.project_key === "ddg-control-ai-stack" && item.title === title));
-  if (!linked.length) return <p className="cm-no-task">No matching task record is present in this environment; this finding remains context, not a task.</p>;
+  if (lookupState === "loading") return <p className="cm-no-task">Checking existing task references…</p>;
+  if (lookupState === "unavailable") return <p className="cm-no-task">Task links cannot be checked while existing records are unavailable.</p>;
+  const linked = items.filter((item) => item.project_key === "ddg-control-ai-stack" && titles.includes(item.title));
+  if (!linked.length) return <p className="cm-no-task">No matching task is in the loaded records; this finding remains context, not a new task.</p>;
   return <ul className="cm-task-links">{linked.map((task) => <li key={task.id}><Link href="/ai-stack#work-queue-heading">Existing task #{task.id}: {task.title} · {task.status.replaceAll("_", " ")}</Link></li>)}</ul>;
 }
 
-function FindingCard({ finding, items }: { finding: CompanyFinding; items: ExistingWorkItem[] }) {
+function FindingCard({ finding, items, lookupState }: { finding: CompanyFinding; items: ExistingWorkItem[]; lookupState: TaskLookupState }) {
   return (
     <article className="cm-finding">
       <div className="cm-finding-title"><span className={`cm-severity cm-severity-${finding.severity.toLowerCase()}`}>{finding.kind} · {finding.severity}</span><EvidenceBadge category={finding.evidence} date={finding.sourceDate} /></div>
       <h4>{finding.title}</h4>
       <p>{finding.whyItMatters}</p>
       <dl className="cm-finding-meta"><div><dt>Evidence / scope</dt><dd>{finding.source} · {finding.scope}</dd></div><div><dt>Next action</dt><dd>{finding.nextAction}</dd></div></dl>
-      <TaskReferences titles={finding.relatedTaskTitles} items={items} />
+      <TaskReferences titles={finding.relatedTaskTitles} items={items} lookupState={lookupState} />
     </article>
   );
 }
@@ -74,7 +87,12 @@ export function CompanyMap() {
   const [selectedId, setSelectedId] = useState("sys-ddg-control");
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [gapsOpen, setGapsOpen] = useState(false);
-  const itemsQuery = useQuery({ queryKey: ["company-map-existing-work"], queryFn: loadExistingWork, retry: false, staleTime: 60_000 });
+  const itemsQuery = useQuery({ queryKey: ["company-map-existing-work"], queryFn: loadExistingWork, enabled: gapsOpen, retry: false, refetchOnWindowFocus: false, staleTime: 60_000 });
+  const lookupState: TaskLookupState = itemsQuery.isError ? "unavailable" : itemsQuery.data ? "ready" : "loading";
+  function selectView(next: View) {
+    setView(next);
+    setSelectedLinkId(null);
+  }
   const normalizedSearch = search.trim().toLowerCase();
   const visibleNodes = useMemo(() => companyMapNodes.filter((node) => {
     const kindForView = view === "People" ? "person" : view === "Systems" ? "system" : view === "Projects" ? "project" : null;
@@ -109,20 +127,20 @@ export function CompanyMap() {
       </div>
 
       <div className="cm-toolbar">
-        <div className="cm-tabs" role="tablist" aria-label="Company map views">
-          {(["Overview", "People", "Systems", "Projects"] as const).map((tab) => <button key={tab} type="button" role="tab" aria-selected={view === tab} className={view === tab ? "is-active" : ""} onClick={() => { setView(tab); setSelectedLinkId(null); }}>{tab}</button>)}
+        <div className="cm-tabs" role="group" aria-label="Company map view filters">
+          {(["Overview", "People", "Systems", "Projects"] as const).map((tab) => <button key={tab} type="button" aria-pressed={view === tab} className={view === tab ? "is-active" : ""} onClick={() => selectView(tab)}>{tab}</button>)}
         </div>
-        <label className="cm-search">Search map<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, system, project or gap" /></label>
+        <label className="cm-search">Search map<input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setSelectedLinkId(null); }} placeholder="Name, system, project or gap" /></label>
       </div>
 
       {view === "Overview" && !normalizedSearch ? (
         <div className="cm-overview">
           <div className="cm-lanes" aria-label="Company map categories">
-            {overviewCounts.map((group) => <button className="cm-lane" type="button" key={group.view} onClick={() => setView(group.view)}>
+            {overviewCounts.map((group) => <button className="cm-lane" type="button" key={group.view} onClick={() => selectView(group.view)}>
               <span className="cm-lane-count">{group.count}</span><strong>{group.view}</strong><span>{group.note}</span><i>Explore {group.view.toLowerCase()} →</i>
             </button>)}
           </div>
-          <button type="button" className="cm-mobile-paths" onClick={() => setView("Systems")}>Explore all {companyMapLinks.length} relationships in Systems →</button>
+          <button type="button" className="cm-mobile-paths" onClick={() => selectView("Systems")}>Explore all {companyMapLinks.length} relationships in Systems →</button>
           <section className="cm-connections" aria-labelledby="cm-connections-title">
             <div className="cm-section-head"><div><p className="cm-kicker">Known paths · not live traffic</p><h3 id="cm-connections-title">How the company is connected</h3></div><span>{companyMapLinks.length} recorded relationships</span></div>
             <div className="cm-connection-list">{companyMapLinks.slice(0, 4).map((link) => <button type="button" className={`cm-connection${selectedLinkId === link.id ? " is-selected" : ""}`} key={link.id} onClick={() => { setSelectedLinkId(link.id); setSelectedId(link.from); }}>
@@ -168,9 +186,9 @@ export function CompanyMap() {
           <span><span className="cm-kicker">Source findings · not incidents</span><strong id="cm-gaps-title">Actionable gaps and bottlenecks</strong><small>{companyMapFindings.length} findings · expand for evidence and next actions</small></span><b aria-hidden="true">{gapsOpen ? "−" : "+"}</b>
         </button>
         {gapsOpen && <div id="cm-gaps-panel" className="cm-gap-grid">
-          {itemsQuery.isError && <p role="alert" className="cm-inline-error">{itemsQuery.error.message} Existing task links cannot be checked; no tasks have been invented.</p>}
-          {itemsQuery.isLoading && <p role="status" className="cm-inline-loading">Checking existing dashboard task references…</p>}
-          {companyMapFindings.map((finding) => <FindingCard key={finding.id} finding={finding} items={itemsQuery.data ?? []} />)}
+          {itemsQuery.isError && <div role="alert" className="cm-inline-error"><p>{itemsQuery.error.message} Existing task links cannot be checked; no tasks have been invented.</p><button type="button" disabled={itemsQuery.isFetching} onClick={() => void itemsQuery.refetch()}>Retry task links</button></div>}
+          {lookupState === "loading" && <p role="status" className="cm-inline-loading">Checking existing dashboard task references…</p>}
+          {companyMapFindings.map((finding) => <FindingCard key={finding.id} finding={finding} items={itemsQuery.data ?? []} lookupState={lookupState} />)}
         </div>}
       </section>
 
