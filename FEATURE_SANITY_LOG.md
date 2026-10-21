@@ -115,3 +115,13 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - First idle motion only; varied facing/prop frames/neighbor routines and genuine-message ingress are still pending. Rendered small-screen/keyboard/focus/owner acceptance remains open. No tests/data/provider/migration/release actions.
 
 - Dock source review: use a labeled compact Characters icon on narrow headers to avoid adding a long sixth header label; preserve full visible label on wider screens. Keyboard/touch/rendered acceptance remains open.
+##21October - Load route code when needed
+- Need: compiled dashboard ships every route in one 930.20kB entry bundle. Existing pages are independent route entries; React lazy imports and one accessible loading shell are the simplest suitable reduction in upfront code.
+- Keep exact routes, named page components, auth gate, existing query/data semantics and route-reset error boundary. No prefetch loops, new dependency, provider call, schema or worker change.
+- Build artifact sizes measure code distribution only, not network speed or browser/owner acceptance. Cold-route loading and failed-chunk recovery remain browser acceptance items; no tests run.
+
+- Route-loading review found generic render retry cannot recover a cached lazy-import rejection. Add route-specific branded failure shell with working navigation and explicit Reload app (warns about unsaved changes), no raw internal error text or automatic reload loop. Route changes keep existing reset-key recovery. Browser failure/recovery acceptance remains open.
+
+##21October - Coherent main preview batch
+- Combine reviewed dock source with current main route loading so Replit can preview on stable main. Resolve only appended sanity-log conflict by preserving both histories; source files do not conflict.
+- Static sprite rendering and compilation are recorded. Merge permission covers source integration; browser layout/owner/live acceptance stays a separate unmet gate. Do not publish from this merge.
