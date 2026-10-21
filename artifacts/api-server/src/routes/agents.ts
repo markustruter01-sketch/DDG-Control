@@ -15,6 +15,7 @@ import {
 import { desc, eq, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { runOllie } from "../agents/ollie";
+import { requireRealOwnerSession } from "./auth";
 
 const router: IRouter = Router();
 
@@ -463,7 +464,7 @@ router.get("/agent-updates/latest", async (_req, res): Promise<void> => {
   res.json(ListLatestAgentUpdatesResponse.parse(latestUpdates));
 });
 
-router.post("/agents/ollie/run", async (req, res): Promise<void> => {
+router.post("/agents/ollie/run", requireRealOwnerSession, async (req, res): Promise<void> => {
   if (
     req.body === null ||
     typeof req.body !== "object" ||

@@ -1,4 +1,5 @@
 import { DDG_EMPLOYEE_ROLES } from "./employee-roles";
+export { LEGACY_REPORT_GENERATION_ENABLED, LEGACY_REPORT_GENERATION_BLOCKER } from "./provider-spending";
 export { DDG_EMPLOYEE_ROLES, type DdgEmployeeRole, type DdgEmployeeRoleId } from "./employee-roles";
 
 export const PROJECT_STATUSES = ["unset", "active", "building", "paused"] as const;
