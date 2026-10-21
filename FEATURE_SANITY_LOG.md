@@ -93,3 +93,10 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Need: Projects dock navigation scrolls but leaves keyboard focus behind and forces smooth motion. Reuse one reveal helper, focus existing target without a tab stop, and honor reduced-motion preference.
 - Keep layout, routes, records and safe-area padding. Browser focus/touch/screen-reader/mobile acceptance remains open; no new queries, calls or writes.
 - Restored original UTF-8 log bytes before appending these entries; corrected local Windows encoding before delivery.
+
+
+##21October - Notification response and navigation guards
+- Need: malformed successful receipt responses can crash rendering or imply a confirmed save. Validate bounded IDs, SHA-256 versions, timestamps, duplicate/unrequested rows and exact save response identity; reject malformed data as unavailable/unconfirmed.
+- Disable read actions while decisions refresh or fail. Keep existing API, source-version server checks, no automatic retries/writes, migration gate and decision navigation.
+- Need: linked-decision effect can repeatedly scroll/focus on background query updates. Handle focus once per navigation version, retaining loading waits, explicit links and error states.
+- Compile/build only; malformed response/browser/runtime and persistence acceptance remain open. No tests, data/provider/migration/release operations.
