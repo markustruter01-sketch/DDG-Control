@@ -149,3 +149,9 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Add three authored remarks per existing employee and an explicit Character remark/Another remark control; one visible remark at a time, reset on selection/close, dismissible, clearly labelled preset banter/not work. No timer, provider/model call, notification badge or fabricated business action.
 - Keep actual notifications separate and visible through existing inbox. No record mutation or real employee message claim. Browser/keyboard/screen-reader acceptance remains open; no tests requested.
 - Heimdall generated idle pilot remains outside app: browser local-file security policy blocked preview, do not work around or silently accept its cloak/shape drift. Existing approved masters/static cutout gestures remain in source.
+
+##22October - Avatar focus and mobile delivery audit
+- Need: CSS-hidden desktop cast still mounted all9 image elements on mobile, even with tray closed. Match the existing1051px desktop breakpoint in presentation state and mount the cast only on desktop; mobile still accesses all9 via the tray, loading images on opening. Keep CSS breakpoint as fallback and central navigation layout unchanged.
+- Escape/Close previously returned focus to header even after a bottom character opened the panel. Remember the actual opener and fall back to header if it disappears on resize/hide; move focus to header before focused cast unmounts on narrowing.
+- Dismiss previously removed the focused button. Return to remark trigger, keep a mounted polite announcement region and respect previously-handled Escape events.
+- Source review only at this stage; browser/assistive-technology behavior still needs actual acceptance. No tests/model/provider/backend/data/release actions; no repeated blocked browser or Replit network attempt.

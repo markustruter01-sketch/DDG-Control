@@ -7,6 +7,7 @@ import './employee-dock.css';
 
 type Preferences = { hidden: boolean; quiet: boolean };
 const STORAGE_KEY = 'ddg-employee-presentation';
+const DESKTOP_CAST_QUERY = '(min-width: 1051px)';
 function savedPreferences(): Preferences {
   try {
     const value = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? 'null');
@@ -21,11 +22,19 @@ export function EmployeeDock() {
   const [selected, setSelected] = useState<DdgEmployeeRole | null>(null);
   const [remarkIndex, setRemarkIndex] = useState<number | null>(null);
   const [visible, setVisible] = useState(() => document.visibilityState === 'visible');
+  const [desktopCast, setDesktopCast] = useState(() => window.matchMedia(DESKTOP_CAST_QUERY).matches);
   const panelId = useId();
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLElement>(null);
   const cast = useRef<HTMLDivElement>(null);
+  const opener = useRef<HTMLButtonElement | null>(null);
+  const remarkTrigger = useRef<HTMLButtonElement>(null);
+
+  function closePanel() {
+    setOpen(false);
+    (opener.current?.isConnected ? opener.current : trigger.current)?.focus();
+  }
 
   useEffect(() => {
     try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences)); } catch { /* Session preference still works. */ }
@@ -36,10 +45,20 @@ export function EmployeeDock() {
     return () => document.removeEventListener('visibilitychange', change);
   }, []);
   useEffect(() => {
+    const query = window.matchMedia(DESKTOP_CAST_QUERY);
+    const change = () => {
+      if (!query.matches && cast.current?.contains(document.activeElement)) trigger.current?.focus();
+      setDesktopCast(query.matches);
+    };
+    query.addEventListener('change', change);
+    change();
+    return () => query.removeEventListener('change', change);
+  }, []);
+  useEffect(() => {
     if (!open) return;
     panel.current?.focus();
     const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setOpen(false); trigger.current?.focus(); }
+      if (event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); closePanel(); }
     };
     const outside = (event: PointerEvent) => {
       if (event.target instanceof Node && !root.current?.contains(event.target) &&
@@ -54,7 +73,11 @@ export function EmployeeDock() {
   }, [open]);
 
   function select(employee: DdgEmployeeRole) { setSelected(employee); setRemarkIndex(null); }
-  function inspect(employee: DdgEmployeeRole) { select(employee); setOpen(true); }
+  function inspect(employee: DdgEmployeeRole, button: HTMLButtonElement) {
+    opener.current = button;
+    select(employee);
+    setOpen(true);
+  }
   // Remarks are requested by the owner, never generated on a timer or treated as notifications.
   useEffect(() => { if (!open) setRemarkIndex(null); }, [open]);
   function character(employee: DdgEmployeeRole, index: number) {
@@ -62,19 +85,22 @@ export function EmployeeDock() {
       style={{ animationDelay: `${index * -1.7}s` }}
       title={`${employee.name} · ${employee.role}`}
       aria-label={`${employee.name}, ${employee.role}. View character details`}
-      onClick={() => inspect(employee)}>
+      onClick={(event) => inspect(employee, event.currentTarget)}>
       <EmployeeSprite employeeId={employee.id} />
     </button>;
   }
 
   return <div className="employee-presentation" ref={root}>
     <button type="button" className="theme-toggle employee-toggle" ref={trigger} aria-expanded={open} aria-controls={panelId}
-      aria-label="Company characters and presentation preferences" onClick={() => setOpen((value) => !value)}>
+      aria-label="Company characters and presentation preferences" onClick={(event) => {
+        opener.current = event.currentTarget;
+        setOpen((value) => !value);
+      }}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="9" cy="7" r="3" /><path d="M3 20v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6m2 10v-3a6 6 0 0 0-2-4" /></svg>
       <span>Characters</span>
     </button>
     {createPortal(<>
-    {!preferences.hidden && <div ref={cast} className="employee-cast" data-quiet={preferences.quiet || !visible || open}>
+    {desktopCast && !preferences.hidden && <div ref={cast} className="employee-cast" data-quiet={preferences.quiet || !visible || open}>
       <div className="employee-side employee-side-left" role="group" aria-label="Company characters, first four">
         {DDG_EMPLOYEE_ROLES.slice(0, 4).map(character)}
       </div>
@@ -84,7 +110,7 @@ export function EmployeeDock() {
     </div>}
     {open && <section id={panelId} className="employee-settings" ref={panel} tabIndex={-1} aria-labelledby={`${panelId}-title`}>
       <div className="employee-settings-heading"><h2 id={`${panelId}-title`}>Company characters</h2>
-        <button type="button" onClick={() => { setOpen(false); trigger.current?.focus(); }} aria-label="Close character panel">×</button></div>
+        <button type="button" onClick={closePanel} aria-label="Close character panel">×</button></div>
       <p>Presentation only. Characters do not show active workers or live employee messages. Saved decisions stay in Notifications.</p>
       <div className="employee-preferences">
         <label><input type="checkbox" checked={preferences.hidden} onChange={(event) => setPreferences((value) => ({ ...value, hidden: event.target.checked }))} /> Hide bottom characters</label>
@@ -101,14 +127,19 @@ export function EmployeeDock() {
         <p><strong>{selected.name}</strong><br />{selected.role}<br /><small>Company character. Live work and messages are not connected.</small></p>
       </div>}
       {selected && <div className="employee-banter">
-        <button type="button" onClick={() => setRemarkIndex((value) => value === null ? 0 : (value + 1) % EMPLOYEE_BANTER[selected.id].length)}>
+        <button type="button" ref={remarkTrigger} onClick={() => setRemarkIndex((value) => value === null ? 0 : (value + 1) % EMPLOYEE_BANTER[selected.id].length)}>
           {remarkIndex === null ? 'Character remark' : 'Another remark'}
         </button>
-        {remarkIndex !== null && <>
+        {remarkIndex !== null &&
           <p className="employee-banter-label">Preset character banter · not a work update</p>
-          <p aria-live="polite" aria-atomic="true">{selected.name}: “{EMPLOYEE_BANTER[selected.id][remarkIndex]}”</p>
-          <button type="button" onClick={() => setRemarkIndex(null)}>Dismiss remark</button>
-        </>}
+        }
+        <div aria-live="polite" aria-atomic="true">
+          {remarkIndex !== null && <p>{selected.name}: “{EMPLOYEE_BANTER[selected.id][remarkIndex]}”</p>}
+        </div>
+        {remarkIndex !== null && <button type="button" onClick={() => {
+          setRemarkIndex(null);
+          remarkTrigger.current?.focus();
+        }}>Dismiss remark</button>}
       </div>}
     </section>}
     </>, document.body)}
