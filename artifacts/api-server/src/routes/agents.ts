@@ -85,7 +85,7 @@ async function cursorGet(apiKey: string, path: string): Promise<unknown> {
   return response.json() as Promise<unknown>;
 }
 
-router.get("/cursor/cloud-agents", async (_req, res): Promise<void> => {
+router.get("/cursor/cloud-agents", requireRealOwnerSession, async (_req, res): Promise<void> => {
   const apiKey = process.env.CURSOR_API_KEY?.trim();
   if (!apiKey) {
     res.json({ status: "not_configured", checkedAt: null, agents: [] });
@@ -234,7 +234,7 @@ router.get("/cursor/cloud-agents", async (_req, res): Promise<void> => {
   }
 });
 
-router.get("/cursor/models", async (_req, res): Promise<void> => {
+router.get("/cursor/models", requireRealOwnerSession, async (_req, res): Promise<void> => {
   const apiKey = process.env.CURSOR_API_KEY?.trim();
   if (!apiKey) {
     res.json({ status: "not_configured", models: [] satisfies CursorModel[] });

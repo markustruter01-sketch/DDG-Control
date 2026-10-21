@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import {
@@ -7,7 +7,7 @@ import {
   useListAgentRuns,
   useRunOllie,
 } from '@workspace/api-client-react';
-import { Header } from '@/components/header';
+import { DevAuthBypassContext, Header } from '@/components/header';
 import { serverErrorText } from '@/lib/errors';
 import { formatBrisbaneDateTime, formatCurrentDisplayName } from '@/lib/format';
 import { LEGACY_REPORT_GENERATION_ENABLED, LEGACY_REPORT_GENERATION_BLOCKER } from '@workspace/project-constants';
@@ -29,12 +29,15 @@ async function loadCursorModels(): Promise<CursorModelsResponse> {
 }
 
 export function AgentsPage() {
+  const devBypass = useContext(DevAuthBypassContext);
   const client = useQueryClient();
   const cursorModelsQuery = useQuery({
     queryKey: ['cursor-models'],
     queryFn: loadCursorModels,
+    enabled: false,
     retry: false,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
   const runsQuery = useListAgentRuns({
     query: { queryKey: getListAgentRunsQueryKey() },
@@ -108,8 +111,8 @@ export function AgentsPage() {
             <button
               className="task-secondary-button"
               type="button"
-              disabled={cursorModelsQuery.isFetching}
-              onClick={() => void cursorModelsQuery.refetch()}
+              disabled={devBypass || cursorModelsQuery.isFetching}
+              onClick={() => { if (!devBypass) void cursorModelsQuery.refetch(); }}
               data-testid="button-refresh-cursor-models"
             >
               {cursorModelsQuery.isFetching ? 'Checking…' : 'Check models'}
@@ -118,13 +121,15 @@ export function AgentsPage() {
           <p className="agents-run-notice">
             This is a read-only check. It does not start an agent. A model appearing here does not prove its use is included in your plan; check Cursor billing before starting any coding task.
           </p>
-          {cursorModelsQuery.isLoading ? (
+          {devBypass ? <p className="task-state-message">Provider checks require a real owner sign-in. Preview mode does not contact Cursor.</p>
+          : cursorModelsQuery.isFetching ? (
             <p className="task-state-message" role="status">Checking Cursor connection…</p>
           ) : cursorModelsQuery.isError ? (
             <p className="agents-run-notice agents-run-notice-error" role="alert">
               {serverErrorText(cursorModelsQuery.error, 'Unable to check Cursor models.')}
             </p>
-          ) : cursorModelsQuery.data?.status === 'not_configured' ? (
+          ) : !cursorModelsQuery.data ? <p className="task-state-message">Model list not checked. Use Check models to make one read-only provider request.</p>
+          : cursorModelsQuery.data.status === 'not_configured' ? (
             <p className="task-state-message" data-testid="status-cursor-not-configured">
               Cursor is not connected yet. Add CURSOR_API_KEY to Replit Secrets to check available models. Never put the key in this page or in GitHub.
             </p>

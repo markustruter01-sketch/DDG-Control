@@ -660,10 +660,11 @@ export function AIStackPage() {
   const agentsQuery = useQuery({
     queryKey: ["cursor-cloud-agents"],
     queryFn: loadCursorAgents,
-    enabled: !devBypass,
+    enabled: false,
     retry: false,
-    refetchInterval: devBypass ? false : 60_000,
-    refetchOnWindowFocus: !devBypass,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
   const agents = agentsQuery.data?.agents ?? [];
   const tokenValues = agents.map((agent) => agent.totalTokens ?? 0);
@@ -674,7 +675,7 @@ export function AIStackPage() {
   const attentionCount = agents.filter((agent) =>
     ["ERROR", "EXPIRED"].includes(agent.runStatus?.toUpperCase() ?? ""),
   ).length;
-  const cursorConnected = !devBypass && agentsQuery.data?.status === "connected";
+  const cursorConnected = !devBypass && !agentsQuery.isError && agentsQuery.data?.status === "connected";
   const controlCount = controlsQuery.data?.controls.filter((control) => control.enabled).length;
   const latestTokenTotal = agents.reduce((total, agent) => total + (agent.totalTokens ?? 0), 0);
   const hasTokenTotals = cursorConnected && agents.some((agent) => agent.totalTokens !== null);
@@ -685,9 +686,7 @@ export function AIStackPage() {
       ? "Unavailable"
       : !Number.isFinite(checkedAtMs)
         ? "Unknown · no check timestamp"
-        : Date.now() - checkedAtMs > 120_000
-          ? "Stale · last checked over 2 min ago"
-          : "Checked recently";
+        : `Last checked ${new Date(checkedAtMs).toLocaleString("en-AU")}`;
   const [detailView, setDetailView] = useState<DetailView>(null);
   const latestHandover = [...(handoversQuery.data ?? [])].sort((a, b) =>
     Date.parse(b.created_at) - Date.parse(a.created_at) || b.id - a.id,
@@ -746,7 +745,7 @@ export function AIStackPage() {
           </div>
           <div className="ai-stack-refresh" role="status">
             <span
-              className={`ai-stack-live-dot ${agentsQuery.data?.status === "connected" ? "is-live" : ""}`}
+              className="ai-stack-live-dot"
             />
             <span className="ai-stack-refresh-label">{devBypass
               ? "Cursor polling disabled in development bypass"
@@ -827,7 +826,9 @@ export function AIStackPage() {
                 </p>
               </div>
               <div className="ai-stack-panel-actions">
-                <span className="ai-stack-status">{agents.length} agents</span>
+                <span className="ai-stack-status">{!devBypass && !agentsQuery.isError && agentsQuery.data?.status === "connected" ? `${agents.length} agents in last check` : "Agents unknown"}</span>
+                <button className="ai-stack-detail-button" type="button" disabled={devBypass || agentsQuery.isFetching}
+                  onClick={() => { if (!devBypass) void agentsQuery.refetch(); }}>Check provider status</button>
                 <button
                   className="ai-stack-detail-button"
                   type="button"
@@ -837,14 +838,16 @@ export function AIStackPage() {
                 </button>
               </div>
             </div>
-            {agentsQuery.isLoading ? (
+            {devBypass ? <p className="ai-stack-empty">Provider checks require a real owner sign-in. Preview mode does not contact Cursor.</p>
+            : agentsQuery.isFetching ? (
               <p className="ai-stack-empty">Checking Cursor…</p>
             ) : agentsQuery.isError ? (
               <p className="ai-stack-empty ai-stack-error">
                 Could not read Cursor. Check the saved API key and app
                 connection.
               </p>
-            ) : agentsQuery.data?.status === "not_configured" ? (
+            ) : !agentsQuery.data ? <p className="ai-stack-empty">Provider status not checked. Use Check provider status for one read-only observation; no automatic polling.</p>
+            : agentsQuery.data.status === "not_configured" ? (
               <p className="ai-stack-empty">
                 Cursor API key is not set on the server.
               </p>
