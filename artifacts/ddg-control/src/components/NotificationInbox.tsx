@@ -12,10 +12,26 @@ type Versions = { snapshot: Snapshot; items: Array<{ decision_id: number; source
 const PAGE_SIZE = 20;
 const RECEIPT_KEY = 'decision-notification-receipts';
 
+function isReceipt(value: unknown): value is Receipt {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as Partial<Receipt>;
+  return typeof item.decision_id === 'number' && Number.isSafeInteger(item.decision_id) &&
+    item.decision_id > 0 && item.decision_id <= 2147483647 &&
+    typeof item.source_version === 'string' && /^[a-f0-9]{64}$/.test(item.source_version) &&
+    (item.read_at === null || (typeof item.read_at === 'string' && Number.isFinite(Date.parse(item.read_at))));
+}
+
 async function loadReceipts(ids: number[]): Promise<ReceiptList> {
   const response = await fetch('/api/notification-receipts?decision_ids=' + ids.join(','), { cache: 'no-store' });
   if (!response.ok) throw new Error('Saved read markers are unavailable. Decision records remain separate.');
-  return response.json();
+  const body: unknown = await response.json();
+  if (!body || typeof body !== 'object' || !('items' in body) || !Array.isArray(body.items) ||
+      body.items.length > ids.length || !body.items.every(isReceipt) ||
+      body.items.some((item) => !ids.includes(item.decision_id)) ||
+      new Set(body.items.map((item) => item.decision_id)).size !== body.items.length) {
+    throw new Error('Saved read markers are unavailable. Decision records remain separate.');
+  }
+  return { items: body.items };
 }
 
 async function saveReceipt(input: { decision_id: number; source_version: string }): Promise<Receipt> {
@@ -26,7 +42,12 @@ async function saveReceipt(input: { decision_id: number; source_version: string 
     const body = await response.json().catch(() => null);
     throw new Error(typeof body?.error === 'string' ? body.error : 'Read marker save is unconfirmed. Refresh before retrying.');
   }
-  return response.json();
+  const body: unknown = await response.json();
+  if (!isReceipt(body) || body.decision_id !== input.decision_id ||
+      body.source_version !== input.source_version || body.read_at === null) {
+    throw new Error('Read marker save is unconfirmed. Refresh before retrying.');
+  }
+  return body;
 }
 
 /** Saved decisions only. Read receipts never grant approval or execution. */
@@ -101,7 +122,7 @@ export function NotificationInbox({ devBypass = false }: { devBypass?: boolean }
   function stateFor(id: number) {
     const expected = readyVersions?.find((item) => item.decision_id === id);
     const saved = receipts.data?.items.find((item) => item.decision_id === id);
-    const ready = !devBypass && !versionError && !receipts.isError && !receipts.isFetching &&
+    const ready = !devBypass && !query.isError && !query.isFetching && !versionError && !receipts.isError && !receipts.isFetching &&
       Boolean(expected && saved && expected.source_version === saved.source_version);
     return { expected, ready, read: ready && Boolean(saved?.read_at) };
   }

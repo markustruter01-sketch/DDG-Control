@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import {
   getListDecisionsQueryKey,
@@ -51,6 +51,7 @@ export function DecisionsPage() {
     version: 0,
   }));
   const [focusNotice, setFocusNotice] = useState<string | null>(null);
+  const focusedRequest = useRef<number | null>(null);
   useEffect(() => {
     function requestFocus(event: Event) {
       const requested = event instanceof CustomEvent && typeof event.detail === 'number'
@@ -71,7 +72,8 @@ export function DecisionsPage() {
     };
   }, []);
   useEffect(() => {
-    if (!focusRequest.id || projectFilter !== 'all' || pendingQuery.isLoading || historyLoading) return;
+    if (!focusRequest.id || projectFilter !== 'all' || pendingQuery.isLoading || historyLoading ||
+        focusedRequest.current === focusRequest.version) return;
     const target = document.getElementById(`decision-${focusRequest.id}`);
     if (target instanceof HTMLElement) {
       if (target instanceof HTMLDetailsElement) target.open = true;
@@ -79,6 +81,7 @@ export function DecisionsPage() {
       if (history instanceof HTMLDetailsElement) history.open = true;
       target.scrollIntoView({ behavior: 'auto', block: 'center' });
       (target.querySelector('summary') ?? target).focus();
+      focusedRequest.current = focusRequest.version;
       setFocusNotice(null);
     } else if (!pendingQuery.isError && !historyError) {
       setFocusNotice('This decision is no longer available in the current records. Nothing has been approved or restarted.');
