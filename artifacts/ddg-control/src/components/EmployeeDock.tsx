@@ -53,8 +53,9 @@ export function EmployeeDock() {
 
   function inspect(employee: DdgEmployeeRole) { setSelected(employee); setOpen(true); }
   function character(employee: DdgEmployeeRole, index: number) {
-    return <button type="button" className="employee-character" key={employee.id}
+    return <button type="button" className="employee-character" key={employee.id} data-employee={employee.id}
       style={{ animationDelay: `${index * -1.7}s` }}
+      title={`${employee.name} · ${employee.role}`}
       aria-label={`${employee.name}, ${employee.role}. View character details`}
       onClick={() => inspect(employee)}>
       <EmployeeSprite employeeId={employee.id} />
@@ -84,13 +85,16 @@ export function EmployeeDock() {
         <label><input type="checkbox" checked={preferences.hidden} onChange={(event) => setPreferences((value) => ({ ...value, hidden: event.target.checked }))} /> Hide bottom characters</label>
         <label><input type="checkbox" checked={preferences.quiet} onChange={(event) => setPreferences((value) => ({ ...value, quiet: event.target.checked }))} /> Quiet characters (no idle motion)</label>
       </div>
-      <div className="employee-tray" role="group" aria-label="All nine company characters">
+      <div className="employee-tray" role="group" aria-label="All nine company characters" data-quiet={preferences.quiet || !visible}>
         {DDG_EMPLOYEE_ROLES.map((employee) => <button key={employee.id} type="button"
-          aria-pressed={selected?.id === employee.id} onClick={() => setSelected(employee)}>
+          data-employee={employee.id} aria-pressed={selected?.id === employee.id} onClick={() => setSelected(employee)}>
           <EmployeeSprite employeeId={employee.id} /><span>{employee.name}<small>{employee.role}</small></span>
         </button>)}
       </div>
-      {selected && <p className="employee-detail" role="status"><strong>{selected.name}</strong> · {selected.role}. Company role; runtime identity and message connection are unverified.</p>}
+      {selected && <div className="employee-detail" role="status">
+        <EmployeeSprite employeeId={selected.id} />
+        <p><strong>{selected.name}</strong><br />{selected.role}<br /><small>Company character. Live work and messages are not connected.</small></p>
+      </div>}
     </section>}
     </>, document.body)}
   </div>;
