@@ -23,7 +23,8 @@ import {
   requestBodyRecord,
   zodErrorText,
 } from "./validation";
-import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
+import { hasWorkControl, isProjectWorkHeld, lockWorkControl } from "./work-management";
+import { requireRealOwnerSession } from "./auth";
 
 const router: IRouter = Router();
 
@@ -81,6 +82,16 @@ async function decideWithinTransaction(
   note: string | null,
   decidedVia: DecisionVia,
 ) {
+  // Match managed work's project-first lock order. Recheck the decision after
+  // acquiring that lock so an OFF/completion change cannot race approval.
+  const [hint] = await tx.select({ project_id: decisionsTable.project_id, slug: projectsTable.slug })
+    .from(decisionsTable).innerJoin(projectsTable, eq(decisionsTable.project_id, projectsTable.id))
+    .where(eq(decisionsTable.id, id)).limit(1);
+  if (!hint) return { kind: "not-found" as const };
+  const control = hasWorkControl(hint.slug) ? await lockWorkControl(tx, hint.slug) : null;
+  if (control && (!control.enabled || control.completed || isProjectWorkHeld(hint.slug))) {
+    return { kind: "paused" as const };
+  }
   const [decision] = await tx
     .select()
     .from(decisionsTable)
@@ -88,16 +99,11 @@ async function decideWithinTransaction(
     .limit(1)
     .for("update");
 
-  if (!decision) {
+  if (!decision || decision.project_id !== hint.project_id) {
     return { kind: "not-found" as const };
   }
   if (decision.status !== DECISION_STATUSES[0]) {
     return { kind: "not-pending" as const };
-  }
-  const [project] = await tx.select({ slug: projectsTable.slug })
-    .from(projectsTable).where(eq(projectsTable.id, decision.project_id)).limit(1);
-  if (!project || (hasWorkControl(project.slug) && !(await isProjectWorkEnabled(project.slug)))) {
-    return { kind: "paused" as const };
   }
 
   let taskId: number | null = null;
@@ -212,7 +218,7 @@ router.get("/decisions", async (req, res): Promise<void> => {
   res.json(rows.map(toApiDecision));
 });
 
-router.post("/decisions/:id/approve", async (req, res): Promise<void> => {
+router.post("/decisions/:id/approve", requireRealOwnerSession, async (req, res): Promise<void> => {
   const id = parseDecisionId(req.params.id);
   if (id === null || !ApproveDecisionParams.safeParse({ id }).success) {
     res.status(400).json({ error: "invalid decision id" });
@@ -247,7 +253,7 @@ router.post("/decisions/:id/approve", async (req, res): Promise<void> => {
   res.json(toApiDecision(outcome.decision));
 });
 
-router.post("/decisions/:id/decline", async (req, res): Promise<void> => {
+router.post("/decisions/:id/decline", requireRealOwnerSession, async (req, res): Promise<void> => {
   const id = parseDecisionId(req.params.id);
   if (id === null || !DeclineDecisionParams.safeParse({ id }).success) {
     res.status(400).json({ error: "invalid decision id" });
@@ -283,3 +289,4 @@ router.post("/decisions/:id/decline", async (req, res): Promise<void> => {
 });
 
 export default router;
+
