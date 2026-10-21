@@ -66,7 +66,7 @@ function TaskReferences({ titles, items, lookupState }: { titles?: string[]; ite
   if (lookupState === "unavailable") return <p className="cm-no-task">Task links cannot be checked while existing records are unavailable.</p>;
   const linked = items.filter((item) => item.project_key === "ddg-control-ai-stack" && titles.includes(item.title));
   if (!linked.length) return <p className="cm-no-task">No matching task is in the loaded records; this finding remains context, not a new task.</p>;
-  return <ul className="cm-task-links">{linked.map((task) => <li key={task.id}><Link href="/ai-stack#work-queue-heading">Existing task #{task.id}: {task.title} · {task.status.replaceAll("_", " ")}</Link></li>)}</ul>;
+  return <ul className="cm-task-links">{linked.map((task) => <li key={task.id}><Link href={`/ai-stack#work-item-${task.id}`}>Existing task #{task.id}: {task.title} · {task.status.replaceAll("_", " ")}</Link></li>)}</ul>;
 }
 
 function FindingCard({ finding, items, lookupState }: { finding: CompanyFinding; items: ExistingWorkItem[]; lookupState: TaskLookupState }) {

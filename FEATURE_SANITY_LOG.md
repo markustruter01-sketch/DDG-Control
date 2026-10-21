@@ -71,3 +71,9 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Fetch task references only when findings are expanded; no automatic focus retries. Keep the same API, task records, exact-title/project matching and existing cockpit styling. No agent calls or data writes.
 - Clear selected relationship when changing view/search so detail does not describe hidden prior context. Existing node buttons and source/date drill-down remain.
 - Type/build and rendered keyboard/failure acceptance are separate; no tests or runtime acceptance claimed from source edits.
+
+##21October — Exact work-record links
+- Need: Company Map finding links name a task ID but navigate to the generic queue heading. Existing task cards already have stable work-item anchors and an ancestor-reveal/focus helper; reuse them rather than create another task view or API.
+- Link to the exact saved card, reveal after task loading on initial navigation/hash/back-forward, and distinguish unavailable versus not-in-loaded-records. Never create a replacement, change approval state or start work.
+- Bound fragments to known headings or positive database task IDs. Handle each navigation once so background refresh does not steal focus. Existing company-board links and queue remain intact.
+- Source/compilation and rendered cross-route/keyboard/mobile acceptance remain separate; no tests or runtime writes are part of this change.
