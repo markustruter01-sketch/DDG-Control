@@ -1,0 +1,315 @@
+{
+  "person-njord": [
+    {
+      "id": "idle",
+      "label": "Idle",
+      "src": "employee-animations/njord-idle.webp",
+      "frames": 8,
+      "frameMs": 120
+    },
+    {
+      "id": "walk",
+      "label": "Walk",
+      "src": "employee-animations/njord-walk.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "storm-tide",
+      "label": "Storm Tide",
+      "src": "employee-animations/njord-storm-tide.webp",
+      "frames": 12,
+      "frameMs": 80
+    },
+    {
+      "id": "laptop",
+      "label": "Laptop",
+      "src": "employee-animations/njord-laptop.webp",
+      "frames": 10,
+      "frameMs": 100
+    },
+    {
+      "id": "phone",
+      "label": "Phone",
+      "src": "employee-animations/njord-phone.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "emotes",
+      "label": "Emotes",
+      "src": "employee-animations/njord-emotes.webp",
+      "frames": 9,
+      "frameMs": 240
+    },
+    {
+      "id": "high-five",
+      "label": "High five",
+      "src": "employee-animations/njord-high-five.webp",
+      "frames": 1,
+      "frameMs": 1200
+    },
+    {
+      "id": "splash-daedalus",
+      "label": "Splash Daedalus",
+      "src": "employee-animations/njord-splash-daedalus.webp",
+      "frames": 10,
+      "frameMs": 100
+    }
+  ],
+  "person-harald": [
+    {
+      "id": "idle",
+      "label": "Idle",
+      "src": "employee-animations/harald-idle.webp",
+      "frames": 8,
+      "frameMs": 120
+    },
+    {
+      "id": "walk",
+      "label": "Walk",
+      "src": "employee-animations/harald-walk.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "slam-book",
+      "label": "Slam Book",
+      "src": "employee-animations/harald-slam-book.webp",
+      "frames": 12,
+      "frameMs": 80
+    },
+    {
+      "id": "laptop",
+      "label": "Laptop",
+      "src": "employee-animations/harald-laptop.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "phone",
+      "label": "Phone",
+      "src": "employee-animations/harald-phone.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "discuss",
+      "label": "Discuss",
+      "src": "employee-animations/harald-discuss.webp",
+      "frames": 8,
+      "frameMs": 120
+    },
+    {
+      "id": "emotes",
+      "label": "Emotes",
+      "src": "employee-animations/harald-emotes.webp",
+      "frames": 8,
+      "frameMs": 300
+    }
+  ],
+  "person-daedalus": [
+    {
+      "id": "idle",
+      "label": "Idle",
+      "src": "employee-animations/daedalus-idle.webp",
+      "frames": 8,
+      "frameMs": 120
+    },
+    {
+      "id": "walk",
+      "label": "Walk",
+      "src": "employee-animations/daedalus-walk.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "gadget",
+      "label": "Gadget",
+      "src": "employee-animations/daedalus-gadget.webp",
+      "frames": 10,
+      "frameMs": 90
+    },
+    {
+      "id": "laptop",
+      "label": "Laptop",
+      "src": "employee-animations/daedalus-laptop.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "phone",
+      "label": "Phone",
+      "src": "employee-animations/daedalus-phone.webp",
+      "frames": 9,
+      "frameMs": 100
+    },
+    {
+      "id": "drone-swarm",
+      "label": "Drone Swarm",
+      "src": "employee-animations/daedalus-drone-swarm.webp",
+      "frames": 12,
+      "frameMs": 80
+    },
+    {
+      "id": "emotes",
+      "label": "Emotes",
+      "src": "employee-animations/daedalus-emotes.webp",
+      "frames": 7,
+      "frameMs": 280
+    }
+  ],
+  "person-mimir": [
+    {
+      "id": "idle",
+      "label": "Idle",
+      "src": "employee-animations/mimir-idle.webp",
+      "frames": 8,
+      "frameMs": 120
+    },
+    {
+      "id": "walk",
+      "label": "Walk",
+      "src": "employee-animations/mimir-walk.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "data-spell",
+      "label": "Data Spell",
+      "src": "employee-animations/mimir-data-spell.webp",
+      "frames": 10,
+      "frameMs": 80
+    },
+    {
+      "id": "laptop",
+      "label": "Laptop",
+      "src": "employee-animations/mimir-laptop.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "phone",
+      "label": "Phone",
+      "src": "employee-animations/mimir-phone.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "discuss-daedalus",
+      "label": "Discuss Daedalus",
+      "src": "employee-animations/mimir-discuss-daedalus.webp",
+      "frames": 11,
+      "frameMs": 100
+    },
+    {
+      "id": "emotes",
+      "label": "Emotes",
+      "src": "employee-animations/mimir-emotes.webp",
+      "frames": 9,
+      "frameMs": 280
+    }
+  ],
+  "person-plutus": [
+    {
+      "id": "idle",
+      "label": "Idle",
+      "src": "employee-animations/plutus-idle.webp",
+      "frames": 8,
+      "frameMs": 120
+    },
+    {
+      "id": "walk",
+      "label": "Walk",
+      "src": "employee-animations/plutus-walk.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "finance-spell",
+      "label": "Finance Spell",
+      "src": "employee-animations/plutus-finance-spell.webp",
+      "frames": 9,
+      "frameMs": 80
+    },
+    {
+      "id": "laptop",
+      "label": "Laptop",
+      "src": "employee-animations/plutus-laptop.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "phone",
+      "label": "Phone",
+      "src": "employee-animations/plutus-phone.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "count-money",
+      "label": "Count Money",
+      "src": "employee-animations/plutus-count-money.webp",
+      "frames": 10,
+      "frameMs": 80
+    },
+    {
+      "id": "emotes",
+      "label": "Emotes",
+      "src": "employee-animations/plutus-emotes.webp",
+      "frames": 8,
+      "frameMs": 280
+    },
+    {
+      "id": "high-five",
+      "label": "High five",
+      "src": "employee-animations/plutus-high-five.webp",
+      "frames": 1,
+      "frameMs": 1200
+    }
+  ],
+  "person-freya": [
+    {
+      "id": "idle",
+      "label": "Idle",
+      "src": "employee-animations/freya-idle.webp",
+      "frames": 8,
+      "frameMs": 120
+    },
+    {
+      "id": "walk",
+      "label": "Walk",
+      "src": "employee-animations/freya-walk.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "raven-storm",
+      "label": "Raven Storm",
+      "src": "employee-animations/freya-raven-storm.webp",
+      "frames": 12,
+      "frameMs": 80
+    },
+    {
+      "id": "laptop",
+      "label": "Laptop",
+      "src": "employee-animations/freya-laptop.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "phone",
+      "label": "Phone",
+      "src": "employee-animations/freya-phone.webp",
+      "frames": 8,
+      "frameMs": 100
+    },
+    {
+      "id": "emotes",
+      "label": "Emotes",
+      "src": "employee-animations/freya-emotes.webp",
+      "frames": 6,
+      "frameMs": 280
+    }
+  ]
+}
