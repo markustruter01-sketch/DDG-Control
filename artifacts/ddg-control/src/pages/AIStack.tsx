@@ -137,8 +137,8 @@ async function saveDispatchConfig(data:Record<string,unknown>) {
   if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Could not save dispatch readiness");
   return r.json();
 }
-async function approveOutcome(id:number) {
-  const r=await fetch(`/api/work-outcomes/${id}/approve`,{method:"POST"});
+async function approveOutcome(input:{id:number;expected_version:number}) {
+  const r=await fetch(`/api/work-outcomes/${input.id}/approve`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({expected_version:input.expected_version})});
   if(!r.ok) throw new Error((await r.json().catch(()=>null))?.error??"Outcome approval failed");
   return r.json();
 }
@@ -1194,10 +1194,12 @@ export function AIStackPage() {
               </details>
               <p>{readinessQuery.data?.finance_hold}</p><p>{readinessQuery.data?.local_limits}</p>
             </>}
-            <h3>DDG Control outcome · owner approval pending</h3>
+            <h3>DDG Control outcome · review and approval</h3>
+            <button className="work-toggle" type="button" disabled={outcomesQuery.isFetching || outcomeApproveMutation.isPending} onClick={async()=>{const result=await outcomesQuery.refetch();if(!result.isError)outcomeApproveMutation.reset();}}>Refresh outcomes for review</button>
+            {outcomeApproveMutation.isError && <p role="alert">{outcomeApproveMutation.error.message} Refresh outcomes, then review the current version before trying again.</p>}
             {outcomesQuery.isError ? <p role="alert">Could not load the saved outcome or its audit history.</p> : (outcomesQuery.data?.outcomes ?? []).filter(o=>o.project_key==="ddg-control-ai-stack").map(outcome=><div key={outcome.id}>
-              <strong>{outcome.title} · {outcome.status.replaceAll("_"," ")}</strong><p>{outcome.description}</p>
-              {outcome.status==="pending_approval"&&<button className="work-toggle" type="button" disabled={devBypass||controlsQuery.data?.controls.find(c=>c.project_key===outcome.project_key)?.enabled!==true||outcomeApproveMutation.isPending} onClick={()=>outcomeApproveMutation.mutate(outcome.id)}>Approve outcome</button>}
+              <strong>{outcome.title} · v{outcome.version} · {outcome.status.replaceAll("_"," ")}</strong><p>{outcome.description}</p>
+              {outcome.status==="pending_approval"&&<button className="work-toggle" type="button" disabled={devBypass||outcomesQuery.isFetching||outcomeApproveMutation.isError||controlsQuery.data?.controls.find(c=>c.project_key===outcome.project_key)?.enabled!==true||outcomeApproveMutation.isPending} onClick={()=>outcomeApproveMutation.mutate({id:outcome.id,expected_version:outcome.version})}>Approve outcome v{outcome.version}</button>}
               <ol>{outcome.gates.map(gate=><li key={gate.key}><b>{gate.title}</b> · {gate.key}<ul>{gate.acceptance.map((check,i)=><li key={i}>{check}</li>)}</ul></li>)}</ol>
             </div>)}
           </section>

@@ -175,7 +175,12 @@ router.patch("/work-dispatch-config", requireRealOwnerSession, async (req, res):
 
 router.post("/work-outcomes/:id/approve", requireRealOwnerSession, async (req, res): Promise<void> => {
   const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
-  if (!Number.isSafeInteger(id) || id < 1) { res.status(400).json({ error: "Invalid outcome." }); return; }
+  const b = req.body;
+  if (!Number.isSafeInteger(id) || id < 1 || !b || typeof b !== "object" || Array.isArray(b) ||
+      Object.keys(b).some(key => key !== "expected_version") ||
+      !Number.isSafeInteger(b.expected_version) || b.expected_version < 1) {
+    res.status(400).json({ error: "Provide the outcome ID and the version reviewed before approving." }); return;
+  }
   const result = await db.transaction(async (tx) => {
     const [hint] = await tx.select({ project_key: managedWorkOutcomesTable.project_key }).from(managedWorkOutcomesTable)
       .where(eq(managedWorkOutcomesTable.id, id)).limit(1);
@@ -184,15 +189,16 @@ router.post("/work-outcomes/:id/approve", requireRealOwnerSession, async (req, r
     if ((hint.project_key === "finance" && FINANCE_REVIEW_REQUIRED) || !control.enabled || control.completed) return { kind: "off" as const };
     const [outcome] = await tx.select().from(managedWorkOutcomesTable).where(eq(managedWorkOutcomesTable.id, id)).for("update").limit(1);
     if (!outcome) return { kind: "missing" as const };
+    if (outcome.project_key !== hint.project_key || outcome.version !== b.expected_version) return { kind: "stale" as const };
     if (outcome.status === "approved") return { kind: "ok" as const, outcome };
     if (outcome.status !== "pending_approval") return { kind: "state" as const };
     const [saved] = await tx.update(managedWorkOutcomesTable).set({ status: "approved", updated_at: new Date() }).where(eq(managedWorkOutcomesTable.id, id)).returning();
-    await tx.insert(managedWorkOutcomeEventsTable).values({ outcome_id: id, project_key: outcome.project_key, actor: "Markus", event_type: "outcome_approved", details: { version: outcome.version } });
+    await tx.insert(managedWorkOutcomeEventsTable).values({ outcome_id: id, project_key: outcome.project_key, actor: "Markus", event_type: "outcome_approved", details: { version: outcome.version, reviewed_version: b.expected_version } });
     return { kind: "ok" as const, outcome: saved };
   });
   if (result.kind !== "ok") {
     res.status(result.kind === "missing" ? 404 : result.kind === "off" ? 423 : 409).json({
-      error: result.kind === "missing" ? "Outcome not found." : result.kind === "off" ? "Project work is OFF, held or complete." : "Only pending outcomes can be approved.",
+      error: result.kind === "missing" ? "Outcome not found." : result.kind === "off" ? "Project work is OFF, held or complete." : result.kind === "stale" ? "The outcome changed. Refresh and review its current version before approving." : "Only pending outcomes can be approved.",
     }); return;
   }
   res.json(result.outcome);
