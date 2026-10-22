@@ -10,6 +10,17 @@ function timeLabel(value: string) {
   return Number.isNaN(date.getTime()) ? 'Time unknown' : date.toLocaleString('en-AU', { timeZone: 'Australia/Brisbane', dateStyle: 'medium', timeStyle: 'short' });
 }
 
+const LINK_LABELS = { plan_version:'Plan version', outcome_id:'Outcome ID', outcome_version:'Outcome version', reviewed_version:'Reviewed version', dispatch_id:'Dispatch ID', checkpoint_id:'Checkpoint ID' } as const;
+function recordedLinks(details: unknown): Partial<Record<keyof typeof LINK_LABELS, number>> {
+  const links: Partial<Record<keyof typeof LINK_LABELS, number>> = {};
+  if (!details || typeof details !== 'object' || Array.isArray(details)) return links;
+  for (const key of Object.keys(LINK_LABELS) as Array<keyof typeof LINK_LABELS>) {
+    const value = (details as Record<string,unknown>)[key];
+    if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) links[key] = value;
+  }
+  return links;
+}
+
 export function WorkLedger({ data, loading, failed, onRetry }: Props) {
   const [project, setProject] = useState('all');
   const [task, setTask] = useState('all');
@@ -30,14 +41,18 @@ export function WorkLedger({ data, loading, failed, onRetry }: Props) {
   function exportSnapshot() {
     if (!data || loading || failed || invalidSelection) return;
     const snapshot = {
-      format_version: 1,
+      format_version: 2,
       exported_at: new Date().toISOString(),
       scope: 'Loaded DDG Control work records only; not full company or external-provider history.',
       filters: { project, task },
       tasks: selectedTasks.map(({ id, project_key, repository, branch, commit_ref }) => ({ id, project_key, repository, branch, commit_ref })),
-      events: events.map(({ id, work_item_id, actor, event_type, created_at }) => ({ id, work_item_id, actor, event_type, created_at })),
+      events: events.map(({ id, work_item_id, actor, event_type, created_at, details }) => {
+        const links = recordedLinks(details);
+        return { id, work_item_id, actor, event_type, created_at, recorded_links:links,
+          dispatch_link: links.dispatch_id == null ? 'not_recorded' : dispatches.some(run=>run.id===links.dispatch_id && run.work_item_id===work_item_id) ? 'matched_loaded_run_and_task' : 'matching_run_not_in_loaded_selection' };
+      }),
       dispatches: dispatches.map(({ id, work_item_id, provider, model_id, agent_id, run_id, provider_status, status, branch, started_at }) => ({ id, work_item_id, provider, model_id, agent_id, run_id, provider_status, status, branch, started_at })),
-      limitations: ['No raw event payloads, prompts, credentials or task free text included.', 'Run model identity is not automatically assigned to surrounding events.', 'This export is not a signed or independently tamper-verified audit.', 'Loaded events or dispatches without matching loaded task metadata are excluded; this export does not establish complete history.'],
+      limitations: ['Only allowlisted positive integer linkage/version fields are included from event details; no raw payloads, prompts, credentials or task free text.', 'Recorded links are not proof of complete or independently verified history; unmatched links are not inferred.', 'Run model identity is not automatically assigned to surrounding events.', 'This export is not a signed or independently tamper-verified audit.', 'Loaded events or dispatches without matching loaded task metadata are excluded; this export does not establish complete history.'],
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' }));
     const link = document.createElement('a');
@@ -61,13 +76,19 @@ export function WorkLedger({ data, loading, failed, onRetry }: Props) {
         <h3>Task events</h3>
         {events.length === 0 ? <p className="ai-stack-help">No matching events in the loaded selection. Missing task metadata and unconnected systems are not covered.</p> : <ol className="ledger-events">{events.slice(0,limit).map((event) => {
           const item = tasks.find((candidate) => candidate.id === event.work_item_id);
-          return <li key={event.id}><div><strong>{event.event_type.replaceAll('_',' ')}</strong><time dateTime={event.created_at}>{timeLabel(event.created_at)} · Brisbane</time></div><p>Task #{event.work_item_id} · {item?.project_key ?? 'Project unknown'} · Actor: {event.actor || 'Unknown'}</p><small>Event #{event.id} · Model/reason attribution not established by this event view.</small></li>;
+          const links = recordedLinks(event.details);
+          const entries = Object.entries(links) as Array<[keyof typeof LINK_LABELS,number]>;
+          const matchedRun = links.dispatch_id != null && dispatches.some(run=>run.id===links.dispatch_id && run.work_item_id===event.work_item_id);
+          return <li key={event.id}><div><strong>{event.event_type.replaceAll('_',' ')}</strong><time dateTime={event.created_at}>{timeLabel(event.created_at)} · Brisbane</time></div><p>Task #{event.work_item_id} · {item?.project_key ?? 'Project unknown'} · Actor: {event.actor || 'Unknown'}</p>
+            <p className="ai-stack-help">Recorded links: {entries.length ? entries.map(([key,value])=>`${LINK_LABELS[key]} ${value}`).join(' · ') : 'Unknown — no supported links recorded.'}</p>
+            {links.dispatch_id != null && <p className="ai-stack-help">{matchedRun ? 'Dispatch ID matches a loaded run for this task.' : 'Matching dispatch/task metadata is not in this loaded selection. No run or model is inferred.'}</p>}
+            <small>Event #{event.id} · Model/reason attribution not established by this event view.</small></li>;
         })}</ol>}
         {events.length > limit && <button type="button" className="work-toggle" onClick={() => setLimit((value) => value + 50)}>Show 50 more</button>}
         <details className="ledger-runs"><summary>Provider/run records · {dispatches.length}</summary>{dispatches.length === 0 ? <p>No saved dispatches. This does not prove no external work occurred.</p> : dispatches.map((run) => <article key={run.id}>
           <h4>Dispatch #{run.id} · task #{run.work_item_id}</h4><p>{run.provider || 'Provider unknown'} / {run.model_id || 'Model unknown'} · {run.status}</p><p>Agent {run.agent_id || 'Unknown'} · run {run.run_id || 'Unknown'}</p><p>Branch {run.branch || 'Unknown'} · provider state {run.provider_status || 'Unknown'}</p><time dateTime={run.started_at}>{timeLabel(run.started_at)} · Brisbane</time>
         </article>)}</details>
-        <p className="ai-stack-help">Export contains selected identifiers and metadata, not raw event payloads or task text. No record editing is offered. Storage immutability, complete reasoning provenance and external activity coverage require separate verification.</p>
+        <p className="ai-stack-help">Export contains selected identifiers and allowlisted recorded version/link numbers, not raw event payloads or task text. No record editing is offered. Storage immutability, complete reasoning provenance and external activity coverage require separate verification.</p>
       </>}
     </details>
   );
