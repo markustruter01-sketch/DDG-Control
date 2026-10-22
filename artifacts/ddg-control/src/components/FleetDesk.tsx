@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 type FleetProject = { key: string; label: string; enabled: boolean; financeHeld: boolean; completed: boolean | null };
 type FleetTask = {
@@ -81,15 +81,29 @@ export type FleetDeskProps = {
     comment: string;
   }) => Promise<void>;
   onProposeNextWork: (report: SavedReport) => void;
+  onRefresh: () => Promise<void>;
   loading: boolean;
   error: string | null;
   canAnswer: boolean;
 };
 
 function requestId() {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `fleet-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  if (typeof crypto === "undefined" || typeof crypto.getRandomValues !== "function") {
+    throw new Error("Secure request IDs are unavailable. Use a secure browser connection before saving.");
+  }
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 15) | 64;
+  bytes[8] = (bytes[8] & 63) | 128;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+}
+
+type SaveAttempt = { payload: string; id: string };
+function retryId(attempt: { current: SaveAttempt | null }, input: unknown) {
+  const payload = JSON.stringify(input);
+  if (!attempt.current || attempt.current.payload !== payload) attempt.current = { payload, id: requestId() };
+  return attempt.current.id;
 }
 
 function displayDate(value: string) {
@@ -129,6 +143,7 @@ export default function FleetDesk({
   onCreateQuestion,
   onAnswerQuestion,
   onProposeNextWork,
+  onRefresh,
   loading,
   error,
   canAnswer,
@@ -145,6 +160,8 @@ export default function FleetDesk({
   const [feedback, setFeedback] = useState("");
   const [proposalProject, setProposalProject] = useState("");
   const [proposalReportIndex, setProposalReportIndex] = useState("");
+  const messageAttempt = useRef<SaveAttempt | null>(null);
+  const questionAttempt = useRef<SaveAttempt | null>(null);
 
   const selectedProject = projects.find((project) => project.key === selectedProjectKey);
   const availableTasks = useMemo(
@@ -187,15 +204,16 @@ export default function FleetDesk({
     setBusy("message");
     setFeedback("");
     try {
-      await onSaveMessage({
+      const input = {
         project_key: selectedProjectKey,
         work_item_id: selectedTask?.id ?? null,
         plan_version: selectedTask?.plan_version ?? null,
         outcome_version: selectedTask?.outcome_version ?? null,
         body,
         kind,
-        client_request_id: requestId(),
-      });
+      };
+      await onSaveMessage({ ...input, client_request_id: retryId(messageAttempt, input) });
+      messageAttempt.current = null;
       setMessage("");
       setMessageContext("");
       setFeedback(kind === "draft" ? "Draft saved." : "Dashboard note saved.");
@@ -213,7 +231,7 @@ export default function FleetDesk({
     setBusy("question");
     setFeedback("");
     try {
-      await onCreateQuestion({
+      const input = {
         project_key: selectedProjectKey,
         work_item_id: selectedTask?.id ?? null,
         plan_version: selectedTask?.plan_version ?? null,
@@ -222,8 +240,9 @@ export default function FleetDesk({
         options,
         recommendation: recommendation.trim(),
         blocks_work: blocksWork,
-        request_id: requestId(),
-      });
+      };
+      await onCreateQuestion({ ...input, request_id: retryId(questionAttempt, input) });
+      questionAttempt.current = null;
       setQuestionText("");
       setQuestionOptions("");
       setRecommendation("");
@@ -258,6 +277,18 @@ export default function FleetDesk({
     } finally {
       setBusy("");
     }
+  }
+
+  async function refreshConversation() {
+    if (busy || !selectedProjectKey) return;
+    setBusy("refresh");
+    setFeedback("");
+    try {
+      await onRefresh();
+      setFeedback("Conversation refreshed. Check saved history before retrying an unconfirmed save. Unsaved text has been kept.");
+    } catch (cause) {
+      setFeedback(cause instanceof Error ? cause.message : "Could not refresh conversation. Unsaved text has been kept.");
+    } finally { setBusy(""); }
   }
 
   return (
@@ -431,6 +462,10 @@ export default function FleetDesk({
                 </div>
               </form>
                 </details>
+              <button type="button" className="fleet-button secondary" disabled={!!busy || !selectedProjectKey} onClick={() => void refreshConversation()}>
+                {busy === "refresh" ? "Refreshing…" : "Refresh conversation"}
+              </button>
+              <p className="fleet-copy">If a save is unconfirmed, refresh and check saved history before retrying. Keep this page open until the save is confirmed; leaving discards unsaved text.</p>
               {feedback && <p className={`fleet-status${error ? " error" : ""}`} role="status">{feedback}</p>}
               {orderedMessages.length > 0 ? (
                 <>

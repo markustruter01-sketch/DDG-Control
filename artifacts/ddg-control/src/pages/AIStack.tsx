@@ -804,6 +804,7 @@ export function AIStackPage() {
           onSelectTask={setFleetTaskId}
           onSaveMessage={async(input)=>{await saveFleetMessage(input);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
           onCreateQuestion={async(input)=>{await createFleetQuestion(input as unknown as Record<string,unknown>);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
+          onRefresh={async()=>{const result=await fleetThreadQuery.refetch();if(result.isError)throw new Error("Conversation could not be refreshed. Unsaved text has been kept.");}}
           onAnswerQuestion={async(input)=>{await answerFleetQuestion(input);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
           onProposeNextWork={(report)=>{const project=managedAreas.find((area)=>area.key===report.project_slug);if(!project)return;setWorkFields((current)=>({...current,project_key:project.key,title:(report.next_action||report.summary).slice(0,160),objective:report.summary,outcome:report.next_action,checklist:"",acceptance_checks:"",repository:"",target_branch:""}));window.setTimeout(()=>document.getElementById("work-item-creator")?.scrollIntoView({behavior:"smooth",block:"center"}),0);}}
           loading={fleetThreadQuery.isLoading}
