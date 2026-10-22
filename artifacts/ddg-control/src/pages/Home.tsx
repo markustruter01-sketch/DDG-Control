@@ -1,6 +1,7 @@
 import { Link } from 'wouter';
 import { useEffect, useId, useRef } from 'react';
 import { CompanyCockpit, VillageMotion } from '@/components/CompanyCockpit';
+import { VillageArtwork } from '@/components/VillageArtwork';
 import {
   getGetFinanceSummaryQueryKey,
   getGetCattleDogCoffeeProfitQueryKey,
@@ -172,14 +173,11 @@ function CompanyAtlas({ projects, paused = true }: { projects: Project[]; paused
     <section className="atlas-map-panel atlas-village-panel" aria-labelledby={titleId}>
       <div className="atlas-map-heading"><div><p className="home-section-kicker">People · systems · projects</p><h2 id={titleId}>Company Atlas</h2></div><Link href="/organisation">Explore connections →</Link></div>
       <div className="atlas-map-legend"><span>Village paths · company structure</span><span>No live transfer feed</span></div>
-      <div className="atlas-map-canvas atlas-village-canvas" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}atlas-viking-village-v2.webp")` }}>
+      <div className="atlas-map-canvas atlas-village-canvas" role="group" aria-label="Company village: select a business building">
+        <VillageArtwork />
         <VillageMotion paused={paused} />
-        <img className="atlas-village-flag" src={`${import.meta.env.BASE_URL}ddg-creative-glitch-original.png`} alt="DDG flag on the great hall" />
-        {buildings.map((building) => <details key={building.slug} className={`atlas-node atlas-building atlas-node-${building.position}`}>
-          <summary><span className="atlas-building-hit" aria-hidden="true" /><strong>{building.label}</strong><small>{building.note}</small></summary>
-          <span className="atlas-node-detail"><Link href={destination(building.slug)}>Open {building.label} →</Link></span>
-        </details>)}
-        <Link className="atlas-node atlas-building atlas-node-core" href="/ai-stack"><span className="atlas-building-hit" aria-hidden="true" /><strong>DDG great hall</strong><small>DDG Control · company hub</small></Link>
+        {buildings.map((building) => <Link key={building.slug} className={`atlas-node atlas-building atlas-node-${building.position}`} href={destination(building.slug)} aria-label={`Open ${building.label}. ${building.note}`} title={building.note}><span className="atlas-building-hit" aria-hidden="true" /></Link>)}
+        <Link className="atlas-node atlas-building atlas-node-core" href="/ai-stack" aria-label="Open DDG Control great hall" title="DDG Control · company hub"><span className="atlas-building-hit" aria-hidden="true" /></Link>
       </div>
       <nav className="atlas-village-directory" aria-label="Village buildings">
         <Link href="/ai-stack"><strong>DDG great hall</strong><small>DDG Control · company hub</small></Link>
