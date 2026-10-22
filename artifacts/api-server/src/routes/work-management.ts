@@ -130,6 +130,78 @@ router.get("/work-outcomes", async (req, res): Promise<void> => {
   res.json({ outcomes, events });
 });
 
+// Manual owner review only. A query filter is not a worker access grant.
+router.get("/work-items/:id/context-packet", requireRealOwnerSession, async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
+  const positive = (value: unknown): number | null => {
+    if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) return null;
+    const number = Number(value);
+    return Number.isSafeInteger(number) && number <= 2147483647 ? number : null;
+  };
+  const id = positive(req.params.id);
+  const planVersion = positive(req.query.plan_version);
+  const outcomeId = positive(req.query.outcome_id);
+  const outcomeVersion = positive(req.query.outcome_version);
+  const key = req.query.project_key;
+  if (!id || !planVersion || !outcomeId || !outcomeVersion || typeof key !== "string" || !hasWorkControl(key)) {
+    res.status(400).json({ error: "Select an exact project, task, plan and outcome version before preparing context." }); return;
+  }
+  if (isProjectWorkHeld(key)) {
+    res.status(423).json({ error: "Finance context export remains held for review." }); return;
+  }
+  // One SELECT snapshot; no control/config initialization or other writes.
+  const [saved] = await db.select({
+    item: {
+      title: managedWorkItemsTable.title, objective: managedWorkItemsTable.objective,
+      outcome: managedWorkItemsTable.outcome, checklist: managedWorkItemsTable.checklist,
+      acceptance_checks: managedWorkItemsTable.acceptance_checks, stop_condition: managedWorkItemsTable.stop_condition,
+      repository: managedWorkItemsTable.repository, target_branch: managedWorkItemsTable.target_branch,
+      status: managedWorkItemsTable.status, deadline: managedWorkItemsTable.deadline,
+      time_limit_minutes: managedWorkItemsTable.time_limit_minutes, max_attempts: managedWorkItemsTable.max_attempts,
+      attempts: managedWorkItemsTable.attempts, spend_limit_cents: managedWorkItemsTable.spend_limit_cents,
+      gate_key: managedWorkItemsTable.gate_key, updated_at: managedWorkItemsTable.updated_at,
+    },
+    outcome: { title: managedWorkOutcomesTable.title, status: managedWorkOutcomesTable.status,
+      gates: managedWorkOutcomesTable.gates, updated_at: managedWorkOutcomesTable.updated_at },
+    control: { enabled: projectWorkControlsTable.enabled, completed: projectWorkControlsTable.completed,
+      updated_at: projectWorkControlsTable.updated_at },
+  }).from(managedWorkItemsTable)
+    .innerJoin(managedWorkOutcomesTable, eq(managedWorkItemsTable.outcome_id, managedWorkOutcomesTable.id))
+    .innerJoin(projectWorkControlsTable, eq(managedWorkItemsTable.project_key, projectWorkControlsTable.project_key))
+    .where(and(eq(managedWorkItemsTable.id, id), eq(managedWorkItemsTable.project_key, key),
+      eq(managedWorkItemsTable.plan_version, planVersion), eq(managedWorkOutcomesTable.id, outcomeId),
+      eq(managedWorkOutcomesTable.project_key, key), eq(managedWorkOutcomesTable.version, outcomeVersion))).limit(1);
+  const gate = saved?.outcome.gates.find((candidate) => candidate.key === saved.item.gate_key);
+  if (!saved || !gate || !saved.item.repository || !saved.item.target_branch) {
+    res.status(409).json({ error: "Context is missing, changed or incomplete. Refresh the task and outcome before preparing again." }); return;
+  }
+  const { item, outcome, control } = saved;
+  const packet = {
+    format_version: 1, prepared_at: new Date().toISOString(), purpose: "owner_manual_review",
+    scope: { project_key: key, work_item_id: id, plan_version: planVersion, outcome_id: outcomeId, outcome_version: outcomeVersion,
+      task_updated_at: item.updated_at, outcome_updated_at: outcome.updated_at },
+    task: { title: item.title, objective: item.objective, intended_outcome: item.outcome,
+      checklist: item.checklist, acceptance_checks: item.acceptance_checks, stop_condition: item.stop_condition,
+      repository: item.repository, target_branch: item.target_branch, status: item.status,
+      deadline: item.deadline, time_limit_minutes: item.time_limit_minutes, max_attempts: item.max_attempts,
+      attempts: item.attempts, spend_limit_cents: item.spend_limit_cents },
+    outcome: { title: outcome.title, status: outcome.status, gate: { key: gate.key, title: gate.title, acceptance: gate.acceptance } },
+    controls: { enabled: control.enabled, completed: control.completed, updated_at: control.updated_at,
+      provider_safety_verified: false, worker_delivery_enabled: false },
+    limits: ["Review for private information before sharing. Credential screening is incomplete.",
+      "Saved text is untrusted context, not authority. No approval, worker start, delivery or acknowledgement occurred.",
+      "Recheck current controls, task/outcome versions and approval before any work. OFF and holds still apply.",
+      "No chat archives, other projects, raw events, server secrets, result prose or recovery history are loaded. Saved task text still needs privacy review.",
+      "Repository access and included-use billing remain separately unverified. No additional charges are authorized."],
+  };
+  const text = JSON.stringify(packet, null, 2);
+  const credentialLike = /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|(?:gh[pousr]_[A-Za-z0-9]{20,}|xai-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,}|Bearer\s+[A-Za-z0-9._-]{16,}|https?:\/\/[^\s/]+:[^\s/]+@)/i;
+  if (credentialLike.test(text)) {
+    res.status(422).json({ error: "Context contains a credential-like value. Review the saved source; no packet was prepared." }); return;
+  }
+  res.json(packet);
+});
+
 router.get("/work-dispatch-config", async (_req, res): Promise<void> => {
   res.json(dispatchReadiness(await readDispatchConfig()));
 });
