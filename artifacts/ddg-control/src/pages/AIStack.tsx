@@ -4,6 +4,7 @@ import { DevAuthBypassContext, Header } from "@/components/header";
 import FleetDesk from "@/components/FleetDesk";
 import { DeliveryPlan } from "@/components/DeliveryPlan";
 import { WorkLedger } from "@/components/WorkLedger";
+import { TaskContextPacket } from "@/components/TaskContextPacket";
 import { RejectedPlanRevision } from "@/components/RejectedPlanRevision";
 import { writeHandoverPacket, type HandoverPacketRecord } from "@/lib/handover-packet";
 import { Link } from "wouter";
@@ -1250,6 +1251,9 @@ export function AIStackPage() {
             {(workItemsQuery.data?.dispatches??[]).filter(d=>d.work_item_id===item.id).map(d=><p key={d.id}>Dispatch #{d.id} · {d.provider}/{d.model_id||"model unknown"} · {d.status} ({d.provider_status||"provider status unknown"}) · agent {d.agent_id||"Unknown"} · run {d.run_id||"Unknown"} · {d.started_at}{d.error_summary?` · ${d.error_summary}`:""}</p>)}
             <p className="ai-stack-help">Task status is an owner record. Closing it does not confirm an external run has stopped.</p>
             <p><b>Dispatch:</b> {(workItemsQuery.data?.dispatches??[]).some(d=>d.work_item_id===item.id) ? item.dispatch_state : "Not dispatched · see activation blockers above."}</p>
+            <TaskContextPacket id={item.id} projectKey={item.project_key} planVersion={item.plan_version ?? 1}
+              outcomeId={item.outcome_id} outcomeVersion={outcomesQuery.data?.outcomes.find((outcome) => outcome.id === item.outcome_id)?.version ?? null}
+              disabled={devBypass || item.project_key === "finance" || workItemsQuery.isFetching || outcomesQuery.isFetching || outcomesQuery.isError} />
             <RejectedPlanRevision
               item={item}
               outcome={outcomesQuery.isError ? undefined : outcomesQuery.data?.outcomes.find((outcome) => outcome.id === item.outcome_id)}

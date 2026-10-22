@@ -95,17 +95,20 @@ router.get("/fleet/thread", async (req, res): Promise<void> => {
 
 router.post("/fleet/messages", async (req, res): Promise<void> => {
   const body = req.body;
-  if (!body || !uuidPattern.test(body.client_request_id ?? "") || !["draft", "note"].includes(body.kind) ||
+  if (!body || typeof body.client_request_id !== "string" || !uuidPattern.test(body.client_request_id) || !["draft", "note"].includes(body.kind) ||
       typeof body.body !== "string" || !body.body.trim() || body.body.length > 5000 || secretPattern.test(body.body)) {
     res.status(400).json({ error: "Message is invalid or contains a credential-like string." }); return;
   }
   const scope = await resolveScope(body.project_key, body.work_item_id ?? null, body.plan_version ?? null, body.outcome_version ?? null);
   if ("error" in scope) { res.status(409).json({ error: scope.error }); return; }
+  const normalizedBody = body.body.trim();
+  const matchesMessage = (prior: typeof managedFleetMessagesTable.$inferSelect) =>
+    prior.project_key === scope.projectKey && prior.work_item_id === (scope.item?.id ?? null) &&
+    prior.plan_version === scope.planVersion && prior.outcome_id === (scope.outcome?.id ?? null) &&
+    prior.outcome_version === scope.outcomeVersion && prior.body === normalizedBody && prior.kind === body.kind;
   const [prior] = await db.select().from(managedFleetMessagesTable).where(eq(managedFleetMessagesTable.client_request_id, body.client_request_id)).limit(1);
   if (prior) {
-    const same = prior.project_key === scope.projectKey && prior.work_item_id === (scope.item?.id ?? null) &&
-      prior.plan_version === scope.planVersion && prior.outcome_version === scope.outcomeVersion && prior.body === body.body && prior.kind === body.kind;
-    if (!same) { res.status(409).json({ error: "Request ID was already used for a different message or target." }); return; }
+    if (!matchesMessage(prior)) { res.status(409).json({ error: "Request ID was already used for a different message or target." }); return; }
     res.json({ message: prior, duplicate: true }); return;
   }
   const conversation = await conversationFor(scope);
@@ -116,8 +119,18 @@ router.post("/fleet/messages", async (req, res): Promise<void> => {
   const [message] = await db.insert(managedFleetMessagesTable).values({
     conversation_id: conversation.id, client_request_id: body.client_request_id, project_key: scope.projectKey,
     work_item_id: scope.item?.id ?? null, plan_version: scope.planVersion, outcome_id: scope.outcome?.id ?? null,
-    outcome_version: scope.outcomeVersion, body: body.body.trim(), kind: body.kind, delivery_state: deliveryState,
-  }).returning();
+    outcome_version: scope.outcomeVersion, body: normalizedBody, kind: body.kind, delivery_state: deliveryState,
+  }).onConflictDoNothing({ target: managedFleetMessagesTable.client_request_id }).returning();
+  if (!message) {
+    // A concurrent identical retry can win after the first lookup. Return only
+    // a matching scoped record, never an unrelated message or a unique-key500.
+    const [winner] = await db.select().from(managedFleetMessagesTable)
+      .where(eq(managedFleetMessagesTable.client_request_id, body.client_request_id)).limit(1);
+    if (!winner || !matchesMessage(winner)) {
+      res.status(409).json({ error: "Request ID was already used for a different message or target. Refresh saved history." }); return;
+    }
+    res.json({ message: winner, duplicate: true }); return;
+  }
   res.status(201).json({ message, duplicate: false, delivery_note: active ? "Queued for possible owner follow-up only; not sent and does not affect the active run." : "Saved on the dashboard only; not sent." });
 });
 
