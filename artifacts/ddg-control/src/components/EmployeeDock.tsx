@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { DDG_EMPLOYEE_ROLES, type DdgEmployeeRole } from '@workspace/project-constants';
-import { EmployeeSprite } from './EmployeeSprite';
+import { EmployeeSprite, employeeSequences } from './EmployeeSprite';
 import { EMPLOYEE_BANTER } from '../lib/employee-banter';
 import './employee-dock.css';
 
@@ -21,8 +21,13 @@ export function EmployeeDock() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<DdgEmployeeRole | null>(null);
   const [remarkIndex, setRemarkIndex] = useState<number | null>(null);
+  const [action, setAction] = useState('idle');
+  const [playId, setPlayId] = useState(0);
+  const [dockAction, setDockAction] = useState<{ employeeId: string; action: string; partnerId?: string } | null>(null);
+  const sceneIndex = useRef(0);
   const [visible, setVisible] = useState(() => document.visibilityState === 'visible');
   const [desktopCast, setDesktopCast] = useState(() => window.matchMedia(DESKTOP_CAST_QUERY).matches);
+  const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const panelId = useId();
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -30,6 +35,45 @@ export function EmployeeDock() {
   const cast = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLButtonElement | null>(null);
   const remarkTrigger = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!desktopCast || preferences.hidden || preferences.quiet || !visible || open || reducedMotion) {
+      setDockAction(null);
+      return;
+    }
+    // One decorative scene at a time; source frames, not a worker/activity signal.
+    const scenes = [
+      { employeeId: 'person-mimir', action: 'discuss-daedalus', partnerId: 'person-daedalus' },
+      { employeeId: 'person-freya', action: 'raven-storm' },
+      { employeeId: 'person-njord', action: 'splash-daedalus', partnerId: 'person-daedalus' },
+      { employeeId: 'person-plutus', action: 'count-money' },
+      { employeeId: 'person-daedalus', action: 'gadget' },
+      { employeeId: 'person-harald', action: 'slam-book' },
+      { employeeId: 'person-njord', action: 'high-five', partnerId: 'person-daedalus' },
+      { employeeId: 'person-plutus', action: 'high-five', partnerId: 'person-njord' },
+      { employeeId: 'person-freya', action: 'laptop' },
+      { employeeId: 'person-mimir', action: 'data-spell' },
+      { employeeId: 'person-daedalus', action: 'drone-swarm' },
+      { employeeId: 'person-harald', action: 'phone' },
+    ];
+    let recovery: ReturnType<typeof setTimeout> | undefined;
+    const timer = setInterval(() => {
+      if (cast.current?.contains(document.activeElement)) return;
+      const scene = scenes[sceneIndex.current % scenes.length];
+      sceneIndex.current += 1;
+      setDockAction(scene);
+      // Also recover if an asset fails or animationend is lost. No retries.
+      if (recovery) clearTimeout(recovery);
+      recovery = setTimeout(() => setDockAction(null), 2800);
+    }, 4000);
+    return () => { clearInterval(timer); if (recovery) clearTimeout(recovery); };
+  }, [desktopCast, preferences.hidden, preferences.quiet, visible, open, reducedMotion]);
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const change = () => setReducedMotion(query.matches);
+    query.addEventListener('change', change);
+    return () => query.removeEventListener('change', change);
+  }, []);
 
   function closePanel() {
     setOpen(false);
@@ -72,7 +116,7 @@ export function EmployeeDock() {
     };
   }, [open]);
 
-  function select(employee: DdgEmployeeRole) { setSelected(employee); setRemarkIndex(null); }
+  function select(employee: DdgEmployeeRole) { setSelected(employee); setRemarkIndex(null); setAction('idle'); }
   function inspect(employee: DdgEmployeeRole, button: HTMLButtonElement) {
     opener.current = button;
     select(employee);
@@ -80,14 +124,17 @@ export function EmployeeDock() {
   }
   // Remarks are requested by the owner, never generated on a timer or treated as notifications.
   useEffect(() => { if (!open) setRemarkIndex(null); }, [open]);
-  function character(employee: DdgEmployeeRole, index: number) {
+  function character(employee: DdgEmployeeRole) {
     return <button type="button" className="employee-character" key={employee.id} data-employee={employee.id}
-      style={{ animationDelay: `${index * -1.7}s` }}
+      style={{ visibility: dockAction?.partnerId === employee.id ? 'hidden' : undefined }}
       title={`${employee.name} · ${employee.role}`}
       aria-label={`${employee.name}, ${employee.role}. View character details`}
       onClick={(event) => inspect(employee, event.currentTarget)}>
-      <EmployeeSprite employeeId={employee.id} />
-      <span className="employee-caption" aria-hidden="true">{employee.name}</span>
+      <span className="employee-caption" aria-hidden="true">{employee.name}
+        {dockAction?.employeeId === employee.id && dockAction.partnerId && ` + ${DDG_EMPLOYEE_ROLES.find((role) => role.id === dockAction.partnerId)?.name ?? ''}`}
+      </span>
+      <EmployeeSprite employeeId={employee.id} action={dockAction?.employeeId === employee.id ? dockAction.action : 'idle'}
+        play={!preferences.quiet && visible && !open} onComplete={() => setDockAction(null)} />
     </button>;
   }
 
@@ -120,12 +167,23 @@ export function EmployeeDock() {
       <div className="employee-tray" role="group" aria-label="All nine company characters" data-quiet={preferences.quiet || !visible}>
         {DDG_EMPLOYEE_ROLES.map((employee) => <button key={employee.id} type="button"
           data-employee={employee.id} aria-pressed={selected?.id === employee.id} onClick={() => select(employee)}>
-          <EmployeeSprite employeeId={employee.id} /><span>{employee.name}<small>{employee.role}</small></span>
+          <EmployeeSprite employeeId={employee.id} play={false} /><span>{employee.name}<small>{employee.role}</small></span>
         </button>)}
       </div>
       {selected && <div className="employee-detail" role="status">
-        <EmployeeSprite employeeId={selected.id} />
+        <EmployeeSprite key={`${selected.id}-${playId}`} employeeId={selected.id} action={action}
+          play={!preferences.quiet && visible} onComplete={() => setAction('idle')} />
         <p><strong>{selected.name}</strong><br />{selected.role}<br /><small>Company character. Live work and messages are not connected.</small></p>
+      </div>}
+      {selected && employeeSequences(selected.id).length > 0 && <div className="employee-sequences">
+        <p>Owner-supplied pixel animations · presentation only</p>
+        <div role="group" aria-label={`${selected.name} animation sequences`}>
+          {employeeSequences(selected.id).map((sequence) => <button type="button" key={sequence.id}
+            aria-pressed={action === sequence.id} onClick={() => { setAction(sequence.id); setPlayId((value) => value + 1); }}>
+            {sequence.label}
+          </button>)}
+        </div>
+        <small>Actions play once, then return to idle. Quiet and reduced-motion settings pause playback.</small>
       </div>}
       {selected && <div className="employee-banter">
         <button type="button" ref={remarkTrigger} onClick={() => setRemarkIndex((value) => value === null ? 0 : (value + 1) % EMPLOYEE_BANTER[selected.id].length)}>
