@@ -87,6 +87,7 @@ export function EmployeeDock() {
       aria-label={`${employee.name}, ${employee.role}. View character details`}
       onClick={(event) => inspect(employee, event.currentTarget)}>
       <EmployeeSprite employeeId={employee.id} />
+      <span className="employee-caption" aria-hidden="true">{employee.name}</span>
     </button>;
   }
 

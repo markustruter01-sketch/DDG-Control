@@ -119,6 +119,9 @@ async function getWorkItems() {
   return r.json() as Promise<{items:WorkItem[];dispatches:Array<{id:number;work_item_id:number;provider:string;model_id:string|null;agent_id:string|null;run_id:string|null;provider_status:string|null;status:string;branch:string|null;error_summary:string;started_at:string}>;events:Array<{id:number;work_item_id:number;actor:string;event_type:string;created_at:string;details:Record<string,unknown>}>}>;
 }
 type WorkOutcome = { id:number; project_key:string; title:string; description:string; status:string; version:number; gates:Array<{key:string;title:string;acceptance:string[]}> };
+function emptyWorkDraft(project_key = "hypest") {
+  return { project_key, title:"", objective:"", outcome:"", checklist:"", acceptance_checks:"", deadline:"", time_limit_minutes:"30", max_attempts:"1", stop_condition:"Stop when any acceptance check fails or the limit is reached.", outcome_id:"", gate_key:"", repository:"", target_branch:"" };
+}
 async function getWorkOutcomes() {
   const r=await fetch("/api/work-outcomes",{cache:"no-store"});
   if(!r.ok) throw new Error("Outcome record unavailable");
@@ -654,7 +657,18 @@ export function AIStackPage() {
   const [handoverKey, setHandoverKey] = useState("hypest");
   const [handoverFields, setHandoverFields] = useState({ status: "in progress", completed_work: "", next_action: "", blockers: "", verification: "", recovery_note: "", branch: "", commit_ref: "", task_id: "", work_item_id: "" });
   const [handoverCopyStatus, setHandoverCopyStatus] = useState("");
-  const [workFields, setWorkFields] = useState({ project_key:"hypest", title:"", objective:"", outcome:"", checklist:"", acceptance_checks:"", deadline:"", time_limit_minutes:"30", max_attempts:"1", stop_condition:"Stop when any acceptance check fails or the limit is reached.", outcome_id:"", gate_key:"", repository:"", target_branch:"" });
+  const [workFields, setWorkFields] = useState(() => emptyWorkDraft());
+  const draftOutcome = outcomesQuery.data?.outcomes.find(o => String(o.id) === workFields.outcome_id && o.project_key === workFields.project_key && ["pending_approval", "approved"].includes(o.status));
+  const draftScopeValid = !outcomesQuery.isError && !outcomesQuery.isFetching && !!draftOutcome?.gates.some(g => g.key === workFields.gate_key);
+  function replaceWorkDraft(projectKey: string, report?: { summary: string; next_action: string }) {
+    if (createWorkMutation.isPending) return;
+    const blank = emptyWorkDraft(workFields.project_key);
+    const changed = (Object.keys(blank) as Array<keyof typeof blank>).some(key => workFields[key] !== blank[key]);
+    if (changed && !window.confirm("Replace the current unsaved task draft? Its text and project settings will be cleared. Cancel to keep it.")) return;
+    createWorkMutation.reset();
+    setWorkFields({ ...emptyWorkDraft(projectKey), ...(report ? { title:(report.next_action || report.summary).slice(0,160), objective:report.summary, outcome:report.next_action } : {}) });
+    return true;
+  }
   const [dispatchConfig,setDispatchConfig]=useState({enabled:false,plan_model_confirmed:false,included_allowance_confirmed:false,no_overage_confirmed:false,github_access_confirmed:false,secret_owner_verified:false,selected_model_id:"",approved_repository:"",approved_starting_branch:"",approved_project_key:""});
   useEffect(()=>{const c=readinessQuery.data?.config;if(c)setDispatchConfig({...c,selected_model_id:c.selected_model_id??"",approved_repository:c.approved_repository??"",approved_starting_branch:c.approved_starting_branch??"",approved_project_key:c.approved_project_key??""});},[readinessQuery.data]);
   const agentsQuery = useQuery({
@@ -806,7 +820,7 @@ export function AIStackPage() {
           onCreateQuestion={async(input)=>{await createFleetQuestion(input as unknown as Record<string,unknown>);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
           onRefresh={async()=>{const result=await fleetThreadQuery.refetch();if(result.isError)throw new Error("Conversation could not be refreshed. Unsaved text has been kept.");}}
           onAnswerQuestion={async(input)=>{await answerFleetQuestion(input);await queryClient.invalidateQueries({queryKey:["fleet-thread",fleetProjectKey,fleetTaskId]});}}
-          onProposeNextWork={(report)=>{const project=managedAreas.find((area)=>area.key===report.project_slug);if(!project)return;setWorkFields((current)=>({...current,project_key:project.key,title:(report.next_action||report.summary).slice(0,160),objective:report.summary,outcome:report.next_action,checklist:"",acceptance_checks:"",repository:"",target_branch:""}));window.setTimeout(()=>document.getElementById("work-item-creator")?.scrollIntoView({behavior:"smooth",block:"center"}),0);}}
+          onProposeNextWork={(report)=>{const project=managedAreas.find((area)=>area.key===report.project_slug);if(!project || !replaceWorkDraft(project.key, report))return;window.setTimeout(()=>document.getElementById("work-item-creator")?.scrollIntoView({behavior:"smooth",block:"center"}),0);}}
           loading={fleetThreadQuery.isLoading}
           error={fleetThreadQuery.isError?"Conversation unavailable. Refresh and explicitly reselect the project/task.":null}
           canAnswer={!devBypass}
@@ -1192,11 +1206,11 @@ export function AIStackPage() {
           {(savedReportsQuery.data??[]).filter(r=>managedAreas.some(a=>a.key===r.project_slug)).map(report=><article className="managed-work-card" key={report.project_slug}>
             <strong>{managedAreas.find(a=>a.key===report.project_slug)?.label} · {report.priority??"Priority unknown"}</strong>
             <p>{report.summary}</p><p><b>Suggested next action:</b> {report.next_action}</p>
-            {report.project_slug==="finance" ? <span className="ai-stack-help">Held until Claude review · no Finance work starts here.</span> : <button type="button" className="work-toggle" onClick={()=>{const outcome=outcomesQuery.data?.outcomes.find(o=>o.project_key===report.project_slug&&["pending_approval","approved"].includes(o.status));const gate=outcome?.gates[0];setWorkFields({...workFields,project_key:report.project_slug,title:report.next_action.slice(0,160),objective:report.next_action,outcome:report.summary,outcome_id:outcome?String(outcome.id):"",gate_key:gate?.key??""});}}>Use saved report in draft</button>}
+            {report.project_slug==="finance" ? <span className="ai-stack-help">Held until Claude review · no Finance work starts here.</span> : <button type="button" className="work-toggle" disabled={createWorkMutation.isPending} onClick={()=>replaceWorkDraft(report.project_slug, report)}>Use saved report in draft</button>}
           </article>)}
           <details className="ai-stack-on-demand">
             <summary>Create a bounded task draft</summary>
-          <form id="work-item-creator" className="work-item-form" onSubmit={(event)=>{event.preventDefault();createWorkMutation.mutate({
+          <form id="work-item-creator" className="work-item-form" onSubmit={(event)=>{event.preventDefault();if(!draftScopeValid || createWorkMutation.isPending || devBypass)return;createWorkMutation.mutate({
             project_key:workFields.project_key,title:workFields.title,objective:workFields.objective,outcome:workFields.outcome,
             checklist:workFields.checklist.split("\n").map(x=>x.trim()).filter(Boolean),
             acceptance_checks:workFields.acceptance_checks.split("\n").map(x=>x.trim()).filter(Boolean),
@@ -1205,15 +1219,19 @@ export function AIStackPage() {
             stop_condition:workFields.stop_condition,outcome_id:Number(workFields.outcome_id),gate_key:workFields.gate_key,
             repository:workFields.repository,target_branch:workFields.target_branch,
           });}}>
-            <label>Project<select value={workFields.project_key} onChange={e=>setWorkFields({...workFields,project_key:e.target.value})}>{managedAreas.filter((a)=>a.key!=="finance").map(a=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
+            <fieldset disabled={createWorkMutation.isPending} style={{border:0,padding:0,margin:0,display:"contents"}}>
+            <label>Project<select value={workFields.project_key} onChange={e=>replaceWorkDraft(e.target.value)}>{managedAreas.filter((a)=>a.key!=="finance").map(a=><option key={a.key} value={a.key}>{a.label}</option>)}</select></label>
             <label>Linked outcome<select required value={workFields.outcome_id} onChange={e=>setWorkFields({...workFields,outcome_id:e.target.value,gate_key:""})}><option value="">Select pending or approved outcome</option>{(outcomesQuery.data?.outcomes??[]).filter(o=>o.project_key===workFields.project_key&&["pending_approval","approved"].includes(o.status)).map(o=><option key={o.id} value={o.id}>{o.title}</option>)}</select></label>
-            <label>Outcome gate<select required value={workFields.gate_key} onChange={e=>setWorkFields({...workFields,gate_key:e.target.value})}><option value="">Select gate</option>{outcomesQuery.data?.outcomes.find(o=>String(o.id)===workFields.outcome_id)?.gates.map(g=><option key={g.key} value={g.key}>{g.title}</option>)}</select></label>
+            <label>Outcome gate<select required value={workFields.gate_key} onChange={e=>setWorkFields({...workFields,gate_key:e.target.value})}><option value="">Select gate</option>{draftOutcome?.gates.map(g=><option key={g.key} value={g.key}>{g.title}</option>)}</select></label>
             <label>Repository<input required value={workFields.repository} onChange={e=>setWorkFields({...workFields,repository:e.target.value})}/></label>
             <label>Target branch<input required value={workFields.target_branch} onChange={e=>setWorkFields({...workFields,target_branch:e.target.value})}/></label>
             {(["title","objective","outcome","checklist","acceptance_checks","deadline","time_limit_minutes","max_attempts","stop_condition"] as const).map(field=><label key={field}>{field.replaceAll("_"," ")}{["checklist","acceptance_checks","objective","outcome","stop_condition"].includes(field)?<textarea required value={workFields[field]} onChange={e=>setWorkFields({...workFields,[field]:e.target.value})}/>:<input required type={field==="deadline"?"datetime-local":"text"} value={workFields[field]} onChange={e=>setWorkFields({...workFields,[field]:e.target.value})}/>}</label>)}
             <p className="ai-stack-chart-caption">Zero spend limit. Time is 5–1,440 minutes; attempts are 1–10. No provider or agent is started.</p>
             <p className="ai-stack-help">Planning records stay visible while OFF; new work can only be queued for an ON, incomplete project.</p>
-            <button className="work-toggle" disabled={devBypass || createWorkMutation.isPending || controlsQuery.data?.controls.find(c=>c.project_key===workFields.project_key)?.enabled !== true || controlsQuery.data?.controls.find(c=>c.project_key===workFields.project_key)?.completed === true}>Queue for Markus’ approval</button>
+            <p className="ai-stack-help">Changing project or using a report replaces this unsaved draft after confirmation. Select that project's outcome and gate again. Keep this page open until the save is confirmed.</p>
+            {!draftScopeValid && <p className="ai-stack-help">Choose a current outcome and gate for this project before queuing. If saved outcomes are unavailable, refresh them first.</p>}
+            <button className="work-toggle" disabled={!draftScopeValid || devBypass || createWorkMutation.isPending || controlsQuery.data?.controls.find(c=>c.project_key===workFields.project_key)?.enabled !== true || controlsQuery.data?.controls.find(c=>c.project_key===workFields.project_key)?.completed === true}>Queue for Markus’ approval</button>
+            </fieldset>
           </form>
           </details>
           {createWorkMutation.isError && <p role="alert">{createWorkMutation.error.message}</p>}

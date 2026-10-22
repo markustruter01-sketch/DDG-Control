@@ -48,22 +48,32 @@
 @media(max-width:520px) { .employee-toggle { min-width:44px; } .employee-toggle>span { display:none; } }
 @media(prefers-reduced-motion:reduce) { .employee-character,.employee-character .employee-sprite,.employee-tray button .employee-sprite { animation:none !important; } }
 
-/* Owner requested3x artwork. Give the enlarged cast its own shelf above navigation. */
+/* Approved single-row dock: four left, five right, same baseline as nav icons. */
+.employee-facing { display:block; }
+.employee-facing-left { transform:scaleX(-1); }
+.employee-cast .employee-facing { width:100%; }
+.employee-caption { display:block; margin-top:4px; font-size:10px; line-height:14px; color:var(--cockpit-ink,#f7fbff); text-shadow:0 1px 4px #001725; white-space:nowrap; }
+.employee-tray .employee-facing { max-width:100%; }
+.employee-detail .employee-facing { width:156px; max-width:45%; flex-shrink:0; }
+.employee-detail .employee-facing .employee-sprite { width:100%; max-width:100%; }
 .employee-tray { grid-template-columns:repeat(2,minmax(0,1fr)); }
 @media(min-width:1051px) {
- .employee-cast { position:fixed; left:0; right:0; bottom:calc(98px + env(safe-area-inset-bottom)); z-index:79; display:flex; gap:8px; padding:0 12px; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; pointer-events:auto; }
- .employee-side { position:static; width:auto; max-width:none; flex:0 0 auto; gap:8px; pointer-events:auto; }
- .employee-side-left { margin-left:auto; }
- .employee-side-right { margin-right:auto; }
- .employee-character { width:156px; min-width:156px; min-height:188px; flex:0 0 156px; }
- :root body .app-shell:has(.employee-presentation) { padding-bottom:calc(316px + env(safe-area-inset-bottom))!important; }
- html { scroll-padding-bottom:316px; }
-}
-@media(min-width:2200px) {
  .employee-cast { display:contents; }
- .employee-side { position:fixed; bottom:calc(3px + env(safe-area-inset-bottom)); width:calc((100vw - 500px)/2); max-width:850px; margin:0; gap:0; pointer-events:none; }
- .employee-side-left { right:calc(50% + 250px); }
- .employee-side-right { left:calc(50% + 250px); }
- :root body .app-shell:has(.employee-presentation) { padding-bottom:calc(208px + env(safe-area-inset-bottom))!important; }
- html { scroll-padding-bottom:208px; }
+ .employee-side { position:fixed; bottom:calc(12px + env(safe-area-inset-bottom)); display:flex; width:calc((100vw - 440px)/2); max-width:none; gap:0; justify-content:space-evenly; align-items:flex-end; pointer-events:none; }
+ .employee-side-left { right:calc(50% + 220px); }
+ .employee-side-right { left:calc(50% + 220px); }
+ .employee-character { --hero-size:min(156px,calc((100vw - 480px)/10)); width:var(--hero-size); min-width:44px; min-height:0; padding:0; flex:0 0 var(--hero-size); animation:employee-bold-idle 12s steps(8,end) infinite; }
+ .employee-cast .employee-sprite { width:100%; height:auto; aspect-ratio:156/180; }
+ :root body .app-shell:has(.employee-presentation) { padding-bottom:calc(222px + env(safe-area-inset-bottom))!important; }
+ html { scroll-padding-bottom:222px; }
+ :root .floating-navigation { width:400px; max-width:calc(100vw - 24px); }
 }
+@keyframes employee-bold-idle { 0%,65%,100%{transform:translate(0) rotate(0);} 70%{transform:translateY(-8px) rotate(-3deg);} 75%{transform:translateY(-15px) rotate(3deg);} 80%{transform:translateY(-4px) rotate(-2deg);} 85%{transform:translateY(0) rotate(0);} }
+@keyframes employee-greet { 0%,100%{transform:translateY(0) rotate(0);} 30%{transform:translateY(-20px) rotate(-8deg);} 65%{transform:translateY(-9px) rotate(7deg);} }
+@keyframes employee-courier { 0%,100%{transform:translateX(0);} 25%{transform:translate(14px,-8px) rotate(9deg);} 60%{transform:translate(-10px,-15px) rotate(-8deg);} }
+@keyframes employee-sway { 0%,100%{transform:rotate(0);} 35%{transform:translateY(-10px) rotate(-10deg);} 70%{transform:translateY(-5px) rotate(10deg);} }
+@keyframes employee-salute { 0%,100%{transform:translateY(0) rotate(0);} 35%{transform:translateY(-18px) rotate(-9deg);} 70%{transform:translateY(-8px) rotate(6deg);} }
+/* Keep the existing quiet/hidden/reduced-motion promises after animation overrides. */
+.employee-cast[data-quiet='true'] .employee-character,.employee-cast[data-quiet='true'] .employee-sprite { animation:none!important; }
+.employee-character:is(:hover,:focus-visible) { animation-play-state:paused; }
+@media(prefers-reduced-motion:reduce) { .employee-character,.employee-character .employee-sprite,.employee-tray button .employee-sprite { animation:none!important; } }

@@ -15,6 +15,8 @@ type ColorMode = 'dark' | 'day';
 function revealProjects() {
   const target = document.getElementById('project-list');
   if (!target) return;
+  const dialog = target.closest('dialog');
+  if (dialog && !dialog.open) dialog.showModal();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   target.focus({ preventScroll: true });
   target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
