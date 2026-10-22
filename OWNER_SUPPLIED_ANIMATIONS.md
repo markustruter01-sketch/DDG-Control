@@ -1,5 +1,38 @@
 # Owner-supplied employee animations — 22 October 2026
 
+## Superseding video correction and complete newer roster
+
+The owner's25.97-second screen recording demonstrates that the first continuous
+idle/composite implementation is too fast and jittery. Newer sheets have now
+been supplied for ALL NINE characters; the older six-design status below is
+historical. Canonical identities stay; company role text follows the owner's
+roster screenshot, including Tyr as Cattle Dog Coffee Venture Manager. Heimdall
+keeps prior GM/COO because it is not listed in that screenshot.
+
+Nine grid atlases retain618 source cells. Explicit playable indices omit43
+suspected cut-through cells (heuristic border filter), leaving575 eligible cells
+across188 finite sequences including individual held emotes. Do not call these
+618 registered, newly drawn or independently accepted animation frames. Source
+board pose/scale changes remain. Source SHA/rectangles/body anchors/eligibility
+are in `public/employee-animations/owner-v2-provenance.json`.
+
+Current playback holds a static rest pose, then starts one finite turn every
+4.5seconds. Source steps are180–320ms, normally300–320; final pose holds500ms,
+single-pose emotes1600ms. Always return to rest;3900ms recovery. Everyone stays
+visible. Call/response pairs face each other but do not reuse old-design
+composite actors, teleport neighbours or invent extra poses. All sequences are
+available for manual replay. Quiet/reduced-motion/visibility/offscreen/focus
+guards remain. Names and wrapped company roles appear above heads.
+
+Nine resting posters total80,966bytes. Full grids load on demand while the
+resting poster remains visible, preventing load-time disappearance. No new
+dependencies/model calls/audio. The parent workspace video review and prepared
+source are under `output/avatar-playback-review-20261022`. Build evidence is
+recorded separately from actual corrected-browser/owner acceptance, still open.
+After this correction, continue platform checklist work; no extra art polish.
+
+## Historical first batch
+
 ## Scope
 
 The owner approved the animation boards as the final designs, including the new

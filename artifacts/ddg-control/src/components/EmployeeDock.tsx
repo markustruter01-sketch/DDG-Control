@@ -21,9 +21,9 @@ export function EmployeeDock() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<DdgEmployeeRole | null>(null);
   const [remarkIndex, setRemarkIndex] = useState<number | null>(null);
-  const [action, setAction] = useState('idle');
+  const [action, setAction] = useState('rest');
   const [playId, setPlayId] = useState(0);
-  const [dockAction, setDockAction] = useState<{ employeeId: string; action: string; partnerId?: string } | null>(null);
+  const [dockAction, setDockAction] = useState<{ employeeId: string; action: string; targetId?: string } | null>(null);
   const sceneIndex = useRef(0);
   const [visible, setVisible] = useState(() => document.visibilityState === 'visible');
   const [desktopCast, setDesktopCast] = useState(() => window.matchMedia(DESKTOP_CAST_QUERY).matches);
@@ -43,18 +43,22 @@ export function EmployeeDock() {
     }
     // One decorative scene at a time; source frames, not a worker/activity signal.
     const scenes = [
-      { employeeId: 'person-mimir', action: 'discuss-daedalus', partnerId: 'person-daedalus' },
-      { employeeId: 'person-freya', action: 'raven-storm' },
-      { employeeId: 'person-njord', action: 'splash-daedalus', partnerId: 'person-daedalus' },
-      { employeeId: 'person-plutus', action: 'count-money' },
-      { employeeId: 'person-daedalus', action: 'gadget' },
-      { employeeId: 'person-harald', action: 'slam-book' },
-      { employeeId: 'person-njord', action: 'high-five', partnerId: 'person-daedalus' },
-      { employeeId: 'person-plutus', action: 'high-five', partnerId: 'person-njord' },
-      { employeeId: 'person-freya', action: 'laptop' },
-      { employeeId: 'person-mimir', action: 'data-spell' },
-      { employeeId: 'person-daedalus', action: 'drone-swarm' },
-      { employeeId: 'person-harald', action: 'phone' },
+      { employeeId: 'person-freya', action: 'create-content', targetId: 'person-tyr' },
+      { employeeId: 'person-tyr', action: 'emote-nod', targetId: 'person-freya' },
+      { employeeId: 'person-mimir', action: 'share-insight', targetId: 'person-daedalus' },
+      { employeeId: 'person-daedalus', action: 'build', targetId: 'person-mimir' },
+      { employeeId: 'person-plutus', action: 'calculate', targetId: 'person-njord' },
+      { employeeId: 'person-njord', action: 'negotiate', targetId: 'person-plutus' },
+      { employeeId: 'person-heimdall-gm', action: 'scan' },
+      { employeeId: 'person-harald', action: 'review' },
+      { employeeId: 'person-hermes', action: 'communicate', targetId: 'person-harald' },
+      { employeeId: 'person-harald', action: 'emote-nod', targetId: 'person-hermes' },
+      { employeeId: 'person-freya', action: 'social-planning' },
+      { employeeId: 'person-mimir', action: 'research' },
+      { employeeId: 'person-plutus', action: 'approve' },
+      { employeeId: 'person-tyr', action: 'guard' },
+      { employeeId: 'person-daedalus', action: 'experiment' },
+      { employeeId: 'person-heimdall-gm', action: 'emote-bird-friend' },
     ];
     let recovery: ReturnType<typeof setTimeout> | undefined;
     const timer = setInterval(() => {
@@ -64,8 +68,8 @@ export function EmployeeDock() {
       setDockAction(scene);
       // Also recover if an asset fails or animationend is lost. No retries.
       if (recovery) clearTimeout(recovery);
-      recovery = setTimeout(() => setDockAction(null), 2800);
-    }, 4000);
+      recovery = setTimeout(() => setDockAction(null), 3900);
+    }, 4500);
     return () => { clearInterval(timer); if (recovery) clearTimeout(recovery); };
   }, [desktopCast, preferences.hidden, preferences.quiet, visible, open, reducedMotion]);
   useEffect(() => {
@@ -116,7 +120,7 @@ export function EmployeeDock() {
     };
   }, [open]);
 
-  function select(employee: DdgEmployeeRole) { setSelected(employee); setRemarkIndex(null); setAction('idle'); }
+  function select(employee: DdgEmployeeRole) { setSelected(employee); setRemarkIndex(null); setAction('rest'); }
   function inspect(employee: DdgEmployeeRole, button: HTMLButtonElement) {
     opener.current = button;
     select(employee);
@@ -125,15 +129,16 @@ export function EmployeeDock() {
   // Remarks are requested by the owner, never generated on a timer or treated as notifications.
   useEffect(() => { if (!open) setRemarkIndex(null); }, [open]);
   function character(employee: DdgEmployeeRole) {
+    const ownIndex = DDG_EMPLOYEE_ROLES.findIndex((role) => role.id === employee.id);
+    const peerId = dockAction?.employeeId === employee.id ? dockAction.targetId : dockAction?.targetId === employee.id ? dockAction.employeeId : undefined;
+    const peerIndex = DDG_EMPLOYEE_ROLES.findIndex((role) => role.id === peerId);
     return <button type="button" className="employee-character" key={employee.id} data-employee={employee.id}
-      style={{ visibility: dockAction?.partnerId === employee.id ? 'hidden' : undefined }}
       title={`${employee.name} · ${employee.role}`}
       aria-label={`${employee.name}, ${employee.role}. View character details`}
       onClick={(event) => inspect(employee, event.currentTarget)}>
-      <span className="employee-caption" aria-hidden="true">{employee.name}
-        {dockAction?.employeeId === employee.id && dockAction.partnerId && ` + ${DDG_EMPLOYEE_ROLES.find((role) => role.id === dockAction.partnerId)?.name ?? ''}`}
-      </span>
-      <EmployeeSprite employeeId={employee.id} action={dockAction?.employeeId === employee.id ? dockAction.action : 'idle'}
+      <span className="employee-caption" aria-hidden="true"><strong>{employee.name}</strong><small>{employee.role}</small></span>
+      <EmployeeSprite employeeId={employee.id} action={dockAction?.employeeId === employee.id ? dockAction.action : 'rest'}
+        faceLeft={peerIndex >= 0 ? peerIndex < ownIndex : undefined}
         play={!preferences.quiet && visible && !open} onComplete={() => setDockAction(null)} />
     </button>;
   }
@@ -172,7 +177,7 @@ export function EmployeeDock() {
       </div>
       {selected && <div className="employee-detail" role="status">
         <EmployeeSprite key={`${selected.id}-${playId}`} employeeId={selected.id} action={action}
-          play={!preferences.quiet && visible} onComplete={() => setAction('idle')} />
+          play={!preferences.quiet && visible} onComplete={() => setAction('rest')} />
         <p><strong>{selected.name}</strong><br />{selected.role}<br /><small>Company character. Live work and messages are not connected.</small></p>
       </div>}
       {selected && employeeSequences(selected.id).length > 0 && <div className="employee-sequences">
@@ -183,7 +188,7 @@ export function EmployeeDock() {
             {sequence.label}
           </button>)}
         </div>
-        <small>Actions play once, then return to idle. Quiet and reduced-motion settings pause playback.</small>
+        <small>Actions play once, hold the final pose, then rest. Quiet and reduced-motion settings pause playback.</small>
       </div>}
       {selected && <div className="employee-banter">
         <button type="button" ref={remarkTrigger} onClick={() => setRemarkIndex((value) => value === null ? 0 : (value + 1) % EMPLOYEE_BANTER[selected.id].length)}>
