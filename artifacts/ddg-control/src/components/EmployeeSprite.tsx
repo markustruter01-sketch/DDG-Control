@@ -20,7 +20,7 @@ const portraits: Record<DdgEmployeeRoleId, string> = {
  * The enclosing button supplies the accessible name for decorative instances.
  */
 export function EmployeeSprite({ employeeId, title }: { employeeId: DdgEmployeeRoleId; title?: string }) {
-  return <img className="employee-sprite" src={portraits[employeeId]}
+  return <span className={`employee-facing${['person-hermes','person-mimir','person-harald','person-njord'].includes(employeeId) ? ' employee-facing-left' : ''}`}><img className="employee-sprite" src={portraits[employeeId]}
     width="256" height="256" alt={title ?? ''} aria-hidden={title ? undefined : true}
-    decoding="async" draggable={false} />;
+    decoding="async" draggable={false} /></span>;
 }

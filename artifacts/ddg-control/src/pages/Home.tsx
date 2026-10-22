@@ -1,4 +1,6 @@
 import { Link } from 'wouter';
+import { useEffect, useId, useRef } from 'react';
+import { CompanyCockpit, VillageMotion } from '@/components/CompanyCockpit';
 import {
   getGetFinanceSummaryQueryKey,
   getGetCattleDogCoffeeProfitQueryKey,
@@ -156,7 +158,8 @@ function FinanceSummaryBar({
 
 
 
-function CompanyAtlas({ projects }: { projects: Project[] }) {
+function CompanyAtlas({ projects, paused = true }: { projects: Project[]; paused?: boolean }) {
+  const titleId = useId();
   const buildings = [
     { slug: 'hypest', label: 'Hypest', position: 'fitness', note: 'Fitness · training hall' },
     { slug: 'finance', label: 'DDG Finance', position: 'finance', note: 'Treasury · held for Claude review' },
@@ -166,10 +169,11 @@ function CompanyAtlas({ projects }: { projects: Project[] }) {
   ];
   const destination = (slug: string) => projects.some((project) => project.slug === slug) ? `/projects/${slug}` : '/organisation';
   return (
-    <section className="atlas-map-panel atlas-village-panel" aria-labelledby="atlas-title">
-      <div className="atlas-map-heading"><div><p className="home-section-kicker">People · systems · projects</p><h2 id="atlas-title">Company Atlas</h2></div><Link href="/organisation">Explore connections →</Link></div>
+    <section className="atlas-map-panel atlas-village-panel" aria-labelledby={titleId}>
+      <div className="atlas-map-heading"><div><p className="home-section-kicker">People · systems · projects</p><h2 id={titleId}>Company Atlas</h2></div><Link href="/organisation">Explore connections →</Link></div>
       <div className="atlas-map-legend"><span>Village paths · company structure</span><span>No live transfer feed</span></div>
       <div className="atlas-map-canvas atlas-village-canvas" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}atlas-viking-village-v2.webp")` }}>
+        <VillageMotion paused={paused} />
         <img className="atlas-village-flag" src={`${import.meta.env.BASE_URL}ddg-creative-glitch-original.png`} alt="DDG flag on the great hall" />
         {buildings.map((building) => <details key={building.slug} className={`atlas-node atlas-building atlas-node-${building.position}`}>
           <summary><span className="atlas-building-hit" aria-hidden="true" /><strong>{building.label}</strong><small>{building.note}</small></summary>
@@ -181,12 +185,18 @@ function CompanyAtlas({ projects }: { projects: Project[] }) {
         <Link href="/ai-stack"><strong>DDG great hall</strong><small>DDG Control · company hub</small></Link>
         {buildings.map((building) => <Link key={building.slug} href={destination(building.slug)}><strong>{building.label}</strong><small>{building.note}</small></Link>)}
       </nav>
-      <p className="atlas-evidence-note">Illustrated company village. Roads show agreed relationships, not live data transfers or active business operations.</p>
+      <p className="atlas-evidence-note">Illustrated flow · not live telemetry. Five businesses → DDG Control.</p>
     </section>
   );
 }
 
 export function Home() {
+  const records = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const openProjects = () => { if(window.location.hash === '#project-list' && !records.current?.open) records.current?.showModal(); };
+    openProjects(); window.addEventListener('hashchange',openProjects);
+    return () => window.removeEventListener('hashchange',openProjects);
+  },[]);
   const socialSummaryQuery = useGetSocialSummary();
   const projectsQuery = useListProjects({
     query: { queryKey: getListProjectsQueryKey() },
@@ -270,6 +280,21 @@ export function Home() {
   return (
     <div className="app-shell home-shell">
       <Header />
+      <CompanyCockpit
+        finance={financeSummaryQuery.data} financeLoading={financeSummaryQuery.isLoading} financeError={financeSummaryQuery.isError}
+        social={socialSummaryQuery.data} socialLoading={socialSummaryQuery.isLoading} socialError={socialSummaryQuery.isError}
+        projectCount={projectsQuery.isLoading || projectsQuery.isError ? null : projects.length}
+        attentionCount={attentionCoverageReady ? pendingDecisions.length + flaggedUpdates.length : null}
+        attention={[
+          ...(!pendingDecisionsQuery.isError ? pendingDecisions.map(d=>({title:formatCurrentDisplayName(d.title),href:`/decisions#decision-${d.id}`})) : []),
+          ...(!agentUpdatesQuery.isError ? flaggedUpdates.map(u=>({title:`${u.project_slug}: red saved report`,href:`/projects/${u.project_slug}`})) : []),
+        ]}
+        updates={latestUpdates.map(u=>({label:projects.find(p=>p.slug===u.project_slug)?.name ?? u.project_slug,href:`/projects/${u.project_slug}`,action:formatCurrentDisplayName(u.next_action),date:formatSourceDate(u.created_at)}))}
+        updatesError={agentUpdatesQuery.isError} updatesLoading={agentUpdatesQuery.isLoading}
+        onDetails={()=>records.current?.showModal()} atlas={paused=><CompanyAtlas projects={projects} paused={paused} />}
+      />
+      <dialog ref={records} className="company-records-dialog" aria-label="Company records and sources">
+      <button className="company-records-close" type="button" onClick={()=>records.current?.close()}>Close records ×</button>
       <main className="page-wrap home-main home-cockpit atlas-home">
         <div className="home-cockpit-heading">
           <div>
@@ -527,6 +552,7 @@ export function Home() {
           )}
         </details>
       </main>
+      </dialog>
     </div>
   );
 }
