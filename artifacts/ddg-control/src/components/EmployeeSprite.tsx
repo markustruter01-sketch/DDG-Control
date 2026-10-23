@@ -17,7 +17,7 @@ const portraits: Record<DdgEmployeeRoleId, string> = {
   'person-daedalus': daedalus, 'person-harald': harald, 'person-njord': njord,
 };
 
-type Sequence = { id: string; label: string; src: string; frames: number; frameMs: number; start?: number; columns?: number; rows?: number; indices?: number[]; poster?: string };
+type Sequence = { id: string; label: string; src: string; frames: number; frameMs: number; start?: number; columns?: number; rows?: number; indices?: number[]; poster?: string; canvasAspect?: number };
 const animations = sequences as Partial<Record<DdgEmployeeRoleId, Sequence[]>>;
 export function employeeSequences(employeeId: DdgEmployeeRoleId): Sequence[] {
   return animations[employeeId] ?? [];
@@ -73,11 +73,16 @@ function OwnerSequence({ sequence, title, play, resting, onComplete }: {
   const rows = sequence.rows ?? 1;
   const position = Math.min(frame, sequence.frames - 1);
   const cell = sequence.indices?.[position] ?? (sequence.start ?? 0) + position;
+  // Wider transparent cells give staffs, pets and gestures room while every
+  // standing body keeps the same vertical scale and ground line.
+  const aspect = sequence.canvasAspect ?? 1;
+  const padding = { width: `${aspect * 100}%`, left: `${(1 - aspect) * 50}%` };
   return <span ref={root} className="employee-frame-window employee-sprite" role={title ? 'img' : undefined}
-    aria-label={title} aria-hidden={title ? undefined : true} data-failed={failed || undefined}>
+    aria-label={title} aria-hidden={title ? undefined : true} data-failed={failed || undefined} data-padded={aspect > 1 || undefined}>
     {sequence.poster && <img className="employee-frame-poster" src={`${import.meta.env.BASE_URL}${sequence.poster}`} alt="" draggable={false}
-      decoding="async" style={{ visibility: resting || !ready || failed ? 'visible' : 'hidden' }} />}
+      decoding="async" style={{ ...padding, visibility: resting || !ready || failed ? 'visible' : 'hidden' }} />}
     <span className="employee-frame-canvas" style={{
+      ...padding, position: 'absolute', top: 0,
       visibility: !resting && ready && !failed ? 'visible' : 'hidden',
       backgroundImage: !resting ? `url("${import.meta.env.BASE_URL}${sequence.src}")` : undefined,
       backgroundSize: `${columns * 100}% ${rows * 100}%`,
