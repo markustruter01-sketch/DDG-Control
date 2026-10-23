@@ -44,6 +44,13 @@ export async function createCursorAgent(
   payload: Record<string, unknown>,
   fetchImpl: typeof fetch = fetch,
 ): Promise<{ agentId: string; runId: string; runStatus: string }> {
+  // Bind any accepted response to the durable ID reserved before the request.
+  // Reject malformed input before a provider call rather than create an agent
+  // whose identity cannot be recovered from the local reservation.
+  const expectedAgentId = payload.agentId;
+  if (typeof expectedAgentId !== "string" || !/^bc-[A-Za-z0-9_-]{1,196}$/.test(expectedAgentId)) {
+    throw new Error("Cursor dispatch requires a valid reserved agent ID");
+  }
   const response = await fetchImpl("https://api.cursor.com/v1/agents", {
     method: "POST",
     headers: {
@@ -57,13 +64,25 @@ export async function createCursorAgent(
   if (!response.ok) {
     throw new Error(`Cursor dispatch returned HTTP ${response.status}`);
   }
-  const result: unknown = await response.json();
-  if (result === null || typeof result !== "object") throw new Error("Cursor response was unreadable");
+  let result: unknown;
+  try {
+    result = await response.json();
+  } catch {
+    // JSON parser messages can contain provider response excerpts. Never copy
+    // those into the task's persisted error summary or event ledger.
+    throw new Error("Cursor response was not valid JSON; dispatch result is ambiguous");
+  }
+  if (result === null || typeof result !== "object" || Array.isArray(result)) throw new Error("Cursor response was unreadable");
   const responseObject = result as Record<string, unknown>;
   const agent = responseObject.agent as Record<string, unknown> | undefined;
   const run = responseObject.run as Record<string, unknown> | undefined;
-  if (typeof agent?.id !== "string" || typeof run?.id !== "string") {
-    throw new Error("Cursor response did not include durable agent and run IDs");
+  if (!agent || typeof agent !== "object" || Array.isArray(agent) ||
+      !run || typeof run !== "object" || Array.isArray(run) ||
+      agent.id !== expectedAgentId || run.agentId !== expectedAgentId ||
+      typeof run.id !== "string" || !/^run-[A-Za-z0-9_-]{1,195}$/.test(run.id)) {
+    // A mismatched/malformed success is ambiguous, not permission to retry or
+    // attach a different agent/run to this task. Do not include response prose.
+    throw new Error("Cursor response did not match the reserved agent and run binding");
   }
   return {
     agentId: agent.id,

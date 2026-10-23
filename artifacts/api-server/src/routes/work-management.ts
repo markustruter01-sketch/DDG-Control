@@ -430,6 +430,16 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
   const readiness = dispatchReadiness(config);
   if (!readiness.dispatch_enabled) { res.status(423).json({ error: "Dispatch is blocked.", blockers: readiness.blockers }); return; }
   const reservation = await db.transaction(async (tx) => {
+    // Global reservation/stop order: singleton config, project control, task.
+    // Re-read readiness under the stop-all lock; the earlier snapshot can age.
+    const [config] = await tx.select().from(managedWorkDispatchConfigTable)
+      .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
+    if (!config || !dispatchReadiness(config).dispatch_enabled) return { kind: "disabled" as const };
+    // Serialize reservations across projects. Local terminal status cannot
+    // release this barrier without a verified external termination receipt.
+    const [globalDispatch] = await tx.select({ id: managedWorkDispatchesTable.id })
+      .from(managedWorkDispatchesTable).limit(1);
+    if (globalDispatch) return { kind: "duplicate" as const, status: "global_run_requires_verified_release" };
     const locked = await lockWorkItem(tx, id);
     if (!locked) return { kind: "missing" as const };
     const { item, control } = locked;
@@ -458,11 +468,11 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
     }).returning();
     await tx.update(managedWorkItemsTable).set({ attempts: item.attempts + 1, started_at: new Date(), updated_at: new Date() }).where(eq(managedWorkItemsTable.id, id));
     await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "dispatch_reserved", from_status: "approved", to_status: "approved", details: { dispatch_id: dispatch.id, idempotency_key: idempotencyKey, outcome_version: outcome.version } });
-    return { kind: "reserved" as const, item, dispatch };
+    return { kind: "reserved" as const, item, dispatch, config };
   });
   if (reservation.kind !== "reserved") {
-    const status = reservation.kind === "missing" ? 404 : reservation.kind === "off" || reservation.kind === "question" ? 423 : 409;
-    res.status(status).json({ error: reservation.kind === "off" ? "Project work is OFF." : reservation.kind === "question" ? "A blocking owner question is still open for this task version." : reservation.kind === "duplicate" ? "A dispatch already exists or same-repository work is active; inspect history, do not retry." : reservation.kind === "not_ready" ? "Task is not owner-approved and Ready." : "Work item not found.", ...(reservation.kind === "duplicate" ? { dispatch_status: reservation.status } : {}) });
+    const status = reservation.kind === "missing" ? 404 : reservation.kind === "off" || reservation.kind === "question" || reservation.kind === "disabled" ? 423 : 409;
+    res.status(status).json({ error: reservation.kind === "disabled" ? "Dispatch settings changed or managed work was blocked. Refresh readiness before any further action." : reservation.kind === "off" ? "Project work is OFF." : reservation.kind === "question" ? "A blocking owner question is still open for this task version." : reservation.kind === "duplicate" ? "A prior dispatch requires verified external termination, or repository work is active. Inspect history; do not retry." : reservation.kind === "not_ready" ? "Task is not owner-approved and Ready." : "Work item not found.", ...(reservation.kind === "duplicate" ? { dispatch_status: reservation.status } : {}) });
     return;
   }
   const apiKey = process.env.CURSOR_API_KEY?.trim();
@@ -471,9 +481,10 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
     res.status(503).json({ error: "Dispatch reserved but server secret is unavailable; owner review required." });
     return;
   }
+  let acceptedRun: Awaited<ReturnType<typeof createCursorAgent>> | undefined;
   try {
     const suspicious = /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|(?:gh[pousr]_[A-Za-z0-9]{20,}|xai-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,}|Bearer\s+[A-Za-z0-9._-]{16,})/i;
-    const promptText = [reservation.item.objective, reservation.item.outcome, reservation.item.stop_condition, ...reservation.item.checklist, ...reservation.item.acceptance_checks].join("\n");
+    const promptText = [reservation.item.title, reservation.item.objective, reservation.item.outcome, reservation.item.stop_condition, ...reservation.item.checklist, ...reservation.item.acceptance_checks].join("\n");
     if (suspicious.test(promptText)) throw new Error("Task contains a credential-like string; dispatch refused.");
     const agentUuid = reservation.dispatch.idempotency_key;
     const payload = buildCursorAgentPayload({
@@ -482,18 +493,50 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
         repository: reservation.item.repository!,
         target_branch: reservation.item.target_branch!,
       },
-      modelId: config.selected_model_id!,
+      modelId: reservation.config.selected_model_id!,
       agentId: `bc-${agentUuid}`,
     });
     const result = await createCursorAgent(apiKey, payload);
-    await db.update(managedWorkDispatchesTable).set({ agent_id: result.agentId, run_id: result.runId, provider_status: result.runStatus, status: "running" }).where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
-    await db.update(managedWorkItemsTable).set({ status: "in_progress", branch: reservation.item.target_branch, updated_at: new Date() }).where(eq(managedWorkItemsTable.id, id));
-    await db.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: reservation.item.project_key, actor: "Markus", event_type: "cursor_dispatch_started", from_status: "approved", to_status: "in_progress", details: { dispatch_id: reservation.dispatch.id, provider: "cursor", model_id: config.selected_model_id, agent_id: result.agentId, run_id: result.runId, run_status: result.runStatus, branch: reservation.item.target_branch } });
-    res.status(202).json({ dispatch_id: reservation.dispatch.id, work_item_id: id, provider: "cursor", model_id: config.selected_model_id, agent_id: result.agentId, run_id: result.runId, status: result.runStatus, automatic_pickup: false });
-  } catch (error) {
-    const summary = error instanceof Error ? error.message.slice(0, 500) : "Unknown dispatch result.";
-    await db.update(managedWorkDispatchesTable).set({ status: "needs_owner", error_summary: `${summary} No automatic retry; inspect Cursor before any next action.` }).where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
-    await db.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: reservation.item.project_key, actor: "system", event_type: "cursor_dispatch_needs_owner", from_status: "approved", to_status: "approved", details: { dispatch_id: reservation.dispatch.id, error: summary } });
+    acceptedRun = result;
+    const dashboardStatus = await db.transaction(async (tx) => {
+      // Store the accepted run, task state and event together. A stop while the
+      // network request was in flight must not be overwritten as permission.
+      const [currentConfig] = await tx.select().from(managedWorkDispatchConfigTable)
+        .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
+      const current = await lockWorkItem(tx, id);
+      if (!current) throw new Error("Accepted run could not be linked to its task; owner review required.");
+      const [question] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
+        .where(and(eq(managedFleetQuestionsTable.work_item_id, id), eq(managedFleetQuestionsTable.project_key, current.item.project_key),
+          eq(managedFleetQuestionsTable.plan_version, current.item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
+      const nextStatus = currentConfig?.enabled && currentConfig.updated_at.getTime() === reservation.config.updated_at.getTime() &&
+        current.control.enabled && !current.control.completed && current.item.status === "approved" &&
+        current.item.plan_version === reservation.item.plan_version && new Date() < current.item.deadline && !question
+        ? "in_progress" : "needs_owner";
+      await tx.update(managedWorkDispatchesTable).set({ agent_id: result.agentId, run_id: result.runId, provider_status: result.runStatus, status: "running" })
+        .where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
+      await tx.update(managedWorkItemsTable).set({ status: nextStatus, branch: reservation.item.target_branch, updated_at: new Date() })
+        .where(eq(managedWorkItemsTable.id, id));
+      await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: reservation.item.project_key, actor: "system", event_type: "cursor_dispatch_started", from_status: current.item.status, to_status: nextStatus, details: { dispatch_id: reservation.dispatch.id, provider: "cursor", model_id: reservation.config.selected_model_id, agent_id: result.agentId, run_id: result.runId, run_status: result.runStatus, branch: reservation.item.target_branch, provider_cancellation: "not_requested_or_verified" } });
+      return nextStatus;
+    });
+    res.status(202).json({ dispatch_id: reservation.dispatch.id, work_item_id: id, provider: "cursor", model_id: reservation.config.selected_model_id, agent_id: result.agentId, run_id: result.runId, status: result.runStatus, dashboard_status: dashboardStatus, provider_cancellation: "not_requested_or_verified", automatic_pickup: false });
+  } catch {
+    // A local persistence failure after an accepted start must retain the
+    // validated external binding when recovery storage is available. Never
+    // persist arbitrary database/network error messages or provider excerpts.
+    const summary = acceptedRun
+      ? "Cursor accepted the run, but its local start record could not be confirmed."
+      : "Cursor submission was refused or its result could not be confirmed.";
+    await db.transaction(async (tx) => {
+      await tx.select({ id: managedWorkDispatchConfigTable.id }).from(managedWorkDispatchConfigTable)
+        .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
+      const current = await lockWorkItem(tx, id);
+      await tx.update(managedWorkDispatchesTable).set({
+        status: "needs_owner", error_summary: `${summary} No automatic retry; inspect Cursor before any next action.`,
+        ...(acceptedRun ? { agent_id: acceptedRun.agentId, run_id: acceptedRun.runId, provider_status: acceptedRun.runStatus } : {}),
+      }).where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
+      await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: reservation.item.project_key, actor: "system", event_type: "cursor_dispatch_needs_owner", from_status: current?.item.status ?? "unknown", to_status: current?.item.status ?? "unknown", details: { dispatch_id: reservation.dispatch.id, error: summary, accepted_run_binding_retained: Boolean(acceptedRun) } });
+    });
     res.status(502).json({ error: "Cursor request outcome requires owner review. The reservation prevents duplicate submission." });
   }
 });
