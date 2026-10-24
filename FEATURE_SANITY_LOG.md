@@ -284,3 +284,13 @@ exclusive submission authority and provider/recovery behavior are verified.
 No task acceptance/resume, provider call, DB operation, migration or deployment.
 No tests added or run. API TypeScript noEmit and direct API build passed; source
 diff self-reviewed. Runtime concurrency/provider behavior remains unverified.
+
+## 24 October 2026 — frozen execution bounds and durable deadline action
+
+Save immutable execution bound with reservation; enforce earlier owner/time-cap
+deadline before HTTP and on late acceptance. Explicit owner deadline check uses
+DB time and saved bound, deduplicates recovery intent/event under shared locks,
+and marks active work needs_owner without rewriting completed task acceptance.
+No provider cancellation, slot release, retry, automatic scheduler or queue pickup
+claim. Existing schema reused. No tests, DB/provider/runtime operations performed.
+API TypeScript noEmit/direct API build passed and source diff self-reviewed.

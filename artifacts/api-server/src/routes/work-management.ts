@@ -4,7 +4,7 @@ import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { requireRealOwnerSession } from "./auth";
 import { buildCursorAgentPayload, createCursorAgent } from "../lib/cursor-dispatch";
-import { CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED, CURSOR_RELEASE_OPERATIONS_VERIFIED, cursorCancellationRequirement, hasUnreleasedCursorDispatch, processCursorCancellation, processCursorRelease, readCursorCancellationRecovery, requireCursorCancellation } from "../lib/cursor-cancellation";
+import { CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED, CURSOR_RELEASE_OPERATIONS_VERIFIED, cursorCancellationRequirement, hasUnreleasedCursorDispatch, processCursorCancellation, processCursorRelease, readCursorCancellationRecovery, recordCursorDeadline, requireCursorCancellation } from "../lib/cursor-cancellation";
 
 export const WORK_KEYS = ["finance", "hypest", "cattle-dog-coffee", "ddg-control-ai-stack"] as const;
 export type WorkKey = (typeof WORK_KEYS)[number];
@@ -223,7 +223,7 @@ router.get("/work-readiness", async (_req, res): Promise<void> => {
     ambiguous_dispatches: ambiguous,
     automatic_pickup: false,
     finance_hold: "DDG Finance remains hard-held until Claude review and Markus approval.",
-    local_limits: "Dashboard records enforce deadlines, time/attempt caps, and zero app-side spend; provider billing limits remain owner-verified.",
+    local_limits: "Dashboard rejects starts after saved deadlines and limits attempts/recorded spend. Deadline checks save recovery requirements; automatic scheduling, provider hard stops and billing enforcement remain unverified.",
   });
 });
 
@@ -471,9 +471,15 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
       idempotency_key: idempotencyKey, agent_id: `bc-${idempotencyKey}`, model_id: config.selected_model_id, branch: item.target_branch,
       status: "submitting", started_at: new Date(),
     }).returning();
+    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key,
+      actor: "system", event_type: "cursor_execution_bound", details: { version: 1, dispatch_id: dispatch.id,
+        agent_id: dispatch.agent_id, plan_version: item.plan_version, time_limit_minutes: item.time_limit_minutes,
+        owner_deadline: item.deadline.toISOString(), effective_deadline: new Date(Math.min(item.deadline.getTime(),
+          dispatch.started_at.getTime() + item.time_limit_minutes * 60_000)).toISOString(), provider_enforced: false } });
     await tx.update(managedWorkItemsTable).set({ attempts: item.attempts + 1, started_at: new Date(), updated_at: new Date() }).where(eq(managedWorkItemsTable.id, id));
     await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "dispatch_reserved", from_status: "approved", to_status: "approved", details: { dispatch_id: dispatch.id, idempotency_key: idempotencyKey, outcome_version: outcome.version } });
-    return { kind: "reserved" as const, item, dispatch, config };
+    return { kind: "reserved" as const, item, dispatch, config,
+      effectiveDeadline: new Date(Math.min(item.deadline.getTime(), dispatch.started_at.getTime() + item.time_limit_minutes * 60_000)) };
   });
   if (reservation.kind !== "reserved") {
     const status = reservation.kind === "missing" ? 404 : reservation.kind === "off" || reservation.kind === "question" || reservation.kind === "disabled" ? 423 : 409;
@@ -515,7 +521,7 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
           !current.control.enabled || current.control.completed || current.item.status !== "approved" ||
           current.item.plan_version !== reservation.item.plan_version || new Date() >= current.item.deadline ||
           dispatch.status !== "submitting" || dispatch.agent_id !== payload.agentId || dispatch.run_id !== null) return false;
-      if (await cursorCancellationRequirement(tx, dispatch)) return false;
+      if (new Date() >= reservation.effectiveDeadline || await cursorCancellationRequirement(tx, dispatch)) return false;
       const [outcome] = await tx.select().from(managedWorkOutcomesTable)
         .where(eq(managedWorkOutcomesTable.id, dispatch.outcome_id!)).limit(1);
       if (!outcome || outcome.project_key !== current.item.project_key || outcome.status !== "approved" ||
@@ -553,7 +559,8 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
       const cancellationRequired = await cursorCancellationRequirement(tx, reservation.dispatch);
       const nextStatus = !cancellationRequired && currentConfig?.enabled && currentConfig.updated_at.getTime() === reservation.config.updated_at.getTime() &&
         current.control.enabled && !current.control.completed && current.item.status === "approved" &&
-        current.item.plan_version === reservation.item.plan_version && new Date() < current.item.deadline && !question
+        current.item.plan_version === reservation.item.plan_version && new Date() < current.item.deadline &&
+        new Date() < reservation.effectiveDeadline && !question
         ? "in_progress" : "needs_owner";
       await tx.update(managedWorkDispatchesTable).set({ agent_id: result.agentId, run_id: result.runId, provider_status: result.runStatus, status: "running" })
         .where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
@@ -617,6 +624,20 @@ router.post("/work-dispatches/:id/cancel", requireRealOwnerSession, async (req, 
     res.status(result.kind === "missing" ? 404 : result.kind === "terminal_observed" || result.kind === "terminal_recorded" ? 200 : 409).json(result);
   } catch {
     res.status(503).json({ error: "Cancellation could not be durably confirmed. Inspect saved recovery history; do not assume the run stopped." });
+  }
+});
+
+router.post("/work-dispatches/:id/check-deadline", requireRealOwnerSession, async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1 || !req.body || typeof req.body !== "object" || Array.isArray(req.body) ||
+      Object.keys(req.body).some(key => key !== "action") || req.body.action !== "check_saved_cursor_deadline") {
+    res.status(400).json({ error: "Explicitly request a deadline check of the saved dispatch ID." }); return;
+  }
+  try {
+    const result = await recordCursorDeadline(id);
+    res.status(result.kind === "missing" ? 404 : 200).json(result);
+  } catch {
+    res.status(503).json({ error: "Deadline check could not be saved; provider stop is unverified." });
   }
 });
 

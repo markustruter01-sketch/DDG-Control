@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { db, managedWorkDispatchConfigTable, managedWorkDispatchesTable, managedWorkEventsTable, managedWorkItemsTable, projectWorkControlsTable } from "@workspace/db";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { cancelCursorRun, observeCursorAgentQuiescence, observeCursorRun, resolveCursorRun } from "./cursor-run-control";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Dispatch = typeof managedWorkDispatchesTable.$inferSelect;
 const actor = "system:cursor-run-control-v1";
-const eventTypes = ["cursor_cancel_required", "cursor_cancel_claimed", "cursor_cancel_observed", "cursor_cancel_unresolved", "cursor_run_binding_recovered", "cursor_release_claimed", "cursor_release_unresolved", "cursor_run_released"];
+const eventTypes = ["cursor_cancel_required", "cursor_cancel_claimed", "cursor_cancel_observed", "cursor_cancel_unresolved", "cursor_run_binding_recovered", "cursor_release_claimed", "cursor_release_unresolved", "cursor_run_released", "cursor_deadline_recorded"];
 // A provider snapshot cannot prevent someone submitting a later external run.
 // Keep release disabled until exclusive submission authority is verified.
 export const CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED = false;
@@ -102,6 +102,8 @@ export async function readCursorCancellationRecovery(id: number) {
     provider_status: observation?.details.provider_status ?? "unknown",
     observed_at: observation?.details.observed_at ?? null,
     release_observation_recorded: release, release_attempts_recorded: events.filter(event => event.event_type === "cursor_release_claimed").length,
+    deadline_recorded: events.some(event => event.event_type === "cursor_deadline_recorded"),
+    deadline_evidence: events.find(event => event.event_type === "cursor_deadline_recorded")?.details.reason ?? null,
     evidence_source: "saved_ledger_only", live_status_verified_now: false,
     automatic_retry: false, reservation_released: Boolean(release && CURSOR_RELEASE_OPERATIONS_VERIFIED && CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED), task_accepted: false, code_checkpoint_verified: false };
 }
@@ -268,5 +270,55 @@ export async function processCursorRelease(id: number, apiKey: string) {
     });
     return { kind: observation ? "released" as const : "unresolved" as const, reservation_released: Boolean(observation),
       task_accepted: false, automatic_resume: false };
+  });
+}
+
+/** Durable local deadline action. No clock/timestamp is accepted from the
+ * browser; DB time is read under the same lock as submission/stop/recovery.
+ * This records a cancellation requirement, not provider-side enforcement. */
+export async function recordCursorDeadline(id: number) {
+  return db.transaction(async tx => {
+    const locked = await lockDispatch(tx, id);
+    if (!locked) return { kind: "missing" as const };
+    const { dispatch, task } = locked;
+    const events = await history(tx, dispatch);
+    if (await validRelease(tx, dispatch, events)) return { kind: "released" as const, provider_stopped_now: false };
+    const recorded = events.find(event => event.event_type === "cursor_deadline_recorded");
+    if (recorded) return { kind: "already_recorded" as const, cancellation_required: true, provider_stopped_now: false };
+    const bounds = await tx.select().from(managedWorkEventsTable).where(and(
+      eq(managedWorkEventsTable.work_item_id, task.id), eq(managedWorkEventsTable.actor, "system"),
+      eq(managedWorkEventsTable.event_type, "cursor_execution_bound")));
+    const matching = bounds.filter(event => event.project_key === dispatch.project_key && event.details.version === 1 &&
+      event.details.dispatch_id === id && event.details.agent_id === dispatch.agent_id);
+    const bound = matching.length === 1 ? matching[0].details : undefined;
+    const minutes = bound?.time_limit_minutes;
+    const ownerDeadline = typeof bound?.owner_deadline === "string" ? Date.parse(bound.owner_deadline) : NaN;
+    const effective = typeof bound?.effective_deadline === "string" ? Date.parse(bound.effective_deadline) : NaN;
+    const valid = typeof minutes === "number" && Number.isSafeInteger(minutes) && minutes >= 5 && minutes <= 1440 &&
+      Number.isFinite(ownerDeadline) && Number.isFinite(effective) &&
+      effective === Math.min(ownerDeadline, dispatch.started_at.getTime() + minutes * 60_000);
+    const [clock] = await tx.select({ milliseconds: sql<number>`extract(epoch from clock_timestamp()) * 1000`.mapWith(Number) })
+      .from(managedWorkDispatchConfigTable).where(eq(managedWorkDispatchConfigTable.id, 1)).limit(1);
+    if (!clock || !Number.isFinite(clock.milliseconds)) throw new Error("Deadline clock unavailable");
+    if (valid && clock.milliseconds < effective) return { kind: "not_due" as const, effective_deadline: new Date(effective).toISOString(), provider_stopped_now: false };
+    const reason = valid ? "saved_execution_deadline_elapsed" : "saved_execution_bound_missing_or_invalid";
+    const intentId = await requireCursorCancellation(tx, dispatch, reason);
+    // Never rewrite accepted/completed task records as if local timeout were a
+    // provider result. Active tasks become needs_owner; the reservation stays.
+    const next = ["approved", "in_progress"].includes(task.status) ? "needs_owner" : task.status;
+    if (next !== task.status) await tx.update(managedWorkItemsTable).set({ status: next, updated_at: new Date(clock.milliseconds) })
+      .where(eq(managedWorkItemsTable.id, task.id));
+    await tx.update(managedWorkDispatchesTable).set({ status: "needs_owner",
+      error_summary: "Execution bound elapsed or is unverified. Provider cancellation/recovery remains required." })
+      .where(eq(managedWorkDispatchesTable.id, id));
+    await tx.insert(managedWorkEventsTable).values({ work_item_id: task.id, project_key: dispatch.project_key, actor,
+      event_type: "cursor_deadline_recorded", from_status: task.status, to_status: next,
+      details: { version: 1, dispatch_id: id, agent_id: dispatch.agent_id, run_id: dispatch.run_id, intent_id: intentId,
+        reason, effective_deadline: valid ? new Date(effective).toISOString() : null,
+        checked_at: new Date(clock.milliseconds).toISOString(), provider_request_sent: false, provider_stopped: false,
+        reservation_released: false, automatic_retry: false, task_accepted: false },
+    });
+    return { kind: valid ? "deadline_recorded" as const : "bound_unverified" as const,
+      cancellation_required: true, provider_stopped_now: false, reservation_released: false };
   });
 }

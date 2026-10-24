@@ -94,7 +94,28 @@ retry the same task or resume coding. Existing unique dispatch-per-task, current
 approvals, repository reservations and all live guards still apply. No tables,
 migrations, startup worker, timer or provider side effects added.
 
-Still owed: durable hosted pickup/deadline enforcement; actual recoverable
+## Saved deadline source extension
+
+Reservation now atomically saves a server-authored execution bound: approved plan
+version, owner deadline, time limit, and the earlier of owner deadline or dispatch
+start plus time limit. Pre-submit and accepted-response handling also enforce this
+frozen deadline, so a later delay or task change cannot extend the dispatch bound.
+
+Explicit real-owner POST /work-dispatches/:id/check-deadline accepts only the saved
+dispatch ID and action check_saved_cursor_deadline. It reads DB time under the
+config/control/task/dispatch locks. Before due it records nothing. At/after due,
+or for missing/invalid legacy bounds, it saves one durable cancellation/recovery
+requirement and deadline event. Repeated calls reuse saved evidence. Active task
+status becomes needs_owner; already accepted/completed task status is retained.
+Dispatch remains needs_owner and its reservation stays held. No credential,
+provider request, automatic retry, task acceptance or resume is performed.
+
+This action survives process restart through existing storage. It is not a
+hosted scheduler, automatic queue pickup, provider-side hard stop or periodic
+deadline guarantee. Those runtime capabilities and their live safety flags remain
+unverified/false. No schema, migration, helper, timer or external scheduler added.
+
+Still owed: durable hosted pickup/provider deadline enforcement; actual recoverable
 code checkpoints and supported message ingress/follow-up. These source tasks
 can continue before authorising live operations. The existing isolation,
 recovery, included-use and owner acceptance gates remain separate.
