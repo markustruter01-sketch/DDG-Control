@@ -255,3 +255,152 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Persist fixed safe failure descriptions rather than arbitrary SQL/network errors. No raw exception/response log added. IDs are only copied after strict create response validation.
 - API TypeScript noEmit exit0 and diff-check clear. No tests/backend/DB/task/provider/migration/publication/release. Hard flags false; durable start-intent/cancel receipts and runtime failure acceptance remain open.
 - Direct API build exit0/2.5MB after recovery change. Reviewed complete backend diff against base45add2f; no UI/schema/dependency/provider enablement changes. Existing checks do not establish real concurrent/restart/cancellation behavior.
+
+##24October - Resume authorised backend: durable cancellation recovery
+- Owner explicitly reiterates finish development. Previous standby incorrectly treated live-operation prerequisites as a block on all source development. Source work resumes; no new permission request for already approved development.
+- Need: preserve submission identity before HTTP, stop/reenable barrier, durable cancellation claims and exact-run evidence after restart. Reuse existing dispatch/event storage instead of creating an unnecessary migration. No timer or process-local lock substituted for durable state.
+- Implemented reserved agent ID, locked submission preflight/event, durable local recovery requirements for all historical dispatch statuses, late-start/save-failure requirements, bounded claimed cancellation service, strict exact-run transport, real-owner recovery GET and source-gated cancellation POST. See CURSOR_CANCELLATION_RECOVERY.md.
+- API TypeScript noEmit exit0 and direct API build exit0 (2.5MB). Source self-review, not independent/runtime review. No tests added/run; no backend, DB, provider, migration, merge or deployment operation. All live guards remain false. No global release/task acceptance/checkpoint claim from terminal observations.
+- Remaining source work is active: ambiguous submissions, verified all-history release, durable pickup/deadline runner, genuine checkpoints and communications. Full A/B acceptance remains open; no invented percentage increase.
+# 24 October 2026 — ambiguous Cursor submission recovery (PR30 extension)
+
+Integrated bounded reserved-agent lookup into the durable cancellation service.
+Requires server pre-submit evidence and a single unpaginated run; validates exact
+agent/run identity and timestamps before saving a missing binding. Three GETs
+maximum, no create/steer/resume/cancel during lookup. Unknown results preserve
+the global reservation. Late accepted-start persistence cannot replace a
+different recovered binding. Existing source gates remain false. No tests,
+provider calls, DB operations, migration, merge or deployment performed.
+API TypeScript noEmit and direct API build passed; source diff reviewed. Runtime
+concurrency/provider recovery remains unverified, and live flags remain false.
+
+## 24 October 2026 — trusted dispatch reservation release source
+
+All-history barrier consumes only exact server-authored release evidence with
+valid claim/settled submission. Local completed/failed state cannot release it.
+Explicit real-owner release saves bounded claims and validates exact terminal run,
+single unpaginated run history and IDLE agent. Source gates remain false until
+exclusive submission authority and provider/recovery behavior are verified.
+No task acceptance/resume, provider call, DB operation, migration or deployment.
+No tests added or run. API TypeScript noEmit and direct API build passed; source
+diff self-reviewed. Runtime concurrency/provider behavior remains unverified.
+
+## 24 October 2026 — frozen execution bounds and durable deadline action
+
+Save immutable execution bound with reservation; enforce earlier owner/time-cap
+deadline before HTTP and on late acceptance. Explicit owner deadline check uses
+DB time and saved bound, deduplicates recovery intent/event under shared locks,
+and marks active work needs_owner without rewriting completed task acceptance.
+No provider cancellation, slot release, retry, automatic scheduler or queue pickup
+claim. Existing schema reused. No tests, DB/provider/runtime operations performed.
+API TypeScript noEmit/direct API build passed and source diff self-reviewed.
+
+## 24 October 2026 — shared bounded dispatch service
+
+Extracted dispatch orchestration from the authenticated owner route into
+cursor-work-dispatch.ts; response status/body mappings and all existing guards
+remain. Shared project controls/locks/readiness now live in managed-work-controls.ts
+with compatible route re-exports. No route/service circular dependency or internal
+HTTP. No worker/scheduler/timer/provider/DB operation or live enablement performed.
+No tests added or run. Final API TypeScript noEmit/direct API build passed; source
+extraction reviewed. Runtime acceptance remains open.
+
+## 24 October 2026 — source-disabled bounded hosted pickup
+
+Dedicated HMAC machine route plus globally serialized durable invocation receipts,
+including idle/blocked/busy states. One task per call; claim token/version/expiry
+checked under shared dispatch reservation and pre-HTTP locks. Unique invocation
+replay never resubmits. Existing global dispatch barrier survives worker expiry.
+New source schema only; no migration/push/DB/provider/scheduler/credential/live
+operation. Hosted-worker gate and all existing safety flags remain false. No tests
+added or run. See CURSOR_HOSTED_WORKER_SOURCE.md for exact protocol/limitations.
+DB declaration compilation, API TypeScript noEmit and direct API build passed;
+source review covered HMAC scope, idle replay, overlap, expiry, config/plan binding,
+global dispatch exclusion, guarded schema access and redacted owner recovery view.
+
+## 24 October 2026 — bounded recovery before hosted pickup
+
+Unreleased history takes priority over new coding tasks, including while new-work
+toggle is OFF. One dispatch per tick with persisted sequenced cursor/wrap; stale
+or expired claims cannot advance it. Deadline and optional cancellation service
+validate recovery authority under shared locks. Provider cancellation still needs
+its separate false source gate, saved requirement and current approved non-Finance
+scope, with existing attempt/backoff limits. No automatic release/resume/start.
+Only SOURCE schema fields changed; no migration/push or runtime operation. No tests.
+DB declaration/API TypeScript compilation and direct API build passed; source
+review covered cursor wrap/late receipts, OFF recovery, claim authority and scope.
+
+## 24 October 2026 — B-03/B-04 provider capability audit
+
+Checked current Cursor primary endpoint docs plus existing Fleet Desk/manual
+handover source. Run-scoped checkpoint/restore and exact-run steer delivery are
+not established by the reviewed evidence. Retain dashboard-only messaging/manual
+checkpoint labels and explicit B acceptance gates. No unused adapter or runtime
+operation added. See CURSOR_CHECKPOINT_COMMUNICATION_AUDIT.md. Documentation only;
+no build/tests rerun for unchanged application source.
+
+## 24 October 2026 — minimal infrastructure and legacy write authority
+
+Owner explicitly requests clean/minimal/secure infrastructure. Reused existing
+real-owner middleware on five project/goal/task writes that otherwise accepted
+development bypass. Preserved OFF/Finance/input restrictions. Shared-control
+consumers now import the library directly rather than another route module.
+No service/dependency/schema/credential added. Completion-outcome-version audit
+found no approved-outcome revision/replacement API path; no speculative code added.
+See CONTROL_INFRASTRUCTURE_BOUNDARIES.md. No tests/runtime/DB/provider operations.
+The five writes also use one shared transaction helper to recheck OFF/hold/
+completed under the existing project control lock through the write, closing
+the gap between the earlier read check and mutation. No external HTTP under locks.
+Final API TypeScript noEmit/direct API build passed and source diff reviewed;
+runtime authentication/concurrency behavior remains unverified. No tests run.
+
+## 24 October 2026 — inbound status authority and atomic project writes
+
+Inbound task status now also requires the existing real-owner session; a shared
+inbound key/development bypass cannot substitute for owner authority. Inbound task
+status and append-only project notes reuse the atomic project-write guard so OFF/
+hold/completion cannot race their final write. Existing key/session and input
+validation retained; inbound decision locking already adequate. Finance endpoints
+unchanged. No infrastructure/dependency/schema added; no tests/runtime operations.
+Final API TypeScript noEmit/direct API build passed; source diff reviewed. Actual
+runtime permission/concurrency verification remains open.
+
+## 24 October 2026 — owner-only company work projection
+
+Added bounded read-only API and lazy Company Map work section over existing
+controls/outcomes/versioned task plans/blocking questions. No second queue/store,
+dependency, migration, provider call or broad worker access. Exact task links,
+real-owner-only read, response validation and partial/unconfigured/error states.
+Updated source finding to distinguish this projection from incomplete company
+plan/dependencies/export and live acceptance. Consolidated A01-A07 source evidence
+and finite remaining work in MANAGEMENT_SOURCE_ACCEPTANCE.md. No tests/runtime.
+API/frontend TypeScript noEmit and direct API/Vite frontend builds passed; source
+review covered owner-only fixed scope, bounded/partial data, lazy loading and exact
+task links. No UI/runtime/owner acceptance or live database operation was claimed.
+# 24 October 2026 — bounded saved activity projection
+
+Added real-owner read-only API and lazy Company Map activity section over five
+existing event tables. Fixed managed scope, 50 records per source, explicit
+truncation, named metadata only, integer version allowlist, project filter and
+exact task links. No raw JSON/prose import, new store/schema/dependency/service,
+provider or worker operation. Source review covered authentication, fixed SQL
+scope, output fields, caps, reference namespaces, missing versions and legacy
+timezone limits. API/frontend TypeScript and direct API/Vite builds passed.
+No tests, UI/runtime/DB/provider checks, migration, merge, deployment or acceptance.
+Remaining A02 dependencies/accepted plan/scoped export design is next.
+
+## 24 October 2026 — company dependency preview source
+
+Strict reference-only parser caps scope/outcomes/tasks/edges, rejects duplicate IDs/gates/edges, unknown fields and dependency cycles; canonical SHA256 digest. Pure evaluator checks exact project/task/plan/outcome/gate bindings and transitive prerequisites with completed saved evidence. Real-owner no-store POST /company/plan/preview performs bounded existing-record reads only, exposes metadata verdicts and explicitly no acceptance/execution/persistence/snapshot/question/readiness claims. No new schema/service/package/provider call/write. Source reviewed; API TypeScript/direct build passed. No tests/live checks/DB/migration/merge/deploy. Durable plan approval and dispatch enforcement remain unfinished.
+
+## 24 October 2026 — source-disabled company plan revision receipts
+
+Single source-only immutable reference/approval/withdrawal table, strict owner commands and bounded history. Hardcoded false gate before new-table reads/writes. Existing singleton lock serializes mutations; fixed project/outcome/task lock order, reviewed history-head/digest/target/request UUID, matching replay receipts, stale/conflicting actions refused. No task body copies, UPDATE/DELETE path or provider action. Withdrawals reduce authority even with work OFF. DB declarations/API TypeScript/direct API build passed; source reviewed, no tests/DB/migration/schema push/runtime/merge/deploy. Owner UI and shared enforcement across all work paths remain unfinished; feature disabled.
+
+## 24 October 2026 — shared company-plan enforcement source
+
+One gated accepted-plan context shared across owner approval, worker candidate filtering, reservation, pre-HTTP and late accepted reply. Existing config then all managed controls before task/outcome locks avoids cross-project lock inversion; exact current manifest/digest/bindings and transitive prerequisites. Changed/withdrawn plan blocks submission, late change retains needs-owner/cancellation requirement without provider-stop claim. Events retain plan receipt references; one-task export adds only exact binding/revision metadata, no other-project body. Source gate remains false before new-table access; provider guards false. API TypeScript/direct build passed/source reviewed; no tests/runtime/DB/schema/provider/merge/deploy. Owner review UI/rollout/live acceptance still open.
+
+## 24 October 2026 — exact owner plan review source
+
+Gated review endpoint returns disabled before DB; enabled implementation uses repeatable-read/read-only transaction for exact current acceptance/proposal, head and saved-record verdict. Lazy owner panel validates data, reuses bounded work board, prepares reference-only task/dependency drafts, previews and saves unapproved proposals; exact review checkboxes/head/digest accept/withdraw. Stable request UUID/body retries on ambiguous failure, unreadable success remains uncertain, competing controls frozen, no auto-resubmit after reload. All outcomes/tasks/edges shown, stale acceptance and partial inventory explicit. Work-board response now states omitted plan/dependency coverage rather than asserting no accepted plan exists. Map finding updated source-only. API/frontend TypeScript and direct builds passed; no tests/visual-runtime/DB/provider/migration/merge/deploy/owner acceptance. Plan/provider flags remain false.

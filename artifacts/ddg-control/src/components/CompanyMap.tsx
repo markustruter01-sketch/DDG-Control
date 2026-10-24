@@ -122,8 +122,8 @@ export function CompanyMap() {
 
       <div className="cm-board-pending" role="status">
         <span className="cm-ledger-mark" aria-hidden="true">!</span>
-        <div><strong>Company work board · pending</strong><p>Existing approval queue remains the task source. No second list or broad bot access.</p></div>
-        <Link href="/ai-stack#work-queue-heading">Existing project work →</Link>
+        <div><strong>Company work board · saved records</strong><p>Read-only owner view below. Existing approval queue remains the task source; company-plan acceptance is separate.</p></div>
+        <a href="#company-work-board">Saved company work →</a>
       </div>
 
       <div className="cm-toolbar">

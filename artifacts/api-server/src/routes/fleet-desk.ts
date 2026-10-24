@@ -7,7 +7,7 @@ import {
   managedFleetQuestionEventsTable, managedFleetQuestionsTable, managedWorkDispatchesTable,
   managedWorkItemsTable, managedWorkOutcomesTable,
 } from "@workspace/db/schema";
-import { hasWorkControl, isProjectWorkHeld, lockWorkControl, type WorkTransaction } from "./work-management";
+import { hasWorkControl, isProjectWorkHeld, lockWorkControl, type WorkTransaction } from "../lib/managed-work-controls";
 import { requireRealOwnerSession } from "./auth";
 
 const router: IRouter = Router();

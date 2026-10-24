@@ -35,7 +35,7 @@ import {
 import { refreshCattleDogMetrics } from "../routes/metrics";
 import { computeFinanceSummary } from "../routes/finance";
 import { logger } from "../lib/logger";
-import { isProjectWorkEnabled, WORK_KEYS } from "../routes/work-management";
+import { isProjectWorkEnabled, WORK_KEYS } from "../lib/managed-work-controls";
 import {
   fetchClaudeNotes,
   writeOllieReply,

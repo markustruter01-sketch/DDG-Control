@@ -28,3 +28,4 @@ export * from "./fleet";export * from "./social";
 export * from "./work-management";
 
 export * from "./notification-receipts";
+export * from "./company-plans";

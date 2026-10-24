@@ -23,7 +23,7 @@ import {
   requestBodyRecord,
   zodErrorText,
 } from "./validation";
-import { hasWorkControl, isProjectWorkHeld, lockWorkControl } from "./work-management";
+import { hasWorkControl, isProjectWorkHeld, lockWorkControl } from "../lib/managed-work-controls";
 import { requireRealOwnerSession } from "./auth";
 
 const router: IRouter = Router();

@@ -1,104 +1,54 @@
-import { randomUUID } from "node:crypto";
 import { db, goalsTable, managedFleetQuestionsTable, managedWorkDispatchConfigTable, managedWorkDispatchesTable, managedWorkEventsTable, managedWorkItemsTable, managedWorkOutcomeEventsTable, managedWorkOutcomesTable, projectHandoverEventsTable, projectHandoverTable, projectWorkAuditTable, projectWorkControlsTable, projectsTable, tasksTable } from "@workspace/db";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { requireRealOwnerSession } from "./auth";
-import { buildCursorAgentPayload, createCursorAgent } from "../lib/cursor-dispatch";
+import { CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED, CURSOR_RELEASE_OPERATIONS_VERIFIED, processCursorCancellation, processCursorRelease, readCursorCancellationRecovery, recordCursorDeadline, requireCursorCancellation } from "../lib/cursor-cancellation";
 
-export const WORK_KEYS = ["finance", "hypest", "cattle-dog-coffee", "ddg-control-ai-stack"] as const;
-export type WorkKey = (typeof WORK_KEYS)[number];
-const FINANCE_REVIEW_REQUIRED = true;
-const CURSOR_AUTOMATIC_PICKUP = false;
-const CURSOR_HARD_WALL_CLOCK_STOP_VERIFIED = false;
-// Also fail closed until external termination, global/repository reservations,
-// stop barriers and blocking-question synchronization are verified together.
-const CURSOR_RUN_SAFETY_VERIFIED = false;
-const RUN_SAFETY_BLOCKER = "Dispatch stays blocked: provider termination, global/repository reservation, stop barriers and question synchronization are not verified.";
-const BACKGROUND_WORKER_BLOCKER = "Automatic queue pickup is unavailable: Replit deployments can restart or move processes, and this app has no separately verified durable worker.";
-const TASK_LIMIT_BLOCKER = "Dispatch stays blocked: this adapter cannot enforce or verify a provider-side wall-clock stop for an active run.";
-
-async function readDispatchConfig() {
-  await db.insert(managedWorkDispatchConfigTable).values({ id: 1 }).onConflictDoNothing();
-  const [config] = await db.select().from(managedWorkDispatchConfigTable).where(eq(managedWorkDispatchConfigTable.id, 1)).limit(1);
-  return config!;
-}
-
-function dispatchReadiness(config: Awaited<ReturnType<typeof readDispatchConfig>>) {
-  const secretPresent = Boolean(process.env.CURSOR_API_KEY?.trim());
-  const normalizeRepository = (value: string | null) => value?.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\.git$/, "").replace(/\/$/, "") ?? "";
-  const ownerBlockers = [
-    ...(!CURSOR_HARD_WALL_CLOCK_STOP_VERIFIED ? [TASK_LIMIT_BLOCKER] : []),
-    ...(!CURSOR_RUN_SAFETY_VERIFIED ? [RUN_SAFETY_BLOCKER] : []),
-    ...(!config.plan_model_confirmed ? ["Owner has not verified eligible plan and exact model."] : []),
-    ...(!config.included_allowance_confirmed ? ["Owner has not verified included allowance for that model."] : []),
-    ...(!config.no_overage_confirmed ? ["Owner has not verified no-overage or a hard spend cap."] : []),
-    ...(!config.github_access_confirmed ? ["Owner has not verified GitHub repository access and starting branch."] : []),
-    ...(!config.approved_project_key || !normalizeRepository(config.approved_repository) || !config.approved_starting_branch ? ["Owner-approved project, repository, and starting branch are not configured."] : []),
-    ...(!config.secret_owner_verified || !secretPresent ? ["Cursor server secret must be present and owner-verified; secret values are never returned."] : []),
-    ...(!config.selected_model_id ? ["An explicit owner-verified model ID is required; no fallback is configured."] : []),
-  ];
-  const blockers = [...ownerBlockers, ...(!config.enabled ? ["Dispatch toggle is OFF."] : [])];
-  return {
-    manual_dispatch_ready: ownerBlockers.length === 0,
-    dispatch_enabled: config.enabled && ownerBlockers.length === 0,
-    automatic_pickup: CURSOR_AUTOMATIC_PICKUP,
-    background_worker_blocker: BACKGROUND_WORKER_BLOCKER,
-    secret_present: secretPresent,
-    config: {
-      enabled: config.enabled,
-      plan_model_confirmed: config.plan_model_confirmed,
-      included_allowance_confirmed: config.included_allowance_confirmed,
-      no_overage_confirmed: config.no_overage_confirmed,
-      github_access_confirmed: config.github_access_confirmed,
-      secret_owner_verified: config.secret_owner_verified,
-      selected_model_id: config.selected_model_id,
-      approved_repository: config.approved_repository,
-      approved_starting_branch: config.approved_starting_branch,
-      approved_project_key: config.approved_project_key,
-      updated_at: config.updated_at,
-    },
-    blockers,
-  };
-}
-
-export function hasWorkControl(key: string): key is WorkKey {
-  return WORK_KEYS.includes(key as WorkKey);
-}
-
-export function isProjectWorkHeld(key: string): boolean {
-  return key === "finance" && FINANCE_REVIEW_REQUIRED;
-}
-
-export async function isProjectWorkEnabled(key: string): Promise<boolean> {
-  if (!hasWorkControl(key)) return false;
-  if (key === "finance" && FINANCE_REVIEW_REQUIRED) return false;
-  const [row] = await db.select({ enabled: projectWorkControlsTable.enabled, completed: projectWorkControlsTable.completed })
-    .from(projectWorkControlsTable).where(eq(projectWorkControlsTable.project_key, key)).limit(1);
-  return row?.enabled === true && row.completed === false;
-}
-
-export type WorkTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-/** Serialize project record changes: control first, then outcome/task rows. */
-export async function lockWorkControl(tx: WorkTransaction, key: string) {
-  await tx.insert(projectWorkControlsTable).values({ project_key: key }).onConflictDoNothing();
-  const [control] = await tx.select().from(projectWorkControlsTable)
-    .where(eq(projectWorkControlsTable.project_key, key)).for("update").limit(1);
-  return control!;
-}
-
-async function lockWorkItem(tx: WorkTransaction, id: number) {
-  const [hint] = await tx.select({ project_key: managedWorkItemsTable.project_key }).from(managedWorkItemsTable)
-    .where(eq(managedWorkItemsTable.id, id)).limit(1);
-  if (!hint || !hasWorkControl(hint.project_key)) return null;
-  const control = await lockWorkControl(tx, hint.project_key);
-  const [item] = await tx.select().from(managedWorkItemsTable)
-    .where(eq(managedWorkItemsTable.id, id)).for("update").limit(1);
-  return item ? { item, control } : null;
-}
+import { dispatchApprovedCursorWork } from "../lib/cursor-work-dispatch";
+import { readCursorWorkerInvocation } from "../lib/cursor-worker";
+import { companyPlanAllows, companyPlanReceipt, lockCompanyPlanContext } from "../lib/company-plan-revisions";
+import { WORK_KEYS, FINANCE_REVIEW_REQUIRED, CURSOR_HARD_WALL_CLOCK_STOP_VERIFIED, CURSOR_RUN_SAFETY_VERIFIED, CURSOR_CANCEL_OPERATIONS_VERIFIED, RUN_SAFETY_BLOCKER, TASK_LIMIT_BLOCKER, dispatchReadiness, hasWorkControl, isProjectWorkHeld, lockWorkControl, lockWorkItem, readDispatchConfig } from "../lib/managed-work-controls";
+export { WORK_KEYS, hasWorkControl, isProjectWorkHeld, isProjectWorkEnabled, lockWorkControl } from "../lib/managed-work-controls";
+export type { WorkKey, WorkTransaction } from "../lib/managed-work-controls";
 
 const router: IRouter = Router();
 const workStatuses = ["pending_approval", "approved", "in_progress", "needs_owner", "failed", "completed", "rejected"] as const;
+
+router.get("/company/work-board", requireRealOwnerSession, async (_req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "private, no-store");
+  try {
+    // Read-only projection over authoritative records, not another queue.
+    // Fixed managed scope and bounded reads; no provider call or record insert.
+    const [controls, outcomes, items, questions] = await Promise.all([
+      db.select().from(projectWorkControlsTable).where(inArray(projectWorkControlsTable.project_key, [...WORK_KEYS])),
+      db.select({ id: managedWorkOutcomesTable.id, project_key: managedWorkOutcomesTable.project_key,
+        title: managedWorkOutcomesTable.title, status: managedWorkOutcomesTable.status, version: managedWorkOutcomesTable.version })
+        .from(managedWorkOutcomesTable).where(inArray(managedWorkOutcomesTable.project_key, [...WORK_KEYS]))
+        .orderBy(desc(managedWorkOutcomesTable.id)).limit(101),
+      db.select({ id: managedWorkItemsTable.id, project_key: managedWorkItemsTable.project_key, title: managedWorkItemsTable.title,
+        status: managedWorkItemsTable.status, plan_version: managedWorkItemsTable.plan_version,
+        outcome_id: managedWorkItemsTable.outcome_id, gate_key: managedWorkItemsTable.gate_key, deadline: managedWorkItemsTable.deadline })
+        .from(managedWorkItemsTable).where(inArray(managedWorkItemsTable.project_key, [...WORK_KEYS]))
+        .orderBy(desc(managedWorkItemsTable.id)).limit(201),
+      db.select({ id: managedFleetQuestionsTable.id, project_key: managedFleetQuestionsTable.project_key,
+        work_item_id: managedFleetQuestionsTable.work_item_id, plan_version: managedFleetQuestionsTable.plan_version })
+        .from(managedFleetQuestionsTable).where(and(inArray(managedFleetQuestionsTable.project_key, [...WORK_KEYS]),
+          eq(managedFleetQuestionsTable.status, "open"), eq(managedFleetQuestionsTable.blocks_work, true)))
+        .orderBy(desc(managedFleetQuestionsTable.id)).limit(201),
+    ]);
+    res.json({ version: 1, evidence_source: "saved_owner_records", execution_status_verified: false,
+      truncated: outcomes.length > 100 || items.length > 200 || questions.length > 200,
+      projects: WORK_KEYS.map(key => {
+        const control = controls.find(row => row.project_key === key);
+        return { key, control: control ? control.completed ? "complete" : control.enabled ? "on" : "off" : "unknown",
+          held: isProjectWorkHeld(key), outcomes: outcomes.slice(0, 100).filter(row => row.project_key === key),
+          items: items.slice(0, 200).filter(row => row.project_key === key),
+          blocking_questions: questions.slice(0, 200).filter(row => row.project_key === key) };
+      }), dependencies_included: false, company_plan_acceptance_included: false });
+  } catch {
+    res.status(503).json({ error: "Company work records are unavailable. No work or approval was requested." });
+  }
+});
 
 router.get("/work-items", async (req, res): Promise<void> => {
   const key = typeof req.query.project_key === "string" ? req.query.project_key : null;
@@ -216,7 +166,7 @@ router.get("/work-readiness", async (_req, res): Promise<void> => {
     ambiguous_dispatches: ambiguous,
     automatic_pickup: false,
     finance_hold: "DDG Finance remains hard-held until Claude review and Markus approval.",
-    local_limits: "Dashboard records enforce deadlines, time/attempt caps, and zero app-side spend; provider billing limits remain owner-verified.",
+    local_limits: "Dashboard rejects starts after saved deadlines and limits attempts/recorded spend. Deadline checks save recovery requirements; automatic scheduling, provider hard stops and billing enforcement remain unverified.",
   });
 });
 
@@ -390,10 +340,12 @@ router.post("/work-items/:id/approve", requireRealOwnerSession, async (req, res)
     return;
   }
   const result = await db.transaction(async (tx) => {
+    const companyPlan = await lockCompanyPlanContext(tx);
     const locked = await lockWorkItem(tx, id);
     if (!locked) return { kind: "missing" as const };
     const { item, control } = locked;
     if ((item.project_key === "finance" && FINANCE_REVIEW_REQUIRED) || !control.enabled || control.completed) return { kind: "off" as const };
+    if (!companyPlanAllows(companyPlan, id)) return { kind: "dependency" as const };
     const [outcome] = item.outcome_id
       ? await tx.select().from(managedWorkOutcomesTable).where(eq(managedWorkOutcomesTable.id, item.outcome_id)).limit(1)
       : [];
@@ -412,12 +364,12 @@ router.post("/work-items/:id/approve", requireRealOwnerSession, async (req, res)
     const [activeRepo] = await tx.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable).where(and(eq(managedWorkItemsTable.repository, item.repository!), ne(managedWorkItemsTable.id, id), inArray(managedWorkItemsTable.status, ["approved", "in_progress"]))).limit(1);
     if (item.repository && activeRepo) return { kind: "duplicate" as const };
     const [updated] = await tx.update(managedWorkItemsTable).set({ status: "approved", updated_at: new Date() }).where(eq(managedWorkItemsTable.id, id)).returning();
-    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "approved", from_status: item.status, to_status: "approved", details: { plan_version: item.plan_version ?? 1, outcome_id: outcome.id, outcome_version: outcome.version } });
+    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "approved", from_status: item.status, to_status: "approved", details: { plan_version: item.plan_version ?? 1, outcome_id: outcome.id, outcome_version: outcome.version, ...companyPlanReceipt(companyPlan) } });
     return { kind: "ok" as const, item: updated };
   });
   if (result.kind !== "ok") {
     const status = result.kind === "missing" ? 404 : result.kind === "off" || result.kind === "question" ? 423 : 409;
-    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "question" ? "A blocking owner question is still open for this task version." : result.kind === "duplicate" ? "An active work item already exists for this project or repository." : result.kind === "stale" ? "The task plan or outcome changed. Refresh and review the current versions before approving." : result.kind === "state" ? "Outcome must be owner-approved before its task can be approved." : "Work item not found." });
+    res.status(status).json({ error: result.kind === "dependency" ? "The accepted company plan or task prerequisites do not permit approval." : result.kind === "off" ? "Project work is OFF." : result.kind === "question" ? "A blocking owner question is still open for this task version." : result.kind === "duplicate" ? "An active work item already exists for this project or repository." : result.kind === "stale" ? "The task plan or outcome changed. Refresh and review the current versions before approving." : result.kind === "state" ? "Outcome must be owner-approved before its task can be approved." : "Work item not found." });
     return;
   }
   res.json(result.item);
@@ -425,119 +377,80 @@ router.post("/work-items/:id/approve", requireRealOwnerSession, async (req, res)
 
 router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res): Promise<void> => {
   const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
-  if (!Number.isSafeInteger(id) || id < 1) { res.status(400).json({ error: "Invalid work item." }); return; }
-  const config = await readDispatchConfig();
-  const readiness = dispatchReadiness(config);
-  if (!readiness.dispatch_enabled) { res.status(423).json({ error: "Dispatch is blocked.", blockers: readiness.blockers }); return; }
-  const reservation = await db.transaction(async (tx) => {
-    // Global reservation/stop order: singleton config, project control, task.
-    // Re-read readiness under the stop-all lock; the earlier snapshot can age.
-    const [config] = await tx.select().from(managedWorkDispatchConfigTable)
-      .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
-    if (!config || !dispatchReadiness(config).dispatch_enabled) return { kind: "disabled" as const };
-    // Serialize reservations across projects. Local terminal status cannot
-    // release this barrier without a verified external termination receipt.
-    const [globalDispatch] = await tx.select({ id: managedWorkDispatchesTable.id })
-      .from(managedWorkDispatchesTable).limit(1);
-    if (globalDispatch) return { kind: "duplicate" as const, status: "global_run_requires_verified_release" };
-    const locked = await lockWorkItem(tx, id);
-    if (!locked) return { kind: "missing" as const };
-    const { item, control } = locked;
-    if ((item.project_key === "finance" && FINANCE_REVIEW_REQUIRED) || !control.enabled || control.completed) return { kind: "off" as const };
-    const [blockingQuestion] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
-      .where(and(eq(managedFleetQuestionsTable.project_key, item.project_key), eq(managedFleetQuestionsTable.work_item_id, item.id),
-        eq(managedFleetQuestionsTable.plan_version, item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
-    if (blockingQuestion) return { kind: "question" as const };
-    const normalizeRepository = (value: string | null) => value?.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\.git$/, "").replace(/\/$/, "") ?? "";
-    if (item.project_key === "finance" || item.project_key !== config.approved_project_key || !item.repository || !item.target_branch ||
-        normalizeRepository(item.repository) !== normalizeRepository(config.approved_repository) ||
-        item.target_branch !== config.approved_starting_branch || item.status !== "approved" ||
-        item.attempts >= item.max_attempts || item.spend_limit_cents !== 0 || new Date() >= item.deadline) return { kind: "not_ready" as const };
-    const [outcome] = await tx.select().from(managedWorkOutcomesTable).where(eq(managedWorkOutcomesTable.id, item.outcome_id!)).limit(1);
-    if (!outcome || outcome.project_key !== item.project_key || outcome.status !== "approved") return { kind: "not_ready" as const };
-    const [prior] = await tx.select({ id: managedWorkDispatchesTable.id, status: managedWorkDispatchesTable.status }).from(managedWorkDispatchesTable).where(eq(managedWorkDispatchesTable.work_item_id, id)).limit(1);
-    if (prior) return { kind: "duplicate" as const, status: prior.status };
-    const [repoActive] = await tx.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable)
-      .where(and(eq(managedWorkItemsTable.repository, item.repository), ne(managedWorkItemsTable.id, id), inArray(managedWorkItemsTable.status, ["approved", "in_progress"]))).limit(1);
-    if (repoActive) return { kind: "duplicate" as const, status: "repository_active" };
-    const idempotencyKey = randomUUID();
-    const [dispatch] = await tx.insert(managedWorkDispatchesTable).values({
-      work_item_id: id, project_key: item.project_key, outcome_id: outcome.id, outcome_version: outcome.version,
-      idempotency_key: idempotencyKey, model_id: config.selected_model_id, branch: item.target_branch,
-      status: "submitting", started_at: new Date(),
-    }).returning();
-    await tx.update(managedWorkItemsTable).set({ attempts: item.attempts + 1, started_at: new Date(), updated_at: new Date() }).where(eq(managedWorkItemsTable.id, id));
-    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "dispatch_reserved", from_status: "approved", to_status: "approved", details: { dispatch_id: dispatch.id, idempotency_key: idempotencyKey, outcome_version: outcome.version } });
-    return { kind: "reserved" as const, item, dispatch, config };
-  });
-  if (reservation.kind !== "reserved") {
-    const status = reservation.kind === "missing" ? 404 : reservation.kind === "off" || reservation.kind === "question" || reservation.kind === "disabled" ? 423 : 409;
-    res.status(status).json({ error: reservation.kind === "disabled" ? "Dispatch settings changed or managed work was blocked. Refresh readiness before any further action." : reservation.kind === "off" ? "Project work is OFF." : reservation.kind === "question" ? "A blocking owner question is still open for this task version." : reservation.kind === "duplicate" ? "A prior dispatch requires verified external termination, or repository work is active. Inspect history; do not retry." : reservation.kind === "not_ready" ? "Task is not owner-approved and Ready." : "Work item not found.", ...(reservation.kind === "duplicate" ? { dispatch_status: reservation.status } : {}) });
-    return;
+  const result = await dispatchApprovedCursorWork(id);
+  res.status(result.status).json(result.body);
+});
+
+router.get("/work-worker-invocations/:id", requireRealOwnerSession, async (req, res): Promise<void> => {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) {
+    res.status(400).json({ error: "Invalid worker invocation ID." }); return;
+  }
+  res.setHeader("Cache-Control", "no-store");
+  const result = await readCursorWorkerInvocation(id);
+  res.status(result.status).json(result.body);
+});
+
+router.get("/work-dispatches/:id/recovery", requireRealOwnerSession, async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1) { res.status(400).json({ error: "Invalid dispatch ID." }); return; }
+  const saved = await readCursorCancellationRecovery(id);
+  if (!saved) { res.status(404).json({ error: "Cursor dispatch not found." }); return; }
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ ...saved, provider_cancellation_enabled: CURSOR_CANCEL_OPERATIONS_VERIFIED });
+});
+
+router.post("/work-dispatches/:id/cancel", requireRealOwnerSession, async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1 || !req.body || typeof req.body !== "object" || Array.isArray(req.body) ||
+      Object.keys(req.body).some(key => key !== "action") || req.body.action !== "cancel_saved_cursor_run") {
+    res.status(400).json({ error: "Explicitly request cancellation of the saved dispatch ID." }); return;
+  }
+  if (!CURSOR_CANCEL_OPERATIONS_VERIFIED) {
+    res.status(423).json({ error: "Live cancellation is not enabled: isolated recovery and provider acceptance remain unverified.", provider_cancellation: "not_requested_or_verified" }); return;
   }
   const apiKey = process.env.CURSOR_API_KEY?.trim();
-  if (!apiKey) {
-    await db.update(managedWorkDispatchesTable).set({ status: "needs_owner", error_summary: "Server secret missing after reservation; do not retry automatically." }).where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
-    res.status(503).json({ error: "Dispatch reserved but server secret is unavailable; owner review required." });
-    return;
-  }
-  let acceptedRun: Awaited<ReturnType<typeof createCursorAgent>> | undefined;
+  if (!apiKey) { res.status(503).json({ error: "Cursor server credential unavailable; cancellation not requested." }); return; }
+  // IDs come exclusively from the saved dispatch. Browser/worker supplied
+  // provider IDs, terminal statuses and receipts are never accepted here.
   try {
-    const suspicious = /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|(?:gh[pousr]_[A-Za-z0-9]{20,}|xai-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,}|Bearer\s+[A-Za-z0-9._-]{16,})/i;
-    const promptText = [reservation.item.title, reservation.item.objective, reservation.item.outcome, reservation.item.stop_condition, ...reservation.item.checklist, ...reservation.item.acceptance_checks].join("\n");
-    if (suspicious.test(promptText)) throw new Error("Task contains a credential-like string; dispatch refused.");
-    const agentUuid = reservation.dispatch.idempotency_key;
-    const payload = buildCursorAgentPayload({
-      task: {
-        ...reservation.item,
-        repository: reservation.item.repository!,
-        target_branch: reservation.item.target_branch!,
-      },
-      modelId: reservation.config.selected_model_id!,
-      agentId: `bc-${agentUuid}`,
-    });
-    const result = await createCursorAgent(apiKey, payload);
-    acceptedRun = result;
-    const dashboardStatus = await db.transaction(async (tx) => {
-      // Store the accepted run, task state and event together. A stop while the
-      // network request was in flight must not be overwritten as permission.
-      const [currentConfig] = await tx.select().from(managedWorkDispatchConfigTable)
-        .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
-      const current = await lockWorkItem(tx, id);
-      if (!current) throw new Error("Accepted run could not be linked to its task; owner review required.");
-      const [question] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
-        .where(and(eq(managedFleetQuestionsTable.work_item_id, id), eq(managedFleetQuestionsTable.project_key, current.item.project_key),
-          eq(managedFleetQuestionsTable.plan_version, current.item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
-      const nextStatus = currentConfig?.enabled && currentConfig.updated_at.getTime() === reservation.config.updated_at.getTime() &&
-        current.control.enabled && !current.control.completed && current.item.status === "approved" &&
-        current.item.plan_version === reservation.item.plan_version && new Date() < current.item.deadline && !question
-        ? "in_progress" : "needs_owner";
-      await tx.update(managedWorkDispatchesTable).set({ agent_id: result.agentId, run_id: result.runId, provider_status: result.runStatus, status: "running" })
-        .where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
-      await tx.update(managedWorkItemsTable).set({ status: nextStatus, branch: reservation.item.target_branch, updated_at: new Date() })
-        .where(eq(managedWorkItemsTable.id, id));
-      await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: reservation.item.project_key, actor: "system", event_type: "cursor_dispatch_started", from_status: current.item.status, to_status: nextStatus, details: { dispatch_id: reservation.dispatch.id, provider: "cursor", model_id: reservation.config.selected_model_id, agent_id: result.agentId, run_id: result.runId, run_status: result.runStatus, branch: reservation.item.target_branch, provider_cancellation: "not_requested_or_verified" } });
-      return nextStatus;
-    });
-    res.status(202).json({ dispatch_id: reservation.dispatch.id, work_item_id: id, provider: "cursor", model_id: reservation.config.selected_model_id, agent_id: result.agentId, run_id: result.runId, status: result.runStatus, dashboard_status: dashboardStatus, provider_cancellation: "not_requested_or_verified", automatic_pickup: false });
+    const result = await processCursorCancellation(id, apiKey);
+    res.status(result.kind === "missing" ? 404 : result.kind === "terminal_observed" || result.kind === "terminal_recorded" ? 200 : 409).json(result);
   } catch {
-    // A local persistence failure after an accepted start must retain the
-    // validated external binding when recovery storage is available. Never
-    // persist arbitrary database/network error messages or provider excerpts.
-    const summary = acceptedRun
-      ? "Cursor accepted the run, but its local start record could not be confirmed."
-      : "Cursor submission was refused or its result could not be confirmed.";
-    await db.transaction(async (tx) => {
-      await tx.select({ id: managedWorkDispatchConfigTable.id }).from(managedWorkDispatchConfigTable)
-        .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
-      const current = await lockWorkItem(tx, id);
-      await tx.update(managedWorkDispatchesTable).set({
-        status: "needs_owner", error_summary: `${summary} No automatic retry; inspect Cursor before any next action.`,
-        ...(acceptedRun ? { agent_id: acceptedRun.agentId, run_id: acceptedRun.runId, provider_status: acceptedRun.runStatus } : {}),
-      }).where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
-      await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: reservation.item.project_key, actor: "system", event_type: "cursor_dispatch_needs_owner", from_status: current?.item.status ?? "unknown", to_status: current?.item.status ?? "unknown", details: { dispatch_id: reservation.dispatch.id, error: summary, accepted_run_binding_retained: Boolean(acceptedRun) } });
-    });
-    res.status(502).json({ error: "Cursor request outcome requires owner review. The reservation prevents duplicate submission." });
+    res.status(503).json({ error: "Cancellation could not be durably confirmed. Inspect saved recovery history; do not assume the run stopped." });
+  }
+});
+
+router.post("/work-dispatches/:id/check-deadline", requireRealOwnerSession, async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1 || !req.body || typeof req.body !== "object" || Array.isArray(req.body) ||
+      Object.keys(req.body).some(key => key !== "action") || req.body.action !== "check_saved_cursor_deadline") {
+    res.status(400).json({ error: "Explicitly request a deadline check of the saved dispatch ID." }); return;
+  }
+  try {
+    const result = await recordCursorDeadline(id);
+    res.status(result.kind === "missing" ? 404 : 200).json(result);
+  } catch {
+    res.status(503).json({ error: "Deadline check could not be saved; provider stop is unverified." });
+  }
+});
+
+router.post("/work-dispatches/:id/release", requireRealOwnerSession, async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1 || !req.body || typeof req.body !== "object" || Array.isArray(req.body) ||
+      Object.keys(req.body).some(key => key !== "action") || req.body.action !== "verify_and_release_saved_cursor_run") {
+    res.status(400).json({ error: "Explicitly request verification and release of the saved dispatch ID." }); return;
+  }
+  if (!CURSOR_RELEASE_OPERATIONS_VERIFIED || !CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED) {
+    res.status(423).json({ error: "Release is disabled: exclusive submission authority and provider/recovery acceptance are unverified.", reservation_released: false }); return;
+  }
+  const apiKey = process.env.CURSOR_API_KEY?.trim();
+  if (!apiKey) { res.status(503).json({ error: "Cursor server credential unavailable; reservation remains held." }); return; }
+  try {
+    const result = await processCursorRelease(id, apiKey);
+    res.status(result.kind === "missing" ? 404 : result.kind === "released" || result.kind === "already_released" ? 200 : 409).json(result);
+  } catch {
+    res.status(503).json({ error: "Release could not be durably confirmed. Reservation remains blocked pending saved evidence." });
   }
 });
 
@@ -626,13 +539,14 @@ router.post("/work-stop", requireRealOwnerSession, async (req, res): Promise<voi
         details: { project_controls_disabled: true, dispatch_disabled: true, provider_cancellation: "not_requested_or_verified" },
       });
     }
-    const unresolved = await tx.select({
-      id: managedWorkDispatchesTable.id, work_item_id: managedWorkDispatchesTable.work_item_id,
-      project_key: managedWorkDispatchesTable.project_key, agent_id: managedWorkDispatchesTable.agent_id,
-      run_id: managedWorkDispatchesTable.run_id, status: managedWorkDispatchesTable.status,
-    }).from(managedWorkDispatchesTable)
-      .where(inArray(managedWorkDispatchesTable.status, ["submitting", "running", "needs_owner"]));
-    return { affected_task_records: open.length, unresolved_dispatches: unresolved };
+    // Dashboard status (including failed/completed) is not terminal provider
+    // evidence. Preserve recovery requirements for every historical dispatch.
+    const dispatches = await tx.select().from(managedWorkDispatchesTable).orderBy(managedWorkDispatchesTable.id);
+    for (const dispatch of dispatches) await requireCursorCancellation(tx, dispatch, "dashboard_work_blocked");
+    const unresolved = dispatches.map(dispatch => ({ id: dispatch.id, work_item_id: dispatch.work_item_id,
+      project_key: dispatch.project_key, agent_id: dispatch.agent_id, run_id: dispatch.run_id, status: dispatch.status }));
+    return { affected_task_records: open.length, unresolved_dispatches: unresolved,
+      cancellation_recovery_recorded: true, provider_cancellation_enabled: CURSOR_CANCEL_OPERATIONS_VERIFIED };
   });
   res.json({
     dashboard_work_blocked: true,

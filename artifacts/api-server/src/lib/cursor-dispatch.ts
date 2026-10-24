@@ -16,6 +16,8 @@ export function buildCursorAgentPayload(input: {
   task: CursorDispatchTask;
   modelId: string;
   agentId: string;
+  planScope?: { planVersion: number; outcomeId: number; outcomeVersion: number; gateKey: string;
+    acceptanceId: number; proposalId: number; digest: string };
 }): Record<string, unknown> {
   const { task } = input;
   return {
@@ -26,6 +28,10 @@ export function buildCursorAgentPayload(input: {
         `Work item #${task.id}: ${task.title}`,
         `Objective: ${task.objective}`,
         `Outcome: ${task.outcome}`,
+        ...(input.planScope ? [
+          `Reviewed task plan v${input.planScope.planVersion}, outcome #${input.planScope.outcomeId} v${input.planScope.outcomeVersion}, gate ${input.planScope.gateKey}.`,
+          `Company plan acceptance #${input.planScope.acceptanceId}, proposal #${input.planScope.proposalId}, digest ${input.planScope.digest}. Server checked prerequisites before submission; this is not permission to read other projects or approve work.`,
+        ] : []),
         `Checklist:\n${task.checklist.map((item) => `- ${item}`).join("\n")}`,
         `Acceptance checks:\n${task.acceptance_checks.map((item) => `- ${item}`).join("\n")}`,
         `Requested bounds: ${task.time_limit_minutes} minutes and at most ${task.max_attempts} attempt(s). These are not provider-enforced by this adapter; do not continue if an enforceable stop is unavailable.`,
