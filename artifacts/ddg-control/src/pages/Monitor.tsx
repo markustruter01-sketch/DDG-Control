@@ -46,7 +46,7 @@ export function Monitor() {
   const cards = query.data?.cards ?? emptyCards;
   return <div className="kpi-shell"><Header /><main className="kpi-main" id="main-content">
     <section className="kpi-heading"><div><p className="eyebrow">DDG / COMPANY INTELLIGENCE</p><h1>Company at a glance<span className="kpi-heading-dot" aria-hidden="true">.</span></h1></div>
-      <div className="kpi-toolbar"><span>{query.data ? `Income period: ${query.data.period.from} — ${query.data.period.to}` : 'Saved company records'}</span><button type="button" disabled={query.isFetching} onClick={() => void query.refetch()} aria-label="Refresh saved company figures">{query.isFetching ? 'Loading…' : 'Refresh ↗'}</button></div>
+      <div className="kpi-toolbar"><span>{query.data ? `Ledger period: ${query.data.period.from} — ${query.data.period.to}` : 'Saved company records'}</span><button type="button" disabled={query.isFetching} onClick={() => void query.refetch()} aria-label="Refresh saved company figures">{query.isFetching ? 'Loading…' : 'Refresh ↗'}</button></div>
     </section>
     {query.isError && <p className="kpi-error" role="alert">{query.error instanceof Error ? query.error.message : 'Figures unavailable.'}{query.data && ' Previous readings shown.'}</p>}
     <section className="kpi-grid" aria-label="Company key figures" aria-busy={query.isFetching}>{cards.map((card, index) => <article className={`kpi-card kpi-${card.key}`} key={card.key}>
