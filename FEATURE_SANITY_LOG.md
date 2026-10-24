@@ -388,3 +388,7 @@ scope, output fields, caps, reference namespaces, missing versions and legacy
 timezone limits. API/frontend TypeScript and direct API/Vite builds passed.
 No tests, UI/runtime/DB/provider checks, migration, merge, deployment or acceptance.
 Remaining A02 dependencies/accepted plan/scoped export design is next.
+
+## 24 October 2026 — company dependency preview source
+
+Strict reference-only parser caps scope/outcomes/tasks/edges, rejects duplicate IDs/gates/edges, unknown fields and dependency cycles; canonical SHA256 digest. Pure evaluator checks exact project/task/plan/outcome/gate bindings and transitive prerequisites with completed saved evidence. Real-owner no-store POST /company/plan/preview performs bounded existing-record reads only, exposes metadata verdicts and explicitly no acceptance/execution/persistence/snapshot/question/readiness claims. No new schema/service/package/provider call/write. Source reviewed; API TypeScript/direct build passed. No tests/live checks/DB/migration/merge/deploy. Durable plan approval and dispatch enforcement remain unfinished.

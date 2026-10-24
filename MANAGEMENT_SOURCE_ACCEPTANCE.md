@@ -32,7 +32,8 @@ the board never starts work, approves it, clears a blocker or releases a hold.
 ## Finite remaining source work
 
 Finish the A-02 dependency/plan acceptance and scoped export design against the
-existing records. The A-05 bounded evidence projection is now source implemented;
+existing records. COMPANY_PLAN_CONTRACT.md now records the bounded design;
+implementation and runtime acceptance remain open. The A-05 bounded evidence projection is now source implemented;
 complete runtime history reconstruction and owner acceptance remain open. Preserve adequate
 current controls rather than add alternate task truth. B-03/B-04 capability gaps
 are recorded in CURSOR_CHECKPOINT_COMMUNICATION_AUDIT.md; source adapters cannot
@@ -58,3 +59,12 @@ has no established actor/timezone, so no invented actor/date or global chronolog
 Independent reads are not a transaction snapshot or complete history. Missing
 data is not success; no execution, recovery, cost, model or owner acceptance proof.
 API/frontend TypeScript and direct API/Vite builds passed. No tests or live checks.
+
+A02 increment: strict bounded manifest/DAG parsing, canonical digest and shared
+pure version/binding/transitive-prerequisite evaluation are consumed by an
+owner-only unsaved preview API. Invalid/duplicate/out-of-scope/cyclic references
+are rejected. No task prose is accepted in the manifest or returned. Preview
+always says accepted=false and execution_authorized=false; independently read
+records are not an approval snapshot. API TypeScript/direct build passed; no
+tests/runtime/DB operations. Durable revision service, owner review UI and
+approval/selection/pre-HTTP enforcement remain required before enablement.
