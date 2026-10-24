@@ -5,14 +5,14 @@ import { Link } from 'wouter';
 type Outcome = { id: number; project_key: string; title: string; status: string; version: number };
 type Item = { id: number; project_key: string; title: string; status: string; plan_version: number;
   outcome_id: number | null; gate_key: string | null; deadline: string };
-type Board = { version: 1; truncated: boolean; projects: Array<{ key: string; control: string; held: boolean;
+export type Board = { version: 1; truncated: boolean; projects: Array<{ key: string; control: string; held: boolean;
   outcomes: Outcome[]; items: Item[]; blocking_questions: Array<{ id: number }> }> };
 const labels: Record<string, string> = { finance: 'DDG Finance', hypest: 'Hypest',
   'cattle-dog-coffee': 'Cattle Dog Coffee', 'ddg-control-ai-stack': 'DDG Control' };
 const integer = (value: unknown) => typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 const record = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 
-async function loadBoard(): Promise<Board> {
+export async function loadBoard(): Promise<Board> {
   const response = await fetch('/api/company/work-board', { cache: 'no-store' });
   if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ?
     'Sign in with a real owner session to view saved company work.' : 'Saved company work is unavailable.');

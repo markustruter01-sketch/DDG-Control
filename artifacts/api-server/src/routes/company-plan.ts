@@ -3,11 +3,15 @@ import { and, inArray, sql } from 'drizzle-orm';
 import { Router, type IRouter } from 'express';
 import { requireRealOwnerSession } from './auth';
 import { evaluateCompanyPlan, parseCompanyPlan, type CompanyPlanManifest } from '../lib/company-plan';
-import { COMPANY_PLAN_REVISIONS_VERIFIED, CompanyPlanError, parseCompanyPlanCommand, readCompanyPlanRevisions, recordCompanyPlanRevision } from '../lib/company-plan-revisions';
+import { COMPANY_PLAN_REVISIONS_VERIFIED, CompanyPlanError, parseCompanyPlanCommand, readCompanyPlanReview, readCompanyPlanRevisions, recordCompanyPlanRevision } from '../lib/company-plan-revisions';
 
 export const companyPlanRouter: IRouter = Router();
 const planError = (res: import('express').Response, error: unknown) => res.status(error instanceof CompanyPlanError ? error.status : 503)
   .json({ error: error instanceof CompanyPlanError ? error.message : 'Saved plan records are unavailable.' });
+companyPlanRouter.get('/company/plan/review', requireRealOwnerSession, async (_req, res): Promise<void> => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  try { res.json(await readCompanyPlanReview()); } catch (error) { planError(res, error); }
+});
 companyPlanRouter.get('/company/plan/revisions', requireRealOwnerSession, async (_req, res): Promise<void> => {
   res.setHeader('Cache-Control', 'private, no-store');
   try { res.json(await readCompanyPlanRevisions()); } catch (error) { planError(res, error); }

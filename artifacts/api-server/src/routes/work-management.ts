@@ -44,7 +44,7 @@ router.get("/company/work-board", requireRealOwnerSession, async (_req, res): Pr
           held: isProjectWorkHeld(key), outcomes: outcomes.slice(0, 100).filter(row => row.project_key === key),
           items: items.slice(0, 200).filter(row => row.project_key === key),
           blocking_questions: questions.slice(0, 200).filter(row => row.project_key === key) };
-      }), dependencies_recorded: false, company_plan_accepted: false });
+      }), dependencies_included: false, company_plan_acceptance_included: false });
   } catch {
     res.status(503).json({ error: "Company work records are unavailable. No work or approval was requested." });
   }

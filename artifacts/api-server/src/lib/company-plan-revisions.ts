@@ -40,19 +40,47 @@ export async function readCompanyPlanRevisions() {
   return { version: 1, revisions: rows.slice(0, 20), truncated: rows.length > 20, execution_authorized: false };
 }
 
-async function readPlanRecords(tx: WorkTransaction, manifest: CompanyPlanManifest) {
-  const outcomes = manifest.outcomes.length ? await tx.select({ id: managedWorkOutcomesTable.id, version: managedWorkOutcomesTable.version,
+async function readPlanRecords(tx: WorkTransaction, manifest: CompanyPlanManifest, lockRows = true) {
+  const outcomeQuery = tx.select({ id: managedWorkOutcomesTable.id, version: managedWorkOutcomesTable.version,
     project_key: managedWorkOutcomesTable.project_key, status: managedWorkOutcomesTable.status, gates: managedWorkOutcomesTable.gates })
     .from(managedWorkOutcomesTable).where(and(inArray(managedWorkOutcomesTable.id, manifest.outcomes.map(o => o.id)),
-      inArray(managedWorkOutcomesTable.project_key, manifest.projects))).orderBy(managedWorkOutcomesTable.id).limit(100).for('update') : [];
-  const tasks = manifest.tasks.length ? await tx.select({ id: managedWorkItemsTable.id, plan_version: managedWorkItemsTable.plan_version,
+      inArray(managedWorkOutcomesTable.project_key, manifest.projects))).orderBy(managedWorkOutcomesTable.id).limit(100);
+  const outcomes = manifest.outcomes.length ? await (lockRows ? outcomeQuery.for('update') : outcomeQuery) : [];
+  const taskQuery = tx.select({ id: managedWorkItemsTable.id, plan_version: managedWorkItemsTable.plan_version,
     project_key: managedWorkItemsTable.project_key, outcome_id: managedWorkItemsTable.outcome_id,
     gate_key: managedWorkItemsTable.gate_key, status: managedWorkItemsTable.status,
     acceptance_evidence: sql<boolean>`length(trim(${managedWorkItemsTable.acceptance_evidence})) > 0` })
     .from(managedWorkItemsTable).where(and(inArray(managedWorkItemsTable.id, manifest.tasks.map(t => t.id)),
-      inArray(managedWorkItemsTable.project_key, manifest.projects))).orderBy(managedWorkItemsTable.id).limit(200).for('update') : [];
+      inArray(managedWorkItemsTable.project_key, manifest.projects))).orderBy(managedWorkItemsTable.id).limit(200);
+  const tasks = manifest.tasks.length ? await (lockRows ? taskQuery.for('update') : taskQuery) : [];
   const controls = await tx.select().from(projectWorkControlsTable).where(inArray(projectWorkControlsTable.project_key, manifest.projects));
   return { outcomes, tasks, controls };
+}
+
+/** Consistent owner review snapshot, not permission to execute. Disabled mode
+ * returns before any database query; enabled mode is a read-only transaction. */
+export async function readCompanyPlanReview() {
+  if (!COMPANY_PLAN_REVISIONS_VERIFIED) return { version: 1, enabled: false, head_id: null,
+    proposal: null, active: null, execution_authorized: false };
+  return db.transaction(async tx => {
+    const [head] = await tx.select({ id: companyPlanRevisionsTable.id }).from(companyPlanRevisionsTable).orderBy(desc(companyPlanRevisionsTable.id)).limit(1);
+    const [latest] = await tx.select().from(companyPlanRevisionsTable).where(eq(companyPlanRevisionsTable.kind, 'proposed')).orderBy(desc(companyPlanRevisionsTable.id)).limit(1);
+    const [action] = await tx.select().from(companyPlanRevisionsTable).where(inArray(companyPlanRevisionsTable.kind, ['accepted', 'withdrawn'])).orderBy(desc(companyPlanRevisionsTable.id)).limit(1);
+    const project = async (row: typeof latest) => {
+      const manifest = parseCompanyPlan(row.manifest);
+      if (companyPlanDigest(manifest) !== row.digest) return conflict('The stored proposal cannot be verified.');
+      return { id: row.id, digest: row.digest, manifest, recorded_actor: row.actor, recorded_at: row.created_at,
+        evaluation: evaluateCompanyPlan(manifest, await readPlanRecords(tx, manifest, false)) };
+    };
+    let active = null;
+    if (action?.kind === 'accepted' && action.target_revision_id) {
+      const [proposal] = await tx.select().from(companyPlanRevisionsTable).where(eq(companyPlanRevisionsTable.id, action.target_revision_id)).limit(1);
+      if (!proposal || proposal.kind !== 'proposed' || proposal.digest !== action.digest) return conflict('The active plan receipt cannot be verified.');
+      active = { acceptance_id: action.id, ...await project(proposal) };
+    }
+    return { version: 1, enabled: true, head_id: head?.id ?? null, proposal: latest ? await project(latest) : null,
+      active, snapshot_consistent: true, execution_authorized: false };
+  }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
 }
 
 export type CompanyPlanContext = { mode: 'legacy' | 'blocked' } | {

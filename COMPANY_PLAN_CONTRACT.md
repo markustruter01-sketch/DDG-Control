@@ -158,3 +158,27 @@ bindings and accepted revision references only; no prerequisite task bodies or
 company records are exported. Gate text joins existing credential-pattern checks.
 The owner review UI, schema rollout and live concurrency/permission verification
 remain open. No hardcoded safety gate has been enabled.
+
+## Owner review source increment
+
+GET /api/company/plan/review returns disabled before any database access while
+the source gate is false. Its enabled implementation uses a repeatable-read,
+read-only transaction to return the exact current acceptance/proposal and latest
+proposal, history head, full bounded reference manifests and saved-record
+evaluation. This review snapshot grants no execution authority.
+
+The lazy Company Map panel validates responses, reuses the existing bounded work
+board, selects exact task references and directed prerequisites, previews them,
+and saves only an unapproved proposal. Exact reviewed-head/revision/digest
+checkbox actions accept or withdraw; no work toggle or agent start is included.
+Accepted receipts with stale references are explicitly blocked. No controls are
+shown as enabled while rollout is disabled. Partial task inventory cannot create
+a proposal. No polling, model call, new UI dependency, service or task-body store.
+
+An uncertain save retains the same request UUID/body and locks competing actions;
+retry validates matching receipt identity/digest/target. Definitive refusal clears
+the pending command and requires refreshed review. Reload does not automatically
+resubmit; the owner must review saved records before another action. HTTP success
+with an unreadable receipt is treated as uncertain, not as confirmed approval.
+API/frontend TypeScript and direct builds passed; no tests, runtime journey,
+database operation, migration, provider operation or owner acceptance occurred.
