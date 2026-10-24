@@ -5,6 +5,7 @@ import { cancelCursorRun, observeCursorAgentQuiescence, observeCursorRun, resolv
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Dispatch = typeof managedWorkDispatchesTable.$inferSelect;
+type RecoveryAuthority = (tx: Transaction, dispatch: Dispatch) => Promise<boolean>;
 const actor = "system:cursor-run-control-v1";
 const eventTypes = ["cursor_cancel_required", "cursor_cancel_claimed", "cursor_cancel_observed", "cursor_cancel_unresolved", "cursor_run_binding_recovered", "cursor_release_claimed", "cursor_release_unresolved", "cursor_run_released", "cursor_deadline_recorded"];
 // A provider snapshot cannot prevent someone submitting a later external run.
@@ -108,16 +109,19 @@ export async function readCursorCancellationRecovery(id: number) {
     automatic_retry: false, reservation_released: Boolean(release && CURSOR_RELEASE_OPERATIONS_VERIFIED && CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED), task_accepted: false, code_checkpoint_verified: false };
 }
 
-/** One explicitly requested bounded attempt. Never starts/resumes coding work.
- * Invoked only behind the real-owner route and its source-locked live gate.
- * No background pickup or migration is installed by importing this module.
+/** One bounded authorised attempt. Never starts/resumes coding work.
+ * Owner calls require the real-owner route and its source-locked live gate.
+ * Hosted recovery additionally supplies an under-lock authority check and may
+ * consume only existing saved stop/deadline requirements. No migration or
+ * background loop is installed by importing this module.
  */
-export async function processCursorCancellation(id: number, apiKey: string) {
+export async function processCursorCancellation(id: number, apiKey: string, authoriseRecovery?: RecoveryAuthority) {
   const claim = await db.transaction(async tx => {
     const locked = await lockDispatch(tx, id);
     if (!locked) return { kind: "missing" as const };
     const { dispatch } = locked;
-    const intentId = await requireCursorCancellation(tx, dispatch, "explicit_owner_request");
+    if (authoriseRecovery && !await authoriseRecovery(tx, dispatch)) return { kind: "stale" as const };
+    const intentId = await requireCursorCancellation(tx, dispatch, authoriseRecovery ? "approved_worker_recovery" : "explicit_owner_request");
     // Legacy rows without the reserved ID or durable pre-submit evidence need
     // manual reconciliation. Never infer that an absent run means no worker.
     if (!dispatch.agent_id) return { kind: "unbound" as const };
@@ -276,11 +280,12 @@ export async function processCursorRelease(id: number, apiKey: string) {
 /** Durable local deadline action. No clock/timestamp is accepted from the
  * browser; DB time is read under the same lock as submission/stop/recovery.
  * This records a cancellation requirement, not provider-side enforcement. */
-export async function recordCursorDeadline(id: number) {
+export async function recordCursorDeadline(id: number, authoriseRecovery?: RecoveryAuthority) {
   return db.transaction(async tx => {
     const locked = await lockDispatch(tx, id);
     if (!locked) return { kind: "missing" as const };
     const { dispatch, task } = locked;
+    if (authoriseRecovery && !await authoriseRecovery(tx, dispatch)) return { kind: "stale" as const };
     const events = await history(tx, dispatch);
     if (await validRelease(tx, dispatch, events)) return { kind: "released" as const, provider_stopped_now: false };
     const recorded = events.find(event => event.event_type === "cursor_deadline_recorded");

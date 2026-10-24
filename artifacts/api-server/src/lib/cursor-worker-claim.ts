@@ -17,7 +17,15 @@ export async function validCursorWorkerClaim(tx: WorkTransaction, claim: CursorW
   if (!CURSOR_HOSTED_WORKER_VERIFIED) return false;
   const [row] = await tx.select().from(cursorWorkerInvocationsTable)
     .where(eq(cursorWorkerInvocationsTable.invocation_id, claim.invocationId)).limit(1);
-  return Boolean(row && row.claim_token === claim.token && row.state === "claimed" && row.work_item_id === taskId &&
+  return Boolean(row && row.claim_token === claim.token && row.state === "claimed" && row.operation === "dispatch" && row.work_item_id === taskId &&
     row.plan_version === planVersion && row.outcome_version === outcomeVersion &&
     row.config_version.getTime() === configVersion.getTime() && row.expires_at.getTime() > await workerDatabaseTime(tx));
+}
+
+export async function validCursorRecoveryClaim(tx: WorkTransaction, claim: CursorWorkerClaim, dispatchId: number, taskId: number) {
+  if (!CURSOR_HOSTED_WORKER_VERIFIED) return false;
+  const [row] = await tx.select().from(cursorWorkerInvocationsTable)
+    .where(eq(cursorWorkerInvocationsTable.invocation_id, claim.invocationId)).limit(1);
+  return Boolean(row && row.claim_token === claim.token && row.state === "claimed" && row.operation === "recover" &&
+    row.dispatch_id === dispatchId && row.work_item_id === taskId && row.expires_at.getTime() > await workerDatabaseTime(tx));
 }

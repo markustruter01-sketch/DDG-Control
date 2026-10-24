@@ -317,3 +317,15 @@ added or run. See CURSOR_HOSTED_WORKER_SOURCE.md for exact protocol/limitations.
 DB declaration compilation, API TypeScript noEmit and direct API build passed;
 source review covered HMAC scope, idle replay, overlap, expiry, config/plan binding,
 global dispatch exclusion, guarded schema access and redacted owner recovery view.
+
+## 24 October 2026 — bounded recovery before hosted pickup
+
+Unreleased history takes priority over new coding tasks, including while new-work
+toggle is OFF. One dispatch per tick with persisted sequenced cursor/wrap; stale
+or expired claims cannot advance it. Deadline and optional cancellation service
+validate recovery authority under shared locks. Provider cancellation still needs
+its separate false source gate, saved requirement and current approved non-Finance
+scope, with existing attempt/backoff limits. No automatic release/resume/start.
+Only SOURCE schema fields changed; no migration/push or runtime operation. No tests.
+DB declaration/API TypeScript compilation and direct API build passed; source
+review covered cursor wrap/late receipts, OFF recovery, claim authority and scope.

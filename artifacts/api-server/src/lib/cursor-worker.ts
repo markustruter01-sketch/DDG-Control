@@ -1,15 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { db, cursorWorkerInvocationsTable, managedFleetQuestionsTable, managedWorkDispatchConfigTable, managedWorkDispatchesTable, managedWorkItemsTable, managedWorkOutcomesTable, projectWorkControlsTable } from "@workspace/db";
-import { and, eq, gt, lt, ne, notExists, sql } from "drizzle-orm";
-import { CURSOR_HOSTED_WORKER_VERIFIED, dispatchReadiness, hasWorkControl, normalizeWorkRepository } from "./managed-work-controls";
-import { workerDatabaseTime } from "./cursor-worker-claim";
+import { and, desc, eq, gt, isNotNull, lt, ne, notExists, sql } from "drizzle-orm";
+import { CURSOR_CANCEL_OPERATIONS_VERIFIED, CURSOR_HOSTED_WORKER_VERIFIED, dispatchReadiness, hasWorkControl, normalizeWorkRepository } from "./managed-work-controls";
+import { validCursorRecoveryClaim, workerDatabaseTime } from "./cursor-worker-claim";
 import { dispatchApprovedCursorWork } from "./cursor-work-dispatch";
+import { cursorCancellationRequirement, hasUnreleasedCursorDispatch, processCursorCancellation, recordCursorDeadline } from "./cursor-cancellation";
 
 /** Owner recovery projection only. Never expose claim tokens or credentials. */
 export async function readCursorWorkerInvocation(invocationId: string) {
   if (!CURSOR_HOSTED_WORKER_VERIFIED) return { status: 423, body: { state: "disabled", evidence_source: "unavailable" } };
   const [row] = await db.select({ invocation_id: cursorWorkerInvocationsTable.invocation_id,
     state: cursorWorkerInvocationsTable.state, work_item_id: cursorWorkerInvocationsTable.work_item_id,
+    operation: cursorWorkerInvocationsTable.operation, recovery_after_dispatch_id: cursorWorkerInvocationsTable.recovery_after_dispatch_id,
     plan_version: cursorWorkerInvocationsTable.plan_version, outcome_version: cursorWorkerInvocationsTable.outcome_version,
     dispatch_id: cursorWorkerInvocationsTable.dispatch_id, result_code: cursorWorkerInvocationsTable.result_code,
     http_status: cursorWorkerInvocationsTable.http_status, expires_at: cursorWorkerInvocationsTable.expires_at,
@@ -41,6 +43,24 @@ export async function runCursorWorkerTick(invocationId: string, requestTimestamp
       expires_at: new Date(now + 90_000), config_version: config.updated_at };
     const [active] = await tx.select({ id: cursorWorkerInvocationsTable.invocation_id }).from(cursorWorkerInvocationsTable)
       .where(and(eq(cursorWorkerInvocationsTable.state, "claimed"), gt(cursorWorkerInvocationsTable.expires_at, new Date(now)))).limit(1);
+    // Recovery ignores the new-work toggle/readiness. The global dispatch
+    // barrier must be resolved before selecting any further coding task.
+    if (!active && await hasUnreleasedCursorDispatch(tx)) {
+      const [previous] = await tx.select({ cursor: cursorWorkerInvocationsTable.recovery_after_dispatch_id })
+        .from(cursorWorkerInvocationsTable).where(and(eq(cursorWorkerInvocationsTable.state, "finished"),
+          isNotNull(cursorWorkerInvocationsTable.recovery_after_dispatch_id)))
+        .orderBy(desc(cursorWorkerInvocationsTable.sequence)).limit(1);
+      const after = previous?.cursor ?? 0;
+      let [dispatch] = await tx.select().from(managedWorkDispatchesTable)
+        .where(gt(managedWorkDispatchesTable.id, after)).orderBy(managedWorkDispatchesTable.id).limit(1);
+      if (!dispatch && after > 0) [dispatch] = await tx.select().from(managedWorkDispatchesTable)
+        .orderBy(managedWorkDispatchesTable.id).limit(1);
+      if (dispatch) {
+        await tx.insert(cursorWorkerInvocationsTable).values({ ...base, state: "claimed", operation: "recover",
+          work_item_id: dispatch.work_item_id, dispatch_id: dispatch.id });
+        return { kind: "recover" as const, token, taskId: dispatch.work_item_id, dispatchId: dispatch.id };
+      }
+    }
     const ready = dispatchReadiness(config).dispatch_enabled && hasWorkControl(config.approved_project_key ?? "");
     const [candidate] = !active && ready ? await tx.select({ item: managedWorkItemsTable, outcome: managedWorkOutcomesTable })
       .from(managedWorkItemsTable)
@@ -75,23 +95,67 @@ export async function runCursorWorkerTick(invocationId: string, requestTimestamp
   if (claim.kind === "replay") return { status: claim.prior.state === "finished" ? 200 : 409,
     body: { state: "replay", previous_state: claim.prior.state, result: claim.prior.result_code,
       dispatch_id: claim.prior.dispatch_id, previous_http_status: claim.prior.http_status, automatic_retry: false } };
-  if (claim.kind !== "claimed") return { status: claim.kind === "stale" ? 401 : claim.kind === "unconfigured" ? 503 : 200,
+  if (claim.kind !== "claimed" && claim.kind !== "recover") return { status: claim.kind === "stale" ? 401 : claim.kind === "unconfigured" ? 503 : 200,
     body: { state: claim.kind === "finished" ? claim.code : claim.kind, automatic_retry: false } };
   // HTTP occurs only inside the shared dispatcher after durable claim checks.
   // A crash here leaves the claim for inspection. Retrying this invocation ID
   // never resubmits; another invocation must acquire a new valid bounded claim.
-  const result = await dispatchApprovedCursorWork(claim.taskId, { invocationId, token: claim.token });
-  const dispatchId = Number.isSafeInteger(result.body.dispatch_id) ? result.body.dispatch_id as number : null;
+  const workerClaim = { invocationId, token: claim.token };
+  let status: number;
+  let code: string;
+  let dispatchId: number | null;
+  if (claim.kind === "recover") {
+    const authorise = async (tx: Parameters<Parameters<typeof db.transaction>[0]>[0], dispatch: typeof managedWorkDispatchesTable.$inferSelect) =>
+      validCursorRecoveryClaim(tx, workerClaim, dispatch.id, dispatch.work_item_id);
+    const deadline = await recordCursorDeadline(claim.dispatchId, authorise);
+    code = `recovery_${deadline.kind}`;
+    status = deadline.kind === "stale" ? 409 : 200;
+    dispatchId = claim.dispatchId;
+    // A previously saved stop/deadline requirement is necessary. No new
+    // cancellation is inferred merely because a dispatch exists.
+    if (CURSOR_CANCEL_OPERATIONS_VERIFIED && deadline.kind !== "stale" && deadline.kind !== "released" && deadline.kind !== "missing") {
+      const cancelAuthority = async (tx: Parameters<Parameters<typeof db.transaction>[0]>[0], dispatch: typeof managedWorkDispatchesTable.$inferSelect) => {
+        const [config] = await tx.select().from(managedWorkDispatchConfigTable)
+          .where(eq(managedWorkDispatchConfigTable.id, 1)).limit(1);
+        return Boolean(await authorise(tx, dispatch) && config && dispatch.project_key !== "finance" &&
+          dispatch.project_key === config.approved_project_key && await cursorCancellationRequirement(tx, dispatch));
+      };
+      const required = await db.transaction(async tx => {
+        await tx.select({ id: managedWorkDispatchConfigTable.id }).from(managedWorkDispatchConfigTable)
+          .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
+        const [dispatch] = await tx.select().from(managedWorkDispatchesTable)
+          .where(eq(managedWorkDispatchesTable.id, claim.dispatchId)).limit(1);
+        return Boolean(dispatch && await cancelAuthority(tx, dispatch));
+      });
+      if (required) {
+        const apiKey = process.env.CURSOR_API_KEY?.trim();
+        if (apiKey) {
+          const cancellation = await processCursorCancellation(claim.dispatchId, apiKey, cancelAuthority);
+          code = `recovery_${cancellation.kind}`;
+          if (cancellation.kind === "stale") status = 409;
+        } else code = "recovery_credential_unavailable";
+      }
+    }
+  } else {
+    const result = await dispatchApprovedCursorWork(claim.taskId, workerClaim);
+    status = result.status;
+    code = result.status === 202 ? "submitted" : "dispatch_blocked_or_unresolved";
+    dispatchId = Number.isSafeInteger(result.body.dispatch_id) ? result.body.dispatch_id as number : null;
+  }
   await db.transaction(async tx => {
     await tx.select({ id: managedWorkDispatchConfigTable.id }).from(managedWorkDispatchConfigTable)
       .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
     const [saved] = await tx.select().from(cursorWorkerInvocationsTable)
       .where(eq(cursorWorkerInvocationsTable.invocation_id, invocationId)).for("update").limit(1);
     if (!saved || saved.claim_token !== claim.token || saved.state !== "claimed") throw new Error("Worker receipt changed");
-    await tx.update(cursorWorkerInvocationsTable).set({ state: "finished", http_status: result.status,
-      result_code: result.status === 202 ? "submitted" : "dispatch_blocked_or_unresolved", dispatch_id: dispatchId,
-      finished_at: new Date(await workerDatabaseTime(tx)) }).where(eq(cursorWorkerInvocationsTable.invocation_id, invocationId));
+    const now = await workerDatabaseTime(tx);
+    await tx.update(cursorWorkerInvocationsTable).set({ state: "finished", http_status: status,
+      result_code: code, dispatch_id: dispatchId,
+      // Expired/stale recovery may be recorded, but cannot advance the cursor
+      // over work its worker no longer owns. The next call safely rechecks it.
+      recovery_after_dispatch_id: claim.kind === "recover" && status !== 409 && saved.expires_at.getTime() > now ? claim.dispatchId : null,
+      finished_at: new Date(now) }).where(eq(cursorWorkerInvocationsTable.invocation_id, invocationId));
   });
-  return { status: result.status, body: { state: result.status === 202 ? "submitted" : "dispatch_blocked_or_unresolved",
+  return { status, body: { state: code,
     work_item_id: claim.taskId, dispatch_id: dispatchId, automatic_retry: false } };
 }

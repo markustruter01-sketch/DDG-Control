@@ -70,7 +70,36 @@ behavior, HMAC negative cases, concurrent/replayed/expired claims, restart,
 included/no-overage operation and an isolated pilot remain unverified. No tests
 were added or run. Source TypeScript/build checks do not pass those criteria.
 
-Periodic deadline/recovery orchestration, provider hard stops, actual code
+## Bounded recovery before pickup
+
+If any historical dispatch remains unreleased, a tick claims recovery instead of
+new coding work, even when the new-work toggle is OFF or dispatch readiness is
+blocked. It handles one saved dispatch, never an unbounded sweep. Receipts have a
+database-generated sequence and recovery cursor. Selection resumes after the last
+finished cursor and wraps to the first dispatch at the end of history. Completed/
+failed/unknown-provider rows are not silently filtered out. Unknown providers stay
+unreleased. Expired/stale invocations cannot advance this cursor, and an older
+receipt finishing late cannot replace a newer sequence's cursor.
+
+Deadline recording validates the current recovery claim inside the shared locks.
+Any due/unverified bound saves its durable stop/recovery requirement; this does
+not assert that the provider stopped. Recovery may act on an existing stop
+requirement even before the deadline. Only if the separate live cancellation gate
+is enabled, the saved claim remains valid, the current approved project matches,
+the dispatch is not Finance and a saved requirement exists may the existing bounded
+cancellation service be called. It rechecks authority under locks before claiming
+an attempt. At most one cancellation/reconciliation attempt is made per tick;
+existing attempt ceiling, lease expiry and backoff still apply. Credentials are
+read only after those preconditions. No new start/steer/resume/release is done by
+recovery. Live cancellation and hosted-worker gates remain false.
+
+The schema additions (sequence, operation and cursor) are source contracts only;
+no migration or schema push was created/applied. Source orchestration does not
+prove a scheduler runs on time or guarantees a provider hard stop. A tick that
+handles recovery never also starts a new task. A later tick can consider new
+work only after every dispatch has valid release evidence and all guards pass.
+
+Provider hard stops, actual code
 checkpoints and supported provider communications remain separate work. A timer
 inside the web process is not substituted for an accepted durable scheduler.
 The new source gate is not enabled by an environment variable or owner UI toggle.
