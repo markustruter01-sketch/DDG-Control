@@ -1,6 +1,5 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { seedProjectsIfEmpty } from "./routes/projects";
 
 const rawPort = process.env["PORT"];
 
@@ -17,8 +16,6 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function startServer(): Promise<void> {
-  await seedProjectsIfEmpty();
-
   app.listen(port, (err) => {
     if (err) {
       logger.error({ err }, "Error listening on port");

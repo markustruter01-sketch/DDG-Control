@@ -59,7 +59,7 @@ function LoginScreen({ initialError }: { initialError?: string }) {
       <Header showLogout={false} />
       <main className="auth-main">
         <section className="auth-card">
-          <p className="eyebrow">Control panel</p>
+          <p className="eyebrow">Company monitor</p>
           <h1 className="auth-title">Log in</h1>
           <form className="auth-form" onSubmit={submitLogin} data-testid="login-form">
             <label className="auth-field" htmlFor="login-password">

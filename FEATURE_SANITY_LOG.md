@@ -255,3 +255,7 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Persist fixed safe failure descriptions rather than arbitrary SQL/network errors. No raw exception/response log added. IDs are only copied after strict create response validation.
 - API TypeScript noEmit exit0 and diff-check clear. No tests/backend/DB/task/provider/migration/publication/release. Hard flags false; durable start-intent/cancel receipts and runtime failure acceptance remain open.
 - Direct API build exit0/2.5MB after recovery change. Reviewed complete backend diff against base45add2f; no UI/schema/dependency/provider enablement changes. Existing checks do not establish real concurrent/restart/cancellation behavior.
+
+## 24 October 2026 — owner rescope to monitoring only
+
+One compact Monitor page replaces mounted control frontend; minimal header/login/day-night/shared approved logo/background. Project cards, saved work counts, attention/activity, details and HTTPS source links; explicit saved/unverified/partial/error states, bounded manual refresh and no fabricated health. Server now mounts only existing health/auth plus owner read-only monitor; all non-auth writes refused, old control/machine routes unmounted, no startup seeding/provider/model/worker calls. Unmerged PR30 control/schema additions excluded from monitoring tree, old branch/draft preserved. No new dependency/service/table/data migration. TypeScript and API/Vite builds passed; no tests/visual-runtime/DB/provider/merge/deploy/owner acceptance. See MONITORING_SCOPE.md.
