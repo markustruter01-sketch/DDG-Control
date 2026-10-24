@@ -42,8 +42,14 @@ router.get('/monitor', async (_req, res): Promise<void> => {
       .from(socialSnapshotsTable).where(lte(socialSnapshotsTable.captured_on, today))
       .orderBy(desc(socialSnapshotsTable.captured_on), desc(socialSnapshotsTable.id)).limit(501),
   ]);
-  const name = (id: number | null) => id === null ? 'Company' : projects.status === 'fulfilled' ?
-    projects.value.find(p => p.id === id)?.name ?? `Business #${id}` : `Business #${id}`;
+  const name = (id: number | null) => {
+    if (id === null) return 'Company · unassigned';
+    const project = projects.status === 'fulfilled' ? projects.value.find(p => p.id === id) : undefined;
+    if (!project) return `Business #${id}`;
+    // Names are not unique in storage. Never merge separate businesses merely
+    // because their labels match (or equal the unassigned company bucket).
+    return `${project.name} · #${id}`;
+  };
   const cards: Card[] = [];
   const add = (key: string, title: string, unit: Card['unit'], read: () => { bars: Point[]; note: string; as_of?: string | null }, available: boolean) => {
     try {
