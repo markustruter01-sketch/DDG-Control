@@ -364,3 +364,16 @@ validation retained; inbound decision locking already adequate. Finance endpoint
 unchanged. No infrastructure/dependency/schema added; no tests/runtime operations.
 Final API TypeScript noEmit/direct API build passed; source diff reviewed. Actual
 runtime permission/concurrency verification remains open.
+
+## 24 October 2026 — owner-only company work projection
+
+Added bounded read-only API and lazy Company Map work section over existing
+controls/outcomes/versioned task plans/blocking questions. No second queue/store,
+dependency, migration, provider call or broad worker access. Exact task links,
+real-owner-only read, response validation and partial/unconfigured/error states.
+Updated source finding to distinguish this projection from incomplete company
+plan/dependencies/export and live acceptance. Consolidated A01-A07 source evidence
+and finite remaining work in MANAGEMENT_SOURCE_ACCEPTANCE.md. No tests/runtime.
+API/frontend TypeScript noEmit and direct API/Vite frontend builds passed; source
+review covered owner-only fixed scope, bounded/partial data, lazy loading and exact
+task links. No UI/runtime/owner acceptance or live database operation was claimed.

@@ -13,6 +13,42 @@ export type { WorkKey, WorkTransaction } from "../lib/managed-work-controls";
 const router: IRouter = Router();
 const workStatuses = ["pending_approval", "approved", "in_progress", "needs_owner", "failed", "completed", "rejected"] as const;
 
+router.get("/company/work-board", requireRealOwnerSession, async (_req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "private, no-store");
+  try {
+    // Read-only projection over authoritative records, not another queue.
+    // Fixed managed scope and bounded reads; no provider call or record insert.
+    const [controls, outcomes, items, questions] = await Promise.all([
+      db.select().from(projectWorkControlsTable).where(inArray(projectWorkControlsTable.project_key, [...WORK_KEYS])),
+      db.select({ id: managedWorkOutcomesTable.id, project_key: managedWorkOutcomesTable.project_key,
+        title: managedWorkOutcomesTable.title, status: managedWorkOutcomesTable.status, version: managedWorkOutcomesTable.version })
+        .from(managedWorkOutcomesTable).where(inArray(managedWorkOutcomesTable.project_key, [...WORK_KEYS]))
+        .orderBy(desc(managedWorkOutcomesTable.id)).limit(101),
+      db.select({ id: managedWorkItemsTable.id, project_key: managedWorkItemsTable.project_key, title: managedWorkItemsTable.title,
+        status: managedWorkItemsTable.status, plan_version: managedWorkItemsTable.plan_version,
+        outcome_id: managedWorkItemsTable.outcome_id, gate_key: managedWorkItemsTable.gate_key, deadline: managedWorkItemsTable.deadline })
+        .from(managedWorkItemsTable).where(inArray(managedWorkItemsTable.project_key, [...WORK_KEYS]))
+        .orderBy(desc(managedWorkItemsTable.id)).limit(201),
+      db.select({ id: managedFleetQuestionsTable.id, project_key: managedFleetQuestionsTable.project_key,
+        work_item_id: managedFleetQuestionsTable.work_item_id, plan_version: managedFleetQuestionsTable.plan_version })
+        .from(managedFleetQuestionsTable).where(and(inArray(managedFleetQuestionsTable.project_key, [...WORK_KEYS]),
+          eq(managedFleetQuestionsTable.status, "open"), eq(managedFleetQuestionsTable.blocks_work, true)))
+        .orderBy(desc(managedFleetQuestionsTable.id)).limit(201),
+    ]);
+    res.json({ version: 1, evidence_source: "saved_owner_records", execution_status_verified: false,
+      truncated: outcomes.length > 100 || items.length > 200 || questions.length > 200,
+      projects: WORK_KEYS.map(key => {
+        const control = controls.find(row => row.project_key === key);
+        return { key, control: control ? control.completed ? "complete" : control.enabled ? "on" : "off" : "unknown",
+          held: isProjectWorkHeld(key), outcomes: outcomes.slice(0, 100).filter(row => row.project_key === key),
+          items: items.slice(0, 200).filter(row => row.project_key === key),
+          blocking_questions: questions.slice(0, 200).filter(row => row.project_key === key) };
+      }), dependencies_recorded: false, company_plan_accepted: false });
+  } catch {
+    res.status(503).json({ error: "Company work records are unavailable. No work or approval was requested." });
+  }
+});
+
 router.get("/work-items", async (req, res): Promise<void> => {
   const key = typeof req.query.project_key === "string" ? req.query.project_key : null;
   const base = db.select().from(managedWorkItemsTable);
