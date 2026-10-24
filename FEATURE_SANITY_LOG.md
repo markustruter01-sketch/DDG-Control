@@ -294,3 +294,13 @@ and marks active work needs_owner without rewriting completed task acceptance.
 No provider cancellation, slot release, retry, automatic scheduler or queue pickup
 claim. Existing schema reused. No tests, DB/provider/runtime operations performed.
 API TypeScript noEmit/direct API build passed and source diff self-reviewed.
+
+## 24 October 2026 — shared bounded dispatch service
+
+Extracted dispatch orchestration from the authenticated owner route into
+cursor-work-dispatch.ts; response status/body mappings and all existing guards
+remain. Shared project controls/locks/readiness now live in managed-work-controls.ts
+with compatible route re-exports. No route/service circular dependency or internal
+HTTP. No worker/scheduler/timer/provider/DB operation or live enablement performed.
+No tests added or run. Final API TypeScript noEmit/direct API build passed; source
+extraction reviewed. Runtime acceptance remains open.

@@ -115,6 +115,27 @@ hosted scheduler, automatic queue pickup, provider-side hard stop or periodic
 deadline guarantee. Those runtime capabilities and their live safety flags remain
 unverified/false. No schema, migration, helper, timer or external scheduler added.
 
+## Shared dispatch service extraction
+
+The existing authenticated owner dispatch route now delegates to
+cursor-work-dispatch.ts. It returns status/body data without Express or internal
+HTTP calls. Reservation, frozen execution bounds, pre-submit approval/question
+checks, global/repository exclusion, stop barriers, exact response binding and
+late-save recovery remain in this one service. The five existing HTTP response
+mappings are retained; invalid IDs are checked in the service before DB access.
+
+managed-work-controls.ts now owns the shared project controls, lock helpers,
+dispatch configuration/readiness and existing false live gates. The route
+re-exports its prior public controls so Fleet Desk/inbound and other existing
+callers retain their imports. Neither module performs startup work. Authentication
+stays at the real-owner route; this service is an internal execution primitive,
+not permission for a caller to bypass approval or enable dispatch.
+
+This refactor prepares hosted pickup to use the same implementation. It does not
+install a scheduler, authenticate a new worker, enable pickup, start a process or
+claim restart/pilot acceptance. Hosted identity, delivery/lease orchestration and
+provider hard stop remain separate, source-disabled work.
+
 Still owed: durable hosted pickup/provider deadline enforcement; actual recoverable
 code checkpoints and supported message ingress/follow-up. These source tasks
 can continue before authorising live operations. The existing isolation,
