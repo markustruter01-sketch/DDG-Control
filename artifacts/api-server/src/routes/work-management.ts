@@ -6,6 +6,7 @@ import { CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED, CURSOR_RELEASE_OPERATIONS_VERI
 
 import { dispatchApprovedCursorWork } from "../lib/cursor-work-dispatch";
 import { readCursorWorkerInvocation } from "../lib/cursor-worker";
+import { companyPlanAllows, companyPlanReceipt, lockCompanyPlanContext } from "../lib/company-plan-revisions";
 import { WORK_KEYS, FINANCE_REVIEW_REQUIRED, CURSOR_HARD_WALL_CLOCK_STOP_VERIFIED, CURSOR_RUN_SAFETY_VERIFIED, CURSOR_CANCEL_OPERATIONS_VERIFIED, RUN_SAFETY_BLOCKER, TASK_LIMIT_BLOCKER, dispatchReadiness, hasWorkControl, isProjectWorkHeld, lockWorkControl, lockWorkItem, readDispatchConfig } from "../lib/managed-work-controls";
 export { WORK_KEYS, hasWorkControl, isProjectWorkHeld, isProjectWorkEnabled, lockWorkControl } from "../lib/managed-work-controls";
 export type { WorkKey, WorkTransaction } from "../lib/managed-work-controls";
@@ -339,10 +340,12 @@ router.post("/work-items/:id/approve", requireRealOwnerSession, async (req, res)
     return;
   }
   const result = await db.transaction(async (tx) => {
+    const companyPlan = await lockCompanyPlanContext(tx);
     const locked = await lockWorkItem(tx, id);
     if (!locked) return { kind: "missing" as const };
     const { item, control } = locked;
     if ((item.project_key === "finance" && FINANCE_REVIEW_REQUIRED) || !control.enabled || control.completed) return { kind: "off" as const };
+    if (!companyPlanAllows(companyPlan, id)) return { kind: "dependency" as const };
     const [outcome] = item.outcome_id
       ? await tx.select().from(managedWorkOutcomesTable).where(eq(managedWorkOutcomesTable.id, item.outcome_id)).limit(1)
       : [];
@@ -361,12 +364,12 @@ router.post("/work-items/:id/approve", requireRealOwnerSession, async (req, res)
     const [activeRepo] = await tx.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable).where(and(eq(managedWorkItemsTable.repository, item.repository!), ne(managedWorkItemsTable.id, id), inArray(managedWorkItemsTable.status, ["approved", "in_progress"]))).limit(1);
     if (item.repository && activeRepo) return { kind: "duplicate" as const };
     const [updated] = await tx.update(managedWorkItemsTable).set({ status: "approved", updated_at: new Date() }).where(eq(managedWorkItemsTable.id, id)).returning();
-    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "approved", from_status: item.status, to_status: "approved", details: { plan_version: item.plan_version ?? 1, outcome_id: outcome.id, outcome_version: outcome.version } });
+    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "approved", from_status: item.status, to_status: "approved", details: { plan_version: item.plan_version ?? 1, outcome_id: outcome.id, outcome_version: outcome.version, ...companyPlanReceipt(companyPlan) } });
     return { kind: "ok" as const, item: updated };
   });
   if (result.kind !== "ok") {
     const status = result.kind === "missing" ? 404 : result.kind === "off" || result.kind === "question" ? 423 : 409;
-    res.status(status).json({ error: result.kind === "off" ? "Project work is OFF." : result.kind === "question" ? "A blocking owner question is still open for this task version." : result.kind === "duplicate" ? "An active work item already exists for this project or repository." : result.kind === "stale" ? "The task plan or outcome changed. Refresh and review the current versions before approving." : result.kind === "state" ? "Outcome must be owner-approved before its task can be approved." : "Work item not found." });
+    res.status(status).json({ error: result.kind === "dependency" ? "The accepted company plan or task prerequisites do not permit approval." : result.kind === "off" ? "Project work is OFF." : result.kind === "question" ? "A blocking owner question is still open for this task version." : result.kind === "duplicate" ? "An active work item already exists for this project or repository." : result.kind === "stale" ? "The task plan or outcome changed. Refresh and review the current versions before approving." : result.kind === "state" ? "Outcome must be owner-approved before its task can be approved." : "Work item not found." });
     return;
   }
   res.json(result.item);

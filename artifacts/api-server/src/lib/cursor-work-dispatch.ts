@@ -5,6 +5,7 @@ import { buildCursorAgentPayload, createCursorAgent } from "./cursor-dispatch";
 import { cursorCancellationRequirement, hasUnreleasedCursorDispatch, requireCursorCancellation } from "./cursor-cancellation";
 import { CURSOR_HOSTED_WORKER_VERIFIED, FINANCE_REVIEW_REQUIRED, dispatchReadiness, lockWorkItem, normalizeWorkRepository, readDispatchConfig } from "./managed-work-controls";
 import { validCursorWorkerClaim, type CursorWorkerClaim } from "./cursor-worker-claim";
+import { companyPlanAllows, companyPlanReceipt, lockCompanyPlanContext, sameCompanyPlan } from "./company-plan-revisions";
 
 export type CursorDispatchServiceResult = { status: number; body: Record<string, unknown> };
 
@@ -23,12 +24,14 @@ export async function dispatchApprovedCursorWork(id: number, workerClaim?: Curso
     const [config] = await tx.select().from(managedWorkDispatchConfigTable)
       .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
     if (!config || !dispatchReadiness(config).dispatch_enabled) return { kind: "disabled" as const };
+    const companyPlan = await lockCompanyPlanContext(tx);
     // Serialize reservations across projects. Local terminal status cannot
     // release this barrier without a verified external termination receipt.
     if (await hasUnreleasedCursorDispatch(tx)) return { kind: "duplicate" as const, status: "global_run_requires_verified_release" };
     const locked = await lockWorkItem(tx, id);
     if (!locked) return { kind: "missing" as const };
     const { item, control } = locked;
+    if (!companyPlanAllows(companyPlan, id)) return { kind: "not_ready" as const };
     if ((item.project_key === "finance" && FINANCE_REVIEW_REQUIRED) || !control.enabled || control.completed) return { kind: "off" as const };
     const [blockingQuestion] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
       .where(and(eq(managedFleetQuestionsTable.project_key, item.project_key), eq(managedFleetQuestionsTable.work_item_id, item.id),
@@ -61,8 +64,9 @@ export async function dispatchApprovedCursorWork(id: number, workerClaim?: Curso
         owner_deadline: item.deadline.toISOString(), effective_deadline: new Date(Math.min(item.deadline.getTime(),
           dispatch.started_at.getTime() + item.time_limit_minutes * 60_000)).toISOString(), provider_enforced: false } });
     await tx.update(managedWorkItemsTable).set({ attempts: item.attempts + 1, started_at: new Date(), updated_at: new Date() }).where(eq(managedWorkItemsTable.id, id));
-    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: workerClaim ? "system:cursor-worker-v1" : "Markus", event_type: "dispatch_reserved", from_status: "approved", to_status: "approved", details: { dispatch_id: dispatch.id, idempotency_key: idempotencyKey, outcome_version: outcome.version, invocation_id: workerClaim?.invocationId ?? null } });
-    return { kind: "reserved" as const, item, dispatch, config,
+    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: workerClaim ? "system:cursor-worker-v1" : "Markus", event_type: "dispatch_reserved", from_status: "approved", to_status: "approved", details: { dispatch_id: dispatch.id, idempotency_key: idempotencyKey, outcome_version: outcome.version, invocation_id: workerClaim?.invocationId ?? null, ...companyPlanReceipt(companyPlan) } });
+    return { kind: "reserved" as const, item, dispatch, config, companyPlan,
+      outcomeVersion: outcome.version,
       effectiveDeadline: new Date(Math.min(item.deadline.getTime(), dispatch.started_at.getTime() + item.time_limit_minutes * 60_000)) };
   });
   if (reservation.kind !== "reserved") {
@@ -77,7 +81,7 @@ export async function dispatchApprovedCursorWork(id: number, workerClaim?: Curso
   let acceptedRun: Awaited<ReturnType<typeof createCursorAgent>> | undefined;
   try {
     const suspicious = /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|(?:gh[pousr]_[A-Za-z0-9]{20,}|xai-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,}|Bearer\s+[A-Za-z0-9._-]{16,})/i;
-    const promptText = [reservation.item.title, reservation.item.objective, reservation.item.outcome, reservation.item.stop_condition, ...reservation.item.checklist, ...reservation.item.acceptance_checks].join("\n");
+    const promptText = [reservation.item.title, reservation.item.objective, reservation.item.outcome, reservation.item.stop_condition, reservation.item.gate_key ?? '', ...reservation.item.checklist, ...reservation.item.acceptance_checks].join("\n");
     if (suspicious.test(promptText)) throw new Error("Task contains a credential-like string; dispatch refused.");
     const agentUuid = reservation.dispatch.idempotency_key;
     const payload = buildCursorAgentPayload({
@@ -88,6 +92,11 @@ export async function dispatchApprovedCursorWork(id: number, workerClaim?: Curso
       },
       modelId: reservation.config.selected_model_id!,
       agentId: `bc-${agentUuid}`,
+      ...(reservation.companyPlan.mode === 'accepted' ? { planScope: {
+        planVersion: reservation.item.plan_version, outcomeId: reservation.item.outcome_id!, outcomeVersion: reservation.outcomeVersion,
+        gateKey: reservation.item.gate_key!, acceptanceId: reservation.companyPlan.acceptance_id,
+        proposalId: reservation.companyPlan.proposal_id, digest: reservation.companyPlan.digest,
+      } } : {}),
     });
     // Persist a submission boundary before HTTP. Recheck the same reservation
     // under the stop lock; a stop after this commit leaves a durable recovery
@@ -95,6 +104,8 @@ export async function dispatchApprovedCursorWork(id: number, workerClaim?: Curso
     const submit = await db.transaction(async tx => {
       const [currentConfig] = await tx.select().from(managedWorkDispatchConfigTable)
         .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
+      const currentPlan = await lockCompanyPlanContext(tx);
+      if (!sameCompanyPlan(reservation.companyPlan, currentPlan) || !companyPlanAllows(currentPlan, id)) return false;
       const current = await lockWorkItem(tx, id);
       const [dispatch] = await tx.select().from(managedWorkDispatchesTable)
         .where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id)).for("update").limit(1);
@@ -117,7 +128,8 @@ export async function dispatchApprovedCursorWork(id: number, workerClaim?: Curso
       await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: current.item.project_key,
         actor: "system", event_type: "cursor_submission_started", details: { dispatch_id: dispatch.id,
           reserved_agent_id: dispatch.agent_id, config_version: currentConfig.updated_at.toISOString(),
-          plan_version: current.item.plan_version, outcome_version: dispatch.outcome_version, automatic_retry: false } });
+          plan_version: current.item.plan_version, outcome_version: dispatch.outcome_version, automatic_retry: false,
+          ...companyPlanReceipt(reservation.companyPlan) } });
       return true;
     });
     if (!submit) throw new Error("Submission blocked by changed controls or task state");
@@ -128,6 +140,7 @@ export async function dispatchApprovedCursorWork(id: number, workerClaim?: Curso
       // network request was in flight must not be overwritten as permission.
       const [currentConfig] = await tx.select().from(managedWorkDispatchConfigTable)
         .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
+      const returnedPlan = await lockCompanyPlanContext(tx);
       const current = await lockWorkItem(tx, id);
       if (!current) throw new Error("Accepted run could not be linked to its task; owner review required.");
       const [savedDispatch] = await tx.select().from(managedWorkDispatchesTable)
@@ -140,7 +153,8 @@ export async function dispatchApprovedCursorWork(id: number, workerClaim?: Curso
         .where(and(eq(managedFleetQuestionsTable.work_item_id, id), eq(managedFleetQuestionsTable.project_key, current.item.project_key),
           eq(managedFleetQuestionsTable.plan_version, current.item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
       const cancellationRequired = await cursorCancellationRequirement(tx, reservation.dispatch);
-      const nextStatus = !cancellationRequired && currentConfig?.enabled && currentConfig.updated_at.getTime() === reservation.config.updated_at.getTime() &&
+      const nextStatus = sameCompanyPlan(reservation.companyPlan, returnedPlan) && companyPlanAllows(returnedPlan, id) &&
+        !cancellationRequired && currentConfig?.enabled && currentConfig.updated_at.getTime() === reservation.config.updated_at.getTime() &&
         current.control.enabled && !current.control.completed && current.item.status === "approved" &&
         current.item.plan_version === reservation.item.plan_version && new Date() < current.item.deadline &&
         new Date() < reservation.effectiveDeadline && !question
@@ -149,7 +163,7 @@ export async function dispatchApprovedCursorWork(id: number, workerClaim?: Curso
         .where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
       await tx.update(managedWorkItemsTable).set({ status: nextStatus, branch: reservation.item.target_branch, updated_at: new Date() })
         .where(eq(managedWorkItemsTable.id, id));
-      if (nextStatus === "needs_owner") await requireCursorCancellation(tx, reservation.dispatch, "controls_or_task_changed_during_submission");
+      if (nextStatus === "needs_owner") await requireCursorCancellation(tx, reservation.dispatch, "controls_task_or_company_plan_changed_during_submission");
       await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: reservation.item.project_key, actor: "system", event_type: "cursor_dispatch_started", from_status: current.item.status, to_status: nextStatus, details: { dispatch_id: reservation.dispatch.id, provider: "cursor", model_id: reservation.config.selected_model_id, agent_id: result.agentId, run_id: result.runId, run_status: result.runStatus, branch: reservation.item.target_branch, provider_cancellation: "not_requested_or_verified" } });
       return nextStatus;
     });

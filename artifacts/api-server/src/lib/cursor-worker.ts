@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { db, cursorWorkerInvocationsTable, managedFleetQuestionsTable, managedWorkDispatchConfigTable, managedWorkDispatchesTable, managedWorkItemsTable, managedWorkOutcomesTable, projectWorkControlsTable } from "@workspace/db";
-import { and, desc, eq, gt, isNotNull, lt, ne, notExists, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, lt, ne, notExists, sql } from "drizzle-orm";
+import { lockCompanyPlanContext } from "./company-plan-revisions";
 import { CURSOR_CANCEL_OPERATIONS_VERIFIED, CURSOR_HOSTED_WORKER_VERIFIED, dispatchReadiness, hasWorkControl, normalizeWorkRepository } from "./managed-work-controls";
 import { validCursorRecoveryClaim, workerDatabaseTime } from "./cursor-worker-claim";
 import { dispatchApprovedCursorWork } from "./cursor-work-dispatch";
@@ -62,11 +63,14 @@ export async function runCursorWorkerTick(invocationId: string, requestTimestamp
       }
     }
     const ready = dispatchReadiness(config).dispatch_enabled && hasWorkControl(config.approved_project_key ?? "");
-    const [candidate] = !active && ready ? await tx.select({ item: managedWorkItemsTable, outcome: managedWorkOutcomesTable })
+    const companyPlan = !active && ready ? await lockCompanyPlanContext(tx) : { mode: 'blocked' as const };
+    const dependencyReady = companyPlan.mode === 'legacy' || (companyPlan.mode === 'accepted' && companyPlan.allowed_task_ids.size > 0);
+    const [candidate] = !active && ready && dependencyReady ? await tx.select({ item: managedWorkItemsTable, outcome: managedWorkOutcomesTable })
       .from(managedWorkItemsTable)
       .innerJoin(managedWorkOutcomesTable, eq(managedWorkOutcomesTable.id, managedWorkItemsTable.outcome_id))
       .innerJoin(projectWorkControlsTable, eq(projectWorkControlsTable.project_key, managedWorkItemsTable.project_key))
       .where(and(eq(managedWorkItemsTable.status, "approved"), ne(managedWorkItemsTable.project_key, "finance"),
+        companyPlan.mode === 'accepted' ? inArray(managedWorkItemsTable.id, [...companyPlan.allowed_task_ids]) : undefined,
         eq(managedWorkItemsTable.project_key, config.approved_project_key ?? ""),
         eq(managedWorkItemsTable.target_branch, config.approved_starting_branch ?? ""),
         eq(sql<string>`regexp_replace(regexp_replace(regexp_replace(lower(trim(${managedWorkItemsTable.repository})), '^https?://', ''), '[.]git$', ''), '/$', '')`, normalizeWorkRepository(config.approved_repository)),
@@ -83,7 +87,7 @@ export async function runCursorWorkerTick(invocationId: string, requestTimestamp
             eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))))))
       .orderBy(managedWorkItemsTable.id).limit(1) : [];
     if (!candidate) {
-      const code = active ? "busy" : ready ? "idle" : "blocked";
+      const code = active ? "busy" : ready && dependencyReady ? "idle" : "blocked";
       await tx.insert(cursorWorkerInvocationsTable).values({ ...base, state: "finished", http_status: 200,
         result_code: code, finished_at: new Date(now) });
       return { kind: "finished" as const, code };

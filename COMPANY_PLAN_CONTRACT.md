@@ -73,9 +73,10 @@ accepted revisions are rejected under the same serialization lock.
 
 Every consumer recomputes validity from current authoritative records. A changed
 binding or withdrawn/superseded plan blocks its dependent tasks; no automatic
-grandfathering. Avoid a second stale persisted Ready flag. Task proposal/revision,
-approval, dispatch reservation and final pre-HTTP submission must all use the
-same dependency evaluator wherever the plan feature is enabled. Automatic
+grandfathering. Avoid a second stale persisted Ready flag. New proposals cannot
+approve themselves into an accepted plan, and revised bindings invalidate its
+reference check. Task approval, dispatch reservation and pre-HTTP submission use
+the same dependency evaluator wherever the feature is enabled. Automatic
 selection must exclude blocked dependencies rather than repeatedly pick them.
 
 A prerequisite is satisfied only by the exact referenced task plan and outcome
@@ -136,3 +137,24 @@ it does not approve individual tasks or require future prerequisites already don
 Dependency checks for individual work, UI and rollout remain separate unfinished
 steps. A saved acceptance receipt does not itself grant execution authority.
 No SQL migration, schema push or database operation has been performed.
+
+## Shared enforcement source increment
+
+lockCompanyPlanContext returns legacy behavior without any new-table access
+while the feature gate is false. When enabled it takes the existing singleton
+config lock and every managed control in WORK_KEYS order before locking any
+outcome/task. It resolves the latest accepted/withdrawn action and exact proposed
+manifest/digest, evaluates current records and produces only allowed task IDs.
+Missing, withdrawn, malformed or stale plans block. Task approval, automatic
+candidate selection, reservation and final pre-HTTP submission consume it.
+Blocked dependencies are excluded from candidate selection, not repeatedly picked.
+Reservation freezes the accepted revision identity; replacement/withdrawal or
+prerequisite changes before submission refuse HTTP. Changes during accepted HTTP
+lead to needs-owner and durable cancellation requirement, not a claimed stop.
+
+Approval/reservation/submission events retain revision/proposal/digest metadata.
+The provider payload receives the one selected task's exact plan/outcome/gate
+bindings and accepted revision references only; no prerequisite task bodies or
+company records are exported. Gate text joins existing credential-pattern checks.
+The owner review UI, schema rollout and live concurrency/permission verification
+remain open. No hardcoded safety gate has been enabled.

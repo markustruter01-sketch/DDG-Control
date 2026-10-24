@@ -55,6 +55,46 @@ async function readPlanRecords(tx: WorkTransaction, manifest: CompanyPlanManifes
   return { outcomes, tasks, controls };
 }
 
+export type CompanyPlanContext = { mode: 'legacy' | 'blocked' } | {
+  mode: 'accepted'; acceptance_id: number; proposal_id: number; digest: string; allowed_task_ids: Set<number>;
+};
+
+/** Call BEFORE any project/task lock. Holds config then every managed project
+ * control in fixed order, preventing cross-project prerequisite races. Callers
+ * must retain this transaction through their approval/reservation decision. */
+export async function lockCompanyPlanContext(tx: WorkTransaction): Promise<CompanyPlanContext> {
+  if (!COMPANY_PLAN_REVISIONS_VERIFIED) return { mode: 'legacy' };
+  const [config] = await tx.select({ id: managedWorkDispatchConfigTable.id }).from(managedWorkDispatchConfigTable)
+    .where(eq(managedWorkDispatchConfigTable.id, 1)).for('update').limit(1);
+  if (!config) return { mode: 'blocked' };
+  for (const key of WORK_KEYS) await lockWorkControl(tx, key);
+  const [acceptance] = await tx.select().from(companyPlanRevisionsTable)
+    .where(inArray(companyPlanRevisionsTable.kind, ['accepted', 'withdrawn'])).orderBy(desc(companyPlanRevisionsTable.id)).limit(1);
+  if (!acceptance || acceptance.kind !== 'accepted' || !acceptance.target_revision_id) return { mode: 'blocked' };
+  const [proposal] = await tx.select().from(companyPlanRevisionsTable)
+    .where(eq(companyPlanRevisionsTable.id, acceptance.target_revision_id)).limit(1);
+  if (!proposal || proposal.kind !== 'proposed' || proposal.digest !== acceptance.digest) return { mode: 'blocked' };
+  let manifest: CompanyPlanManifest;
+  try { manifest = parseCompanyPlan(proposal.manifest); }
+  catch { return { mode: 'blocked' }; }
+  if (companyPlanDigest(manifest) !== acceptance.digest) return { mode: 'blocked' };
+  const evaluation = evaluateCompanyPlan(manifest, await readPlanRecords(tx, manifest));
+  if (!evaluation.references_current || !evaluation.declared_scope_has_goals) return { mode: 'blocked' };
+  return { mode: 'accepted', acceptance_id: acceptance.id, proposal_id: proposal.id, digest: acceptance.digest,
+    allowed_task_ids: new Set(evaluation.tasks.filter(t => t.binding_current && t.project_allows_new_work && t.dependencies_satisfied).map(t => t.task_id)) };
+}
+
+export const companyPlanAllows = (context: CompanyPlanContext, taskId: number) =>
+  context.mode === 'legacy' || (context.mode === 'accepted' && context.allowed_task_ids.has(taskId));
+
+export const sameCompanyPlan = (before: CompanyPlanContext, after: CompanyPlanContext) =>
+  before.mode === 'legacy' ? after.mode === 'legacy' : before.mode === 'accepted' && after.mode === 'accepted' &&
+    before.acceptance_id === after.acceptance_id && before.proposal_id === after.proposal_id && before.digest === after.digest;
+
+export const companyPlanReceipt = (context: CompanyPlanContext) => context.mode === 'accepted' ? {
+  company_plan_acceptance_id: context.acceptance_id, company_plan_proposal_id: context.proposal_id, company_plan_digest: context.digest,
+} : {};
+
 export async function recordCompanyPlanRevision(command: Command) {
   if (!COMPANY_PLAN_REVISIONS_VERIFIED) return disabled();
   return db.transaction(async tx => {

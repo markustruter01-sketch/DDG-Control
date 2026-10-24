@@ -77,3 +77,11 @@ checks, immutable receipts, withdrawal even while OFF. No duplicate task bodies,
 new service/package or existing-table columns. DB declaration/API compilation
 and API build passed; no tests or actual database/schema operations. Owner review
 UI and all work-consumer enforcement are still required; feature stays disabled.
+
+A02 enforcement increment: source now shares the same current accepted-plan
+context across approval, worker selection, reservation and pre-HTTP checks, plus
+late-response recovery. Config/all-project locks precede task/outcome locks;
+exact digest/bindings/transitive evidence and fixed allowed-task scope. Recorded
+revision metadata and selected-task-only export added. Feature remains false;
+owner review UI, rollout and actual runtime acceptance remain open. API TypeScript
+and direct API build passed; no tests/provider/DB/runtime operations.
