@@ -338,3 +338,18 @@ not established by the reviewed evidence. Retain dashboard-only messaging/manual
 checkpoint labels and explicit B acceptance gates. No unused adapter or runtime
 operation added. See CURSOR_CHECKPOINT_COMMUNICATION_AUDIT.md. Documentation only;
 no build/tests rerun for unchanged application source.
+
+## 24 October 2026 — minimal infrastructure and legacy write authority
+
+Owner explicitly requests clean/minimal/secure infrastructure. Reused existing
+real-owner middleware on five project/goal/task writes that otherwise accepted
+development bypass. Preserved OFF/Finance/input restrictions. Shared-control
+consumers now import the library directly rather than another route module.
+No service/dependency/schema/credential added. Completion-outcome-version audit
+found no approved-outcome revision/replacement API path; no speculative code added.
+See CONTROL_INFRASTRUCTURE_BOUNDARIES.md. No tests/runtime/DB/provider operations.
+The five writes also use one shared transaction helper to recheck OFF/hold/
+completed under the existing project control lock through the write, closing
+the gap between the earlier read check and mutation. No external HTTP under locks.
+Final API TypeScript noEmit/direct API build passed and source diff reviewed;
+runtime authentication/concurrency behavior remains unverified. No tests run.

@@ -107,3 +107,16 @@ export async function lockWorkItem(tx: WorkTransaction, id: number) {
   return item ? { item, control } : null;
 }
 
+/** Recheck OFF/hold at the write boundary. The same project control lock is
+ * held through the mutation, so a concurrent OFF/complete action serializes
+ * with it. Never perform provider HTTP inside this transaction callback. */
+export async function withProjectWorkWrite<T>(key: string, write: (tx: WorkTransaction) => Promise<T>) {
+  return db.transaction(async tx => {
+    if (hasWorkControl(key)) {
+      const control = await lockWorkControl(tx, key);
+      if (isProjectWorkHeld(key) || !control.enabled || control.completed) return { allowed: false as const };
+    }
+    return { allowed: true as const, value: await write(tx) };
+  });
+}
+

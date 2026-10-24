@@ -14,7 +14,8 @@ import {
 import { eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { zodErrorText } from "./validation";
-import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
+import { hasWorkControl, isProjectWorkEnabled, withProjectWorkWrite } from "../lib/managed-work-controls";
+import { requireRealOwnerSession } from "./auth";
 
 const router: IRouter = Router();
 
@@ -131,7 +132,7 @@ router.get("/projects/:slug", async (req, res): Promise<void> => {
   res.json(GetProjectResponse.parse(toApiProject(project)));
 });
 
-router.patch("/projects/:slug", async (req, res): Promise<void> => {
+router.patch("/projects/:slug", requireRealOwnerSession, async (req, res): Promise<void> => {
   const params = UpdateProjectParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: zodErrorText(params.error) });
@@ -229,11 +230,13 @@ router.patch("/projects/:slug", async (req, res): Promise<void> => {
     }
   }
 
-  const [updated] = await db
+  const mutation = await withProjectWorkWrite(params.data.slug, tx => tx
     .update(projectsTable)
     .set(updates)
     .where(eq(projectsTable.slug, params.data.slug))
-    .returning();
+    .returning());
+  if (!mutation.allowed) { res.status(423).json({ error: "Project work is OFF, held or complete. Project updates are paused." }); return; }
+  const [updated] = mutation.value;
 
   if (!updated) {
     res.status(404).json({ error: "not found" });

@@ -20,7 +20,8 @@ import {
 import { MEMBER_KINDS, TASK_STATUSES } from "@workspace/project-constants";
 import { eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { hasWorkControl, isProjectWorkEnabled } from "./work-management";
+import { hasWorkControl, isProjectWorkEnabled, withProjectWorkWrite } from "../lib/managed-work-controls";
+import { requireRealOwnerSession } from "./auth";
 import {
   getMissingRequiredFieldError,
   getUnknownFieldError,
@@ -199,7 +200,7 @@ router.get("/projects/:slug/tasks", async (req, res): Promise<void> => {
   res.json(response);
 });
 
-router.post("/projects/:slug/tasks", async (req, res): Promise<void> => {
+router.post("/projects/:slug/tasks", requireRealOwnerSession, async (req, res): Promise<void> => {
   const params = CreateProjectTaskParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: zodErrorText(params.error) });
@@ -256,7 +257,9 @@ router.post("/projects/:slug/tasks", async (req, res): Promise<void> => {
     ...(status === "done" ? { completed_at: new Date() } : {}),
   };
 
-  const [created] = await db.insert(tasksTable).values(values).returning();
+  const mutation = await withProjectWorkWrite(params.data.slug, tx => tx.insert(tasksTable).values(values).returning());
+  if (!mutation.allowed) { res.status(423).json({ error: "Project work is OFF, held or complete. Task changes are paused." }); return; }
+  const [created] = mutation.value;
   if (!created) {
     res.status(500).json({ error: "unable to create task" });
     return;
@@ -267,7 +270,7 @@ router.post("/projects/:slug/tasks", async (req, res): Promise<void> => {
   res.status(201).json(response);
 });
 
-router.patch("/tasks/:id", async (req, res): Promise<void> => {
+router.patch("/tasks/:id", requireRealOwnerSession, async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   if (!/^[1-9]\d*$/.test(rawId)) {
     res.status(400).json({ error: "invalid task id" });
@@ -353,11 +356,13 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
     }
   }
 
-  const [updated] = await db
+  const mutation = await withProjectWorkWrite(taskProject.slug, tx => tx
     .update(tasksTable)
     .set(updates)
     .where(eq(tasksTable.id, params.data.id))
-    .returning();
+    .returning());
+  if (!mutation.allowed) { res.status(423).json({ error: "Project work is OFF, held or complete. Task changes are paused." }); return; }
+  const [updated] = mutation.value;
 
   if (!updated) {
     res.status(404).json({ error: "not found" });

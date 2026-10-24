@@ -31,7 +31,7 @@ import { desc, eq, ne } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import { decideDecision } from "./decisions";
 import { requireRealOwnerSession } from "./auth";
-import { hasWorkControl, isProjectWorkEnabled, isProjectWorkHeld, lockWorkControl } from "./work-management";
+import { hasWorkControl, isProjectWorkEnabled, isProjectWorkHeld, lockWorkControl } from "../lib/managed-work-controls";
 import { getTradingSnapshot } from "../agents/ollie";
 import {
   computeFinanceSummary,
