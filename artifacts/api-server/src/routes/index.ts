@@ -12,6 +12,7 @@ import inboundRouter from "./inbound";
 import financeRouter from "./finance";
 import socialRouter from "./social";
 import workManagementRouter from "./work-management";
+import { companyActivityRouter } from "./company-activity";
 import fleetDeskRouter from "./fleet-desk";
 import notificationReceiptsRouter from "./notification-receipts";
 import cursorWorkerRouter from "./cursor-worker";
@@ -35,6 +36,7 @@ router.use(inboundRouter);
 router.use(financeRouter);
 router.use(socialRouter);
 router.use(workManagementRouter);
+router.use(companyActivityRouter);
 router.use(fleetDeskRouter);
 router.use(notificationReceiptsRouter);
 

@@ -377,3 +377,14 @@ and finite remaining work in MANAGEMENT_SOURCE_ACCEPTANCE.md. No tests/runtime.
 API/frontend TypeScript noEmit and direct API/Vite frontend builds passed; source
 review covered owner-only fixed scope, bounded/partial data, lazy loading and exact
 task links. No UI/runtime/owner acceptance or live database operation was claimed.
+# 24 October 2026 — bounded saved activity projection
+
+Added real-owner read-only API and lazy Company Map activity section over five
+existing event tables. Fixed managed scope, 50 records per source, explicit
+truncation, named metadata only, integer version allowlist, project filter and
+exact task links. No raw JSON/prose import, new store/schema/dependency/service,
+provider or worker operation. Source review covered authentication, fixed SQL
+scope, output fields, caps, reference namespaces, missing versions and legacy
+timezone limits. API/frontend TypeScript and direct API/Vite builds passed.
+No tests, UI/runtime/DB/provider checks, migration, merge, deployment or acceptance.
+Remaining A02 dependencies/accepted plan/scoped export design is next.

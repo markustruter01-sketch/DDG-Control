@@ -32,7 +32,8 @@ the board never starts work, approves it, clears a blocker or releases a hold.
 ## Finite remaining source work
 
 Finish the A-02 dependency/plan acceptance and scoped export design against the
-existing records, and the A-05 navigable evidence projection. Preserve adequate
+existing records. The A-05 bounded evidence projection is now source implemented;
+complete runtime history reconstruction and owner acceptance remain open. Preserve adequate
 current controls rather than add alternate task truth. B-03/B-04 capability gaps
 are recorded in CURSOR_CHECKPOINT_COMMUNICATION_AUDIT.md; source adapters cannot
 substitute for provider/worker proof. Remaining live checks require their existing
@@ -41,3 +42,19 @@ separate authority and safety prerequisites. Final open-source discovery stays l
 No tests, database/provider/worker operations, migration, merge, deployment or owner
 acceptance occurred during this source review. Clean/minimal/secure infrastructure,
 Finance hold, unchanged Music and parked graphics remain requirements.
+
+## Activity projection source boundary — 24 October 2026
+
+GET /api/company/activity requires the existing real owner session and no-store.
+It reads at most 51 records from each of five existing event sources, returns 50
+with per-source truncation, and limits scope to the four managed project keys.
+Only named metadata is selected; raw details, prompts, private thinking and
+provider output are excluded. Version values must be positive integers or become
+unknown. No new storage, schema, dependency, service, worker access or write path.
+The lazy Company Map activity section validates responses, filters the limited
+records by project and links exact managed task IDs. Question/outcome/handover IDs
+are separately labelled, never confused with managed tasks. Legacy project audit
+has no established actor/timezone, so no invented actor/date or global chronology.
+Independent reads are not a transaction snapshot or complete history. Missing
+data is not success; no execution, recovery, cost, model or owner acceptance proof.
+API/frontend TypeScript and direct API/Vite builds passed. No tests or live checks.

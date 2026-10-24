@@ -4,6 +4,7 @@ import { Header } from '@/components/header';
 import { formatCurrentDisplayName } from '@/lib/format';
 import { CompanyMap } from '@/components/CompanyMap';
 import { CompanyWorkBoard } from '@/components/CompanyWorkBoard';
+import { CompanyActivity } from '@/components/CompanyActivity';
 import { companyMapNodes } from '@/lib/company-map-data';
 
 export function OrganisationPage() {
@@ -21,6 +22,7 @@ export function OrganisationPage() {
         </header>
         <CompanyMap />
         <CompanyWorkBoard />
+        <CompanyActivity />
         <section className="org-chart" aria-labelledby="org-chart-title">
           <div className="section-rule"><span id="org-chart-title">Confirmed company directory</span></div>
           {founder && <div className="org-tier org-tier-founder"><h2>Founder</h2><div className="org-people"><article className="org-person"><span className="org-person-name">{founder.label}</span><span className="org-person-role">{founder.ownerRole}</span></article></div></div>}
