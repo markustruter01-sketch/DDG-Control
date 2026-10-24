@@ -41,9 +41,9 @@ database administrator rewriting data. No public/inbound receipt writer added.
 
 Existing dashboard block wording remains accurate: provider cancellation is
 not requested or verified. A separately authorised cancel action is necessary
-when the source gate is eventually enabled. No automatic retry, agent creation,
-archive, delete, resume, task acceptance or global-slot release is implemented by
-the cancellation service.
+when the source gate is eventually enabled. The cancellation action never
+automatically retries, creates/archives/deletes agents, resumes work, accepts
+tasks or releases the global slot. Explicit source-gated release is described below.
 
 ## Evidence and remaining work
 
@@ -65,8 +65,36 @@ writers cannot overwrite a different recovered binding. No task is started or
 accepted and the global reservation remains held. Concurrent external follow-ups
 cannot be ruled out by this snapshot; all-history release remains separate.
 
-Still owed: all-history terminal
-release policy; durable hosted pickup/deadline enforcement; actual recoverable
+## Reservation release source extension
+
+The dispatch barrier now inspects all saved dispatch history, including locally
+failed/completed rows. Every row must have a valid server-authored release tied
+to its exact saved binding, durable claim and settled submission. New protocol
+events or a later/conflicting submission record invalidate an older release.
+Unknown providers/IDs, missing evidence and unresolved history keep it blocked.
+
+An explicit real-owner release endpoint accepts only the saved dispatch ID and
+action. Both route and service fail before DB/HTTP while the new release and
+exclusive-agent-control source gates are false. These are dispatch readiness
+blockers. Provider polling cannot prevent external queued follow-ups or future
+starts by another actor; exclusive submission authority must be independently
+established before enabling these gates. No live enablement is claimed.
+
+When eventually authorised, release saves a 90-second claim and performs at most
+three GETs outside locks: exact terminal run, complete single-run history (limit2,
+reject additional runs/pagination), then matching IDLE agent/latestRunId.
+Lifecycle IDLE alone never proves termination. Status/timestamps must agree.
+Three explicit release attempts maximum, with backoff and mutual exclusion with
+cancellation claims. Crashed/expired attempts cannot save a release. Additional
+runs require reconciliation; this code does not guess their ownership.
+
+Release removes only that dispatch's reservation barrier. It does not accept or
+complete its task, release other unresolved dispatches, restore project toggles,
+retry the same task or resume coding. Existing unique dispatch-per-task, current
+approvals, repository reservations and all live guards still apply. No tables,
+migrations, startup worker, timer or provider side effects added.
+
+Still owed: durable hosted pickup/deadline enforcement; actual recoverable
 code checkpoints and supported message ingress/follow-up. These source tasks
 can continue before authorising live operations. The existing isolation,
 recovery, included-use and owner acceptance gates remain separate.

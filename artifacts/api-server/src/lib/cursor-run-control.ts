@@ -98,3 +98,34 @@ export async function resolveCursorRun(apiKey: string, agentId: string, submissi
   if (observed.providerCreatedAt !== candidate.createdAt) throw new Error("Cursor recovery creation time mismatch");
   return observed;
 }
+
+/** Three GETs; reject agents with follow-ups or incomplete run history. This
+ * snapshot alone does not establish exclusive control of future submissions. */
+export async function observeCursorAgentQuiescence(apiKey: string, binding: CursorRunBinding,
+  fetchImpl: typeof fetch = fetch) {
+  const observation = await observeCursorRun(apiKey, binding, fetchImpl);
+  if (!observation.terminal) throw new Error("Saved Cursor run is not terminal");
+  const base = runUrl(binding).slice(0, -(`/runs/${binding.runId}`).length);
+  const get = async (url: string) => {
+    const response = await fetchImpl(url, { method: "GET", headers: headers(apiKey), redirect: "error",
+      signal: AbortSignal.timeout(25_000) });
+    if (!response.ok) throw new Error("Cursor quiescence lookup unavailable");
+    return readObject(response);
+  };
+  const page = await get(`${base}/runs?limit=2`);
+  if ((page.nextCursor !== undefined && page.nextCursor !== null) || !Array.isArray(page.items) || page.items.length !== 1) {
+    throw new Error("Cursor run history requires reconciliation");
+  }
+  const run = page.items[0];
+  if (!run || typeof run !== "object" || Array.isArray(run) || run.id !== binding.runId ||
+      run.agentId !== binding.agentId || typeof run.status !== "string" || !terminalStatuses.has(run.status) ||
+      run.status !== observation.status || run.createdAt !== observation.providerCreatedAt ||
+      run.updatedAt !== observation.providerUpdatedAt) throw new Error("Cursor run history mismatch");
+  // Read lifecycle last: IDLE is required in addition to exact terminal proof,
+  // never used as terminal proof itself. ACTIVE can mean queued background work.
+  const agent = await get(base);
+  if (agent.id !== binding.agentId || agent.status !== "IDLE" || agent.latestRunId !== binding.runId) {
+    throw new Error("Cursor agent is not quiescent");
+  }
+  return observation;
+}

@@ -4,7 +4,7 @@ import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { requireRealOwnerSession } from "./auth";
 import { buildCursorAgentPayload, createCursorAgent } from "../lib/cursor-dispatch";
-import { cursorCancellationRequirement, processCursorCancellation, readCursorCancellationRecovery, requireCursorCancellation } from "../lib/cursor-cancellation";
+import { CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED, CURSOR_RELEASE_OPERATIONS_VERIFIED, cursorCancellationRequirement, hasUnreleasedCursorDispatch, processCursorCancellation, processCursorRelease, readCursorCancellationRecovery, requireCursorCancellation } from "../lib/cursor-cancellation";
 
 export const WORK_KEYS = ["finance", "hypest", "cattle-dog-coffee", "ddg-control-ai-stack"] as const;
 export type WorkKey = (typeof WORK_KEYS)[number];
@@ -33,6 +33,7 @@ function dispatchReadiness(config: Awaited<ReturnType<typeof readDispatchConfig>
   const ownerBlockers = [
     ...(!CURSOR_HARD_WALL_CLOCK_STOP_VERIFIED ? [TASK_LIMIT_BLOCKER] : []),
     ...(!CURSOR_RUN_SAFETY_VERIFIED ? [RUN_SAFETY_BLOCKER] : []),
+    ...(!CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED || !CURSOR_RELEASE_OPERATIONS_VERIFIED ? ["Dispatch stays blocked: exclusive agent submission authority and verified reservation release are not accepted."] : []),
     ...(!config.plan_model_confirmed ? ["Owner has not verified eligible plan and exact model."] : []),
     ...(!config.included_allowance_confirmed ? ["Owner has not verified included allowance for that model."] : []),
     ...(!config.no_overage_confirmed ? ["Owner has not verified no-overage or a hard spend cap."] : []),
@@ -47,6 +48,7 @@ function dispatchReadiness(config: Awaited<ReturnType<typeof readDispatchConfig>
     dispatch_enabled: config.enabled && ownerBlockers.length === 0,
     automatic_pickup: CURSOR_AUTOMATIC_PICKUP,
     provider_cancellation_enabled: CURSOR_CANCEL_OPERATIONS_VERIFIED,
+    reservation_release_enabled: CURSOR_RELEASE_OPERATIONS_VERIFIED && CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED,
     background_worker_blocker: BACKGROUND_WORKER_BLOCKER,
     secret_present: secretPresent,
     config: {
@@ -442,9 +444,7 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
     if (!config || !dispatchReadiness(config).dispatch_enabled) return { kind: "disabled" as const };
     // Serialize reservations across projects. Local terminal status cannot
     // release this barrier without a verified external termination receipt.
-    const [globalDispatch] = await tx.select({ id: managedWorkDispatchesTable.id })
-      .from(managedWorkDispatchesTable).limit(1);
-    if (globalDispatch) return { kind: "duplicate" as const, status: "global_run_requires_verified_release" };
+    if (await hasUnreleasedCursorDispatch(tx)) return { kind: "duplicate" as const, status: "global_run_requires_verified_release" };
     const locked = await lockWorkItem(tx, id);
     if (!locked) return { kind: "missing" as const };
     const { item, control } = locked;
@@ -617,6 +617,25 @@ router.post("/work-dispatches/:id/cancel", requireRealOwnerSession, async (req, 
     res.status(result.kind === "missing" ? 404 : result.kind === "terminal_observed" || result.kind === "terminal_recorded" ? 200 : 409).json(result);
   } catch {
     res.status(503).json({ error: "Cancellation could not be durably confirmed. Inspect saved recovery history; do not assume the run stopped." });
+  }
+});
+
+router.post("/work-dispatches/:id/release", requireRealOwnerSession, async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1 || !req.body || typeof req.body !== "object" || Array.isArray(req.body) ||
+      Object.keys(req.body).some(key => key !== "action") || req.body.action !== "verify_and_release_saved_cursor_run") {
+    res.status(400).json({ error: "Explicitly request verification and release of the saved dispatch ID." }); return;
+  }
+  if (!CURSOR_RELEASE_OPERATIONS_VERIFIED || !CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED) {
+    res.status(423).json({ error: "Release is disabled: exclusive submission authority and provider/recovery acceptance are unverified.", reservation_released: false }); return;
+  }
+  const apiKey = process.env.CURSOR_API_KEY?.trim();
+  if (!apiKey) { res.status(503).json({ error: "Cursor server credential unavailable; reservation remains held." }); return; }
+  try {
+    const result = await processCursorRelease(id, apiKey);
+    res.status(result.kind === "missing" ? 404 : result.kind === "released" || result.kind === "already_released" ? 200 : 409).json(result);
+  } catch {
+    res.status(503).json({ error: "Release could not be durably confirmed. Reservation remains blocked pending saved evidence." });
   }
 });
 

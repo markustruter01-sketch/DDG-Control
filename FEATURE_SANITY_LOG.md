@@ -273,3 +273,14 @@ different recovered binding. Existing source gates remain false. No tests,
 provider calls, DB operations, migration, merge or deployment performed.
 API TypeScript noEmit and direct API build passed; source diff reviewed. Runtime
 concurrency/provider recovery remains unverified, and live flags remain false.
+
+## 24 October 2026 — trusted dispatch reservation release source
+
+All-history barrier consumes only exact server-authored release evidence with
+valid claim/settled submission. Local completed/failed state cannot release it.
+Explicit real-owner release saves bounded claims and validates exact terminal run,
+single unpaginated run history and IDLE agent. Source gates remain false until
+exclusive submission authority and provider/recovery behavior are verified.
+No task acceptance/resume, provider call, DB operation, migration or deployment.
+No tests added or run. API TypeScript noEmit and direct API build passed; source
+diff self-reviewed. Runtime concurrency/provider behavior remains unverified.
