@@ -14,3 +14,23 @@
 
 @media(max-width:1050px){.kpi-bar-row:nth-child(n+4){display:none}}
 @media(max-height:720px){.kpi-card-bottom time{display:block;font-size:.46rem}}
+
+/* Keep the development notice inside the same viewport budget as the monitor. */
+.monitor-session-shell {
+  height: 100dvh;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+}
+.monitor-session-shell:has(> .dev-auth-banner) {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.monitor-session-shell > .kpi-shell { height: 100%; min-height: 0; }
+
+/* Improve desktop evidence labels without adding panels or hiding data. */
+@media (min-width: 1051px) and (min-height: 721px) {
+  .kpi-toolbar, .kpi-footer { font-size: .7rem; }
+  .kpi-bar-row, .kpi-bar-row > b { font-size: .7rem; }
+  .kpi-card-bottom p, .kpi-card-bottom time { font-size: .7rem; }
+  .kpi-source-state, .kpi-empty-chart > span { font-size: 10px; }
+}
