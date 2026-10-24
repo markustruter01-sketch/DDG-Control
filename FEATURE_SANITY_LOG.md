@@ -329,3 +329,12 @@ scope, with existing attempt/backoff limits. No automatic release/resume/start.
 Only SOURCE schema fields changed; no migration/push or runtime operation. No tests.
 DB declaration/API TypeScript compilation and direct API build passed; source
 review covered cursor wrap/late receipts, OFF recovery, claim authority and scope.
+
+## 24 October 2026 — B-03/B-04 provider capability audit
+
+Checked current Cursor primary endpoint docs plus existing Fleet Desk/manual
+handover source. Run-scoped checkpoint/restore and exact-run steer delivery are
+not established by the reviewed evidence. Retain dashboard-only messaging/manual
+checkpoint labels and explicit B acceptance gates. No unused adapter or runtime
+operation added. See CURSOR_CHECKPOINT_COMMUNICATION_AUDIT.md. Documentation only;
+no build/tests rerun for unchanged application source.
