@@ -15,7 +15,7 @@ async function loadSnapshot(): Promise<Snapshot> {
   try {
     const response = await fetch('/api/monitor', { cache: 'no-store', signal: controller.signal });
     if (response.status === 401) { setAuthenticationRequired(true); throw new Error('Owner login required.'); }
-    if (response.status === 403) throw new Error('Private figures require owner authentication with preview bypass disabled.');
+    if (response.status === 403) throw new Error('Saved figures are not accessible in this session.');
     if (!response.ok) throw new Error('Saved company figures unavailable.');
     const v: unknown = await response.json();
     if (!record(v) || v.version !== 2 || v.evidence !== 'saved_records' || v.live_verified !== false || v.currency !== 'AUD' ||

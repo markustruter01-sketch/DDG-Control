@@ -315,4 +315,19 @@ export const requireRealOwnerSession: RequestHandler = (req, res, next): void =>
   next();
 };
 
+// Owner-approved development access is limited to the saved KPI read endpoint.
+// An unset/test/production environment must still require the real owner session.
+export const requireMonitorReadSession: RequestHandler = (req, res, next): void => {
+  if (
+    process.env.NODE_ENV === "development" &&
+    isAuthBypassed() &&
+    (req.method === "GET" || req.method === "HEAD") &&
+    req.path === "/monitor"
+  ) {
+    next();
+    return;
+  }
+  requireRealOwnerSession(req, res, next);
+};
+
 export default router;
