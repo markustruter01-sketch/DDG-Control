@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { requireRealOwnerSession } from "./auth";
 import { buildCursorAgentPayload, createCursorAgent } from "../lib/cursor-dispatch";
+import { cursorCancellationRequirement, processCursorCancellation, readCursorCancellationRecovery, requireCursorCancellation } from "../lib/cursor-cancellation";
 
 export const WORK_KEYS = ["finance", "hypest", "cattle-dog-coffee", "ddg-control-ai-stack"] as const;
 export type WorkKey = (typeof WORK_KEYS)[number];
@@ -13,6 +14,9 @@ const CURSOR_HARD_WALL_CLOCK_STOP_VERIFIED = false;
 // Also fail closed until external termination, global/repository reservations,
 // stop barriers and blocking-question synchronization are verified together.
 const CURSOR_RUN_SAFETY_VERIFIED = false;
+// Separate from permission to start work. Source integration exists, but live
+// cancellation still requires isolated recovery and provider acceptance.
+const CURSOR_CANCEL_OPERATIONS_VERIFIED = false;
 const RUN_SAFETY_BLOCKER = "Dispatch stays blocked: provider termination, global/repository reservation, stop barriers and question synchronization are not verified.";
 const BACKGROUND_WORKER_BLOCKER = "Automatic queue pickup is unavailable: Replit deployments can restart or move processes, and this app has no separately verified durable worker.";
 const TASK_LIMIT_BLOCKER = "Dispatch stays blocked: this adapter cannot enforce or verify a provider-side wall-clock stop for an active run.";
@@ -42,6 +46,7 @@ function dispatchReadiness(config: Awaited<ReturnType<typeof readDispatchConfig>
     manual_dispatch_ready: ownerBlockers.length === 0,
     dispatch_enabled: config.enabled && ownerBlockers.length === 0,
     automatic_pickup: CURSOR_AUTOMATIC_PICKUP,
+    provider_cancellation_enabled: CURSOR_CANCEL_OPERATIONS_VERIFIED,
     background_worker_blocker: BACKGROUND_WORKER_BLOCKER,
     secret_present: secretPresent,
     config: {
@@ -463,7 +468,7 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
     const idempotencyKey = randomUUID();
     const [dispatch] = await tx.insert(managedWorkDispatchesTable).values({
       work_item_id: id, project_key: item.project_key, outcome_id: outcome.id, outcome_version: outcome.version,
-      idempotency_key: idempotencyKey, model_id: config.selected_model_id, branch: item.target_branch,
+      idempotency_key: idempotencyKey, agent_id: `bc-${idempotencyKey}`, model_id: config.selected_model_id, branch: item.target_branch,
       status: "submitting", started_at: new Date(),
     }).returning();
     await tx.update(managedWorkItemsTable).set({ attempts: item.attempts + 1, started_at: new Date(), updated_at: new Date() }).where(eq(managedWorkItemsTable.id, id));
@@ -496,6 +501,37 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
       modelId: reservation.config.selected_model_id!,
       agentId: `bc-${agentUuid}`,
     });
+    // Persist a submission boundary before HTTP. Recheck the same reservation
+    // under the stop lock; a stop after this commit leaves a durable recovery
+    // intent even if the provider accepts only after the stop response.
+    const submit = await db.transaction(async tx => {
+      const [currentConfig] = await tx.select().from(managedWorkDispatchConfigTable)
+        .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
+      const current = await lockWorkItem(tx, id);
+      const [dispatch] = await tx.select().from(managedWorkDispatchesTable)
+        .where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id)).for("update").limit(1);
+      if (!currentConfig || !current || !dispatch || !dispatchReadiness(currentConfig).dispatch_enabled ||
+          currentConfig.updated_at.getTime() !== reservation.config.updated_at.getTime() ||
+          !current.control.enabled || current.control.completed || current.item.status !== "approved" ||
+          current.item.plan_version !== reservation.item.plan_version || new Date() >= current.item.deadline ||
+          dispatch.status !== "submitting" || dispatch.agent_id !== payload.agentId || dispatch.run_id !== null) return false;
+      if (await cursorCancellationRequirement(tx, dispatch)) return false;
+      const [outcome] = await tx.select().from(managedWorkOutcomesTable)
+        .where(eq(managedWorkOutcomesTable.id, dispatch.outcome_id!)).limit(1);
+      if (!outcome || outcome.project_key !== current.item.project_key || outcome.status !== "approved" ||
+          outcome.version !== dispatch.outcome_version) return false;
+      const [question] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
+        .where(and(eq(managedFleetQuestionsTable.work_item_id, id), eq(managedFleetQuestionsTable.project_key, current.item.project_key),
+          eq(managedFleetQuestionsTable.plan_version, current.item.plan_version), eq(managedFleetQuestionsTable.blocks_work, true),
+          eq(managedFleetQuestionsTable.status, "open"))).limit(1);
+      if (question) return false;
+      await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: current.item.project_key,
+        actor: "system", event_type: "cursor_submission_started", details: { dispatch_id: dispatch.id,
+          reserved_agent_id: dispatch.agent_id, config_version: currentConfig.updated_at.toISOString(),
+          plan_version: current.item.plan_version, outcome_version: dispatch.outcome_version, automatic_retry: false } });
+      return true;
+    });
+    if (!submit) throw new Error("Submission blocked by changed controls or task state");
     const result = await createCursorAgent(apiKey, payload);
     acceptedRun = result;
     const dashboardStatus = await db.transaction(async (tx) => {
@@ -508,7 +544,8 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
       const [question] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
         .where(and(eq(managedFleetQuestionsTable.work_item_id, id), eq(managedFleetQuestionsTable.project_key, current.item.project_key),
           eq(managedFleetQuestionsTable.plan_version, current.item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
-      const nextStatus = currentConfig?.enabled && currentConfig.updated_at.getTime() === reservation.config.updated_at.getTime() &&
+      const cancellationRequired = await cursorCancellationRequirement(tx, reservation.dispatch);
+      const nextStatus = !cancellationRequired && currentConfig?.enabled && currentConfig.updated_at.getTime() === reservation.config.updated_at.getTime() &&
         current.control.enabled && !current.control.completed && current.item.status === "approved" &&
         current.item.plan_version === reservation.item.plan_version && new Date() < current.item.deadline && !question
         ? "in_progress" : "needs_owner";
@@ -516,6 +553,7 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
         .where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
       await tx.update(managedWorkItemsTable).set({ status: nextStatus, branch: reservation.item.target_branch, updated_at: new Date() })
         .where(eq(managedWorkItemsTable.id, id));
+      if (nextStatus === "needs_owner") await requireCursorCancellation(tx, reservation.dispatch, "controls_or_task_changed_during_submission");
       await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: reservation.item.project_key, actor: "system", event_type: "cursor_dispatch_started", from_status: current.item.status, to_status: nextStatus, details: { dispatch_id: reservation.dispatch.id, provider: "cursor", model_id: reservation.config.selected_model_id, agent_id: result.agentId, run_id: result.runId, run_status: result.runStatus, branch: reservation.item.target_branch, provider_cancellation: "not_requested_or_verified" } });
       return nextStatus;
     });
@@ -535,9 +573,40 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
         status: "needs_owner", error_summary: `${summary} No automatic retry; inspect Cursor before any next action.`,
         ...(acceptedRun ? { agent_id: acceptedRun.agentId, run_id: acceptedRun.runId, provider_status: acceptedRun.runStatus } : {}),
       }).where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
+      if (acceptedRun) await requireCursorCancellation(tx, reservation.dispatch, "accepted_start_persistence_requires_recovery");
       await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: reservation.item.project_key, actor: "system", event_type: "cursor_dispatch_needs_owner", from_status: current?.item.status ?? "unknown", to_status: current?.item.status ?? "unknown", details: { dispatch_id: reservation.dispatch.id, error: summary, accepted_run_binding_retained: Boolean(acceptedRun) } });
     });
     res.status(502).json({ error: "Cursor request outcome requires owner review. The reservation prevents duplicate submission." });
+  }
+});
+
+router.get("/work-dispatches/:id/recovery", requireRealOwnerSession, async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1) { res.status(400).json({ error: "Invalid dispatch ID." }); return; }
+  const saved = await readCursorCancellationRecovery(id);
+  if (!saved) { res.status(404).json({ error: "Cursor dispatch not found." }); return; }
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ ...saved, provider_cancellation_enabled: CURSOR_CANCEL_OPERATIONS_VERIFIED });
+});
+
+router.post("/work-dispatches/:id/cancel", requireRealOwnerSession, async (req, res): Promise<void> => {
+  const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1 || !req.body || typeof req.body !== "object" || Array.isArray(req.body) ||
+      Object.keys(req.body).some(key => key !== "action") || req.body.action !== "cancel_saved_cursor_run") {
+    res.status(400).json({ error: "Explicitly request cancellation of the saved dispatch ID." }); return;
+  }
+  if (!CURSOR_CANCEL_OPERATIONS_VERIFIED) {
+    res.status(423).json({ error: "Live cancellation is not enabled: isolated recovery and provider acceptance remain unverified.", provider_cancellation: "not_requested_or_verified" }); return;
+  }
+  const apiKey = process.env.CURSOR_API_KEY?.trim();
+  if (!apiKey) { res.status(503).json({ error: "Cursor server credential unavailable; cancellation not requested." }); return; }
+  // IDs come exclusively from the saved dispatch. Browser/worker supplied
+  // provider IDs, terminal statuses and receipts are never accepted here.
+  try {
+    const result = await processCursorCancellation(id, apiKey);
+    res.status(result.kind === "missing" ? 404 : result.kind === "terminal_observed" || result.kind === "terminal_recorded" ? 200 : 409).json(result);
+  } catch {
+    res.status(503).json({ error: "Cancellation could not be durably confirmed. Inspect saved recovery history; do not assume the run stopped." });
   }
 });
 
@@ -626,13 +695,14 @@ router.post("/work-stop", requireRealOwnerSession, async (req, res): Promise<voi
         details: { project_controls_disabled: true, dispatch_disabled: true, provider_cancellation: "not_requested_or_verified" },
       });
     }
-    const unresolved = await tx.select({
-      id: managedWorkDispatchesTable.id, work_item_id: managedWorkDispatchesTable.work_item_id,
-      project_key: managedWorkDispatchesTable.project_key, agent_id: managedWorkDispatchesTable.agent_id,
-      run_id: managedWorkDispatchesTable.run_id, status: managedWorkDispatchesTable.status,
-    }).from(managedWorkDispatchesTable)
-      .where(inArray(managedWorkDispatchesTable.status, ["submitting", "running", "needs_owner"]));
-    return { affected_task_records: open.length, unresolved_dispatches: unresolved };
+    // Dashboard status (including failed/completed) is not terminal provider
+    // evidence. Preserve recovery requirements for every historical dispatch.
+    const dispatches = await tx.select().from(managedWorkDispatchesTable).orderBy(managedWorkDispatchesTable.id);
+    for (const dispatch of dispatches) await requireCursorCancellation(tx, dispatch, "dashboard_work_blocked");
+    const unresolved = dispatches.map(dispatch => ({ id: dispatch.id, work_item_id: dispatch.work_item_id,
+      project_key: dispatch.project_key, agent_id: dispatch.agent_id, run_id: dispatch.run_id, status: dispatch.status }));
+    return { affected_task_records: open.length, unresolved_dispatches: unresolved,
+      cancellation_recovery_recorded: true, provider_cancellation_enabled: CURSOR_CANCEL_OPERATIONS_VERIFIED };
   });
   res.json({
     dashboard_work_blocked: true,
