@@ -255,3 +255,15 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Persist fixed safe failure descriptions rather than arbitrary SQL/network errors. No raw exception/response log added. IDs are only copied after strict create response validation.
 - API TypeScript noEmit exit0 and diff-check clear. No tests/backend/DB/task/provider/migration/publication/release. Hard flags false; durable start-intent/cancel receipts and runtime failure acceptance remain open.
 - Direct API build exit0/2.5MB after recovery change. Reviewed complete backend diff against base45add2f; no UI/schema/dependency/provider enablement changes. Existing checks do not establish real concurrent/restart/cancellation behavior.
+
+## 24 October 2026 — owner rescope to monitoring only
+
+One compact Monitor page replaces mounted control frontend; minimal header/login/day-night/shared approved logo/background. Project cards, saved work counts, attention/activity, details and HTTPS source links; explicit saved/unverified/partial/error states, bounded manual refresh and no fabricated health. Server now mounts only existing health/auth plus owner read-only monitor; all non-auth writes refused, old control/machine routes unmounted, no startup seeding/provider/model/worker calls. Unmerged PR30 control/schema additions excluded from monitoring tree, old branch/draft preserved. No new dependency/service/table/data migration. TypeScript and API/Vite builds passed; no tests/visual-runtime/DB/provider/merge/deploy/owner acceptance. See MONITORING_SCOPE.md.
+
+## 24 October 2026 — one-screen company KPI scope
+
+Actual owner discarded avatars/village and project workflow detail; requested one viewport of company profits/debt/customers/social footprint, bars/graphs and Glacier Glitch. Owner selected existing saved records with gaps. Replaced project/task monitor with eight compact KPI bar panels. Reads only existing capped finance/metric/social records, no external API/new dependency/schema/write. No fabricated profit, unique customers/audience, trends/targets or live state. Income/debt/monthly commitments remain explicitly partial; consolidated profit unavailable until complete verified source exists. Recorded snapshot dates and AUD convention explicit. Responsive viewport grid, no avatar/village imports, no live operations. Auth-bypass 403 now shows a configuration error instead of repeated login loop. TypeScript/build checks recorded separately; no tests/visual/runtime/DB/provider/migration/merge/deploy.
+
+## 24 October 2026 — bounded KPI source review
+
+Reviewed mounted route/auth/startup graph, capped read projection, safe amount handling, saved/partial/missing/stale semantics, period/currency/customer/audience limits and escaped numeric charts. Corrected business attribution: stable IDs and separate unassigned bucket prevent equal names collapsing bars. API TypeScript/direct build passed; unchanged frontend checks reused. No tests/visual/runtime/DB/provider/migration/merge/deploy. MONITORING_SOURCE_REVIEW.md records remaining preview/readability/owner acceptance; compilation does not prove single-screen fit.

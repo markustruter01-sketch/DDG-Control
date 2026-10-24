@@ -3,7 +3,7 @@ import { Router as WouterRouter } from 'wouter';
 import { AuthGate } from '@/components/auth';
 import { ColorModeProvider } from '@/components/header';
 import { queryClient } from '@/lib/query-client';
-import './ddg.css';
+import './monitoring.css';
 
 function App() {
   return (
