@@ -5,6 +5,26 @@ clean, minimal infrastructure. This replaces the automated-control delivery scop
 
 ## Active application
 
+LATEST OWNER CLARIFICATION: no avatars or village. The active interface is now
+one viewport of high-level company key figures, prioritising bars over text:
+consolidated profit, recorded income/debt, online customers, social footprint,
+reach, engagement and monthly commitments. The owner chose existing saved records
+with explicit gaps. The project/task overview described below is superseded.
+
+The KPI endpoint uses only existing saved finance, metric and social tables with
+bounded queries. Income covers 30 Brisbane calendar dates; debt is saved balances;
+costs are recorded active recurring commitments, not actual total expenses.
+Online customer readings are not deduplicated across businesses. Account follower
+totals are not unique people. Snapshot dates are shown where recorded; metrics
+from different dates do not become a verified current company total. All available
+cards remain partial coverage; no rows means unknown, not a fabricated zero.
+Consolidated profit remains unavailable because the saved sources do not establish
+complete net profit/cost coverage. No external store/account API is called.
+AUD follows the existing dashboard convention, not a new currency verification.
+The graph data contains no sample values, synthetic trends or inferred targets.
+The fixed-height responsive grid is designed for a single screen; actual viewport,
+zoom, visual and owner acceptance checks have not been run.
+
 One overview shows saved project status, bounded work counts, attention items,
 recent recorded activity, project details and safe HTTPS links to source tools.
 It retains the exact creative logo and glacier/navy identity with day/night mode,
