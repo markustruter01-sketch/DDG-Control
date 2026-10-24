@@ -267,3 +267,9 @@ Actual owner discarded avatars/village and project workflow detail; requested on
 ## 24 October 2026 — bounded KPI source review
 
 Reviewed mounted route/auth/startup graph, capped read projection, safe amount handling, saved/partial/missing/stale semantics, period/currency/customer/audience limits and escaped numeric charts. Corrected business attribution: stable IDs and separate unassigned bucket prevent equal names collapsing bars. API TypeScript/direct build passed; unchanged frontend checks reused. No tests/visual/runtime/DB/provider/migration/merge/deploy. MONITORING_SOURCE_REVIEW.md records remaining preview/readability/owner acceptance; compilation does not prove single-screen fit.
+
+## 24 October 2026 — preview viewport correction
+
+Owner corrected the earlier Pull target from Hypest to DDG-Control. One Replit source inspection reports clean MAIN 7f8f250f/tree77bb8fce, matching the approved monitoring source. Existing workflows were already running. A separate bounded rendered review at 1440x1000 reported the lower row reaching the viewport bottom, no visible footer, small secondary text and unavailable figures. This is Replit worker-reported visual evidence, not an independently viewed screenshot or owner acceptance. One unnamed resource 404 was reported; cause unresolved.
+
+Source correction: put the existing development-login banner and routed screen inside one viewport grid, so the banner consumes space within the viewport rather than extending it. Preserve auth behavior and the server's real-owner guard. Increase desktop chart/evidence labels without adding panels/dependencies or changing data. Frontend TypeScript and Vite build passed (97 modules, 243.50 kB JS, 9.58 kB CSS); git diff check passed. No tests or DB/provider/settings operations. Exact corrected rendered fit, populated chart readability and authenticated saved-data availability remain unverified; merge and integration need separate owner review.

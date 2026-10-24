@@ -108,12 +108,14 @@ export function AuthGate() {
     const devBypass = sessionQuery.data.dev_bypass;
     return (
       <DevAuthBypassContext.Provider value={devBypass}>
-        {devBypass && (
-          <div className="dev-auth-banner" role="status">
-            DEV: login off
-          </div>
-        )}
-        <Router />
+        <div className="monitor-session-shell">
+          {devBypass && (
+            <div className="dev-auth-banner" role="status">
+              DEV: login off
+            </div>
+          )}
+          <Router />
+        </div>
       </DevAuthBypassContext.Provider>
     );
   }
