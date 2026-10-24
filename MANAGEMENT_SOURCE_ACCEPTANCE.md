@@ -68,3 +68,12 @@ always says accepted=false and execution_authorized=false; independently read
 records are not an approval snapshot. API TypeScript/direct build passed; no
 tests/runtime/DB operations. Durable revision service, owner review UI and
 approval/selection/pre-HTTP enforcement remain required before enablement.
+
+A02 revision source increment: one new source-only immutable company-plan
+reference receipt table/service, owner history/propose/accept/withdraw API,
+hardcoded false gate before any new-table access. Existing config lock serializes
+writers; ordered controls/outcomes/tasks, exact head/digest/reference and replay
+checks, immutable receipts, withdrawal even while OFF. No duplicate task bodies,
+new service/package or existing-table columns. DB declaration/API compilation
+and API build passed; no tests or actual database/schema operations. Owner review
+UI and all work-consumer enforcement are still required; feature stays disabled.

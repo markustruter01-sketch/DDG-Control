@@ -3,8 +3,24 @@ import { and, inArray, sql } from 'drizzle-orm';
 import { Router, type IRouter } from 'express';
 import { requireRealOwnerSession } from './auth';
 import { evaluateCompanyPlan, parseCompanyPlan, type CompanyPlanManifest } from '../lib/company-plan';
+import { COMPANY_PLAN_REVISIONS_VERIFIED, CompanyPlanError, parseCompanyPlanCommand, readCompanyPlanRevisions, recordCompanyPlanRevision } from '../lib/company-plan-revisions';
 
 export const companyPlanRouter: IRouter = Router();
+const planError = (res: import('express').Response, error: unknown) => res.status(error instanceof CompanyPlanError ? error.status : 503)
+  .json({ error: error instanceof CompanyPlanError ? error.message : 'Saved plan records are unavailable.' });
+companyPlanRouter.get('/company/plan/revisions', requireRealOwnerSession, async (_req, res): Promise<void> => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  try { res.json(await readCompanyPlanRevisions()); } catch (error) { planError(res, error); }
+});
+for (const [path, kind] of [['propose', 'proposed'], ['accept', 'accepted'], ['withdraw', 'withdrawn']] as const) {
+  companyPlanRouter.post(`/company/plan/${path}`, requireRealOwnerSession, async (req, res): Promise<void> => {
+    res.setHeader('Cache-Control', 'private, no-store');
+    // Return before parsing/service/new-table access while rollout is disabled.
+    if (!COMPANY_PLAN_REVISIONS_VERIFIED) { res.status(423).json({ error: 'Saved company plans are disabled pending reviewed rollout and enforcement.' }); return; }
+    try { res.json(await recordCompanyPlanRevision(parseCompanyPlanCommand(kind, req.body))); }
+    catch (error) { planError(res, error); }
+  });
+}
 /** Read-only proposal preview. No plan receipt, approval, database write or provider call. */
 companyPlanRouter.post('/company/plan/preview', requireRealOwnerSession, async (req, res): Promise<void> => {
   res.setHeader('Cache-Control', 'private, no-store');

@@ -58,8 +58,8 @@ An empty or partial proposal may be saved only as a clearly unaccepted proposal;
 acceptance requires its declared scope and all required references to be valid.
 
 Owner acceptance requires the real owner session. Use the existing singleton
-dispatch-config lock, project controls in fixed WORK_KEYS order, outcomes and
-tasks by ascending ID, then the company-plan serialization lock. Every new
+dispatch-config lock (also serializes all plan writers), project controls in
+fixed WORK_KEYS order, outcomes and tasks by ascending ID. Every new
 plan mutation uses this order. Resolve the target revision first without granting
 authority; re-read it under the lock and compare the expected revision/digest.
 Use a database transaction for validation and the immutable acceptance receipt.
@@ -120,3 +120,19 @@ filter, not proof that arbitrary prose is secret-free.
 
 No new provider, database operation, migration, test, release or owner action is
 authorised by this design. Existing live flags stay false. Music is unchanged.
+
+## Source revision service increment
+
+Source-only company_plan_revisions stores immutable proposal/reference receipts,
+not task copies. Its new table is never accessed while the hardcoded false
+COMPANY_PLAN_REVISIONS_VERIFIED gate remains false. GET revisions and POST
+propose/accept/withdraw require the real owner, return no-store and generic
+unavailability on unexpected failures. Exact history-head, revision/digest and
+request UUID checks prevent stale/conflicting actions and reuse a matching
+receipt on replay. Database timestamps and a fixed recorded owner are used.
+No UPDATE/DELETE path exists. Withdrawal can run with work OFF and cannot cancel
+a provider run. Acceptance checks locked references/goals/project controls;
+it does not approve individual tasks or require future prerequisites already done.
+Dependency checks for individual work, UI and rollout remain separate unfinished
+steps. A saved acceptance receipt does not itself grant execution authority.
+No SQL migration, schema push or database operation has been performed.
