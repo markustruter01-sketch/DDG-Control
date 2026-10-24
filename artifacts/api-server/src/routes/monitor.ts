@@ -25,7 +25,7 @@ router.get('/monitor', async (_req, res): Promise<void> => {
   const start = new Date(`${today}T00:00:00Z`); start.setUTCDate(start.getUTCDate() - 29);
   const since = start.toISOString().slice(0, 10);
   // Saved tables only: no provider call, refresh write, model, seeding or schema change.
-  const [projects, debts, income, costs, customers, social] = await Promise.allSettled([
+  const [projects, debts, income, costs, customers, social, sales] = await Promise.allSettled([
     db.select({ id: projectsTable.id, name: projectsTable.name }).from(projectsTable).orderBy(projectsTable.id).limit(101),
     db.select({ project_id: debtsTable.project_id, amount: debtsTable.balance_cents }).from(debtsTable).orderBy(debtsTable.id).limit(501),
     db.select({ project_id: revenueEntriesTable.project_id, amount: revenueEntriesTable.amount_cents, day: revenueEntriesTable.received_on })
@@ -41,6 +41,10 @@ router.get('/monitor', async (_req, res): Promise<void> => {
       engagements: socialSnapshotsTable.engagements_30d, day: socialSnapshotsTable.captured_on })
       .from(socialSnapshotsTable).where(lte(socialSnapshotsTable.captured_on, today))
       .orderBy(desc(socialSnapshotsTable.captured_on), desc(socialSnapshotsTable.id)).limit(501),
+    db.select({ id: metricSnapshotsV2Table.id, project_id: metricSnapshotsV2Table.project_id, value: metricSnapshotsV2Table.value,
+      day: sql<string>`to_char(${metricSnapshotsV2Table.captured_at}, 'YYYY-MM-DD')` }).from(metricSnapshotsV2Table)
+      .where(and(eq(metricSnapshotsV2Table.key, 'sales_30d'), lte(sql<string>`to_char(${metricSnapshotsV2Table.captured_at}, 'YYYY-MM-DD')`, today)))
+      .orderBy(desc(metricSnapshotsV2Table.captured_at), desc(metricSnapshotsV2Table.id)).limit(501),
   ]);
   const name = (id: number | null) => {
     if (id === null) return 'Company · unassigned';
@@ -61,7 +65,18 @@ router.get('/monitor', async (_req, res): Promise<void> => {
   };
   cards.push({ key: 'profit', title: 'Consolidated profit', unit: 'aud_cents', value: null, bars: [],
     state: 'missing', note: 'Verified net-profit source missing', as_of: null });
-  add('income', 'Recorded income', 'aud_cents', () => ({ bars: grouped(income.status === 'fulfilled' ? income.value.slice(0, 1000).map(r => ({ label: name(r.project_id), value: cents(r.amount) })) : []),
+  // Saved store sales are a separate source, never added to ledger income.
+  // Do not hide a failed ledger read by replacing it with another source.
+  if (income.status === 'fulfilled' && income.value.length === 0 && sales.status === 'fulfilled' && sales.value.length > 0) {
+    add('income', 'Saved online sales', 'aud_cents', () => {
+      const latest = new Map<number, { value: number; day: string }>();
+      for (const row of sales.value.slice(0, 500)) if (!latest.has(row.project_id)) latest.set(row.project_id, row);
+      const days = [...latest.values()].map(r => r.day).sort();
+      return { bars: grouped([...latest].map(([id, row]) => ({ label: name(id), value: row.value }))),
+        note: `${sales.value.length > 500 ? 'Limited snapshots' : 'Saved sales snapshots'} · rolling 30 days · not net profit`,
+        as_of: days.length ? days[0] === days[days.length - 1] ? days[0] : `${days[0]} – ${days[days.length - 1]}` : null };
+    }, true);
+  } else add('income', 'Recorded income', 'aud_cents', () => ({ bars: grouped(income.status === 'fulfilled' ? income.value.slice(0, 1000).map(r => ({ label: name(r.project_id), value: cents(r.amount) })) : []),
     note: income.status === 'fulfilled' && income.value.length > 1000 ? 'Limited ledger entries · 30 days' : 'Ledger only · last 30 days' }), income.status === 'fulfilled');
   add('debt', 'Recorded debt', 'aud_cents', () => ({ bars: grouped(debts.status === 'fulfilled' ? debts.value.slice(0, 500).map(r => ({ label: name(r.project_id), value: cents(r.amount) })) : []),
     note: debts.status === 'fulfilled' && debts.value.length > 500 ? 'Limited saved balances' : 'Saved balances · not verified live' }), debts.status === 'fulfilled');
