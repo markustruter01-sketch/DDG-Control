@@ -65,3 +65,7 @@ checkpoint recovery, trading changes and production operations. Finance hold and
 Music remain unchanged. Existing source integrations are not newly connected by
 this redesign. Genuine telemetry ingestion can be separately scoped when its
 source and permissions are known; no fake live state is substituted meanwhile.
+
+## Owner-approved development access — 25 October 2026
+
+Owner explicitly requires login off until development is finished, including saved KPI reads. GET/HEAD /api/monitor alone may use the existing DDG_DEV_AUTH_BYPASS=true flag when NODE_ENV is exactly development. Production, unset and other environment modes retain real owner authentication. Legacy control/provider routes remain unmounted; mutation methods remain refused. No new data source or fabricated figures. Access is temporary development access, not verified owner login or production acceptance.

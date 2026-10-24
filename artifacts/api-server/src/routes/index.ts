@@ -1,12 +1,12 @@
 import { Router, type IRouter } from 'express';
 import healthRouter from './health';
-import authRouter, { requireRealOwnerSession } from './auth';
+import authRouter, { requireMonitorReadSession } from './auth';
 import monitorRouter from './monitor';
 
 const router: IRouter = Router();
 router.use(healthRouter);
 router.use(authRouter);
-router.use(requireRealOwnerSession);
+router.use(requireMonitorReadSession);
 // The monitor has no task, approval, provider, worker or production write route.
 router.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD') { next(); return; }
