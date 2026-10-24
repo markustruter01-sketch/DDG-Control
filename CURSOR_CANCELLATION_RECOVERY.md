@@ -52,7 +52,20 @@ self-review covered lock order, late start, stop/reenable, bounded claims,
 identity checks, HTTP outside locks and response privacy. No tests were added
 or run. Database concurrency, restart and provider behavior remain unexercised.
 
-Still owed: safely reconcile submissions without run IDs; all-history terminal
+Missing-run recovery now requires the exact server-reserved agent ID and one
+matching durable pre-submit event. A saved claim bounds three authenticated GETs
+(agent metadata, at most two listed runs, exact run). Only one run with no next
+page, matching identities/latestRunId and valid creation times can be bound.
+Empty, multiple, paginated, malformed, unavailable or stale results remain
+unresolved. Missing agents are not proof that submission never happened.
+Recovery only saves the binding and exact-run observation; it sends no cancel
+request. A nonterminal recovered run requires a separate explicit cancel attempt,
+subject to the same shared three-attempt ceiling and backoff. Late submission
+writers cannot overwrite a different recovered binding. No task is started or
+accepted and the global reservation remains held. Concurrent external follow-ups
+cannot be ruled out by this snapshot; all-history release remains separate.
+
+Still owed: all-history terminal
 release policy; durable hosted pickup/deadline enforcement; actual recoverable
 code checkpoints and supported message ingress/follow-up. These source tasks
 can continue before authorising live operations. The existing isolation,

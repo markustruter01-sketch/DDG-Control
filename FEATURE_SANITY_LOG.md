@@ -262,3 +262,14 @@ Owner rule recorded21October2026: before starting each new feature, confirm it i
 - Implemented reserved agent ID, locked submission preflight/event, durable local recovery requirements for all historical dispatch statuses, late-start/save-failure requirements, bounded claimed cancellation service, strict exact-run transport, real-owner recovery GET and source-gated cancellation POST. See CURSOR_CANCELLATION_RECOVERY.md.
 - API TypeScript noEmit exit0 and direct API build exit0 (2.5MB). Source self-review, not independent/runtime review. No tests added/run; no backend, DB, provider, migration, merge or deployment operation. All live guards remain false. No global release/task acceptance/checkpoint claim from terminal observations.
 - Remaining source work is active: ambiguous submissions, verified all-history release, durable pickup/deadline runner, genuine checkpoints and communications. Full A/B acceptance remains open; no invented percentage increase.
+# 24 October 2026 — ambiguous Cursor submission recovery (PR30 extension)
+
+Integrated bounded reserved-agent lookup into the durable cancellation service.
+Requires server pre-submit evidence and a single unpaginated run; validates exact
+agent/run identity and timestamps before saving a missing binding. Three GETs
+maximum, no create/steer/resume/cancel during lookup. Unknown results preserve
+the global reservation. Late accepted-start persistence cannot replace a
+different recovered binding. Existing source gates remain false. No tests,
+provider calls, DB operations, migration, merge or deployment performed.
+API TypeScript noEmit and direct API build passed; source diff reviewed. Runtime
+concurrency/provider recovery remains unverified, and live flags remain false.

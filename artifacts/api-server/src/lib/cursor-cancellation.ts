@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { db, managedWorkDispatchConfigTable, managedWorkDispatchesTable, managedWorkEventsTable, managedWorkItemsTable, projectWorkControlsTable } from "@workspace/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { cancelCursorRun, observeCursorRun } from "./cursor-run-control";
+import { cancelCursorRun, observeCursorRun, resolveCursorRun } from "./cursor-run-control";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Dispatch = typeof managedWorkDispatchesTable.$inferSelect;
 const actor = "system:cursor-run-control-v1";
-const eventTypes = ["cursor_cancel_required", "cursor_cancel_claimed", "cursor_cancel_observed", "cursor_cancel_unresolved"];
+const eventTypes = ["cursor_cancel_required", "cursor_cancel_claimed", "cursor_cancel_observed", "cursor_cancel_unresolved", "cursor_run_binding_recovered"];
 const maxAttempts = 3;
 const claimMilliseconds = 90_000;
 const retryMilliseconds = 60_000;
@@ -87,7 +87,20 @@ export async function processCursorCancellation(id: number, apiKey: string) {
     if (!locked) return { kind: "missing" as const };
     const { dispatch } = locked;
     const intentId = await requireCursorCancellation(tx, dispatch, "explicit_owner_request");
-    if (!dispatch.agent_id || !dispatch.run_id) return { kind: "unbound" as const };
+    // Legacy rows without the reserved ID or durable pre-submit evidence need
+    // manual reconciliation. Never infer that an absent run means no worker.
+    if (!dispatch.agent_id) return { kind: "unbound" as const };
+    let submissionStartedAt: Date | undefined;
+    if (!dispatch.run_id) {
+      if (dispatch.agent_id !== `bc-${dispatch.idempotency_key}`) return { kind: "unbound" as const };
+      const submissions = await tx.select().from(managedWorkEventsTable).where(and(
+        eq(managedWorkEventsTable.work_item_id, dispatch.work_item_id), eq(managedWorkEventsTable.actor, "system"),
+        eq(managedWorkEventsTable.event_type, "cursor_submission_started")));
+      const matching = submissions.filter(event => event.project_key === dispatch.project_key &&
+        event.details.dispatch_id === id && event.details.reserved_agent_id === dispatch.agent_id);
+      if (matching.length !== 1) return { kind: "unbound" as const };
+      submissionStartedAt = matching[0].created_at;
+    }
     const events = await history(tx, dispatch);
     const sameBinding = (event: typeof events[number]) => event.details.agent_id === dispatch.agent_id && event.details.run_id === dispatch.run_id;
     if (events.some(event => event.event_type === "cursor_cancel_observed" && sameBinding(event) && event.details.terminal === true)) {
@@ -104,9 +117,10 @@ export async function processCursorCancellation(id: number, apiKey: string) {
     const [saved] = await tx.insert(managedWorkEventsTable).values({
       work_item_id: dispatch.work_item_id, project_key: dispatch.project_key, actor, event_type: "cursor_cancel_claimed",
       details: { version: 1, dispatch_id: id, intent_id: intentId, token, attempt: claims.length + 1,
-        agent_id: dispatch.agent_id, run_id: dispatch.run_id, expires_at: new Date(now + claimMilliseconds).toISOString() },
+        agent_id: dispatch.agent_id, run_id: dispatch.run_id, operation: submissionStartedAt ? "resolve_run" : "cancel_run",
+        expires_at: new Date(now + claimMilliseconds).toISOString() },
     }).returning({ id: managedWorkEventsTable.id });
-    return { kind: "claimed" as const, dispatch, token, claimId: saved.id,
+    return { kind: "claimed" as const, dispatch, token, claimId: saved.id, submissionStartedAt,
       binding: { agentId: dispatch.agent_id, runId: dispatch.run_id } };
   });
   if (claim.kind !== "claimed") return claim;
@@ -115,9 +129,15 @@ export async function processCursorCancellation(id: number, apiKey: string) {
   // On a crash/timeout, the durable claim stays unresolved and consumes an
   // attempt. No create call or automatic cancellation retry occurs here.
   let acknowledgement = "unknown";
-  try { acknowledgement = await cancelCursorRun(apiKey, claim.binding); } catch { /* Observe even after an ambiguous cancellation. */ }
   let observation: Awaited<ReturnType<typeof observeCursorRun>> | undefined;
-  try { observation = await observeCursorRun(apiKey, claim.binding); } catch { /* No fabricated terminal evidence. */ }
+  if (claim.submissionStartedAt) {
+    try { observation = await resolveCursorRun(apiKey, claim.binding.agentId, claim.submissionStartedAt); }
+    catch { /* An empty/ambiguous/unavailable lookup leaves the reservation intact. */ }
+  } else if (claim.binding.runId) {
+    const binding = { agentId: claim.binding.agentId, runId: claim.binding.runId };
+    try { acknowledgement = await cancelCursorRun(apiKey, binding); } catch { /* Observe after ambiguous cancellation. */ }
+    try { observation = await observeCursorRun(apiKey, binding); } catch { /* No fabricated terminal evidence. */ }
+  }
 
   return db.transaction(async tx => {
     const locked = await lockDispatch(tx, id);
@@ -127,11 +147,21 @@ export async function processCursorCancellation(id: number, apiKey: string) {
     if (latest?.id !== claim.claimId || latest.details.token !== claim.token ||
         typeof latest.details.expires_at !== "string" || Date.parse(latest.details.expires_at) <= Date.now() ||
         events.some(event => event.details.claim_id === claim.claimId && event.event_type !== "cursor_cancel_claimed")) return { kind: "stale" as const };
+    if (claim.submissionStartedAt && observation) {
+      await tx.update(managedWorkDispatchesTable).set({ run_id: observation.runId })
+        .where(eq(managedWorkDispatchesTable.id, id));
+      await tx.insert(managedWorkEventsTable).values({ work_item_id: locked.task.id,
+        project_key: locked.dispatch.project_key, actor, event_type: "cursor_run_binding_recovered",
+        details: { version: 1, dispatch_id: id, claim_id: claim.claimId, agent_id: observation.agentId,
+          run_id: observation.runId, source: "authenticated_single_run_and_exact_get",
+          cancellation_sent: false, task_accepted: false, reservation_released: false } });
+    }
     await tx.insert(managedWorkEventsTable).values({
       work_item_id: locked.task.id, project_key: locked.dispatch.project_key, actor,
       event_type: observation ? "cursor_cancel_observed" : "cursor_cancel_unresolved",
       details: { version: 1, dispatch_id: id, claim_id: claim.claimId,
-        agent_id: claim.binding.agentId, run_id: claim.binding.runId, acknowledgement,
+        agent_id: claim.binding.agentId, run_id: observation?.runId ?? claim.binding.runId, acknowledgement,
+        operation: claim.submissionStartedAt ? "resolve_run" : "cancel_run",
         observation_source: observation ? "authenticated_exact_run_get" : "unavailable",
         observed_at: new Date().toISOString(), provider_updated_at: observation?.providerUpdatedAt ?? null,
         provider_status: observation?.status ?? "unknown", terminal: observation?.terminal ?? false,
@@ -139,7 +169,7 @@ export async function processCursorCancellation(id: number, apiKey: string) {
     });
     // Observation is evidence, not owner acceptance or permission to release
     // the global dispatch barrier. Existing conservative release rules remain.
-    return { kind: observation?.terminal ? "terminal_observed" as const : "unresolved" as const,
+    return { kind: observation?.terminal ? "terminal_observed" as const : claim.submissionStartedAt && observation ? "binding_recovered" as const : "unresolved" as const,
       provider_status: observation?.status ?? "unknown", acknowledgement, reservation_released: false };
   });
 }

@@ -541,6 +541,12 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
         .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
       const current = await lockWorkItem(tx, id);
       if (!current) throw new Error("Accepted run could not be linked to its task; owner review required.");
+      const [savedDispatch] = await tx.select().from(managedWorkDispatchesTable)
+        .where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id)).for("update").limit(1);
+      if (!savedDispatch || savedDispatch.agent_id !== result.agentId ||
+          (savedDispatch.run_id !== null && savedDispatch.run_id !== result.runId)) {
+        throw new Error("Accepted run conflicts with saved recovery binding.");
+      }
       const [question] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
         .where(and(eq(managedFleetQuestionsTable.work_item_id, id), eq(managedFleetQuestionsTable.project_key, current.item.project_key),
           eq(managedFleetQuestionsTable.plan_version, current.item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
@@ -569,12 +575,16 @@ router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res
       await tx.select({ id: managedWorkDispatchConfigTable.id }).from(managedWorkDispatchConfigTable)
         .where(eq(managedWorkDispatchConfigTable.id, 1)).for("update").limit(1);
       const current = await lockWorkItem(tx, id);
+      const [savedDispatch] = await tx.select().from(managedWorkDispatchesTable)
+        .where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id)).for("update").limit(1);
+      const maySaveBinding = acceptedRun && savedDispatch?.agent_id === acceptedRun.agentId &&
+        (savedDispatch.run_id === null || savedDispatch.run_id === acceptedRun.runId);
       await tx.update(managedWorkDispatchesTable).set({
         status: "needs_owner", error_summary: `${summary} No automatic retry; inspect Cursor before any next action.`,
-        ...(acceptedRun ? { agent_id: acceptedRun.agentId, run_id: acceptedRun.runId, provider_status: acceptedRun.runStatus } : {}),
+        ...(maySaveBinding && acceptedRun ? { agent_id: acceptedRun.agentId, run_id: acceptedRun.runId, provider_status: acceptedRun.runStatus } : {}),
       }).where(eq(managedWorkDispatchesTable.id, reservation.dispatch.id));
       if (acceptedRun) await requireCursorCancellation(tx, reservation.dispatch, "accepted_start_persistence_requires_recovery");
-      await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: reservation.item.project_key, actor: "system", event_type: "cursor_dispatch_needs_owner", from_status: current?.item.status ?? "unknown", to_status: current?.item.status ?? "unknown", details: { dispatch_id: reservation.dispatch.id, error: summary, accepted_run_binding_retained: Boolean(acceptedRun) } });
+      await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: reservation.item.project_key, actor: "system", event_type: "cursor_dispatch_needs_owner", from_status: current?.item.status ?? "unknown", to_status: current?.item.status ?? "unknown", details: { dispatch_id: reservation.dispatch.id, error: summary, accepted_run_binding_retained: Boolean(maySaveBinding), accepted_run_binding_conflict: Boolean(acceptedRun && !maySaveBinding) } });
     });
     res.status(502).json({ error: "Cursor request outcome requires owner review. The reservation prevents duplicate submission." });
   }
