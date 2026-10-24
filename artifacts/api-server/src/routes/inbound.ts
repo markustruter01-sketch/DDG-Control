@@ -31,7 +31,7 @@ import { desc, eq, ne } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import { decideDecision } from "./decisions";
 import { requireRealOwnerSession } from "./auth";
-import { hasWorkControl, isProjectWorkEnabled, isProjectWorkHeld, lockWorkControl } from "../lib/managed-work-controls";
+import { hasWorkControl, isProjectWorkEnabled, isProjectWorkHeld, lockWorkControl, withProjectWorkWrite } from "../lib/managed-work-controls";
 import { getTradingSnapshot } from "../agents/ollie";
 import {
   computeFinanceSummary,
@@ -353,7 +353,7 @@ router.post("/inbound/decisions", requireRealOwnerSession, async (req, res): Pro
   res.status(200).json(response);
 });
 
-router.post("/inbound/tasks/:id/status", async (req, res): Promise<void> => {
+router.post("/inbound/tasks/:id/status", requireRealOwnerSession, async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   if (!/^[1-9]\d*$/.test(rawId)) {
     res.status(400).json({ error: "invalid task id" });
@@ -418,11 +418,13 @@ router.post("/inbound/tasks/:id/status", async (req, res): Promise<void> => {
     updates.completed_at = null;
   }
 
-  const [updated] = await db
+  const mutation = await withProjectWorkWrite(taskProject.slug, tx => tx
     .update(tasksTable)
     .set(updates)
     .where(eq(tasksTable.id, params.data.id))
-    .returning();
+    .returning());
+  if (!mutation.allowed) { res.status(423).json({ error: "Project work is OFF, held or complete. Task status updates are paused." }); return; }
+  const [updated] = mutation.value;
   if (!updated) {
     res.status(404).json({ error: "not found" });
     return;
@@ -477,7 +479,7 @@ router.post("/inbound/notes", async (req, res): Promise<void> => {
     return;
   }
 
-  const [created] = await db
+  const mutation = await withProjectWorkWrite(project.slug, tx => tx
     .insert(inboundNotesTable)
     .values({
       project_id: project.id,
@@ -485,7 +487,9 @@ router.post("/inbound/notes", async (req, res): Promise<void> => {
       severity: parsed.data.severity,
       text: parsed.data.text,
     })
-    .returning();
+    .returning());
+  if (!mutation.allowed) { res.status(423).json({ error: "Project work is OFF, held or complete. New project notes are paused." }); return; }
+  const [created] = mutation.value;
   if (!created) {
     res.status(500).json({ error: "could not store note" });
     return;

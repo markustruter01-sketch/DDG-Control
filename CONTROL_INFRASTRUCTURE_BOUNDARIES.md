@@ -38,6 +38,13 @@ completion serializes with the write. Earlier read checks remain useful feedback
 but no longer act as the final write authority. Unmanaged projects retain their
 existing behavior. Runtime concurrency acceptance remains unverified.
 
+The inbound task-status write also requires the real owner in addition to its
+existing inbound key, and inbound task-status/note writes use the same atomic
+project guard. A shared inbound key is not owner identity. Append-only inbound
+notes retain their existing key/session contract and grant no execution approval.
+Inbound decision approval already used owner authentication and project locking;
+that adequate behavior was retained. Finance bookkeeping endpoints were unchanged.
+
 All known existing shared-control consumers now import managed-work-controls.ts
 directly. The existing work-management route re-exports remain for compatibility.
 No infrastructure, dependency, credential, permission setting or schema was added

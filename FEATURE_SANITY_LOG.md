@@ -353,3 +353,14 @@ completed under the existing project control lock through the write, closing
 the gap between the earlier read check and mutation. No external HTTP under locks.
 Final API TypeScript noEmit/direct API build passed and source diff reviewed;
 runtime authentication/concurrency behavior remains unverified. No tests run.
+
+## 24 October 2026 — inbound status authority and atomic project writes
+
+Inbound task status now also requires the existing real-owner session; a shared
+inbound key/development bypass cannot substitute for owner authority. Inbound task
+status and append-only project notes reuse the atomic project-write guard so OFF/
+hold/completion cannot race their final write. Existing key/session and input
+validation retained; inbound decision locking already adequate. Finance endpoints
+unchanged. No infrastructure/dependency/schema added; no tests/runtime operations.
+Final API TypeScript noEmit/direct API build passed; source diff reviewed. Actual
+runtime permission/concurrency verification remains open.
