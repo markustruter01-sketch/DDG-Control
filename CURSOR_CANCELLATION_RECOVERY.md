@@ -32,12 +32,14 @@ cancellation flag are false. Finance remains held; Music and graphics unchanged.
 
 ## Storage and compatibility
 
-Uses existing managed_work_dispatches and managed_work_events. No new schema,
+Cancellation/release uses existing managed_work_dispatches and managed_work_events. No new schema,
 executable migration, startup task, timer or dependency. Current DB uniqueness
 allows one dispatch per task; intent deduplication depends on that invariant.
 All writers for this cancellation protocol must hold the singleton config lock.
 This is server-authored ledger evidence, not protection against a privileged
 database administrator rewriting data. No public/inbound receipt writer added.
+The later hosted-pickup source has a separate invocation schema contract, described
+in CURSOR_HOSTED_WORKER_SOURCE.md; no migration or schema push has been performed.
 
 Existing dashboard block wording remains accurate: provider cancellation is
 not requested or verified. A separately authorised cancel action is necessary

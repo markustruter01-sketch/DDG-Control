@@ -14,11 +14,15 @@ import socialRouter from "./social";
 import workManagementRouter from "./work-management";
 import fleetDeskRouter from "./fleet-desk";
 import notificationReceiptsRouter from "./notification-receipts";
+import cursorWorkerRouter from "./cursor-worker";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+// Separate source-disabled machine route; it performs its own HMAC validation.
+// Owner session/dev bypass cannot authenticate this endpoint.
+router.use(cursorWorkerRouter);
 router.use(requireAuth);
 router.use(projectsRouter);
 router.use(tasksRouter);

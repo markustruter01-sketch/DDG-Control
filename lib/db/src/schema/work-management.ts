@@ -240,4 +240,24 @@ export const managedWorkEventsTable = pgTable("managed_work_events", {
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Source contract only. No migration is applied by importing this schema.
+// Global invocation storage is needed even for idle/blocked ticks; task events
+// alone cannot prevent replay of an idle request after a task becomes ready.
+export const cursorWorkerInvocationsTable = pgTable("cursor_worker_invocations", {
+  invocation_id: text("invocation_id").primaryKey(),
+  claim_token: text("claim_token").notNull(),
+  request_timestamp: timestamp("request_timestamp", { withTimezone: true }).notNull(),
+  expires_at: timestamp("expires_at", { withTimezone: true }).notNull(),
+  state: text("state").notNull(),
+  work_item_id: integer("work_item_id").references(() => managedWorkItemsTable.id),
+  plan_version: integer("plan_version"),
+  outcome_version: integer("outcome_version"),
+  config_version: timestamp("config_version", { withTimezone: true }).notNull(),
+  http_status: integer("http_status"),
+  result_code: text("result_code"),
+  dispatch_id: integer("dispatch_id").references(() => managedWorkDispatchesTable.id),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  finished_at: timestamp("finished_at", { withTimezone: true }),
+}, table => [check("cursor_worker_invocation_state_check", sql`${table.state} IN ('claimed', 'finished')`)]);
+
 export type ProjectHandover = typeof projectHandoverTable.$inferSelect;

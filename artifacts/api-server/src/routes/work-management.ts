@@ -5,6 +5,7 @@ import { requireRealOwnerSession } from "./auth";
 import { CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED, CURSOR_RELEASE_OPERATIONS_VERIFIED, processCursorCancellation, processCursorRelease, readCursorCancellationRecovery, recordCursorDeadline, requireCursorCancellation } from "../lib/cursor-cancellation";
 
 import { dispatchApprovedCursorWork } from "../lib/cursor-work-dispatch";
+import { readCursorWorkerInvocation } from "../lib/cursor-worker";
 import { WORK_KEYS, FINANCE_REVIEW_REQUIRED, CURSOR_HARD_WALL_CLOCK_STOP_VERIFIED, CURSOR_RUN_SAFETY_VERIFIED, CURSOR_CANCEL_OPERATIONS_VERIFIED, RUN_SAFETY_BLOCKER, TASK_LIMIT_BLOCKER, dispatchReadiness, hasWorkControl, isProjectWorkHeld, lockWorkControl, lockWorkItem, readDispatchConfig } from "../lib/managed-work-controls";
 export { WORK_KEYS, hasWorkControl, isProjectWorkHeld, isProjectWorkEnabled, lockWorkControl } from "../lib/managed-work-controls";
 export type { WorkKey, WorkTransaction } from "../lib/managed-work-controls";
@@ -338,6 +339,16 @@ router.post("/work-items/:id/approve", requireRealOwnerSession, async (req, res)
 router.post("/work-items/:id/dispatch", requireRealOwnerSession, async (req, res): Promise<void> => {
   const id = Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
   const result = await dispatchApprovedCursorWork(id);
+  res.status(result.status).json(result.body);
+});
+
+router.get("/work-worker-invocations/:id", requireRealOwnerSession, async (req, res): Promise<void> => {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) {
+    res.status(400).json({ error: "Invalid worker invocation ID." }); return;
+  }
+  res.setHeader("Cache-Control", "no-store");
+  const result = await readCursorWorkerInvocation(id);
   res.status(result.status).json(result.body);
 });
 

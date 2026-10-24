@@ -3,15 +3,17 @@ import { db, managedFleetQuestionsTable, managedWorkDispatchConfigTable, managed
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { buildCursorAgentPayload, createCursorAgent } from "./cursor-dispatch";
 import { cursorCancellationRequirement, hasUnreleasedCursorDispatch, requireCursorCancellation } from "./cursor-cancellation";
-import { FINANCE_REVIEW_REQUIRED, dispatchReadiness, lockWorkItem, readDispatchConfig } from "./managed-work-controls";
+import { CURSOR_HOSTED_WORKER_VERIFIED, FINANCE_REVIEW_REQUIRED, dispatchReadiness, lockWorkItem, normalizeWorkRepository, readDispatchConfig } from "./managed-work-controls";
+import { validCursorWorkerClaim, type CursorWorkerClaim } from "./cursor-worker-claim";
 
 export type CursorDispatchServiceResult = { status: number; body: Record<string, unknown> };
 
 /** Called only by an authenticated, authorised entry point. Shared execution
  * primitive, not permission to dispatch. Readiness is rechecked under the
  * singleton reservation lock. Never retries an ambiguous submission. */
-export async function dispatchApprovedCursorWork(id: number): Promise<CursorDispatchServiceResult> {
+export async function dispatchApprovedCursorWork(id: number, workerClaim?: CursorWorkerClaim): Promise<CursorDispatchServiceResult> {
   if (!Number.isSafeInteger(id) || id < 1) return { status: 400, body: { error: "Invalid work item." } };
+  if (workerClaim && !CURSOR_HOSTED_WORKER_VERIFIED) return { status: 423, body: { error: "Hosted worker is disabled." } };
   const config = await readDispatchConfig();
   const readiness = dispatchReadiness(config);
   if (!readiness.dispatch_enabled) { return { status: 423, body: { error: "Dispatch is blocked.", blockers: readiness.blockers } }; }
@@ -32,13 +34,16 @@ export async function dispatchApprovedCursorWork(id: number): Promise<CursorDisp
       .where(and(eq(managedFleetQuestionsTable.project_key, item.project_key), eq(managedFleetQuestionsTable.work_item_id, item.id),
         eq(managedFleetQuestionsTable.plan_version, item.plan_version ?? 1), eq(managedFleetQuestionsTable.blocks_work, true), eq(managedFleetQuestionsTable.status, "open"))).limit(1);
     if (blockingQuestion) return { kind: "question" as const };
-    const normalizeRepository = (value: string | null) => value?.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\.git$/, "").replace(/\/$/, "") ?? "";
+    const normalizeRepository = normalizeWorkRepository;
     if (item.project_key === "finance" || item.project_key !== config.approved_project_key || !item.repository || !item.target_branch ||
         normalizeRepository(item.repository) !== normalizeRepository(config.approved_repository) ||
         item.target_branch !== config.approved_starting_branch || item.status !== "approved" ||
         item.attempts >= item.max_attempts || item.spend_limit_cents !== 0 || new Date() >= item.deadline) return { kind: "not_ready" as const };
     const [outcome] = await tx.select().from(managedWorkOutcomesTable).where(eq(managedWorkOutcomesTable.id, item.outcome_id!)).limit(1);
     if (!outcome || outcome.project_key !== item.project_key || outcome.status !== "approved") return { kind: "not_ready" as const };
+    if (workerClaim && !await validCursorWorkerClaim(tx, workerClaim, id, item.plan_version, outcome.version, config.updated_at)) {
+      return { kind: "not_ready" as const };
+    }
     const [prior] = await tx.select({ id: managedWorkDispatchesTable.id, status: managedWorkDispatchesTable.status }).from(managedWorkDispatchesTable).where(eq(managedWorkDispatchesTable.work_item_id, id)).limit(1);
     if (prior) return { kind: "duplicate" as const, status: prior.status };
     const [repoActive] = await tx.select({ id: managedWorkItemsTable.id }).from(managedWorkItemsTable)
@@ -56,7 +61,7 @@ export async function dispatchApprovedCursorWork(id: number): Promise<CursorDisp
         owner_deadline: item.deadline.toISOString(), effective_deadline: new Date(Math.min(item.deadline.getTime(),
           dispatch.started_at.getTime() + item.time_limit_minutes * 60_000)).toISOString(), provider_enforced: false } });
     await tx.update(managedWorkItemsTable).set({ attempts: item.attempts + 1, started_at: new Date(), updated_at: new Date() }).where(eq(managedWorkItemsTable.id, id));
-    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: "Markus", event_type: "dispatch_reserved", from_status: "approved", to_status: "approved", details: { dispatch_id: dispatch.id, idempotency_key: idempotencyKey, outcome_version: outcome.version } });
+    await tx.insert(managedWorkEventsTable).values({ work_item_id: id, project_key: item.project_key, actor: workerClaim ? "system:cursor-worker-v1" : "Markus", event_type: "dispatch_reserved", from_status: "approved", to_status: "approved", details: { dispatch_id: dispatch.id, idempotency_key: idempotencyKey, outcome_version: outcome.version, invocation_id: workerClaim?.invocationId ?? null } });
     return { kind: "reserved" as const, item, dispatch, config,
       effectiveDeadline: new Date(Math.min(item.deadline.getTime(), dispatch.started_at.getTime() + item.time_limit_minutes * 60_000)) };
   });
@@ -103,6 +108,7 @@ export async function dispatchApprovedCursorWork(id: number): Promise<CursorDisp
         .where(eq(managedWorkOutcomesTable.id, dispatch.outcome_id!)).limit(1);
       if (!outcome || outcome.project_key !== current.item.project_key || outcome.status !== "approved" ||
           outcome.version !== dispatch.outcome_version) return false;
+      if (workerClaim && !await validCursorWorkerClaim(tx, workerClaim, id, current.item.plan_version, outcome.version, currentConfig.updated_at)) return false;
       const [question] = await tx.select({ id: managedFleetQuestionsTable.id }).from(managedFleetQuestionsTable)
         .where(and(eq(managedFleetQuestionsTable.work_item_id, id), eq(managedFleetQuestionsTable.project_key, current.item.project_key),
           eq(managedFleetQuestionsTable.plan_version, current.item.plan_version), eq(managedFleetQuestionsTable.blocks_work, true),

@@ -6,6 +6,9 @@ export const WORK_KEYS = ["finance", "hypest", "cattle-dog-coffee", "ddg-control
 export type WorkKey = (typeof WORK_KEYS)[number];
 export const FINANCE_REVIEW_REQUIRED = true;
 const CURSOR_AUTOMATIC_PICKUP = false;
+// Separate acceptance of hosted scheduler, machine identity, recovery and
+// included/no-cost delivery. Source code is not proof these are configured.
+export const CURSOR_HOSTED_WORKER_VERIFIED = false;
 export const CURSOR_HARD_WALL_CLOCK_STOP_VERIFIED = false;
 // Also fail closed until external termination, global/repository reservations,
 // stop barriers and blocking-question synchronization are verified together.
@@ -23,9 +26,12 @@ export async function readDispatchConfig() {
   return config!;
 }
 
+export const normalizeWorkRepository = (value: string | null) => value?.trim().toLowerCase()
+  .replace(/^https?:\/\//, "").replace(/\.git$/, "").replace(/\/$/, "") ?? "";
+
 export function dispatchReadiness(config: Awaited<ReturnType<typeof readDispatchConfig>>) {
   const secretPresent = Boolean(process.env.CURSOR_API_KEY?.trim());
-  const normalizeRepository = (value: string | null) => value?.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\.git$/, "").replace(/\/$/, "") ?? "";
+  const normalizeRepository = normalizeWorkRepository;
   const ownerBlockers = [
     ...(!CURSOR_HARD_WALL_CLOCK_STOP_VERIFIED ? [TASK_LIMIT_BLOCKER] : []),
     ...(!CURSOR_RUN_SAFETY_VERIFIED ? [RUN_SAFETY_BLOCKER] : []),
@@ -43,6 +49,7 @@ export function dispatchReadiness(config: Awaited<ReturnType<typeof readDispatch
     manual_dispatch_ready: ownerBlockers.length === 0,
     dispatch_enabled: config.enabled && ownerBlockers.length === 0,
     automatic_pickup: CURSOR_AUTOMATIC_PICKUP,
+    hosted_worker_enabled: CURSOR_HOSTED_WORKER_VERIFIED,
     provider_cancellation_enabled: CURSOR_CANCEL_OPERATIONS_VERIFIED,
     reservation_release_enabled: CURSOR_RELEASE_OPERATIONS_VERIFIED && CURSOR_EXCLUSIVE_AGENT_CONTROL_VERIFIED,
     background_worker_blocker: BACKGROUND_WORKER_BLOCKER,

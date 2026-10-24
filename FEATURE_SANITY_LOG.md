@@ -304,3 +304,16 @@ with compatible route re-exports. No route/service circular dependency or intern
 HTTP. No worker/scheduler/timer/provider/DB operation or live enablement performed.
 No tests added or run. Final API TypeScript noEmit/direct API build passed; source
 extraction reviewed. Runtime acceptance remains open.
+
+## 24 October 2026 — source-disabled bounded hosted pickup
+
+Dedicated HMAC machine route plus globally serialized durable invocation receipts,
+including idle/blocked/busy states. One task per call; claim token/version/expiry
+checked under shared dispatch reservation and pre-HTTP locks. Unique invocation
+replay never resubmits. Existing global dispatch barrier survives worker expiry.
+New source schema only; no migration/push/DB/provider/scheduler/credential/live
+operation. Hosted-worker gate and all existing safety flags remain false. No tests
+added or run. See CURSOR_HOSTED_WORKER_SOURCE.md for exact protocol/limitations.
+DB declaration compilation, API TypeScript noEmit and direct API build passed;
+source review covered HMAC scope, idle replay, overlap, expiry, config/plan binding,
+global dispatch exclusion, guarded schema access and redacted owner recovery view.
