@@ -65,11 +65,11 @@ function MoneyPanel({ money }: { money: OverviewResponse['money'] | undefined })
   const net = money?.net_cents ?? null;
   return (
     <section className="glass panel" aria-label="Company money, all businesses, all time">
-      <div className="panel-head">
-        <h2>Company · all time</h2>
-        <Link href="/money" className="label">Money ›</Link>
-      </div>
       <div className="equation">
+        <span className="term" style={{ minWidth: 150 }}>
+          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Company · all time</h2>
+          <Link href="/money" className="label">Money ›</Link>
+        </span>
         <Term label="Expenses" value={aud(money?.expenses_cents)} />
         <Term sign="−" label="Gross revenue" value={aud(money?.gross_revenue_cents)} />
         <Term sign="=" label="Debt" value={aud(money?.debt_cents)} />
@@ -104,8 +104,8 @@ function BusinessCard({ b }: { b: Business }) {
       </div>
       <div className="term">
         <span className="label">Status</span>
-        <span className="num" style={{ fontSize: 24 }}>{b.status}</span>
-        <span className="muted" style={{ fontSize: 12.5 }}>Next: {b.next}</span>
+        <span className="biz-status">{b.status}</span>
+        <span className="muted clamp1" style={{ fontSize: 12.5 }} title={b.next}>Next: {b.next}</span>
       </div>
       <span className="accent-line" style={{ background: `linear-gradient(90deg, ${b.accent} 0 32px, var(--ng-edge) 32px)` }} aria-hidden="true" />
       <div className="biz-actions">
@@ -184,7 +184,7 @@ export function Home() {
             {BUSINESSES.map((b) => (
               <div key={b.slug} className="milestone">
                 <span><span className="dot" style={{ background: b.accent }} aria-hidden="true" />{b.name.replace('DDG ', '')}</span>
-                <span className="muted" style={{ fontSize: 12.5 }}>{b.next}</span>
+                <span className="muted clamp1" style={{ fontSize: 12.5 }} title={b.next}>{b.next}</span>
               </div>
             ))}
           </section>
