@@ -1,556 +1,203 @@
+import { useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
-import { useEffect, useId, useRef } from 'react';
-import { CompanyCockpit, VillageMotion } from '@/components/CompanyCockpit';
-import { VillageArtwork } from '@/components/VillageArtwork';
-import {
-  getGetFinanceSummaryQueryKey,
-  getGetCattleDogCoffeeProfitQueryKey,
-  getGetProjectFinanceFleetLatestQueryKey,
-  getListDecisionsQueryKey,
-  getListLatestAgentUpdatesQueryKey,
-  getListProjectDailySalesQueryKey,
-  getListProjectMetricsQueryKey,
-  getListProjectsQueryKey,
-  useGetFinanceSummary,
-  useGetSocialSummary,
-  useGetCattleDogCoffeeProfit,
-  useGetProjectFinanceFleetLatest,
-  useListDecisions,
-  useListLatestAgentUpdates,
-  useListProjectDailySales,
-  useListProjectMetrics,
-  useListProjects,
-  type DailySalesRow,
-  type FinanceSummaryResponse,
-  type LatestAgentProjectUpdate,
-  type Project,
-} from '@workspace/api-client-react';
-import { PROJECT_HEADLINE_METRIC } from '@workspace/project-constants';
+import { useGetOverview, type OverviewResponse } from '@workspace/api-client-react';
 import { Header } from '@/components/header';
-import { SocialBar } from '@/components/SocialBar';
-import { serverErrorText } from '@/lib/errors';
-import { formatAgo, formatCurrentDisplayName, formatFigure, formatFinanceCents, formatBrisbaneDateTime } from '@/lib/format';
+import { PlatformIcon } from '@/components/PlatformIcon';
+import {
+  ASKS, BOTS, BUSINESSES, CLAUDE_HOME, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
+} from '@/lib/company';
+import { aud, count, daysUntil } from '@/lib/money';
 
-function Sparkline({ rows }: { rows: DailySalesRow[] }) {
-  if (rows.length < 2) return null;
-  const values = rows.map((row) => row.sales_cents);
-  const low = Math.min(...values);
-  const range = Math.max(1, Math.max(...values) - low);
-  const points = values.map((value, index) => {
-    const x = (index / (values.length - 1)) * 100;
-    const y = 26 - ((value - low) / range) * 22;
-    return `${x},${y}`;
-  }).join(' ');
-  return <svg className="tile-sparkline" viewBox="0 0 100 28" role="img" aria-label="Daily sales trend"><polyline points={points} /></svg>;
+const ICON_PATHS: Record<Business['icon'], ReactNode> = {
+  finance: <path d="M5 20v-6M10 20V9M15 20v-9M20 20V4" />,
+  coffee: <><path d="M4 9h13v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z" /><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17" /><path d="M8 3v2M12 3v2" /></>,
+  fitness: <path d="M3 10v4M6 7v10M18 7v10M21 10v4M6 12h12" />,
+  creative: <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M10 9.5v5l4.5-2.5z" /></>,
+};
+
+function Term({ label, value, sign }: { label: string; value: string; sign?: string }) {
+  return (
+    <span className="net" style={{ marginLeft: 0 }}>
+      {sign && <span className="op" aria-hidden="true">{sign}</span>}
+      <span className="term"><span className="label">{label}</span><span className="num">{value}</span></span>
+    </span>
+  );
 }
 
-function FinanceKpiCard({
-  testId,
-  label,
-  value,
-  detail,
-  negative = false,
-}: {
-  testId: string;
-  label: string;
-  value: string;
-  detail: string;
-  negative?: boolean;
-}) {
+type Metric = 'followers' | 'views_30d' | 'likes_30d';
+const METRICS: { key: Metric; label: string }[] = [
+  { key: 'followers', label: 'Followers' },
+  { key: 'views_30d', label: 'Views · 30 days' },
+  { key: 'likes_30d', label: 'Likes · 30 days' },
+];
+
+function SocialPanel({ social }: { social: OverviewResponse['social'] | undefined }) {
+  const [metric, setMetric] = useState<Metric>('followers');
+  const byPlatform = new Map(social?.platforms.map((p) => [p.platform, p]));
   return (
-    <article className="finance-kpi-card" data-testid={testId}>
-      <p className="finance-kpi-label">{label}</p>
-      <p className={`finance-kpi-value${negative ? ' finance-kpi-value-negative' : ''}`}>{value}</p>
-      <p className="finance-kpi-detail">{detail}</p>
+    <section className="glass panel" aria-label="Social footprint, all platforms">
+      <div className="equation" style={{ alignItems: 'center' }}>
+        <span className="term" style={{ minWidth: 150 }}>
+          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Social footprint</h2>
+          <span className="label">{METRICS.find((m) => m.key === metric)!.label}</span>
+        </span>
+        <span className="num" style={{ fontSize: 38, fontWeight: 400 }}>{count(social?.[metric])}</span>
+        <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--ng-edge)' }} aria-hidden="true" />
+        {SOCIALS.map((s) => (
+          <span key={s.platform} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minWidth: 84 }}>
+            <span className="muted" style={{ display: 'flex' }}><PlatformIcon platform={s.platform} size={18} /></span>
+            <span style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: 'tabular-nums' }}>{count(byPlatform.get(s.platform)?.[metric])}</span>
+          </span>
+        ))}
+        <div className="nav" role="tablist" aria-label="Social measure" style={{ padding: 0, marginLeft: 'auto' }}>
+          {METRICS.map((m) => (
+            <button key={m.key} type="button" role="tab" aria-selected={metric === m.key} className="btn"
+              style={{ border: 0, minHeight: 40, background: metric === m.key ? 'rgba(255,255,255,0.10)' : 'transparent' }}
+              onClick={() => setMetric(m.key)}>{m.label.split(' ·')[0]}</button>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MoneyPanel({ money }: { money: OverviewResponse['money'] | undefined }) {
+  const net = money?.net_cents ?? null;
+  return (
+    <section className="glass panel" aria-label="Company money, all businesses, all time">
+      <div className="panel-head">
+        <h2>Company · all time</h2>
+        <Link href="/money" className="label">Money ›</Link>
+      </div>
+      <div className="equation">
+        <Term label="Expenses" value={aud(money?.expenses_cents)} />
+        <Term sign="−" label="Gross revenue" value={aud(money?.gross_revenue_cents)} />
+        <Term sign="=" label="Debt" value={aud(money?.debt_cents)} />
+        <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--ng-edge)' }} aria-hidden="true" />
+        <Term label="Charity deducted" value={money?.charity_cents == null ? '—' : `−${aud(money.charity_cents)}`} />
+        <span className="net" style={{ marginLeft: 0 }}>
+          <span className="op" aria-hidden="true">→</span>
+          <span className="term">
+            <span className="label">Net profit</span>
+            <span className="num" style={{ fontSize: 38, fontWeight: 400 }}>{aud(net)}</span>
+            <span className="net-line" aria-hidden="true"
+              style={{ background: net === null ? 'var(--ng-edge)' : net < 0 ? 'var(--ng-problem)' : 'var(--ng-mint)' }} />
+          </span>
+        </span>
+        <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--ng-edge)' }} aria-hidden="true" />
+        <Term label="Donated via our link" value={aud(money?.donated_via_link_cents)} />
+      </div>
+      {money?.notes.map((n) => <p key={n} className="note" style={{ margin: 0 }}>{n}</p>)}
+    </section>
+  );
+}
+
+function BusinessCard({ b }: { b: Business }) {
+  return (
+    <article className="glass biz">
+      <div className="biz-top">
+        <span className="biz-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICON_PATHS[b.icon]}</svg>
+        </span>
+        <span className="biz-name"><b>{b.name}</b><span>{b.sub}</span></span>
+        <span className="dot" style={{ background: b.accent }} aria-hidden="true" />
+      </div>
+      <div className="term">
+        <span className="label">Status</span>
+        <span className="num" style={{ fontSize: 24 }}>{b.status}</span>
+        <span className="muted" style={{ fontSize: 12.5 }}>Next: {b.next}</span>
+      </div>
+      <span className="accent-line" style={{ background: `linear-gradient(90deg, ${b.accent} 0 32px, var(--ng-edge) 32px)` }} aria-hidden="true" />
+      <div className="biz-actions">
+        <ExternalButton href={b.site} label="Open site" />
+        <ExternalButton href={b.admin} label="Admin" fill />
+      </div>
     </article>
   );
 }
 
-function FinanceSummaryBar({
-  summary,
-  isLoading,
-  error,
-  onRetry,
-}: {
-  summary: FinanceSummaryResponse | undefined;
-  isLoading: boolean;
-  error: unknown;
-  onRetry: () => void;
-}) {
-  const placeholder = isLoading ? '…' : '—';
-  const customerCount = summary
-    ? summary.customers === null
-      ? '–'
-      : formatFigure(summary.customers, 'count')
-    : placeholder;
-  const scale = Math.max(summary?.revenue_30d_cents ?? 0, summary?.expenses_30d_cents ?? 0, 1);
-
-  return (
-    <section className="home-performance-panel home-finance-panel" aria-labelledby="home-finance-title" data-testid="finance-summary">
-      <div className="home-panel-heading">
-        <div>
-          <p className="home-section-kicker">Business performance</p>
-          <h2 id="home-finance-title">Company finance</h2>
-        </div>
-        <Link className="home-panel-link" href="/finances">Open Finance</Link>
-      </div>
-      <div className="home-finance-metrics">
-        <FinanceKpiCard
-          testId="finance-kpi-profit"
-          label="Profit · 30 days"
-          value={summary ? formatFinanceCents(summary.profit_30d_cents) : placeholder}
-          detail={`Revenue ${summary ? formatFigure(summary.revenue_30d_cents, 'aud_cents') : placeholder}`}
-          negative={Boolean(summary && summary.profit_30d_cents < 0)}
-        />
-        <FinanceKpiCard
-          testId="finance-kpi-expected-profit"
-          label="Expected profit · next month"
-          value={summary ? formatFinanceCents(summary.expected_profit_next_month_cents) : placeholder}
-          detail={`Estimate · revenue ${summary ? formatFigure(summary.expected_revenue_next_month_cents, 'aud_cents') : placeholder}`}
-          negative={Boolean(summary && summary.expected_profit_next_month_cents < 0)}
-        />
-        <FinanceKpiCard
-          testId="finance-kpi-customers"
-          label="Online customers · 30 days"
-          value={customerCount}
-          detail="Cattle Dog Coffee · Stripe"
-        />
-        <FinanceKpiCard
-          testId="finance-kpi-expenses"
-          label="Expected expenses · next month"
-          value={summary ? formatFigure(summary.expected_expenses_next_month_cents, 'aud_cents') : placeholder}
-          detail="Estimate"
-        />
-        <FinanceKpiCard
-          testId="finance-kpi-debt"
-          label="Debt · current"
-          value={summary ? formatFigure(summary.debt_cents, 'aud_cents') : placeholder}
-          detail="Source date Unknown"
-        />
-      </div>
-      <div className="home-performance-bars" aria-label="Revenue and expenses comparison">
-        <div className="home-bar-row">
-          <span>Revenue · last 30 days</span>
-          <div className="home-bar-track"><i className="home-bar-revenue" style={{ width: `${summary ? (summary.revenue_30d_cents / scale) * 100 : 0}%` }} /></div>
-          <strong>{summary ? formatFigure(summary.revenue_30d_cents, 'aud_cents') : placeholder}</strong>
-        </div>
-        <div className="home-bar-row">
-          <span>Expenses · last 30 days</span>
-          <div className="home-bar-track"><i className="home-bar-expenses" style={{ width: `${summary ? (summary.expenses_30d_cents / scale) * 100 : 0}%` }} /></div>
-          <strong>{summary ? formatFigure(summary.expenses_30d_cents, 'aud_cents') : placeholder}</strong>
-        </div>
-      </div>
-      <p className="home-chart-caption">Bars compare reported revenue and expenses over the same 30-day window; they are not a trend.</p>
-      {isLoading && <p className="finance-summary-state" role="status">Loading company figures…</p>}
-      {error != null && (
-        <div className="finance-summary-state finance-summary-error" role="alert">
-          <span>{serverErrorText(error, 'Unable to load company figures.')}</span>
-          <button className="retry-button" type="button" onClick={onRetry}>Retry</button>
-        </div>
-      )}
-      <details className="home-source-details">
-        <summary>Periods and source notes</summary>
-        <p>Revenue, expenses and profit: last 30 days. Expected values: next-month estimate. Finance response does not provide a source timestamp; source date is Unknown.</p>
-        {summary?.notes.map((note, index) => <p key={`${index}-${note}`}>{note}</p>)}
-      </details>
-    </section>
-  );
-}
-
-
-
-function CompanyAtlas({ projects, paused = true }: { projects: Project[]; paused?: boolean }) {
-  const titleId = useId();
-  const buildings = [
-    { slug: 'hypest', label: 'Hypest', position: 'fitness', note: 'Fitness · training hall' },
-    { slug: 'finance', label: 'DDG Finance', position: 'finance', note: 'Treasury · held for Claude review' },
-    { slug: 'creative', label: 'Creative', position: 'creative', note: 'Workshop · gaming and music experiments' },
-    { slug: 'cattle-dog-coffee', label: 'Cattle Dog Coffee', position: 'coffee', note: 'DDG Coffee · roastery' },
-    { slug: 'ddg-music', label: 'DDG Music', position: 'music', note: 'Skald hall · undecided, unchanged' },
-  ];
-  const destination = (slug: string) => projects.some((project) => project.slug === slug) ? `/projects/${slug}` : '/organisation';
-  return (
-    <section className="atlas-map-panel atlas-village-panel" aria-labelledby={titleId}>
-      <div className="atlas-map-heading"><div><p className="home-section-kicker">People · systems · projects</p><h2 id={titleId}>Company Atlas</h2></div><Link href="/organisation">Explore connections →</Link></div>
-      <div className="atlas-map-legend"><span>Village paths · company structure</span><span>No live transfer feed</span></div>
-      <div className="atlas-map-canvas atlas-village-canvas" role="group" aria-label="Company village: select a business building">
-        <VillageArtwork />
-        <VillageMotion paused={paused} />
-        {buildings.map((building) => <Link key={building.slug} className={`atlas-node atlas-building atlas-node-${building.position}`} href={destination(building.slug)} aria-label={`Open ${building.label}. ${building.note}`} title={building.note}><span className="atlas-building-hit" aria-hidden="true" /></Link>)}
-        <Link className="atlas-node atlas-building atlas-node-core" href="/ai-stack" aria-label="Open DDG Control great hall" title="DDG Control · company hub"><span className="atlas-building-hit" aria-hidden="true" /></Link>
-      </div>
-      <nav className="atlas-village-directory" aria-label="Village buildings">
-        <Link href="/ai-stack"><strong>DDG great hall</strong><small>DDG Control · company hub</small></Link>
-        {buildings.map((building) => <Link key={building.slug} href={destination(building.slug)}><strong>{building.label}</strong><small>{building.note}</small></Link>)}
-      </nav>
-      <p className="atlas-evidence-note">Illustrated flow · not live telemetry. Five businesses → DDG Control.</p>
-    </section>
-  );
+function ExternalButton({ href, label, fill = false }: { href: string | null; label: string; fill?: boolean }) {
+  if (!href) return <span className={`btn${fill ? ' fill' : ''}`} aria-disabled="true" title="Link needed">{label}</span>;
+  return <a className={`btn${fill ? ' fill' : ''}`} href={href} target="_blank" rel="noreferrer">{label} ↗</a>;
 }
 
 export function Home() {
-  const records = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const openProjects = () => { if(window.location.hash === '#project-list' && !records.current?.open) records.current?.showModal(); };
-    openProjects(); window.addEventListener('hashchange',openProjects);
-    return () => window.removeEventListener('hashchange',openProjects);
-  },[]);
-  const socialSummaryQuery = useGetSocialSummary();
-  const projectsQuery = useListProjects({
-    query: { queryKey: getListProjectsQueryKey() },
-  });
-  const agentUpdatesQuery = useListLatestAgentUpdates({
-    query: {
-      queryKey: getListLatestAgentUpdatesQueryKey(),
-      staleTime: 60_000,
-    },
-  });
-  const pendingDecisionsQuery = useListDecisions(
-    { status: 'pending' },
-    { query: { queryKey: getListDecisionsQueryKey({ status: 'pending' }) } },
-  );
-  const financeSummaryQuery = useGetFinanceSummary({
-    query: {
-      queryKey: getGetFinanceSummaryQueryKey(),
-      staleTime: 60_000,
-    },
-  });
-  const fleetLatestQuery = useGetProjectFinanceFleetLatest({
-    query: {
-      queryKey: getGetProjectFinanceFleetLatestQueryKey(),
-      staleTime: 60_000,
-    },
-  });
-  const coffeeProfitQuery = useGetCattleDogCoffeeProfit({
-    query: {
-      queryKey: getGetCattleDogCoffeeProfitQueryKey(),
-      staleTime: 60_000,
-    },
-  });
-  const coffeeSlug = 'cattle-dog-coffee';
-  const coffeeMetricsQuery = useListProjectMetrics(coffeeSlug, {
-    query: { queryKey: getListProjectMetricsQueryKey(coffeeSlug) },
-  });
-  const coffeeSalesQuery = useListProjectDailySales(coffeeSlug, {
-    query: { queryKey: getListProjectDailySalesQueryKey(coffeeSlug) },
-  });
-  const projects = projectsQuery.data ?? [];
-  const socialReadings = socialSummaryQuery.data?.ventures.flatMap((venture) => venture.platforms) ?? [];
-  const socialSourceDates = socialReadings.map((reading) => reading.captured_on).filter(Boolean).sort();
-  const reportChanges = (agentUpdatesQuery.data ?? []).flatMap(
-    (update: LatestAgentProjectUpdate) => {
-      const previous = update.previous;
-      if (!previous) return [];
-      const differences: string[] = [];
-      if (previous.status_light !== update.status_light) {
-        differences.push(`Status: ${previous.status_light} → ${update.status_light}`);
-      }
-      if (
-        previous.priority &&
-        update.priority &&
-        previous.priority !== update.priority
-      ) {
-        differences.push(`Priority: ${previous.priority} → ${update.priority}`);
-      }
-      if (previous.next_action !== update.next_action) {
-        differences.push(`Next action changed: ${formatCurrentDisplayName(update.next_action)}`);
-      }
-      if (differences.length === 0) return [];
-      const project = projects.find((item) => item.slug === update.project_slug);
-      return [{
-        project_slug: update.project_slug,
-        project_name: project?.name ?? update.project_slug,
-        differences,
-      }];
-    },
-  );
-  const latestUpdates = [...(agentUpdatesQuery.data ?? [])].sort((a, b) =>
-    new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),
-  );
-  const pendingDecisions = pendingDecisionsQuery.data ?? [];
-  const flaggedUpdates = latestUpdates.filter((update) => update.status_light === 'red');
-  const attentionCoverageReady = !pendingDecisionsQuery.isLoading && !pendingDecisionsQuery.isError &&
-    !agentUpdatesQuery.isLoading && !agentUpdatesQuery.isError;
-  const formatSourceDate = (value: string | null) => value
-    ? formatBrisbaneDateTime(value)
-    : 'Source date Unknown';
-
+  const overview = useGetOverview();
+  const days = daysUntil(LAUNCH_DATE);
+  const accentOf = (slug: string | null) => BUSINESSES.find((b) => b.slug === slug)?.accent ?? 'var(--ng-ice)';
   return (
-    <div className="app-shell home-shell">
-      <Header />
-      <CompanyCockpit
-        finance={financeSummaryQuery.data} financeLoading={financeSummaryQuery.isLoading} financeError={financeSummaryQuery.isError}
-        social={socialSummaryQuery.data} socialLoading={socialSummaryQuery.isLoading} socialError={socialSummaryQuery.isError}
-        projectCount={projectsQuery.isLoading || projectsQuery.isError ? null : projects.length}
-        attentionCount={attentionCoverageReady ? pendingDecisions.length + flaggedUpdates.length : null}
-        attention={[
-          ...(!pendingDecisionsQuery.isError ? pendingDecisions.map(d=>({title:formatCurrentDisplayName(d.title),href:`/decisions#decision-${d.id}`})) : []),
-          ...(!agentUpdatesQuery.isError ? flaggedUpdates.map(u=>({title:`${u.project_slug}: red saved report`,href:`/projects/${u.project_slug}`})) : []),
-        ]}
-        updates={latestUpdates.map(u=>({label:projects.find(p=>p.slug===u.project_slug)?.name ?? u.project_slug,href:`/projects/${u.project_slug}`,action:formatCurrentDisplayName(u.next_action),date:formatSourceDate(u.created_at)}))}
-        updatesError={agentUpdatesQuery.isError} updatesLoading={agentUpdatesQuery.isLoading}
-        onDetails={()=>records.current?.showModal()} atlas={paused=><CompanyAtlas projects={projects} paused={paused} />}
-      />
-      <dialog ref={records} className="company-records-dialog" aria-label="Company records and sources">
-      <button className="company-records-close" type="button" onClick={()=>records.current?.close()}>Close records ×</button>
-      <main className="page-wrap home-main home-cockpit atlas-home">
-        <div className="home-cockpit-heading">
-          <div>
-            <p className="eyebrow">Company overview</p>
-            <h1 className="home-title">Company overview</h1>
-          </div>
-          <Link className="company-map-home-link" href="/organisation#company-map-title" data-testid="link-company-map">
-            <span><strong>Company Map</strong><small>People, systems, projects and delivery gaps</small></span>
-            <span aria-hidden="true">→</span>
-          </Link>
-        </div>
+    <div className="ng-page photo">
+      <div className="ng-wrap">
+        <Header />
+        {overview.isError && <p className="alert" role="alert">Company figures didn't load. Refresh to try again.</p>}
 
-        <section className="home-headline-performance" aria-label="Company finance and social reporting">
-          <div className="home-section-title">
-            <p className="home-section-kicker">1 · Company finance &amp; social reporting</p>
-            <p>Periods and source coverage are shown with each figure.</p>
-          </div>
-          <div className="home-performance-grid">
-            <FinanceSummaryBar
-              summary={financeSummaryQuery.data}
-              isLoading={financeSummaryQuery.isLoading}
-              error={financeSummaryQuery.isError ? financeSummaryQuery.error : null}
-              onRetry={() => void financeSummaryQuery.refetch()}
-            />
-            <SocialBar projects={projects} />
-          </div>
+        <SocialPanel social={overview.data?.social} />
+        <MoneyPanel money={overview.data?.money} />
+
+        <section className="row" aria-label="Businesses">
+          {BUSINESSES.map((b) => <BusinessCard key={b.slug} b={b} />)}
         </section>
 
-        <section className="home-overview-grid" aria-label="Company health and attention">
-          <article className="home-health-panel">
-            <div className="home-panel-heading">
-              <div>
-                <p className="home-section-kicker">2 · Company health</p>
-                <h2>At a glance</h2>
-              </div>
-              <Link className="home-panel-link" href="/organisation">Company Map</Link>
-            </div>
-            <div className="home-health-status">
-              <div>
-                <span>Service health</span>
-                <strong>Unknown</strong>
-                <small>No dependency-health check is available on this dashboard.</small>
-              </div>
-              <div>
-                <span>Project records</span>
-                <strong>{projectsQuery.isLoading ? '…' : projectsQuery.isError ? 'Unknown' : projects.length}</strong>
-                <small>{projectsQuery.isError ? 'Unable to read project registry.' : 'Registry count · not a live-service status'}</small>
-              </div>
-              <div><span>Profit · last 30 days</span><strong>{financeSummaryQuery.isLoading ? '…' : financeSummaryQuery.isError || !financeSummaryQuery.data ? 'Unknown' : formatFinanceCents(financeSummaryQuery.data.profit_30d_cents)}</strong><small>Reported total · headline source details above</small></div>
-              <div><span>Social footprint</span><strong>{socialSummaryQuery.isLoading ? '…' : socialSummaryQuery.isError || socialReadings.length === 0 ? 'Unknown' : formatFigure(socialSummaryQuery.data!.total_followers, 'count')}</strong><small>{socialReadings.length > 0 ? `Summed followers · oldest reading ${socialSourceDates[0] ?? 'Unknown'}` : 'No saved readings'} · not unique people</small></div>
-              <div><span>Employee roster</span><strong>9</strong><small>Named roles · not active worker count</small></div>
-            </div>
-            {projectsQuery.isError ? (
-              <p className="home-unknown-state" role="alert">Project status unavailable.</p>
-            ) : projects.length > 0 ? (
-              <div className="home-status-list">
-                {projects.map((project) => (
-                  <Link key={project.id} href={`/projects/${project.slug}`} className="home-status-item">
-                    <span>{project.name}</span><strong>{project.status}</strong>
-                  </Link>
-                ))}
-              </div>
-            ) : projectsQuery.isLoading ? <p className="home-unknown-state" role="status">Loading project registry…</p> : <p className="home-unknown-state">No project records returned.</p>}
-          </article>
-
-          <CompanyAtlas projects={projects} />
-          <aside className="home-attention-panel" aria-labelledby="home-attention-title">
-            <div className="home-panel-heading">
-              <div>
-                <p className="home-section-kicker">Owner review</p>
-                <h2 id="home-attention-title">Needs attention</h2>
-              </div>
-              <span className="home-attention-count" aria-label={attentionCoverageReady ? 'Items in available decision and report records' : 'Attention count unknown: source coverage incomplete'}>{attentionCoverageReady ? pendingDecisions.length + flaggedUpdates.length : '?'}</span>
-            </div>
-            <p className="home-panel-caption">Saved decisions and report flags only; not a live company health check.</p>
-            {pendingDecisionsQuery.isLoading && <p className="home-unknown-state" role="status">Checking decisions…</p>}
-            {pendingDecisionsQuery.isError && <div className="home-unknown-state" role="alert">Decision queue unavailable. <button className="retry-button" type="button" onClick={() => void pendingDecisionsQuery.refetch()}>Retry decisions</button></div>}
-            {agentUpdatesQuery.isLoading && <p className="home-unknown-state" role="status">Checking report flags…</p>}
-            {agentUpdatesQuery.isError && <div className="home-unknown-state" role="alert">Report flags unavailable. Attention coverage is incomplete. <button className="retry-button" type="button" onClick={() => void agentUpdatesQuery.refetch()}>Retry reports</button></div>}
-            {attentionCoverageReady && pendingDecisions.length === 0 && flaggedUpdates.length === 0 &&
-              <p className="home-unknown-state">No pending decisions or red report flags in the available records.</p>}
-            {((!pendingDecisionsQuery.isError && pendingDecisions.length > 0) || (!agentUpdatesQuery.isError && flaggedUpdates.length > 0)) && (
-              <ul className="home-attention-list">
-                {!pendingDecisionsQuery.isError && pendingDecisions.slice(0, 3).map((decision) => (
-                  <li key={decision.id}><Link href={`/decisions#decision-${decision.id}`}><span>{projects.find((project) => project.slug === decision.project_slug)?.name ?? decision.project_slug}</span><strong>{formatCurrentDisplayName(decision.title)}</strong><small>Owner decision · {decision.urgency} urgency</small></Link></li>
-                ))}
-                {!agentUpdatesQuery.isError && flaggedUpdates.slice(0, 2).map((update) => (
-                  <li key={`flag-${update.project_slug}`}><Link href={`/projects/${update.project_slug}`}><span>{projects.find((project) => project.slug === update.project_slug)?.name ?? update.project_slug}</span><strong>Red status in saved Heimdall report</strong><small>{formatCurrentDisplayName(update.next_action)} · {formatSourceDate(update.created_at)}</small></Link></li>
-                ))}
-              </ul>
-            )}
-            <Link className="home-panel-link" href="/decisions">Open decision records →</Link>
-          </aside>
-        </section>
-
-        <section className="home-activity-panel" aria-labelledby="home-activity-title">
-          <div className="home-panel-heading">
-            <div>
-              <p className="home-section-kicker">3 · Agent activity</p>
-              <h2 id="home-activity-title">Latest saved project updates</h2>
-              <p className="home-panel-caption">Heimdall report records; these do not prove a worker is active.</p>
-            </div>
-            <Link className="home-panel-link" href="/ai-stack">Open AI Stack</Link>
-          </div>
-          {agentUpdatesQuery.isLoading ? <p className="home-unknown-state" role="status">Loading saved updates…</p>
-            : agentUpdatesQuery.isError ? <div className="home-unknown-state" role="alert">Saved updates unavailable. <button className="retry-button" type="button" onClick={() => void agentUpdatesQuery.refetch()}>Retry</button></div>
-              : latestUpdates.length === 0 ? <p className="home-unknown-state">Unknown · no saved project updates.</p>
-                : <div className="home-agent-list">{latestUpdates.slice(0, 4).map((update) => (
-                  <Link key={update.project_slug} href={`/projects/${update.project_slug}`} className="home-agent-item">
-                    <span className={`home-agent-status status-${update.status_light}`}>{update.status_light}</span>
-                    <span className="home-agent-copy"><strong>{projects.find((project) => project.slug === update.project_slug)?.name ?? update.project_slug}</strong><small>{formatCurrentDisplayName(update.next_action)}</small></span>
-                    <time>{formatSourceDate(update.created_at)}</time>
-                  </Link>
-                ))}</div>}
-        </section>
-
-        <div className="section-rule" id="project-list" tabIndex={-1} data-testid="section-project-list"><span>Projects · open a project</span></div>
-
-        {projectsQuery.isLoading ? (
-          <section className="state-panel" aria-live="polite" data-testid="status-projects-loading">
-            <div className="skeleton loading-line" aria-hidden="true" />
-            <p className="state-copy loading-label">Loading projects…</p>
+        <div className="row">
+          <section className="glass panel grow-1" aria-label="Needs you">
+            <div className="panel-head"><h2>Needs you</h2><span className="label">{ASKS.length} open</span></div>
+            <ul className="list">
+              {ASKS.map((a) => (
+                <li key={a.text}>
+                  <span className="dot" style={{ width: 6, height: 6, background: accentOf(a.business) }} aria-hidden="true" />
+                  <span className="grow"><span>{a.text}</span><span className="label" style={{ letterSpacing: 0.4 }}>{a.when}</span></span>
+                </li>
+              ))}
+            </ul>
           </section>
-        ) : projectsQuery.isError ? (
-          <section className="state-panel" role="alert" data-testid="status-projects-error">
-            <h2 className="state-title">Unable to load projects.</h2>
-            <p className="state-copy">Please try again.</p>
-            <button className="retry-button" type="button" onClick={() => void projectsQuery.refetch()} data-testid="button-retry-projects">
-              Retry
-            </button>
-          </section>
-        ) : projectsQuery.data?.length ? (
-          <div className="project-grid" data-testid="list-projects">
-            {projectsQuery.data.map((project) => {
-              const latestUpdate = agentUpdatesQuery.data?.find(
-                (update) => update.project_slug === project.slug,
-              );
-              const headlineKey = PROJECT_HEADLINE_METRIC[project.slug as keyof typeof PROJECT_HEADLINE_METRIC];
-              const headlineMetric = headlineKey
-                ? coffeeMetricsQuery.data?.find((metric) => metric.key === headlineKey)
-                : undefined;
-              const fleet = fleetLatestQuery.data && !('empty' in fleetLatestQuery.data)
-                ? fleetLatestQuery.data
-                : undefined;
-              const financeHeadline = project.slug === 'finance'
-                ? fleetLatestQuery.isError
-                  ? 'No data yet'
-                  : fleet?.mode === 'paper'
-                    ? `${formatFigure(fleet.total_equity_cents, 'usd_cents')} · Fleet value (paper) · updated ${formatAgo(fleet.generated_at)}`
-                    : 'No data yet'
-                : null;
-              const coffeeProfitHeadline = project.slug === coffeeSlug
-                ? coffeeProfitQuery.data
-                  ? `${formatFigure(coffeeProfitQuery.data.last30d.grossRevenueCents, 'aud_cents')} sales · ${coffeeProfitQuery.data.last30d.netProfitCents === null ? '—' : formatFigure(coffeeProfitQuery.data.last30d.netProfitCents, 'aud_cents')} profit · last 30 days · updated ${formatAgo(coffeeProfitQuery.data.generatedAt)}`
-                  : coffeeProfitQuery.isError
-                    ? `${headlineMetric ? `${formatFigure(headlineMetric.value, headlineMetric.unit)} · ${headlineMetric.label}` : 'No data yet'} (online only)`
-                    : 'Loading…'
-                : null;
-              const dailySales = project.slug === coffeeSlug ? (coffeeSalesQuery.data ?? []) : [];
-              return (
-                <Link
-                  key={project.id}
-                  href={`/projects/${project.slug}`}
-                  className="project-tile"
-                  data-testid={`link-project-${project.slug}`}
-                >
-                  <div className="tile-top">
-                    <h2 className="tile-name" data-testid={`text-project-name-${project.slug}`}>{project.name}</h2>
-                    <div className="tile-status-group">
-                      <span className="status-badge" data-testid={`status-project-${project.slug}`}>
-                        <span className="status-dot" aria-hidden="true" />
-                        {project.status}
-                      </span>
-                      {latestUpdate && (
-                        <span
-                          className={`agent-light-dot agent-light-${latestUpdate.status_light}`}
-                          title={`Heimdall: ${latestUpdate.status_light}`}
-                          aria-label={`Heimdall's status light: ${latestUpdate.status_light}`}
-                          data-testid={`agent-light-${project.slug}`}
-                        />
-                      )}
-                      {latestUpdate?.priority && (
-                        <span className={`priority-chip priority-${latestUpdate.priority}`} data-testid={`priority-project-${project.slug}`}>
-                          {latestUpdate.priority}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="tile-facts">
-                    <p className="tile-fact">
-                      <strong>Headline:</strong>{' '}
-                      {project.slug === 'finance'
-                        ? financeHeadline
-                        : project.slug === coffeeSlug
-                          ? coffeeProfitHeadline
-                        : headlineMetric
-                          ? `${formatFigure(headlineMetric.value, headlineMetric.unit)} · ${headlineMetric.label}`
-                          : 'No data yet'}
-                    </p>
-                    {project.slug === 'finance' && fleet?.stale && (
-                      <p className="tile-fact fleet-tile-stale" role="status">
-                        Stale — no update for {fleet.age_minutes} min
-                      </p>
-                    )}
-                    {project.slug === coffeeSlug && <Sparkline rows={dailySales} />}
-                    <p className="tile-fact">
-                      <strong>Next action:</strong> {latestUpdate ? formatCurrentDisplayName(latestUpdate.next_action) : 'No data yet'}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        ) : (
-          <section className="state-panel" data-testid="status-projects-empty">
-            <h2 className="state-title">No projects found.</h2>
-          </section>
-        )}
 
-        <details className="report-section home-report-disclosure" data-testid="section-since-report">
-          <summary>Since last report · saved comparisons</summary>
-          <div className="report-heading">
-            <div>
-              <p className="eyebrow">Heimdall’s latest comparison</p>
-              <h2 id="report-title" className="report-title">Since last report</h2>
+          <section className="glass panel grow-15" aria-label="Team">
+            <div className="panel-head"><h2>Team</h2><span className="label">1 human · 9 bots · Claude</span></div>
+            <div className="people">
+              <a className="person" href={HEIMDALL.chat ?? GROK_HOME} target="_blank" rel="noreferrer">
+                <span className="avatar">H</span>
+                <span className="grow" style={{ flex: 1 }}><b>{HEIMDALL.name}</b><br /><span className="muted" style={{ fontSize: 12 }}>{HEIMDALL.role}</span></span>
+                <span className="label">Chat ↗</span>
+              </a>
+              <a className="person" href={CLAUDE_HOME} target="_blank" rel="noreferrer">
+                <span className="avatar">C</span>
+                <span style={{ flex: 1 }}><b>Claude</b><br /><span className="muted" style={{ fontSize: 12 }}>Code · Finance strategy</span></span>
+                <span className="label">Open ↗</span>
+              </a>
             </div>
-          </div>
-          {agentUpdatesQuery.isLoading ? (
-            <div className="report-state" role="status" aria-live="polite">
-              <span className="skeleton loading-line" aria-hidden="true" />
-              <span>Checking the latest report…</span>
-            </div>
-          ) : agentUpdatesQuery.isError ? (
-            <div className="report-state report-state-error" role="alert">
-              <span>Unable to load report changes.</span>
-              <button className="retry-button" type="button" onClick={() => void agentUpdatesQuery.refetch()}>
-                Retry
-              </button>
-            </div>
-          ) : reportChanges.length === 0 ? (
-            <p className="report-empty">No changes since last report</p>
-          ) : (
-            <div className="report-list">
-              {reportChanges.map((change) => (
-                  <article className="report-item" key={change.project_slug} data-testid={`report-project-${change.project_slug}`}>
-                    <Link href={`/projects/${change.project_slug}`} className="report-project-link">
-                      {change.project_name}
-                    </Link>
-                    <ul className="report-differences">
-                      {change.differences.map((difference) => <li key={difference}>{difference}</li>)}
-                    </ul>
-                  </article>
+            <div className="bots">
+              {BOTS.map((bot) => (
+                <a key={bot.name} className="bot" href={bot.chat ?? GROK_HOME} target="_blank" rel="noreferrer" aria-label={`${bot.name}, ${bot.role}. Open chat`}>
+                  <span className="avatar">{bot.name.charAt(0)}</span>
+                  <span><b style={{ fontSize: 13.5 }}>{bot.name}</b><br /><small>{bot.role}</small></span>
+                </a>
               ))}
             </div>
-          )}
-        </details>
-      </main>
-      </dialog>
+          </section>
+
+          <section className="glass panel grow-09" aria-label="Launch">
+            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Launch</h2>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <span className="big">{days}</span>
+              <span className="term"><span>days to go</span><span className="label">Fri 1 Jan 2027</span></span>
+            </div>
+            {BUSINESSES.map((b) => (
+              <div key={b.slug} className="milestone">
+                <span><span className="dot" style={{ background: b.accent }} aria-hidden="true" />{b.name.replace('DDG ', '')}</span>
+                <span className="muted" style={{ fontSize: 12.5 }}>{b.next}</span>
+              </div>
+            ))}
+          </section>
+        </div>
+
+        <nav className="glass links" aria-label="Quick links">
+          {TOOLS.map((t) => <a key={t.name} href={t.href} target="_blank" rel="noreferrer">{t.name}</a>)}
+          <span style={{ flex: 1 }} />
+          {SOCIALS.map((s) => s.href
+            ? <a key={s.platform} href={s.href} target="_blank" rel="noreferrer" aria-label={s.name}><PlatformIcon platform={s.platform} /></a>
+            : <span key={s.platform} className="muted" title={`${s.name} link needed`} style={{ padding: '0 12px', opacity: 0.4, display: 'inline-flex' }}><PlatformIcon platform={s.platform} /></span>)}
+        </nav>
+      </div>
     </div>
   );
 }

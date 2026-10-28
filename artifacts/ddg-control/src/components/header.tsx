@@ -1,35 +1,57 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLogout } from '@workspace/api-client-react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { setAuthenticationRequired } from './auth';
 
 export const DevAuthBypassContext = createContext(false);
-const ColorModeContext = createContext<{ mode: 'dark' | 'day'; toggleMode: () => void } | null>(null);
-export function useColorMode() {
-  const value = useContext(ColorModeContext);
-  if (!value) throw new Error('Color mode context is missing');
-  return value;
-}
-export function ColorModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<'dark' | 'day'>(() => {
-    try { return localStorage.getItem('ddg-control-color-mode') === 'day' ? 'day' : 'dark'; } catch { return 'dark'; }
-  });
+
+const PAGES = [
+  { href: '/', label: 'Home' },
+  { href: '/money', label: 'Money' },
+  { href: '/social', label: 'Social' },
+];
+
+function useBrisbaneClock(): string {
+  const format = () => new Intl.DateTimeFormat('en-AU', {
+    timeZone: 'Australia/Brisbane', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
+  }).format(new Date());
+  const [now, setNow] = useState(format);
   useEffect(() => {
-    document.documentElement.dataset.theme = mode;
-    try { localStorage.setItem('ddg-control-color-mode', mode); } catch { /* Session preference remains usable. */ }
-  }, [mode]);
-  return <ColorModeContext.Provider value={{ mode, toggleMode: () => setMode(m => m === 'day' ? 'dark' : 'day') }}>{children}</ColorModeContext.Provider>;
+    const timer = setInterval(() => setNow(format()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+  return now;
 }
-export function Header({ showLogout = true }: { showLogout?: boolean }) {
-  const { mode, toggleMode } = useColorMode();
-  const client = useQueryClient(), logout = useLogout(), bypass = useContext(DevAuthBypassContext);
-  return <header className="monitor-header">
-    <Link href="/" className="monitor-brand"><img src={`${import.meta.env.BASE_URL}ddg-creative-glitch-original.png`} alt="" /><span>DDG Control<small>Company monitor</small></span></Link>
-    <div className="monitor-header-actions"><span className="monitor-readonly">Read only</span>
-      <button type="button" onClick={toggleMode} aria-label={`Switch to ${mode === 'day' ? 'night' : 'day'} mode`}>{mode === 'day' ? 'Night' : 'Day'}</button>
-      {showLogout && !bypass && <button type="button" disabled={logout.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => { client.clear(); setAuthenticationRequired(true); } })}>{logout.isPending ? 'Leaving…' : 'Log out'}</button>}
-      {logout.isError && <span role="alert">Logout failed. Try again.</span>}
-    </div>
-  </header>;
+
+export function Header({ showNav = true }: { showNav?: boolean }) {
+  const [location] = useLocation();
+  const client = useQueryClient();
+  const logout = useLogout();
+  const bypass = useContext(DevAuthBypassContext);
+  const now = useBrisbaneClock();
+  return (
+    <header className="topbar">
+      <Link href="/" className="brand" aria-label="DDG Control home">
+        <img src={`${import.meta.env.BASE_URL}ddg-professional-white-transparent.png`} alt="" />
+        <b>DDG</b><i aria-hidden="true" /><span>Control</span>
+      </Link>
+      {showNav && (
+        <nav className="nav glass" aria-label="Pages">
+          {PAGES.map((page) => (
+            <Link key={page.href} href={page.href} aria-current={location === page.href ? 'page' : undefined}>{page.label}</Link>
+          ))}
+        </nav>
+      )}
+      <span className="pill glass">{now} · Brisbane</span>
+      {bypass && <span className="pill glass" role="status">DEV: login off</span>}
+      {showNav && !bypass && (
+        <button type="button" className="btn glass" disabled={logout.isPending}
+          onClick={() => logout.mutate(undefined, { onSuccess: () => { client.clear(); setAuthenticationRequired(true); } })}>
+          {logout.isPending ? 'Leaving…' : 'Log out'}
+        </button>
+      )}
+      {logout.isError && <span className="alert" role="alert">Logout failed. Try again.</span>}
+    </header>
+  );
 }

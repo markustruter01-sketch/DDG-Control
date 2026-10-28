@@ -1,13 +1,28 @@
-import { Route, Switch, Link } from 'wouter';
+import { Link, Route, Switch } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Header } from '@/components/header';
-import { Monitor } from '@/pages/Monitor';
-function Unavailable() {
-  return <><Header /><main className="monitor-main"><h1>Overview unavailable</h1><p>Reload the dashboard to try again.</p><button type="button" onClick={() => window.location.reload()}>Reload</button></main></>;
+import { Home } from '@/pages/Home';
+import { Money } from '@/pages/Money';
+import { Social } from '@/pages/Social';
+
+function Problem({ title }: { title: string }) {
+  return (
+    <div className="ng-page"><div className="ng-wrap"><Header />
+      <h1 style={{ margin: 0, fontWeight: 400 }}>{title}</h1>
+      <p><Link href="/" className="btn fill">Back to home</Link></p>
+    </div></div>
+  );
 }
-function RetiredPage() {
-  return <><Header /><main className="monitor-main"><h1>One place to monitor DDG</h1><p>The dashboard has been simplified. Work and approvals happen in their original tools.</p><Link href="/">Open monitoring overview →</Link></main></>;
-}
+
 export function Router() {
-  return <ErrorBoundary FallbackComponent={Unavailable}><Switch><Route path="/" component={Monitor} /><Route component={RetiredPage} /></Switch></ErrorBoundary>;
+  return (
+    <ErrorBoundary FallbackComponent={() => <Problem title="Something broke on this page. Reload to try again." />}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/money" component={Money} />
+        <Route path="/social" component={Social} />
+        <Route component={() => <Problem title="That page doesn't exist." />} />
+      </Switch>
+    </ErrorBoundary>
+  );
 }

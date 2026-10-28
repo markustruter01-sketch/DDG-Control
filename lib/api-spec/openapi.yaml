@@ -1136,6 +1136,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /overview:
+    get:
+      operationId: getOverview
+      tags: [finance]
+      summary: Company-wide money equation and social footprint for the home screen
+      responses:
+        "200":
+          description: All-time money equation in integer AUD cents, plus latest social readings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverviewResponse"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /decisions:
     get:
       operationId: listDecisions
@@ -1870,6 +1888,76 @@ components:
         - status
         - sort_order
         - created_at
+    OverviewResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        read_at:
+          type: string
+          format: date-time
+        money:
+          $ref: "#/components/schemas/OverviewMoney"
+        social:
+          $ref: "#/components/schemas/OverviewSocial"
+      required: [read_at, money, social]
+    OverviewMoney:
+      type: object
+      additionalProperties: false
+      description: >
+        All time, AUD cents. debt = expenses - gross revenue. net = gross revenue - expenses - charity.
+        A null input makes everything that depends on it null.
+      properties:
+        expenses_cents:
+          type: [integer, "null"]
+        gross_revenue_cents:
+          type: [integer, "null"]
+        debt_cents:
+          type: [integer, "null"]
+        charity_cents:
+          type: [integer, "null"]
+        net_cents:
+          type: [integer, "null"]
+        donated_via_link_cents:
+          type: [integer, "null"]
+        coffee_store:
+          type: string
+          enum: [ok, unavailable]
+        notes:
+          type: array
+          items:
+            type: string
+      required: [expenses_cents, gross_revenue_cents, debt_cents, charity_cents, net_cents, donated_via_link_cents, coffee_store, notes]
+    OverviewSocial:
+      type: object
+      additionalProperties: false
+      properties:
+        followers:
+          type: [integer, "null"]
+        views_30d:
+          type: [integer, "null"]
+        likes_30d:
+          type: [integer, "null"]
+        platforms:
+          type: array
+          items:
+            $ref: "#/components/schemas/OverviewSocialPlatform"
+      required: [followers, views_30d, likes_30d, platforms]
+    OverviewSocialPlatform:
+      type: object
+      additionalProperties: false
+      properties:
+        platform:
+          type: string
+          enum: [youtube, instagram, facebook, x, tiktok]
+        followers:
+          type: [integer, "null"]
+        views_30d:
+          type: [integer, "null"]
+        likes_30d:
+          type: [integer, "null"]
+        captured_on:
+          type: [string, "null"]
+      required: [platform, followers, views_30d, likes_30d, captured_on]
     Error:
       type: object
       additionalProperties: false

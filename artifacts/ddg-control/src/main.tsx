@@ -3,10 +3,10 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { ErrorBoundary } from '@/components/error-boundary';
 
-const defaultBackground = `${import.meta.env.BASE_URL}backgrounds/emma-francis.webp`;
+// The home page's landscape photo (Night Glass: photo on home only).
 document.documentElement.style.setProperty(
-  '--home-background',
-  `url("${defaultBackground}")`,
+  '--ng-photo',
+  `url("${import.meta.env.BASE_URL}backgrounds/david-becker.webp")`,
 );
 
 createRoot(document.getElementById('root')!, {

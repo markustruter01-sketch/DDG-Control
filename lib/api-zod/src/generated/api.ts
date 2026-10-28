@@ -1008,6 +1008,36 @@ export const GetFinanceSummaryResponse = zod.object({
 
 
 /**
+ * @summary Company-wide money equation and social footprint for the home screen
+ */
+export const GetOverviewResponse = zod.object({
+  "read_at": zod.coerce.date(),
+  "money": zod.object({
+  "expenses_cents": zod.number().int().nullable(),
+  "gross_revenue_cents": zod.number().int().nullable(),
+  "debt_cents": zod.number().int().nullable(),
+  "charity_cents": zod.number().int().nullable(),
+  "net_cents": zod.number().int().nullable(),
+  "donated_via_link_cents": zod.number().int().nullable(),
+  "coffee_store": zod.enum(['ok', 'unavailable']),
+  "notes": zod.array(zod.string())
+}).describe('All time, AUD cents. debt = expenses - gross revenue. net = gross revenue - expenses - charity. A null input makes everything that depends on it null.\n'),
+  "social": zod.object({
+  "followers": zod.number().int().nullable(),
+  "views_30d": zod.number().int().nullable(),
+  "likes_30d": zod.number().int().nullable(),
+  "platforms": zod.array(zod.object({
+  "platform": zod.enum(['youtube', 'instagram', 'facebook', 'x', 'tiktok']),
+  "followers": zod.number().int().nullable(),
+  "views_30d": zod.number().int().nullable(),
+  "likes_30d": zod.number().int().nullable(),
+  "captured_on": zod.string().nullable()
+}))
+})
+})
+
+
+/**
  * @summary List decisions by status
  */
 export const ListDecisionsQueryParams = zod.object({

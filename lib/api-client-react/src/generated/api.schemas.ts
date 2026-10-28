@@ -437,6 +437,73 @@ export interface Project {
   created_at: string | null;
 }
 
+export type OverviewMoneyCoffeeStore = typeof OverviewMoneyCoffeeStore[keyof typeof OverviewMoneyCoffeeStore];
+
+
+export const OverviewMoneyCoffeeStore = {
+  ok: 'ok',
+  unavailable: 'unavailable',
+} as const;
+
+/**
+ * All time, AUD cents. debt = expenses - gross revenue. net = gross revenue - expenses - charity. A null input makes everything that depends on it null.
+ */
+export interface OverviewMoney {
+  /** @nullable */
+  expenses_cents: number | null;
+  /** @nullable */
+  gross_revenue_cents: number | null;
+  /** @nullable */
+  debt_cents: number | null;
+  /** @nullable */
+  charity_cents: number | null;
+  /** @nullable */
+  net_cents: number | null;
+  /** @nullable */
+  donated_via_link_cents: number | null;
+  coffee_store: OverviewMoneyCoffeeStore;
+  notes: string[];
+}
+
+export type OverviewSocialPlatformPlatform = typeof OverviewSocialPlatformPlatform[keyof typeof OverviewSocialPlatformPlatform];
+
+
+export const OverviewSocialPlatformPlatform = {
+  youtube: 'youtube',
+  instagram: 'instagram',
+  facebook: 'facebook',
+  x: 'x',
+  tiktok: 'tiktok',
+} as const;
+
+export interface OverviewSocialPlatform {
+  platform: OverviewSocialPlatformPlatform;
+  /** @nullable */
+  followers: number | null;
+  /** @nullable */
+  views_30d: number | null;
+  /** @nullable */
+  likes_30d: number | null;
+  /** @nullable */
+  captured_on: string | null;
+}
+
+export interface OverviewSocial {
+  /** @nullable */
+  followers: number | null;
+  /** @nullable */
+  views_30d: number | null;
+  /** @nullable */
+  likes_30d: number | null;
+  platforms: OverviewSocialPlatform[];
+}
+
+export interface OverviewResponse {
+  read_at: string;
+  money: OverviewMoney;
+  social: OverviewSocial;
+}
+
 export interface Error {
   error: string;
 }
