@@ -5,10 +5,13 @@ import monitorRouter from './monitor';
 import overviewRouter from './overview';
 import financeRouter from './finance';
 import socialRouter from './social';
+import botsRouter from './bots';
 
 const router: IRouter = Router();
 router.use(healthRouter);
 router.use(authRouter);
+// Grok bots push numbers with their own key (DDG_BOT_KEY), not the owner login.
+router.use(botsRouter);
 router.use(requireMonitorReadSession);
 // The money ledger and social readings are the only things the owner edits here.
 router.use(financeRouter);

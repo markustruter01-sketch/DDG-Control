@@ -5,7 +5,7 @@ import {
 } from "@workspace/api-zod";
 import { db, projectsTable, socialSnapshotsTable } from "@workspace/db";
 import { asc, desc, eq } from "drizzle-orm";
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type RequestHandler } from "express";
 import { zodErrorText } from "./validation";
 
 const router: IRouter = Router();
@@ -68,7 +68,7 @@ router.get("/social/summary", async (_req, res): Promise<void> => {
   res.json(await computeSocialSummary());
 });
 
-router.post("/social/snapshots", async (req, res): Promise<void> => {
+export const createSocialSnapshot: RequestHandler = async (req, res): Promise<void> => {
   const parsed = CreateSocialSnapshotBody.strict().safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: zodErrorText(parsed.error) });
@@ -112,6 +112,8 @@ router.post("/social/snapshots", async (req, res): Promise<void> => {
   };
   CreateSocialSnapshotResponse.parse(response);
   res.status(201).json(response);
-});
+};
+
+router.post("/social/snapshots", createSocialSnapshot);
 
 export default router;
