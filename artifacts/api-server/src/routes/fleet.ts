@@ -268,7 +268,9 @@ function brisbaneMidnightUtc(day: string): Date {
   return new Date(Date.UTC(year!, month! - 1, date!, -10));
 }
 
-router.post(
+// Finance pushes its hourly snapshot here with its own key, so this sits outside the owner login.
+export const fleetInboundRouter: IRouter = Router();
+fleetInboundRouter.post(
   "/inbound/fleet",
   requireInboundKey("FLEET_INBOUND_KEY"),
   async (req, res): Promise<void> => {

@@ -1,11 +1,13 @@
 import { GetOverviewResponse } from '@workspace/api-zod';
-import { db, expensesTable, projectsTable, revenueEntriesTable, socialSnapshotsTable } from '@workspace/db';
+import { db, expensesTable, fleetBotSnapshotsTable, fleetSnapshotsTable, projectsTable, revenueEntriesTable, socialSnapshotsTable } from '@workspace/db';
 import { desc, eq, sql } from 'drizzle-orm';
 import { Router, type IRouter } from 'express';
 import { getCattleDogCoffeeProfit } from '../lib/cdc-store';
+import { getHypestSummary } from '../lib/hypest-store';
 
 const router: IRouter = Router();
 const COFFEE = 'cattle-dog-coffee';
+const CREATIVE = 'ddg-music'; // the Creative business's database name
 
 const toCents = (value: bigint | string | number | null): number => {
   const n = Number(value ?? 0);
@@ -24,7 +26,7 @@ const PLATFORMS = ['youtube', 'instagram', 'facebook', 'x', 'tiktok'] as const;
  * If a part can't be read, it and everything built on it is null — never guessed.
  */
 export async function computeOverview() {
-  const [projects, spent, ledger, social, store] = await Promise.all([
+  const [projects, spent, ledger, social, store, fleet, hypest] = await Promise.all([
     db.select({ id: projectsTable.id, slug: projectsTable.slug }).from(projectsTable),
     db.select({ total: sql<string>`coalesce(sum(${expensesTable.amount_cents}), 0)` }).from(expensesTable)
       .where(eq(expensesTable.kind, 'one_off')),
@@ -32,7 +34,12 @@ export async function computeOverview() {
       .from(revenueEntriesTable).groupBy(revenueEntriesTable.project_id),
     db.select().from(socialSnapshotsTable).orderBy(desc(socialSnapshotsTable.captured_on), desc(socialSnapshotsTable.id)).limit(1000),
     getCattleDogCoffeeProfit(),
+    db.select().from(fleetSnapshotsTable).orderBy(desc(fleetSnapshotsTable.generated_at)).limit(1),
+    getHypestSummary(),
   ]);
+  const fleetBots = fleet[0]
+    ? await db.select().from(fleetBotSnapshotsTable).where(eq(fleetBotSnapshotsTable.snapshot_id, fleet[0].id)).orderBy(fleetBotSnapshotsTable.bot_id)
+    : [];
 
   const slugOf = new Map(projects.map((p) => [p.id, p.slug]));
   const notes: string[] = [];
@@ -75,6 +82,11 @@ export async function computeOverview() {
     };
   });
 
+  const creativeId = projects.find((p) => p.slug === CREATIVE)?.id;
+  const creativeRevenue = toCents(ledger.find((row) => creativeId !== undefined && row.project_id === creativeId)?.total ?? 0);
+  const creativeFollowers = total(rows.filter((r) => r.project_id === creativeId).map((r) => r.followers));
+  const snap = fleet[0];
+
   return GetOverviewResponse.parse({
     read_at: new Date().toISOString(),
     money: {
@@ -86,6 +98,21 @@ export async function computeOverview() {
       views_30d: total(platforms.map((p) => p.views_30d)),
       likes_30d: total(platforms.map((p) => p.likes_30d)),
       platforms,
+    },
+    businesses: {
+      finance: snap ? {
+        as_of: snap.generated_at.toISOString(), mode: snap.mode,
+        total_equity_cents: snap.total_equity_cents, total_starting_cents: snap.total_starting_cents,
+        bots: fleetBots.map((b) => ({ bot_id: b.bot_id, equity_cents: b.equity_cents, starting_cents: b.starting_cents, paused: b.paused, stale: b.stale })),
+      } : null,
+      coffee: store.ok ? {
+        bags_sold: store.data.allTime.bagCount, charity_cents: store.data.allTime.charityCents,
+        revenue_cents: store.data.allTime.grossRevenueCents, subscribers: store.data.activeSubscribers,
+      } : null,
+      fitness: hypest ? {
+        plan_purchases: hypest.planPurchases, subscribers: hypest.activeSubscribers, monthly_recurring_cents: hypest.monthlyRecurringCents,
+      } : null,
+      creative: { followers: creativeFollowers, revenue_cents: creativeRevenue },
     },
   });
 }

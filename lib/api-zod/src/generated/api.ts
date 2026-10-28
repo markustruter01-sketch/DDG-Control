@@ -1033,7 +1033,37 @@ export const GetOverviewResponse = zod.object({
   "likes_30d": zod.number().int().nullable(),
   "captured_on": zod.string().nullable()
 }))
+}),
+  "businesses": zod.object({
+  "finance": zod.union([zod.object({
+  "as_of": zod.string(),
+  "mode": zod.string(),
+  "total_equity_cents": zod.number().int(),
+  "total_starting_cents": zod.number().int(),
+  "bots": zod.array(zod.object({
+  "bot_id": zod.string(),
+  "equity_cents": zod.number().int(),
+  "starting_cents": zod.number().int(),
+  "paused": zod.boolean(),
+  "stale": zod.boolean()
+}))
+}).describe('Latest hourly push from DDG Finance, US$ cents.'),zod.null()]),
+  "coffee": zod.union([zod.object({
+  "bags_sold": zod.number().int(),
+  "charity_cents": zod.number().int(),
+  "revenue_cents": zod.number().int(),
+  "subscribers": zod.number().int().nullable()
+}).describe('All time, from the Coffee shop, AUD cents.'),zod.null()]),
+  "fitness": zod.union([zod.object({
+  "plan_purchases": zod.number().int(),
+  "subscribers": zod.number().int(),
+  "monthly_recurring_cents": zod.number().int()
+}).describe('From Hypest, real money only, US$ cents.'),zod.null()]),
+  "creative": zod.object({
+  "followers": zod.number().int().nullable(),
+  "revenue_cents": zod.number().int()
 })
+}).describe('Key numbers per business card. A whole business is null when its source can\'t be read.')
 })
 
 

@@ -498,10 +498,66 @@ export interface OverviewSocial {
   platforms: OverviewSocialPlatform[];
 }
 
+export type OverviewFinanceBotsItem = {
+  bot_id: string;
+  equity_cents: number;
+  starting_cents: number;
+  paused: boolean;
+  stale: boolean;
+};
+
+/**
+ * Latest hourly push from DDG Finance, US$ cents.
+ */
+export interface OverviewFinance {
+  as_of: string;
+  mode: string;
+  total_equity_cents: number;
+  total_starting_cents: number;
+  bots: OverviewFinanceBotsItem[];
+}
+
+/**
+ * All time, from the Coffee shop, AUD cents.
+ */
+export interface OverviewCoffee {
+  bags_sold: number;
+  charity_cents: number;
+  revenue_cents: number;
+  /** @nullable */
+  subscribers: number | null;
+}
+
+/**
+ * From Hypest, real money only, US$ cents.
+ */
+export interface OverviewFitness {
+  plan_purchases: number;
+  subscribers: number;
+  monthly_recurring_cents: number;
+}
+
+export interface OverviewCreative {
+  /** @nullable */
+  followers: number | null;
+  revenue_cents: number;
+}
+
+/**
+ * Key numbers per business card. A whole business is null when its source can't be read.
+ */
+export interface OverviewBusinesses {
+  finance: OverviewFinance | null;
+  coffee: OverviewCoffee | null;
+  fitness: OverviewFitness | null;
+  creative: OverviewCreative;
+}
+
 export interface OverviewResponse {
   read_at: string;
   money: OverviewMoney;
   social: OverviewSocial;
+  businesses: OverviewBusinesses;
 }
 
 export interface Error {

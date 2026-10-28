@@ -9,7 +9,6 @@ export type Business = {
   sub: string;
   accent: string;
   icon: 'finance' | 'coffee' | 'fitness' | 'creative';
-  status: string;
   next: string;
   site: string | null;
   admin: string | null;
@@ -17,13 +16,13 @@ export type Business = {
 
 export const BUSINESSES: Business[] = [
   { slug: 'finance', name: 'DDG Finance', sub: 'Trading platform · paper accounts', accent: 'var(--ng-mint)', icon: 'finance',
-    status: 'Paper trading', next: 'Reset all accounts to $100k and start the record on 1 Jan', site: null, admin: null },
+    next: 'Reset all accounts to $100k and start the record on 1 Jan', site: null, admin: null },
   { slug: 'coffee', name: 'DDG Coffee', sub: 'Cattle Dog Coffee · live shop', accent: 'var(--ng-amber)', icon: 'coffee',
-    status: 'Live', next: 'RSPCA page after RSPCA QLD approval', site: 'https://cattledogcoffee.com.au', admin: null },
+    next: 'RSPCA page after RSPCA QLD approval', site: 'https://cattledogcoffee.com.au', admin: null },
   { slug: 'fitness', name: 'DDG Fitness', sub: 'Hypest · AI coaching app', accent: 'var(--ng-volt)', icon: 'fitness',
-    status: 'Not launched', next: 'Home design B, exercise guides, then publish', site: null, admin: null },
+    next: 'Home design B, exercise guides, then publish', site: null, admin: null },
   { slug: 'creative', name: 'DDG Creative', sub: 'Vlogs · clips · music · novel', accent: 'var(--ng-violet)', icon: 'creative',
-    status: 'Shorts daily 9:30 pm', next: 'Projects page on the DDG website', site: 'https://www.youtube.com/@DigitalDynamicsGroup', admin: null },
+    next: 'Projects page on the DDG website', site: 'https://www.youtube.com/@DigitalDynamicsGroup', admin: null },
 ];
 
 export type Ask = { text: string; business: string | null; when: string };
@@ -37,18 +36,19 @@ export const ASKS: Ask[] = [
   { text: 'Physiologist review of exercise steps', business: 'fitness', when: 'Before launch' },
 ];
 
-export type Bot = { name: string; role: string; chat: string | null };
+// avatar = the bot's own Grok Bot app picture, saved in public/avatars/.
+export type Bot = { name: string; role: string; chat: string | null; avatar: string };
 
-export const HEIMDALL: Bot = { name: 'Heimdall', role: 'GM / COO · runs the bots', chat: null };
+export const HEIMDALL: Bot = { name: 'Heimdall', role: 'GM / COO · runs the bots', chat: null, avatar: 'heimdall.png' };
 export const BOTS: Bot[] = [
-  { name: 'Tyr', role: 'Projects', chat: null },
-  { name: 'Freya', role: 'Marketing', chat: null },
-  { name: 'Hermes', role: 'Operations · IT', chat: null },
-  { name: 'Harald', role: 'Legal · Chief of staff', chat: null },
-  { name: 'Plutus', role: 'Finance · analytics', chat: null },
-  { name: 'Mímir', role: 'Scientist · skeptic', chat: null },
-  { name: 'Njord', role: 'Ventures · revenue', chat: null },
-  { name: 'Daedalus', role: 'R&D lab', chat: null },
+  { name: 'Tyr', role: 'Projects', chat: null, avatar: 'tyr.png' },
+  { name: 'Freya', role: 'Marketing', chat: null, avatar: 'freya.png' },
+  { name: 'Hermes', role: 'Operations · IT', chat: null, avatar: 'hermes.png' },
+  { name: 'Harald', role: 'Legal · Chief of staff', chat: null, avatar: 'harald.png' },
+  { name: 'Plutus', role: 'Finance · analytics', chat: null, avatar: 'plutus.png' },
+  { name: 'Mímir', role: 'Scientist · skeptic', chat: null, avatar: 'mimir.png' },
+  { name: 'Njord', role: 'Ventures · revenue', chat: null, avatar: 'njord.png' },
+  { name: 'Daedalus', role: 'R&D lab', chat: null, avatar: 'daedalus.png' },
 ];
 export const GROK_HOME = 'https://grok.com';
 export const CLAUDE_HOME = 'https://claude.ai';
@@ -80,3 +80,11 @@ export const LEDGER_BUSINESSES = [
   { slug: 'ddg-music', label: 'DDG Creative' },
 ] as const;
 export const ledgerLabel = (slug: string | null) => LEDGER_BUSINESSES.find((b) => b.slug === (slug ?? ''))?.label ?? slug ?? 'DDG (company)';
+
+// DDG Finance bot names (from the platform's bot registry). Unknown ids show as sent.
+export const FINANCE_BOT_NAMES: Record<string, string> = {
+  oracle: 'Atlas', spy_qqq_trend: 'Momentum', jerome_macro: 'Bullion', forex_ai: 'Forex', forex_gump: 'Forex Gump',
+};
+
+// DDG Creative projects shown on its card and (later) the website's Creative page.
+export const CREATIVE_PROJECTS = ['Vlogs', 'Gaming clips', 'Music', 'Novel'];
