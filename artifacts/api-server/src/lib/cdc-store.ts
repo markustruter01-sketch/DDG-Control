@@ -27,6 +27,8 @@ const CdcStoreResponseSchema = z
     currency: z.literal("aud"),
     last30d: CdcStoreSummarySchema,
     allTime: CdcStoreSummarySchema,
+    // Added by the shop later; older shop versions don't send it.
+    activeSubscribers: z.number().int().nonnegative().optional(),
   })
   .strict();
 
@@ -50,6 +52,7 @@ export type CattleDogCoffeeProfit = {
   allTime: z.infer<typeof CdcStoreSummarySchema> & {
     netProfitCents: number | null;
   };
+  activeSubscribers: number | null;
 };
 
 export type CattleDogCoffeeProfitResult =
@@ -98,10 +101,13 @@ export async function getCattleDogCoffeeProfit(): Promise<CattleDogCoffeeProfitR
 
   return {
     ok: true,
-      data: GetCattleDogCoffeeProfitResponse.parse({
+    data: {
+      ...(GetCattleDogCoffeeProfitResponse.parse({
       generatedAt: parsed.data.generatedAt,
       last30d: addNetProfit(parsed.data.last30d),
       allTime: addNetProfit(parsed.data.allTime),
-      }) as CattleDogCoffeeProfit,
+      }) as Omit<CattleDogCoffeeProfit, "activeSubscribers">),
+      activeSubscribers: parsed.data.activeSubscribers ?? null,
+    },
   };
 }

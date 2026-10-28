@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { OverviewBusinesses } from './overviewBusinesses';
 import type { OverviewMoney } from './overviewMoney';
 import type { OverviewSocial } from './overviewSocial';
 
@@ -12,4 +13,5 @@ export interface OverviewResponse {
   read_at: Date;
   money: OverviewMoney;
   social: OverviewSocial;
+  businesses: OverviewBusinesses;
 }

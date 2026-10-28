@@ -6,12 +6,14 @@ import overviewRouter from './overview';
 import financeRouter from './finance';
 import socialRouter from './social';
 import botsRouter from './bots';
+import fleetRouter, { fleetInboundRouter } from './fleet';
 
 const router: IRouter = Router();
 router.use(healthRouter);
 router.use(authRouter);
 // Grok bots push numbers with their own key (DDG_BOT_KEY), not the owner login.
 router.use(botsRouter);
+router.use(fleetInboundRouter);
 router.use(requireMonitorReadSession);
 // The money ledger and social readings are the only things the owner edits here.
 router.use(financeRouter);
@@ -23,5 +25,6 @@ router.use((req, res, next) => {
   res.status(405).json({ error: 'This dashboard is read only. Use the original tool to manage work.' });
 });
 router.use(overviewRouter);
+router.use(fleetRouter);
 router.use(monitorRouter);
 export default router;

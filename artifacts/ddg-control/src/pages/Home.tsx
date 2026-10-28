@@ -4,7 +4,7 @@ import { useGetOverview, type OverviewResponse } from '@workspace/api-client-rea
 import { Header } from '@/components/header';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import {
-  ASKS, BOTS, BUSINESSES, CLAUDE_HOME, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
+  ASKS, BOTS, BUSINESSES, CLAUDE_HOME, CREATIVE_PROJECTS, FINANCE_BOT_NAMES, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
 } from '@/lib/company';
 import { aud, count, daysUntil } from '@/lib/money';
 
@@ -92,7 +92,58 @@ function MoneyPanel({ money }: { money: OverviewResponse['money'] | undefined })
   );
 }
 
-function BusinessCard({ b }: { b: Business }) {
+type Businesses = OverviewResponse['businesses'] | undefined;
+type Stat = { label: string; value: string; strong?: boolean };
+
+const usd = (cents: number | null | undefined) =>
+  cents == null ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cents / 100);
+const pct = (now: number, start: number) => {
+  if (!start) return '—';
+  const p = ((now - start) / start) * 100;
+  return `${p >= 0 ? '+' : ''}${p.toFixed(2)}%`;
+};
+
+/** The key numbers for each business card. A missing source shows "—", never a guess. */
+function statsFor(slug: string, data: Businesses): Stat[] {
+  switch (slug) {
+    case 'finance': {
+      const f = data?.finance;
+      if (!f) return [{ label: 'Bots', value: '—' }, { label: 'Portfolio', value: '—', strong: true }];
+      return [
+        ...f.bots.map((b) => ({ label: `${FINANCE_BOT_NAMES[b.bot_id] ?? b.bot_id}${b.paused ? ' · paused' : ''}`, value: usd(b.equity_cents) })),
+        { label: `Portfolio · ${pct(f.total_equity_cents, f.total_starting_cents)}`, value: usd(f.total_equity_cents), strong: true },
+      ];
+    }
+    case 'coffee': {
+      const c = data?.coffee;
+      return [
+        { label: 'Bags sold', value: count(c?.bags_sold) },
+        { label: 'Charity', value: aud(c?.charity_cents) },
+        { label: 'Revenue', value: aud(c?.revenue_cents) },
+        { label: 'Subscribers', value: count(c?.subscribers) },
+      ];
+    }
+    case 'fitness': {
+      const h = data?.fitness;
+      return [
+        { label: 'In-app purchases', value: count(h?.plan_purchases) },
+        { label: 'Subscribers', value: count(h?.subscribers) },
+        { label: 'Monthly recurring', value: usd(h?.monthly_recurring_cents) },
+      ];
+    }
+    default: {
+      const c = data?.creative;
+      return [
+        { label: 'Projects', value: String(CREATIVE_PROJECTS.length) },
+        { label: 'Followers', value: count(c?.followers) },
+        { label: 'Revenue', value: aud(c?.revenue_cents) },
+      ];
+    }
+  }
+}
+
+function BusinessCard({ b, data }: { b: Business; data: Businesses }) {
+  const stats = statsFor(b.slug, data);
   return (
     <article className="glass biz">
       <div className="biz-top">
@@ -102,11 +153,11 @@ function BusinessCard({ b }: { b: Business }) {
         <span className="biz-name"><b>{b.name}</b><span>{b.sub}</span></span>
         <span className="dot" style={{ background: b.accent }} aria-hidden="true" />
       </div>
-      <div className="term">
-        <span className="label">Status</span>
-        <span className="biz-status">{b.status}</span>
-        <span className="muted clamp1" style={{ fontSize: 12.5 }} title={b.next}>Next: {b.next}</span>
-      </div>
+      <dl className="stats">
+        {stats.map((st) => (
+          <div key={st.label} className={st.strong ? 'strong' : undefined}><dt>{st.label}</dt><dd>{st.value}</dd></div>
+        ))}
+      </dl>
       <span className="accent-line" style={{ background: `linear-gradient(90deg, ${b.accent} 0 32px, var(--ng-edge) 32px)` }} aria-hidden="true" />
       <div className="biz-actions">
         <ExternalButton href={b.site} label="Open site" />
@@ -129,13 +180,13 @@ export function Home() {
     <div className="ng-page photo">
       <div className="ng-wrap">
         <Header />
-        {overview.isError && <p className="alert" role="alert">Company figures didn't load. Refresh to try again.</p>}
+        {overview.isError && <p className="toast glass" role="alert">Company figures didn't load. Refresh to try again.</p>}
 
         <SocialPanel social={overview.data?.social} />
         <MoneyPanel money={overview.data?.money} />
 
         <section className="row" aria-label="Businesses">
-          {BUSINESSES.map((b) => <BusinessCard key={b.slug} b={b} />)}
+          {BUSINESSES.map((b) => <BusinessCard key={b.slug} b={b} data={overview.data?.businesses} />)}
         </section>
 
         <div className="row">
@@ -155,7 +206,7 @@ export function Home() {
             <div className="panel-head"><h2>Team</h2><span className="label">1 human · 9 bots · Claude</span></div>
             <div className="people">
               <a className="person" href={HEIMDALL.chat ?? GROK_HOME} target="_blank" rel="noreferrer">
-                <span className="avatar">H</span>
+                <img className="avatar-img" src={`${import.meta.env.BASE_URL}avatars/${HEIMDALL.avatar}`} alt="" width={40} height={40} />
                 <span className="grow" style={{ flex: 1 }}><b>{HEIMDALL.name}</b><br /><span className="muted" style={{ fontSize: 12 }}>{HEIMDALL.role}</span></span>
                 <span className="label">Chat ↗</span>
               </a>
@@ -168,7 +219,7 @@ export function Home() {
             <div className="bots">
               {BOTS.map((bot) => (
                 <a key={bot.name} className="bot" href={bot.chat ?? GROK_HOME} target="_blank" rel="noreferrer" aria-label={`${bot.name}, ${bot.role}. Open chat`}>
-                  <span className="avatar">{bot.name.charAt(0)}</span>
+                  <img className="avatar-img" src={`${import.meta.env.BASE_URL}avatars/${bot.avatar}`} alt="" width={30} height={30} />
                   <span><b style={{ fontSize: 13.5 }}>{bot.name}</b><br /><small>{bot.role}</small></span>
                 </a>
               ))}
@@ -183,8 +234,7 @@ export function Home() {
             </div>
             {BUSINESSES.map((b) => (
               <div key={b.slug} className="milestone">
-                <span><span className="dot" style={{ background: b.accent }} aria-hidden="true" />{b.name.replace('DDG ', '')}</span>
-                <span className="muted clamp1" style={{ fontSize: 12.5 }} title={b.next}>{b.next}</span>
+                <span className="clamp1" title={b.next}><span className="dot" style={{ background: b.accent }} aria-hidden="true" />{b.name.replace('DDG ', '')}<span className="muted" style={{ fontSize: 12.5 }}>· {b.next}</span></span>
               </div>
             ))}
           </section>

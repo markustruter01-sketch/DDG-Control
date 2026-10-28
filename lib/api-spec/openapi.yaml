@@ -1899,7 +1899,95 @@ components:
           $ref: "#/components/schemas/OverviewMoney"
         social:
           $ref: "#/components/schemas/OverviewSocial"
-      required: [read_at, money, social]
+        businesses:
+          $ref: "#/components/schemas/OverviewBusinesses"
+      required: [read_at, money, social, businesses]
+    OverviewBusinesses:
+      type: object
+      additionalProperties: false
+      description: Key numbers per business card. A whole business is null when its source can't be read.
+      properties:
+        finance:
+          oneOf:
+            - $ref: "#/components/schemas/OverviewFinance"
+            - type: "null"
+        coffee:
+          oneOf:
+            - $ref: "#/components/schemas/OverviewCoffee"
+            - type: "null"
+        fitness:
+          oneOf:
+            - $ref: "#/components/schemas/OverviewFitness"
+            - type: "null"
+        creative:
+          $ref: "#/components/schemas/OverviewCreative"
+      required: [finance, coffee, fitness, creative]
+    OverviewFinance:
+      type: object
+      additionalProperties: false
+      description: Latest hourly push from DDG Finance, US$ cents.
+      properties:
+        as_of:
+          type: string
+        mode:
+          type: string
+        total_equity_cents:
+          type: integer
+        total_starting_cents:
+          type: integer
+        bots:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              bot_id:
+                type: string
+              equity_cents:
+                type: integer
+              starting_cents:
+                type: integer
+              paused:
+                type: boolean
+              stale:
+                type: boolean
+            required: [bot_id, equity_cents, starting_cents, paused, stale]
+      required: [as_of, mode, total_equity_cents, total_starting_cents, bots]
+    OverviewCoffee:
+      type: object
+      additionalProperties: false
+      description: All time, from the Coffee shop, AUD cents.
+      properties:
+        bags_sold:
+          type: integer
+        charity_cents:
+          type: integer
+        revenue_cents:
+          type: integer
+        subscribers:
+          type: [integer, "null"]
+      required: [bags_sold, charity_cents, revenue_cents, subscribers]
+    OverviewFitness:
+      type: object
+      additionalProperties: false
+      description: From Hypest, real money only, US$ cents.
+      properties:
+        plan_purchases:
+          type: integer
+        subscribers:
+          type: integer
+        monthly_recurring_cents:
+          type: integer
+      required: [plan_purchases, subscribers, monthly_recurring_cents]
+    OverviewCreative:
+      type: object
+      additionalProperties: false
+      properties:
+        followers:
+          type: [integer, "null"]
+        revenue_cents:
+          type: integer
+      required: [followers, revenue_cents]
     OverviewMoney:
       type: object
       additionalProperties: false
