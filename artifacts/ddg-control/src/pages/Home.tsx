@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { useGetOverview, type OverviewResponse } from '@workspace/api-client-react';
 import { Header } from '@/components/header';
+import { BotAvatar } from '@/components/BotAvatar';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import {
   ASKS, BOTS, BUSINESSES, CLAUDE_HOME, CREATIVE_PROJECTS, FINANCE_BOT_NAMES, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
@@ -206,7 +207,7 @@ export function Home() {
             <div className="panel-head"><h2>Team</h2><span className="label">1 human · 9 bots · Claude</span></div>
             <div className="people">
               <a className="person" href={HEIMDALL.chat ?? GROK_HOME} target="_blank" rel="noreferrer">
-                <img className="avatar-img" src={`${import.meta.env.BASE_URL}avatars/${HEIMDALL.avatar}`} alt="" width={40} height={40} />
+                <BotAvatar file={HEIMDALL.avatar} size={40} />
                 <span className="grow" style={{ flex: 1 }}><b>{HEIMDALL.name}</b><br /><span className="muted" style={{ fontSize: 12 }}>{HEIMDALL.role}</span></span>
                 <span className="label">Chat ↗</span>
               </a>
@@ -219,7 +220,7 @@ export function Home() {
             <div className="bots">
               {BOTS.map((bot) => (
                 <a key={bot.name} className="bot" href={bot.chat ?? GROK_HOME} target="_blank" rel="noreferrer" aria-label={`${bot.name}, ${bot.role}. Open chat`}>
-                  <img className="avatar-img" src={`${import.meta.env.BASE_URL}avatars/${bot.avatar}`} alt="" width={30} height={30} />
+                  <BotAvatar file={bot.avatar} size={30} />
                   <span><b style={{ fontSize: 13.5 }}>{bot.name}</b><br /><small>{bot.role}</small></span>
                 </a>
               ))}
