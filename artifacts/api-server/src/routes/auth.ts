@@ -299,10 +299,7 @@ export const requireAuth: RequestHandler = (req, res, next): void => {
 };
 
 export const requireRealOwnerSession: RequestHandler = (req, res, next): void => {
-  if (isAuthBypassed()) {
-    res.status(403).json({ error: "A real authenticated owner session is required; development auth bypass is not owner verification." });
-    return;
-  }
+  // Dev bypass never counts as the owner: changes always need a real login (the app shows the login screen on 401).
   const configuration = getAuthConfiguration();
   if (!configuration) {
     res.status(503).json({ error: "auth not configured" });
@@ -322,7 +319,7 @@ export const requireMonitorReadSession: RequestHandler = (req, res, next): void 
     process.env.NODE_ENV === "development" &&
     isAuthBypassed() &&
     (req.method === "GET" || req.method === "HEAD") &&
-    req.path === "/monitor"
+    (req.path === "/monitor" || req.path === "/overview")
   ) {
     next();
     return;

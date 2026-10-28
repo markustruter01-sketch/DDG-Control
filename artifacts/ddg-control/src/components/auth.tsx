@@ -7,7 +7,7 @@ import {
 import { queryClient } from '../lib/query-client';
 import { Router } from '../lib/router';
 import { isUnauthorizedError, serverErrorText } from '../lib/errors';
-import { DevAuthBypassContext, Header } from './header';
+import { DevAuthBypassContext } from './header';
 
 let authenticationRequired = false;
 const authenticationListeners = new Set<() => void>();
@@ -55,38 +55,20 @@ function LoginScreen({ initialError }: { initialError?: string }) {
   };
 
   return (
-    <div className="app-shell auth-shell">
-      <Header showLogout={false} />
-      <main className="auth-main">
-        <section className="auth-card">
-          <p className="eyebrow">Company monitor</p>
-          <h1 className="auth-title">Log in</h1>
-          <form className="auth-form" onSubmit={submitLogin} data-testid="login-form">
-            <label className="auth-field" htmlFor="login-password">
-              Password
-              <input
-                id="login-password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                data-testid="input-login-password"
-              />
-            </label>
-            {error && <p className="auth-error" role="alert" data-testid="error-login">{error}</p>}
-            <button
-              className="task-primary-button auth-submit"
-              type="submit"
-              disabled={loginMutation.isPending}
-              data-testid="button-login"
-            >
-              {loginMutation.isPending ? 'Logging in…' : 'Log in'}
-            </button>
-          </form>
-        </section>
-      </main>
+    <div className="ng-page photo login">
+      <form className="glass panel" onSubmit={submitLogin} data-testid="login-form">
+        <img src={`${import.meta.env.BASE_URL}ddg-professional-white-transparent.png`} alt="DDG" style={{ width: 44, height: 44 }} />
+        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>DDG Control</h1>
+        <label className="field" htmlFor="login-password">
+          Password
+          <input id="login-password" name="password" type="password" autoComplete="current-password" value={password}
+            onChange={(event) => setPassword(event.target.value)} required data-testid="input-login-password" />
+        </label>
+        {error && <p className="alert" role="alert" style={{ margin: 0 }} data-testid="error-login">{error}</p>}
+        <button className="btn fill" type="submit" disabled={loginMutation.isPending} data-testid="button-login">
+          {loginMutation.isPending ? 'Logging in…' : 'Log in'}
+        </button>
+      </form>
     </div>
   );
 }
@@ -108,14 +90,7 @@ export function AuthGate() {
     const devBypass = sessionQuery.data.dev_bypass;
     return (
       <DevAuthBypassContext.Provider value={devBypass}>
-        <div className="monitor-session-shell">
-          {devBypass && (
-            <div className="dev-auth-banner" role="status">
-              DEV: login off
-            </div>
-          )}
-          <Router />
-        </div>
+        <Router />
       </DevAuthBypassContext.Provider>
     );
   }
@@ -131,5 +106,5 @@ export function AuthGate() {
     );
   }
 
-  return <main className="auth-loading" aria-live="polite">Loading…</main>;
+  return <main className="ng-page login" aria-live="polite">Loading…</main>;
 }

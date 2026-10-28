@@ -68,6 +68,7 @@ import type {
   MetricHistoryResponse,
   OllieHistoryResponse,
   OllieRunRequest,
+  OverviewResponse,
   Project,
   ProjectMetricsResponse,
   ProjectNotesResponse,
@@ -3418,6 +3419,83 @@ export function useGetFinanceSummary<TData = Awaited<ReturnType<typeof getFinanc
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetFinanceSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetOverviewUrl = () => {
+
+
+
+
+  return `/api/overview`
+}
+
+/**
+ * @summary Company-wide money equation and social footprint for the home screen
+ */
+export const getOverview = async ( options?: Parameters<typeof customFetch>[1]): Promise<OverviewResponse> => {
+
+  return customFetch<OverviewResponse>(getGetOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOverviewQueryKey = () => {
+    return [
+    `/api/overview`
+    ] as const;
+    }
+
+
+export const getGetOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getOverview>>, TError = ErrorType<Error>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOverview>>> = ({ signal }) => getOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getOverview>>>
+export type GetOverviewQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Company-wide money equation and social footprint for the home screen
+ */
+
+export function useGetOverview<TData = Awaited<ReturnType<typeof getOverview>>, TError = ErrorType<Error>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOverviewQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

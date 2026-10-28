@@ -16,6 +16,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "recharts": "^2.15.4",
+    "simple-icons": "13.21.0",
     "wouter": "^3.3.5"
   },
   "devDependencies": {

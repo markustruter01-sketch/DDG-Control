@@ -1,0 +1,149 @@
+/* Night Glass — DDG brand v4. One file, every style the app uses. */
+:root {
+  --ng-night: #07080b;
+  --ng-graphite: #141518;
+  --ng-glass-photo: rgba(16, 18, 24, 0.52);
+  --ng-glass-plain: rgba(255, 255, 255, 0.05);
+  --ng-edge: rgba(255, 255, 255, 0.10);
+  --ng-hairline: rgba(255, 255, 255, 0.08);
+  --ng-text: #ffffff;
+  --ng-text-2: rgba(255, 255, 255, 0.72);
+  --ng-text-3: rgba(255, 255, 255, 0.62);
+  --ng-ice: #7cc9e8;
+  --ng-mint: #3ddc97;
+  --ng-amber: #f5a524;
+  --ng-volt: #d4ff3f;
+  --ng-violet: #a78bfa;
+  --ng-problem: #ff6b6b;
+  --ng-sans: Geist, system-ui, sans-serif;
+  --ng-mono: 'Geist Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ng-graphite); color: var(--ng-text); font: 14px/1.45 var(--ng-sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ng-ice); outline-offset: 2px; }
+
+/* Grounds: the photo is for home only, every other page is graphite. */
+.ng-page { min-height: 100vh; background: var(--ng-graphite); }
+.ng-page.photo {
+  background-color: var(--ng-night);
+  background-image: linear-gradient(180deg, rgba(6,7,10,0.2) 0%, rgba(6,7,10,0.45) 55%, rgba(6,7,10,0.8) 100%), var(--ng-photo);
+  background-size: cover; background-position: center 35%; background-attachment: fixed;
+}
+.ng-wrap { max-width: 1360px; margin: 0 auto; padding: 22px 32px 32px; display: flex; flex-direction: column; gap: 18px; }
+
+/* Glass */
+.glass { border-radius: 16px; background: var(--ng-glass-plain); border: 1px solid var(--ng-edge); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); }
+.photo .glass { background: var(--ng-glass-photo); backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 40px rgba(0,0,0,0.3); }
+.panel { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.panel-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+
+/* Type */
+.label { font-family: var(--ng-mono); font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--ng-text-3); }
+.muted { color: var(--ng-text-2); }
+.num { font-size: 30px; font-weight: 300; letter-spacing: -0.5px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.big { font-size: 64px; font-weight: 300; letter-spacing: -2px; line-height: 1; font-variant-numeric: tabular-nums; }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.accent-line { height: 1px; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.16); background: transparent; font-size: 13.5px; font-weight: 500; cursor: pointer; }
+.btn:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+.btn.fill { background: rgba(255,255,255,0.10); border-color: transparent; }
+.btn.fill:hover { background: rgba(255,255,255,0.16); }
+.btn:disabled, .btn[aria-disabled='true'] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+.icon-btn { width: 44px; padding: 0; }
+
+/* Top bar */
+.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 12px; flex: 1 1 240px; font-size: 20px; letter-spacing: 0.5px; }
+.brand:hover { text-decoration: none; }
+.brand img { width: 34px; height: 34px; }
+.brand b { font-weight: 600; }
+.brand i { width: 1px; height: 20px; background: rgba(255,255,255,0.28); }
+.brand span { font-weight: 300; color: rgba(255,255,255,0.78); }
+.pill { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 12px; font-family: var(--ng-mono); font-size: 13px; color: rgba(255,255,255,0.86); }
+.nav { display: flex; gap: 4px; padding: 4px; border-radius: 14px; }
+.nav a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 10px; font-size: 13.5px; color: var(--ng-text-2); }
+.nav a[aria-current='page'] { background: rgba(255,255,255,0.10); color: var(--ng-text); }
+.nav a:hover { text-decoration: none; color: var(--ng-text); }
+
+/* Layout rows */
+.row { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
+.grow-1 { flex: 1 1 360px; } .grow-15 { flex: 1.5 1 460px; } .grow-17 { flex: 1.7 1 620px; } .grow-09 { flex: 0.9 1 300px; }
+
+/* Money equation */
+.equation { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 18px; }
+.term { display: flex; flex-direction: column; gap: 4px; }
+.op { font-size: 26px; font-weight: 300; color: rgba(255,255,255,0.55); padding-bottom: 2px; }
+.net { margin-left: auto; display: flex; align-items: flex-end; gap: 18px; }
+.net .num { font-size: 38px; font-weight: 400; }
+.net-line { height: 2px; border-radius: 2px; }
+
+/* Social */
+.stats4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stats4 .num { font-size: 26px; }
+
+/* Business cards */
+.biz { flex: 1 1 260px; padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.biz-top { display: flex; align-items: center; gap: 12px; }
+.biz-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); flex: none; }
+.biz-name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.biz-name b { font-size: 16px; font-weight: 600; }
+.biz-name span { font-size: 12.5px; color: var(--ng-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.biz-actions { display: flex; gap: 8px; }
+.biz-actions .btn { flex: 1; }
+
+/* Lists */
+.list { margin: 0; padding: 0; list-style: none; }
+.list li { display: flex; align-items: center; gap: 12px; min-height: 56px; border-top: 1px solid var(--ng-hairline); }
+.list .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+/* Team */
+.people { display: flex; flex-wrap: wrap; gap: 8px; }
+.person { flex: 1 1 200px; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--ng-edge); }
+.person:hover, .bot:hover { text-decoration: none; background: rgba(255,255,255,0.08); }
+.avatar { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.45); font-weight: 500; flex: none; }
+.bots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.bot { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 12px; border: 1px solid var(--ng-hairline); min-width: 0; }
+.bot .avatar { width: 30px; height: 30px; font-size: 12.5px; border-color: rgba(255,255,255,0.35); }
+.bot small { font-size: 11.5px; color: var(--ng-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Launch */
+.milestone { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--ng-hairline); }
+.milestone span { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+
+/* Link strip */
+.links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px 10px; }
+.links a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; font-size: 13.5px; color: rgba(255,255,255,0.88); }
+.links a:hover { background: rgba(255,255,255,0.06); text-decoration: none; }
+
+/* Forms + tables (graphite pages) */
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ng-text-2); flex: 1 1 160px; }
+.field input, .field select { min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); color: var(--ng-text); }
+.form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th { text-align: left; font: 500 11px var(--ng-mono); letter-spacing: 1.2px; text-transform: uppercase; color: var(--ng-text-3); padding: 0 12px 8px 0; }
+td { padding: 12px 12px 12px 0; border-top: 1px solid var(--ng-hairline); }
+td.money { font-family: var(--ng-mono); text-align: right; }
+.alert { color: var(--ng-problem); }
+.note { font-size: 12.5px; color: var(--ng-text-3); }
+
+/* Login */
+.login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.login form { width: min(380px, 100%); padding: 28px; display: flex; flex-direction: column; gap: 16px; }
+
+@media (max-width: 720px) {
+  .ng-wrap { padding: 16px; }
+  .stats4, .bots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .net { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.equation .num { font-size: 28px; }
+@media (max-width: 900px) { .ng-page.photo { background-attachment: scroll; } }
