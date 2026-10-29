@@ -22,6 +22,24 @@ export const botPushesTable = pgTable(
   ],
 );
 
+// Messages between Markus, Claude and the Grok bots. Bots read theirs from /bots/inbox
+// and reply with /bots/message. "all" goes to every bot. read_at = when the recipient fetched it.
+export const botMessagesTable = pgTable(
+  "bot_messages",
+  {
+    id: serial("id").primaryKey(),
+    sender: text("sender").notNull(),
+    recipient: text("recipient").notNull(),
+    text: text("text").notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    read_at: timestamp("read_at", { withTimezone: true }),
+  },
+  (table) => [
+    check("bot_messages_text_length_check", sql`char_length(${table.text}) BETWEEN 1 AND 4000`),
+    index("bot_messages_recipient_idx").on(table.recipient, table.id),
+  ],
+);
+
 // The home screen's "Needs you" list. Added by Markus, Claude or a bot (Heimdall's asks).
 export const asksTable = pgTable(
   "asks",

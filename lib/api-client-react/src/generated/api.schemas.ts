@@ -645,6 +645,28 @@ export interface Connection {
 
 export type ConnectionList = Connection[];
 
+export interface MessageInput {
+  /** @pattern ^[a-z]{2,20}$ */
+  to: string;
+  /**
+     * @minLength 1
+     * @maxLength 4000
+     */
+  text: string;
+}
+
+export interface Message {
+  id: number;
+  from: string;
+  to: string;
+  text: string;
+  created_at: string;
+  /** @nullable */
+  read_at: string | null;
+}
+
+export type MessageList = Message[];
+
 export interface Error {
   error: string;
 }
