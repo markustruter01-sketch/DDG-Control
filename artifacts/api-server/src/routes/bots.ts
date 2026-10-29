@@ -1,9 +1,11 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { botKeys } from '../lib/bot-keys';
 import { CreateAskBody, CreateInboundFinanceExpenseBody, CreateInboundFinanceRevenueBody } from '@workspace/api-zod';
 import { asksTable, botPushesTable, db } from '@workspace/db';
 import { Router, type IRouter, type Request, type Response } from 'express';
 import { createExpense, createRevenue } from './finance';
 import { recordSocialSnapshot } from './social';
+import { dailyBrief, inbox, sendMessage } from '../lib/messages';
 import { requestBodyRecord, zodErrorText } from './validation';
 
 /**
@@ -20,21 +22,6 @@ type Kind = 'social' | 'expense' | 'revenue' | 'ask';
 type Result = { status: number; data?: { id?: unknown } & Record<string, unknown>; error?: string };
 
 const hash = (value: string) => createHash('sha256').update(value).digest();
-
-export function botKeys(): Array<{ bot: string; key: string }> {
-  const keys = (process.env.DDG_BOT_KEYS ?? '')
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-    .map((entry) => {
-      const at = entry.indexOf(':');
-      return { bot: entry.slice(0, at).trim().toLowerCase(), key: entry.slice(at + 1).trim() };
-    })
-    .filter((k) => /^[a-z]{2,20}$/.test(k.bot) && k.key.length >= 24);
-  const claude = process.env.DDG_BOT_KEY?.trim();
-  if (claude && claude.length >= 24) keys.push({ bot: 'claude', key: claude });
-  return keys;
-}
 
 /** Which bot sent this request, or null. Compares against every key so timing gives nothing away. */
 function whichBot(req: Request): string | null {
@@ -100,5 +87,20 @@ router.post('/bots/ask', handle('ask', async (body, bot) => {
   const [row] = await db.insert(asksTable).values({ ...parsed.data, source: `bot:${bot}` }).returning();
   return { status: 201, data: { id: row!.id, text: row!.text } };
 }));
+
+// Messages: each bot checks its inbox (and the automatic daily brief) and can reply.
+router.get('/bots/inbox', async (req, res) => {
+  const bot = whichBot(req);
+  if (!bot) return void res.status(401).json({ error: 'unknown bot key' });
+  const after = Number(req.query.after ?? 0);
+  res.json({ you: bot, brief: await dailyBrief(), messages: await inbox(bot, Number.isSafeInteger(after) && after > 0 ? after : 0) });
+});
+router.post('/bots/message', async (req, res) => {
+  const bot = whichBot(req);
+  if (!bot) return void res.status(401).json({ error: 'unknown bot key' });
+  const result = await sendMessage(bot, req.body);
+  if ('error' in result) return void res.status(result.status).json({ error: result.error });
+  res.status(201).json(result.data);
+});
 
 export default router;

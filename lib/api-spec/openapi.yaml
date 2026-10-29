@@ -1285,6 +1285,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /messages:
+    get:
+      operationId: listMessages
+      tags: [finance]
+      summary: Messages between Markus, Claude and the Grok bots (newest first)
+      responses:
+        "200":
+          description: Newest 200 messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageList"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: sendMessage
+      tags: [finance]
+      summary: Markus sends a message to a bot (or all bots)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Bad message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /decisions:
     get:
       operationId: listDecisions
@@ -2269,6 +2316,39 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/Connection"
+    MessageInput:
+      type: object
+      additionalProperties: false
+      properties:
+        to:
+          type: string
+          pattern: "^[a-z]{2,20}$"
+        text:
+          type: string
+          minLength: 1
+          maxLength: 4000
+      required: [to, text]
+    Message:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        from:
+          type: string
+        to:
+          type: string
+        text:
+          type: string
+        created_at:
+          type: string
+        read_at:
+          type: [string, "null"]
+      required: [id, from, to, text, created_at, read_at]
+    MessageList:
+      type: array
+      items:
+        $ref: "#/components/schemas/Message"
     Error:
       type: object
       additionalProperties: false
