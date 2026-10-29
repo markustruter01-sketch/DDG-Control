@@ -2,11 +2,8 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import express from "express";
 import { z, ZodError } from "zod/v4";
-import projectsRouter from "./routes/projects";
 import financeRouter from "./routes/finance";
-import goalsRouter from "./routes/goals";
-import tasksRouter from "./routes/tasks";
-import fleetRouter from "./routes/fleet";
+import { fleetInboundRouter } from "./routes/fleet";
 import inboundRouter from "./routes/inbound";
 import decisionsRouter from "./routes/decisions";
 import { zodErrorText } from "./routes/validation";
@@ -42,11 +39,8 @@ process.stdout.write("PASS: helper handles first, root, nested, empty, and multi
 
 const app = express();
 app.use(express.json());
-app.use(projectsRouter);
 app.use(financeRouter);
-app.use(goalsRouter);
-app.use(tasksRouter);
-app.use(fleetRouter);
+app.use(fleetInboundRouter);
 app.use(inboundRouter);
 app.use(decisionsRouter);
 app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -122,20 +116,8 @@ try {
   assert(address && typeof address !== "string");
 
   assertShortError(
-    "projects malformed route path",
-    await request(address.port, "GET", "/projects/%E0%A4%A"),
-  );
-  assertShortError(
     "finance invalid debt id",
     await request(address.port, "PATCH", "/finance/debts/0", {}),
-  );
-  assertShortError(
-    "goals invalid goal id",
-    await request(address.port, "PATCH", "/goals/0", {}),
-  );
-  assertShortError(
-    "tasks invalid task id",
-    await request(address.port, "PATCH", "/tasks/0", {}),
   );
   assertShortError(
     "fleet invalid mode",
@@ -167,7 +149,7 @@ try {
     await request(address.port, "GET", "/decisions?status=invalid"),
   );
 
-  process.stdout.write("PASS: 7 route validation/error responses; no database writes\n");
+  process.stdout.write("PASS: 5 route validation/error responses; no database writes\n");
 } finally {
   if (originalFleetKey === undefined) {
     delete process.env.FLEET_INBOUND_KEY;

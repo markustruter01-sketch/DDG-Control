@@ -1,11 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
-import { useGetOverview, type OverviewResponse } from '@workspace/api-client-react';
+import {
+  getListAsksQueryKey, useCompleteAsk, useGetOverview, useListAsks, type OverviewResponse,
+} from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/header';
 import { BotAvatar } from '@/components/BotAvatar';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import {
-  ASKS, BOTS, BUSINESSES, CLAUDE_HOME, CREATIVE_PROJECTS, FINANCE_BOT_NAMES, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
+  BOTS, BUSINESSES, CLAUDE_HOME, CREATIVE_PROJECTS, FINANCE_BOT_NAMES, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
 } from '@/lib/company';
 import { aud, count, daysUntil } from '@/lib/money';
 
@@ -173,6 +176,34 @@ function ExternalButton({ href, label, fill = false }: { href: string | null; la
   return <a className={`btn${fill ? ' fill' : ''}`} href={href} target="_blank" rel="noreferrer">{label} ↗</a>;
 }
 
+function NeedsYou({ accentOf }: { accentOf: (slug: string | null) => string }) {
+  const client = useQueryClient();
+  const asks = useListAsks();
+  const done = useCompleteAsk({ mutation: { onSuccess: () => client.invalidateQueries({ queryKey: getListAsksQueryKey() }) } });
+  const items = asks.data ?? [];
+  return (
+    <section className="glass panel grow-1" aria-label="Needs you">
+      <div className="panel-head"><h2>Needs you</h2><Link href="/ops" className="label">{items.length} open · Add ›</Link></div>
+      <ul className="list">
+        {items.map((a) => (
+          <li key={a.id}>
+            <span className="dot" style={{ width: 6, height: 6, background: accentOf(a.business) }} aria-hidden="true" />
+            <span className="grow">
+              <span>{a.text}</span>
+              <span className="label" style={{ letterSpacing: 0.4 }}>{[a.due, a.source.startsWith('bot:') ? `from ${a.source.slice(4)}` : null].filter(Boolean).join(' · ') || ' '}</span>
+            </span>
+            <button type="button" className="btn icon-btn" aria-label={`Done: ${a.text}`} disabled={done.isPending}
+              onClick={() => done.mutate({ id: a.id })} style={{ minHeight: 36, width: 36, border: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
+            </button>
+          </li>
+        ))}
+        {!items.length && <li className="note">{asks.isLoading ? 'Loading…' : asks.isError ? 'Couldn\'t load the list.' : 'Nothing needs you right now.'}</li>}
+      </ul>
+    </section>
+  );
+}
+
 export function Home() {
   const overview = useGetOverview();
   const days = daysUntil(LAUNCH_DATE);
@@ -191,20 +222,10 @@ export function Home() {
         </section>
 
         <div className="row">
-          <section className="glass panel grow-1" aria-label="Needs you">
-            <div className="panel-head"><h2>Needs you</h2><span className="label">{ASKS.length} open</span></div>
-            <ul className="list">
-              {ASKS.map((a) => (
-                <li key={a.text}>
-                  <span className="dot" style={{ width: 6, height: 6, background: accentOf(a.business) }} aria-hidden="true" />
-                  <span className="grow"><span>{a.text}</span><span className="label" style={{ letterSpacing: 0.4 }}>{a.when}</span></span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <NeedsYou accentOf={accentOf} />
 
           <section className="glass panel grow-15" aria-label="Team">
-            <div className="panel-head"><h2>Team</h2><span className="label">1 human · 9 bots · Claude</span></div>
+            <div className="panel-head"><h2>Team</h2><span className="label">3 bots active · 6 paused · Claude</span></div>
             <div className="people">
               <a className="person" href={HEIMDALL.chat ?? GROK_HOME} target="_blank" rel="noreferrer">
                 <BotAvatar file={HEIMDALL.avatar} size={40} />
@@ -219,9 +240,10 @@ export function Home() {
             </div>
             <div className="bots">
               {BOTS.map((bot) => (
-                <a key={bot.name} className="bot" href={bot.chat ?? GROK_HOME} target="_blank" rel="noreferrer" aria-label={`${bot.name}, ${bot.role}. Open chat`}>
+                <a key={bot.name} className={`bot${bot.active ? '' : ' paused'}`} href={bot.chat ?? GROK_HOME} target="_blank" rel="noreferrer"
+                  aria-label={`${bot.name}, ${bot.role}${bot.active ? '' : ', paused'}. Open chat`}>
                   <BotAvatar file={bot.avatar} size={30} />
-                  <span><b style={{ fontSize: 13.5 }}>{bot.name}</b><br /><small>{bot.role}</small></span>
+                  <span><b style={{ fontSize: 13.5 }}>{bot.name}</b><br /><small>{bot.active ? bot.role : 'Paused'}</small></span>
                 </a>
               ))}
             </div>
