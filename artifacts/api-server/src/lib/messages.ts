@@ -4,6 +4,7 @@ import { and, asc, desc, eq, gt, inArray, isNull, max, or } from 'drizzle-orm';
 import { botKeys } from './bot-keys';
 import { getCattleDogCoffeeProfit } from './cdc-store';
 import { getHypestSummary } from './hypest-store';
+import { computeOverview } from '../routes/overview';
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
 
@@ -73,15 +74,20 @@ export async function inbox(bot: string, afterId: number) {
 
 /** The automatic daily brief every bot reads first: built from live data, no AI involved. */
 export async function dailyBrief() {
-  const [todos, feeds, lastPushes] = await Promise.all([
+  const [todos, feeds, lastPushes, overview] = await Promise.all([
     db.select().from(asksTable).where(isNull(asksTable.done_at)).orderBy(asc(asksTable.created_at)),
     getConnections(),
     db.select().from(botPushesTable).orderBy(desc(botPushesTable.received_at)).limit(20),
+    computeOverview(),
   ]);
   const today = new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Brisbane', dateStyle: 'full' }).format(new Date());
   return {
     date_brisbane: today,
     launch: '1 Jan 2027',
+    // The same numbers Markus sees on Control's home page, so Plutus can cross-check them.
+    money_aud_cents: overview.money,
+    businesses: overview.businesses,
+    social: overview.social,
     markus_open_todos: todos.map((t) => ({ text: t.text, business: t.business ?? 'ddg', due: t.due })),
     feeds_not_ok: feeds.filter((f) => f.state !== 'ok').map((f) => `${f.label}: ${f.detail}`),
     recent_bot_pushes: lastPushes.map((p) => ({ bot: p.bot, kind: p.kind, status: p.status, error: p.error, undone: Boolean(p.undone_at) })),
