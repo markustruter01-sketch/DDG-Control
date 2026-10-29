@@ -25,30 +25,20 @@ export const BUSINESSES: Business[] = [
     next: 'Projects page on the DDG website', site: 'https://www.youtube.com/@DigitalDynamicsGroup', admin: null },
 ];
 
-export type Ask = { text: string; business: string | null; when: string };
-
-// What needs Markus. Claude keeps this list current until the bots feed it.
-export const ASKS: Ask[] = [
-  { text: 'RSPCA QLD bag-logo approval', business: 'coffee', when: 'Waiting on RSPCA' },
-  { text: 'Grok chat link for each bot', business: null, when: 'Next' },
-  { text: 'Check Stripe webhook after first publish', business: 'fitness', when: 'At publish' },
-  { text: 'G4 November rebalance check', business: 'finance', when: '4 Nov' },
-  { text: 'Physiologist review of exercise steps', business: 'fitness', when: 'Before launch' },
-];
-
 // avatar = the bot's own Grok Bot app picture, saved in public/avatars/.
-export type Bot = { name: string; role: string; chat: string | null; avatar: string };
+// active = has routines in marketing mode (Nov 2026 – Mar 2027); paused bots keep memory and act only when messaged.
+export type Bot = { name: string; role: string; chat: string | null; avatar: string; active: boolean };
 
-export const HEIMDALL: Bot = { name: 'Heimdall', role: 'GM / COO · runs the bots', chat: null, avatar: 'heimdall.png' };
+export const HEIMDALL: Bot = { name: 'Heimdall', role: 'GM / COO · 7am list to Markus', chat: null, avatar: 'heimdall.png', active: true };
 export const BOTS: Bot[] = [
-  { name: 'Tyr', role: 'Projects', chat: null, avatar: 'tyr.png' },
-  { name: 'Freya', role: 'Marketing', chat: null, avatar: 'freya.png' },
-  { name: 'Hermes', role: 'Operations · IT', chat: null, avatar: 'hermes.png' },
-  { name: 'Harald', role: 'Legal · Chief of staff', chat: null, avatar: 'harald.png' },
-  { name: 'Plutus', role: 'Finance · analytics', chat: null, avatar: 'plutus.png' },
-  { name: 'Mímir', role: 'Scientist · skeptic', chat: null, avatar: 'mimir.png' },
-  { name: 'Njord', role: 'Ventures · revenue', chat: null, avatar: 'njord.png' },
-  { name: 'Daedalus', role: 'R&D lab', chat: null, avatar: 'daedalus.png' },
+  { name: 'Tyr', role: 'Coffee marketing · sales', chat: null, avatar: 'tyr.png', active: true },
+  { name: 'Freya', role: 'Marketing · socials', chat: null, avatar: 'freya.png', active: true },
+  { name: 'Hermes', role: 'Operations · IT', chat: null, avatar: 'hermes.png', active: false },
+  { name: 'Harald', role: 'Legal · Chief of staff', chat: null, avatar: 'harald.png', active: false },
+  { name: 'Plutus', role: 'Finance · analytics', chat: null, avatar: 'plutus.png', active: false },
+  { name: 'Mímir', role: 'Scientist · skeptic', chat: null, avatar: 'mimir.png', active: false },
+  { name: 'Njord', role: 'Ventures · revenue', chat: null, avatar: 'njord.png', active: false },
+  { name: 'Daedalus', role: 'R&D lab', chat: null, avatar: 'daedalus.png', active: false },
 ];
 export const GROK_HOME = 'https://grok.com';
 export const CLAUDE_HOME = 'https://claude.ai';

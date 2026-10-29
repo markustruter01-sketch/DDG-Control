@@ -140,6 +140,7 @@ td.money { font-family: var(--ng-mono); text-align: right; }
 /* Login */
 .login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
 .login form { width: min(380px, 100%); padding: 28px; display: flex; flex-direction: column; gap: 16px; }
+.login .field { flex: none; }
 
 @media (max-width: 720px) {
   .ng-wrap { padding: 16px; }
@@ -177,3 +178,4 @@ td.money { font-family: var(--ng-mono); text-align: right; }
 @keyframes idle-hop { 0%, 100% { transform: none; } 15% { transform: scale(1.06, 0.92); } 45% { transform: translateY(-5px) scale(0.96, 1.05); } 75% { transform: scale(1.04, 0.95); } }
 @keyframes idle-wiggle { 0%, 100% { transform: none; } 20% { transform: rotate(-5deg); } 40% { transform: rotate(5deg); } 60% { transform: rotate(-3deg); } 80% { transform: rotate(2deg); } }
 @media (prefers-reduced-motion: reduce) { .avatar-img { animation: none !important; } }
+.bot.paused { opacity: 0.45; }

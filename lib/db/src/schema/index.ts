@@ -24,7 +24,9 @@ export * from "./auth";
 export * from "./metrics";
 export * from "./agents";
 export * from "./finance";
-export * from "./fleet";export * from "./social";
+export * from "./fleet";
+export * from "./social";
+export * from "./ops";
 export * from "./work-management";
 
 export * from "./notification-receipts";

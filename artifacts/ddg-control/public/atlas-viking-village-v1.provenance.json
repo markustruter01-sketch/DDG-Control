@@ -1,9 +1,0 @@
-{
-  "generatedSceneMasterSha256": "a5ee4c31640891eed4dd9bb7e99e98f93ea9aec9a77d0c713fa4282708cf941b",
-  "sceneMaster": "AI Stack/output/ddg-avatar/atlas-viking-village-v1.png",
-  "prompt": "AI Stack/output/ddg-avatar/ATLAS_VILLAGE_BRIEF.md",
-  "method": "Built-in imagegen;1448x1086; WebP quality90 delivery,742722bytes",
-  "logo": "Exact original creative logo overlaid separately by HTML; not generated or baked into scenery",
-  "logoSha256": "e1faee9193ce717a784773b909678d574a1914a3fc23237517530596a5ec91a9",
-  "logoMatchesOwnerOriginal": true
-}

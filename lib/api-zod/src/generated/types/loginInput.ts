@@ -7,5 +7,10 @@
  */
 
 export interface LoginInput {
+  /** @maxLength 200 */
+  email: string;
+  /** @maxLength 500 */
   password: string;
+  /** @pattern ^[0-9]{6}$ */
+  code: string;
 }
