@@ -7,7 +7,7 @@ import './night-glass.css';
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+      <WouterRouter base={__CONTROL_BASE__}>
         <AuthGate />
       </WouterRouter>
     </QueryClientProvider>

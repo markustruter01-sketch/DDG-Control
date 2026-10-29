@@ -3,6 +3,10 @@
 
 export const LAUNCH_DATE = '2027-01-01';
 
+// Public facts (also used by the public website) live in public-info.ts.
+import { PUBLIC_SITES, SOCIALS, type Platform } from './public-info';
+export { SOCIALS, type Platform };
+
 export type Business = {
   slug: string;
   name: string;
@@ -18,11 +22,11 @@ export const BUSINESSES: Business[] = [
   { slug: 'finance', name: 'DDG Finance', sub: 'Trading platform · paper accounts', accent: 'var(--ng-mint)', icon: 'finance',
     next: 'Reset all accounts to $100k and start the record on 1 Jan', site: null, admin: null },
   { slug: 'coffee', name: 'DDG Coffee', sub: 'Cattle Dog Coffee · live shop', accent: 'var(--ng-amber)', icon: 'coffee',
-    next: 'RSPCA page after RSPCA QLD approval', site: 'https://cattledogcoffee.com.au', admin: null },
+    next: 'RSPCA page after RSPCA QLD approval', site: PUBLIC_SITES.coffee, admin: null },
   { slug: 'fitness', name: 'DDG Fitness', sub: 'Hypest · AI coaching app', accent: 'var(--ng-volt)', icon: 'fitness',
     next: 'Home design B, exercise guides, then publish', site: null, admin: null },
   { slug: 'creative', name: 'DDG Creative', sub: 'Vlogs · clips · music · novel', accent: 'var(--ng-violet)', icon: 'creative',
-    next: 'Projects page on the DDG website', site: 'https://www.youtube.com/@DigitalDynamicsGroup', admin: null },
+    next: 'Threads of Empire release, late Jan 2027', site: PUBLIC_SITES.creative, admin: null },
 ];
 
 // avatar = the bot's own Grok Bot app picture, saved in public/avatars/.
@@ -35,7 +39,7 @@ export const BOTS: Bot[] = [
   { name: 'Freya', role: 'Marketing · socials', chat: null, avatar: 'freya.png', active: true },
   { name: 'Hermes', role: 'Operations · IT', chat: null, avatar: 'hermes.png', active: false },
   { name: 'Harald', role: 'Legal · Chief of staff', chat: null, avatar: 'harald.png', active: false },
-  { name: 'Plutus', role: 'Finance · analytics', chat: null, avatar: 'plutus.png', active: false },
+  { name: 'Plutus', role: 'Finance · analytics', chat: null, avatar: 'plutus.png', active: true },
   { name: 'Mímir', role: 'Scientist · skeptic', chat: null, avatar: 'mimir.png', active: false },
   { name: 'Njord', role: 'Ventures · revenue', chat: null, avatar: 'njord.png', active: false },
   { name: 'Daedalus', role: 'R&D lab', chat: null, avatar: 'daedalus.png', active: false },
@@ -50,15 +54,6 @@ export const TOOLS = [
   { name: 'Drive', href: 'https://drive.google.com' },
   { name: 'Gmail', href: 'https://mail.google.com' },
   { name: 'Grok', href: GROK_HOME },
-];
-
-export type Platform = 'youtube' | 'instagram' | 'facebook' | 'x' | 'tiktok';
-export const SOCIALS: { platform: Platform; name: string; href: string | null }[] = [
-  { platform: 'youtube', name: 'YouTube', href: 'https://www.youtube.com/@DigitalDynamicsGroup' },
-  { platform: 'instagram', name: 'Instagram', href: 'https://www.instagram.com/digitaldynamicsgroup/' },
-  { platform: 'facebook', name: 'Facebook', href: null },
-  { platform: 'x', name: 'X', href: 'https://x.com/DDGCompany' },
-  { platform: 'tiktok', name: 'TikTok', href: null },
 ];
 
 // Control's database names for each business (used by Money and Social). '' = the company itself.

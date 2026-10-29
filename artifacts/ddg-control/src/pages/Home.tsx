@@ -207,6 +207,7 @@ function NeedsYou({ accentOf }: { accentOf: (slug: string | null) => string }) {
 export function Home() {
   const overview = useGetOverview();
   const days = daysUntil(LAUNCH_DATE);
+  const activeBots = [HEIMDALL, ...BOTS].filter((b) => b.active).length;
   const accentOf = (slug: string | null) => BUSINESSES.find((b) => b.slug === slug)?.accent ?? 'var(--ng-ice)';
   return (
     <div className="ng-page photo">
@@ -225,7 +226,7 @@ export function Home() {
           <NeedsYou accentOf={accentOf} />
 
           <section className="glass panel grow-15" aria-label="Team">
-            <div className="panel-head"><h2>Team</h2><span className="label">3 bots active · 6 paused · Claude</span></div>
+            <div className="panel-head"><h2>Team</h2><span className="label">{activeBots} bots active · {1 + BOTS.length - activeBots} paused · Claude</span></div>
             <div className="people">
               <a className="person" href={HEIMDALL.chat ?? GROK_HOME} target="_blank" rel="noreferrer">
                 <BotAvatar file={HEIMDALL.avatar} size={40} />

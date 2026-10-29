@@ -1,5 +1,5 @@
 import { siFacebook, siInstagram, siTiktok, siX, siYoutube } from 'simple-icons';
-import type { Platform } from '@/lib/company';
+import type { Platform } from '@/lib/public-info';
 
 const ICONS: Record<Platform, { path: string; title: string }> = {
   youtube: siYoutube, instagram: siInstagram, facebook: siFacebook, x: siX, tiktok: siTiktok,
