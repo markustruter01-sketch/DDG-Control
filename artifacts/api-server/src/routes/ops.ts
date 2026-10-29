@@ -1,15 +1,13 @@
 import { CompleteAskParams, CreateAskBody, UndoBotPushParams } from '@workspace/api-zod';
 import {
-  asksTable, botPushesTable, db, expensesTable, fleetSnapshotsTable, revenueEntriesTable, socialSnapshotsTable,
+  asksTable, botMessagesTable, botPushesTable, db, expensesTable, revenueEntriesTable, socialSnapshotsTable,
 } from '@workspace/db';
-import { and, asc, desc, eq, isNull, max } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { Router, type IRouter } from 'express';
-import { getCattleDogCoffeeProfit } from '../lib/cdc-store';
-import { getHypestSummary } from '../lib/hypest-store';
-import { botKeys } from './bots';
+import { getConnections, sendMessage, toMessage } from '../lib/messages';
 import { zodErrorText } from './validation';
 
-// Owner-only (mounted behind the login): the "Needs you" list, the bot push log, and feed health.
+// Owner-only (mounted behind the login): Needs-you list, bot push log, feed health, messages.
 const router: IRouter = Router();
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
 const toAsk = (r: typeof asksTable.$inferSelect) => ({
@@ -74,37 +72,18 @@ router.post('/bot-pushes/:id/undo', async (req, res) => {
   res.json(toPush(result.row));
 });
 
-const HOUR = 3_600_000;
-const age = (d: Date | null) => (d ? Date.now() - d.getTime() : Infinity);
-
 router.get('/connections', async (_req, res) => {
-  const [store, hypest, fleet, social, pushes] = await Promise.all([
-    getCattleDogCoffeeProfit(),
-    getHypestSummary(),
-    db.select({ at: max(fleetSnapshotsTable.generated_at) }).from(fleetSnapshotsTable),
-    db.select({ at: max(socialSnapshotsTable.created_at) }).from(socialSnapshotsTable),
-    db.select({ bot: botPushesTable.bot, at: max(botPushesTable.received_at) }).from(botPushesTable).groupBy(botPushesTable.bot),
-  ]);
-  const fleetAt = fleet[0]?.at ?? null;
-  const socialAt = social[0]?.at ?? null;
-  const rows = [
-    store.ok
-      ? { key: 'coffee', label: 'Coffee shop', state: 'ok', detail: 'Sales and charity read live from the shop', as_of: store.data.generatedAt.toISOString() }
-      : { key: 'coffee', label: 'Coffee shop', state: 'off', detail: `Not reachable: ${store.error}`, as_of: null },
-    { key: 'finance', label: 'DDG Finance', state: age(fleetAt) < 3 * HOUR ? 'ok' : fleetAt ? 'stale' : 'off',
-      detail: fleetAt ? 'Hourly push from the trading platform' : 'No push received yet', as_of: iso(fleetAt) },
-    hypest
-      ? { key: 'fitness', label: 'Hypest', state: 'ok', detail: 'Purchases and subscribers read live', as_of: hypest.generatedAt }
-      : { key: 'fitness', label: 'Hypest', state: 'off', detail: 'Not connected until Hypest is published', as_of: null },
-    { key: 'social', label: 'Social numbers', state: age(socialAt) < 8 * 24 * HOUR ? 'ok' : socialAt ? 'stale' : 'off',
-      detail: socialAt ? 'Latest reading from Freya or the Social page' : 'No readings yet', as_of: iso(socialAt) },
-    ...botKeys().map(({ bot }) => {
-      const at = pushes.find((p) => p.bot === bot)?.at ?? null;
-      return { key: `bot-${bot}`, label: `Bot · ${bot[0]!.toUpperCase()}${bot.slice(1)}`, state: at ? 'ok' : 'off',
-        detail: at ? 'Key set; last push received' : 'Key set; nothing pushed yet', as_of: iso(at) };
-    }),
-  ];
-  res.json(rows);
+  res.json(await getConnections());
+});
+
+router.get('/messages', async (_req, res) => {
+  res.json((await db.select().from(botMessagesTable).orderBy(desc(botMessagesTable.id)).limit(200)).map(toMessage));
+});
+
+router.post('/messages', async (req, res) => {
+  const result = await sendMessage('markus', req.body);
+  if ('error' in result) return void res.status(result.status).json({ error: result.error });
+  res.status(201).json(result.data);
 });
 
 export default router;

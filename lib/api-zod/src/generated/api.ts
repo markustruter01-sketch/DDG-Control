@@ -1186,6 +1186,43 @@ export const GetConnectionsResponse = zod.array(GetConnectionsResponseItem)
 
 
 /**
+ * @summary Messages between Markus, Claude and the Grok bots (newest first)
+ */
+export const ListMessagesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "from": zod.string(),
+  "to": zod.string(),
+  "text": zod.string(),
+  "created_at": zod.string(),
+  "read_at": zod.string().nullable()
+})
+export const ListMessagesResponse = zod.array(ListMessagesResponseItem)
+
+
+/**
+ * @summary Markus sends a message to a bot (or all bots)
+ */
+export const sendMessageBodyToRegExp = new RegExp('^[a-z]{2,20}$');
+export const sendMessageBodyTextMax = 4000;
+
+
+
+export const SendMessageBody = zod.object({
+  "to": zod.string().regex(sendMessageBodyToRegExp),
+  "text": zod.string().min(1).max(sendMessageBodyTextMax)
+})
+
+export const SendMessageResponse = zod.object({
+  "id": zod.number().int(),
+  "from": zod.string(),
+  "to": zod.string(),
+  "text": zod.string(),
+  "created_at": zod.string(),
+  "read_at": zod.string().nullable()
+})
+
+
+/**
  * @summary List decisions by status
  */
 export const ListDecisionsQueryParams = zod.object({
