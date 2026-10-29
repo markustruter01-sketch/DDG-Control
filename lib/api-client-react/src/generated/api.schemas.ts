@@ -394,7 +394,12 @@ export interface InboundNoteResponse {
 }
 
 export interface LoginInput {
+  /** @maxLength 200 */
+  email: string;
+  /** @maxLength 500 */
   password: string;
+  /** @pattern ^[0-9]{6}$ */
+  code: string;
 }
 
 export const LoginResultValue = {
@@ -559,6 +564,84 @@ export interface OverviewResponse {
   social: OverviewSocial;
   businesses: OverviewBusinesses;
 }
+
+/**
+ * @nullable
+ */
+export type AskInputBusiness = typeof AskInputBusiness[keyof typeof AskInputBusiness] | null;
+
+
+export const AskInputBusiness = {
+  finance: 'finance',
+  coffee: 'coffee',
+  fitness: 'fitness',
+  creative: 'creative',
+} as const;
+
+export interface AskInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  text: string;
+  /** @nullable */
+  business?: AskInputBusiness;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  due?: string | null;
+}
+
+export interface Ask {
+  id: number;
+  text: string;
+  /** @nullable */
+  business: string | null;
+  /** @nullable */
+  due: string | null;
+  source: string;
+  created_at: string;
+  /** @nullable */
+  done_at: string | null;
+}
+
+export type AskList = Ask[];
+
+export interface BotPush {
+  id: number;
+  bot: string;
+  kind: string;
+  /** @nullable */
+  record_id: number | null;
+  summary: string;
+  status: number;
+  received_at: string;
+  /** @nullable */
+  undone_at: string | null;
+}
+
+export type BotPushList = BotPush[];
+
+export type ConnectionState = typeof ConnectionState[keyof typeof ConnectionState];
+
+
+export const ConnectionState = {
+  ok: 'ok',
+  stale: 'stale',
+  off: 'off',
+} as const;
+
+export interface Connection {
+  key: string;
+  label: string;
+  state: ConnectionState;
+  detail: string;
+  /** @nullable */
+  as_of: string | null;
+}
+
+export type ConnectionList = Connection[];
 
 export interface Error {
   error: string;

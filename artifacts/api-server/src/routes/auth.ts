@@ -8,10 +8,11 @@ import {
   LoginResponse,
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
+import { verifyCode } from "../lib/totp";
 
 const router: IRouter = Router();
 const SESSION_COOKIE_NAME = "ddg_session";
-const SESSION_DURATION_SECONDS = 30 * 24 * 60 * 60;
+const SESSION_DURATION_SECONDS = 7 * 24 * 60 * 60; // a week, then email + password + code again
 const FAILURE_WINDOW_MS = 15 * 60 * 1000;
 const FAILURE_RETENTION_MS = 24 * 60 * 60 * 1000;
 const MAX_FAILED_ATTEMPTS = 5;
@@ -20,8 +21,10 @@ let missingConfigurationLogged = false;
 let productionBypassWarningLogged = false;
 
 type AuthConfiguration = {
+  adminEmail: string;
   adminPassword: string;
   sessionSecret: string;
+  totpSecret: string;
 };
 
 function isAuthBypassed(): boolean {
@@ -39,16 +42,21 @@ function isAuthBypassed(): boolean {
 }
 
 function getAuthConfiguration(): AuthConfiguration | null {
+  const adminEmail = process.env.DDG_ADMIN_EMAIL?.trim().toLowerCase();
   const adminPassword = process.env.DDG_ADMIN_PASSWORD;
   const sessionSecret = process.env.SESSION_SECRET;
-  if (!adminPassword || !sessionSecret) {
+  const totpSecret = process.env.DDG_TOTP_SECRET?.trim();
+  // Fail closed: no login at all until email, password and the authenticator secret are all set.
+  if (!adminEmail || !adminPassword || !sessionSecret || !totpSecret) {
     const missingSecrets: string[] = [];
+    if (!adminEmail) missingSecrets.push("DDG_ADMIN_EMAIL");
     if (!adminPassword) {
       missingSecrets.push("DDG_ADMIN_PASSWORD");
     }
     if (!sessionSecret) {
       missingSecrets.push("SESSION_SECRET");
     }
+    if (!totpSecret) missingSecrets.push("DDG_TOTP_SECRET");
     if (!missingConfigurationLogged) {
       logger.error(
         { missingSecrets },
@@ -59,7 +67,7 @@ function getAuthConfiguration(): AuthConfiguration | null {
     return null;
   }
 
-  return { adminPassword, sessionSecret };
+  return { adminEmail, adminPassword, sessionSecret, totpSecret };
 }
 
 function getClientAddress(req: Request): string {
@@ -138,11 +146,12 @@ function hasValidSession(req: Request, sessionSecret: string): boolean {
   );
 }
 
-function isExactLoginBody(body: unknown): body is { password: string } {
+function isExactLoginBody(body: unknown): boolean {
   if (body === null || typeof body !== "object" || Array.isArray(body)) {
     return false;
   }
-  return Object.keys(body).length === 1 && Object.hasOwn(body, "password");
+  const keys = Object.keys(body).sort().join(",");
+  return keys === "code,email,password";
 }
 
 router.post("/login", async (req, res): Promise<void> => {
@@ -193,12 +202,18 @@ router.post("/login", async (req, res): Promise<void> => {
   const parsedBody = LoginBody.safeParse(req.body);
   const exactBody = isExactLoginBody(req.body) && parsedBody.success;
   const submittedPassword = exactBody ? parsedBody.data.password : "";
+  const submittedEmail = exactBody ? parsedBody.data.email.trim().toLowerCase() : "";
+  // Email and password compare in constant time; the code is only checked once both match,
+  // so a wrong password never uses up a valid code.
+  const matchesEmail = timingSafeEqual(hashPassword(submittedEmail), hashPassword(configuration.adminEmail));
   const matchesPassword = timingSafeEqual(
     hashPassword(submittedPassword),
     hashPassword(configuration.adminPassword),
   );
+  const matchesCode = exactBody && matchesEmail && matchesPassword
+    && verifyCode(configuration.totpSecret, parsedBody.data.code);
 
-  if (!exactBody || !matchesPassword) {
+  if (!exactBody || !matchesEmail || !matchesPassword || !matchesCode) {
     await db.transaction(async (tx) => {
       await tx.insert(failedLoginsTable).values({ address });
       await tx

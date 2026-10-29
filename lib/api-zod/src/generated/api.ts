@@ -18,10 +18,19 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * @summary Log in with the admin password
+ * @summary Log in with email, password and a 6-digit authenticator code
  */
+export const loginBodyEmailMax = 200;
+
+export const loginBodyPasswordMax = 500;
+
+export const loginBodyCodeRegExp = new RegExp('^[0-9]{6}$');
+
+
 export const LoginBody = zod.object({
-  "password": zod.string()
+  "email": zod.string().max(loginBodyEmailMax),
+  "password": zod.string().max(loginBodyPasswordMax),
+  "code": zod.string().regex(loginBodyCodeRegExp)
 })
 
 export const LoginResponse = zod.object({
@@ -1065,6 +1074,113 @@ export const GetOverviewResponse = zod.object({
 })
 }).describe('Key numbers per business card. A whole business is null when its source can\'t be read.')
 })
+
+
+/**
+ * @summary Open "Needs you" items
+ */
+export const ListAsksResponseItem = zod.object({
+  "id": zod.number().int(),
+  "text": zod.string(),
+  "business": zod.string().nullable(),
+  "due": zod.string().nullable(),
+  "source": zod.string(),
+  "created_at": zod.string(),
+  "done_at": zod.string().nullable()
+})
+export const ListAsksResponse = zod.array(ListAsksResponseItem)
+
+
+/**
+ * @summary Add a "Needs you" item
+ */
+export const createAskBodyTextMax = 200;
+
+export const createAskBodyDueMax = 40;
+
+
+
+export const CreateAskBody = zod.object({
+  "text": zod.string().min(1).max(createAskBodyTextMax),
+  "business": zod.union([zod.literal('finance'),zod.literal('coffee'),zod.literal('fitness'),zod.literal('creative'),zod.literal(null)]).nullish(),
+  "due": zod.string().max(createAskBodyDueMax).nullish()
+})
+
+export const CreateAskResponse = zod.object({
+  "id": zod.number().int(),
+  "text": zod.string(),
+  "business": zod.string().nullable(),
+  "due": zod.string().nullable(),
+  "source": zod.string(),
+  "created_at": zod.string(),
+  "done_at": zod.string().nullable()
+})
+
+
+/**
+ * @summary Tick off a "Needs you" item
+ */
+export const CompleteAskParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const CompleteAskResponse = zod.object({
+  "id": zod.number().int(),
+  "text": zod.string(),
+  "business": zod.string().nullable(),
+  "due": zod.string().nullable(),
+  "source": zod.string(),
+  "created_at": zod.string(),
+  "done_at": zod.string().nullable()
+})
+
+
+/**
+ * @summary Latest pushes from the Grok bots (audit log)
+ */
+export const ListBotPushesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "bot": zod.string(),
+  "kind": zod.string(),
+  "record_id": zod.number().int().nullable(),
+  "summary": zod.string(),
+  "status": zod.number().int(),
+  "received_at": zod.string(),
+  "undone_at": zod.string().nullable()
+})
+export const ListBotPushesResponse = zod.array(ListBotPushesResponseItem)
+
+
+/**
+ * @summary Undo one bot push (removes the row it created)
+ */
+export const UndoBotPushParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const UndoBotPushResponse = zod.object({
+  "id": zod.number().int(),
+  "bot": zod.string(),
+  "kind": zod.string(),
+  "record_id": zod.number().int().nullable(),
+  "summary": zod.string(),
+  "status": zod.number().int(),
+  "received_at": zod.string(),
+  "undone_at": zod.string().nullable()
+})
+
+
+/**
+ * @summary Health of every data feed into Control
+ */
+export const GetConnectionsResponseItem = zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "state": zod.enum(['ok', 'stale', 'off']),
+  "detail": zod.string(),
+  "as_of": zod.string().nullable()
+})
+export const GetConnectionsResponse = zod.array(GetConnectionsResponseItem)
 
 
 /**

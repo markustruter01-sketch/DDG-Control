@@ -7,6 +7,7 @@ import financeRouter from './finance';
 import socialRouter from './social';
 import botsRouter from './bots';
 import fleetRouter, { fleetInboundRouter } from './fleet';
+import opsRouter from './ops';
 
 const router: IRouter = Router();
 router.use(healthRouter);
@@ -15,9 +16,10 @@ router.use(authRouter);
 router.use(botsRouter);
 router.use(fleetInboundRouter);
 router.use(requireMonitorReadSession);
-// The money ledger and social readings are the only things the owner edits here.
+// The owner edits money, social readings, the Needs-you list, and can undo bot pushes.
 router.use(financeRouter);
 router.use(socialRouter);
+router.use(opsRouter);
 // Everything else is read only: work and approvals happen in their original tools.
 router.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD') { next(); return; }

@@ -48,7 +48,7 @@ paths:
     post:
       operationId: login
       tags: [auth]
-      summary: Log in with the admin password
+      summary: Log in with email, password and a 6-digit authenticator code
       requestBody:
         required: true
         content:
@@ -1154,6 +1154,137 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /asks:
+    get:
+      operationId: listAsks
+      tags: [finance]
+      summary: Open "Needs you" items
+      responses:
+        "200":
+          description: Open items, oldest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AskList"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createAsk
+      tags: [finance]
+      summary: Add a "Needs you" item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AskInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ask"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /asks/{id}/done:
+    post:
+      operationId: completeAsk
+      tags: [finance]
+      summary: Tick off a "Needs you" item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ticked off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ask"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /bot-pushes:
+    get:
+      operationId: listBotPushes
+      tags: [finance]
+      summary: Latest pushes from the Grok bots (audit log)
+      responses:
+        "200":
+          description: Newest first, up to 200
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotPushList"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /bot-pushes/{id}/undo:
+    post:
+      operationId: undoBotPush
+      tags: [finance]
+      summary: Undo one bot push (removes the row it created)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Undone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotPush"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /connections:
+    get:
+      operationId: getConnections
+      tags: [finance]
+      summary: Health of every data feed into Control
+      responses:
+        "200":
+          description: One row per feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionList"
+        "401":
+          description: Login required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /decisions:
     get:
       operationId: listDecisions
@@ -1812,9 +1943,16 @@ components:
       type: object
       additionalProperties: false
       properties:
+        email:
+          type: string
+          maxLength: 200
         password:
           type: string
-      required: [password]
+          maxLength: 500
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+      required: [email, password, code]
     LoginResult:
       type: object
       additionalProperties: false
@@ -2046,6 +2184,89 @@ components:
         captured_on:
           type: [string, "null"]
       required: [platform, followers, views_30d, likes_30d, captured_on]
+    AskInput:
+      type: object
+      additionalProperties: false
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 200
+        business:
+          type: [string, "null"]
+          enum: [finance, coffee, fitness, creative, null]
+        due:
+          type: [string, "null"]
+          maxLength: 40
+      required: [text]
+    Ask:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        text:
+          type: string
+        business:
+          type: [string, "null"]
+        due:
+          type: [string, "null"]
+        source:
+          type: string
+        created_at:
+          type: string
+        done_at:
+          type: [string, "null"]
+      required: [id, text, business, due, source, created_at, done_at]
+    AskList:
+      type: array
+      items:
+        $ref: "#/components/schemas/Ask"
+    BotPush:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        bot:
+          type: string
+        kind:
+          type: string
+        record_id:
+          type: [integer, "null"]
+        summary:
+          type: string
+        status:
+          type: integer
+        received_at:
+          type: string
+        undone_at:
+          type: [string, "null"]
+      required: [id, bot, kind, record_id, summary, status, received_at, undone_at]
+    BotPushList:
+      type: array
+      items:
+        $ref: "#/components/schemas/BotPush"
+    Connection:
+      type: object
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        state:
+          type: string
+          enum: [ok, stale, off]
+        detail:
+          type: string
+        as_of:
+          type: [string, "null"]
+      required: [key, label, state, detail, as_of]
+    ConnectionList:
+      type: array
+      items:
+        $ref: "#/components/schemas/Connection"
     Error:
       type: object
       additionalProperties: false

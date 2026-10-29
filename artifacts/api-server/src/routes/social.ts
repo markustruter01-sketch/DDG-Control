@@ -68,22 +68,19 @@ router.get("/social/summary", async (_req, res): Promise<void> => {
   res.json(await computeSocialSummary());
 });
 
-export const createSocialSnapshot: RequestHandler = async (req, res): Promise<void> => {
-  const parsed = CreateSocialSnapshotBody.strict().safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: zodErrorText(parsed.error) });
-    return;
-  }
+type SocialResult = { status: 201; data: Record<string, unknown> } | { status: 400 | 500; error: string };
+
+/** Saves one reading. Used by the owner's Social page and by bots (source "bot"). */
+export async function recordSocialSnapshot(input: unknown, source: "manual" | "bot"): Promise<SocialResult> {
+  const parsed = CreateSocialSnapshotBody.strict().safeParse(input);
+  if (!parsed.success) return { status: 400, error: zodErrorText(parsed.error) };
   const body = parsed.data;
   const [project] = await db
     .select({ id: projectsTable.id, slug: projectsTable.slug })
     .from(projectsTable)
     .where(eq(projectsTable.slug, body.project_slug))
     .limit(1);
-  if (!project) {
-    res.status(400).json({ error: "unknown project" });
-    return;
-  }
+  if (!project) return { status: 400, error: "unknown project" };
   const [created] = await db
     .insert(socialSnapshotsTable)
     .values({
@@ -93,14 +90,11 @@ export const createSocialSnapshot: RequestHandler = async (req, res): Promise<vo
       impressions_30d: body.impressions_30d ?? null,
       engagements_30d: body.engagements_30d ?? null,
       captured_on: brisbaneToday(),
-      source: "manual",
+      source,
     })
     .returning();
-  if (!created) {
-    res.status(500).json({ error: "unable to record social numbers" });
-    return;
-  }
-  const response = {
+  if (!created) return { status: 500, error: "unable to record social numbers" };
+  const data = {
     id: created.id,
     project_slug: project.slug,
     platform: created.platform,
@@ -110,8 +104,14 @@ export const createSocialSnapshot: RequestHandler = async (req, res): Promise<vo
     captured_on: created.captured_on,
     source: created.source,
   };
-  CreateSocialSnapshotResponse.parse(response);
-  res.status(201).json(response);
+  CreateSocialSnapshotResponse.parse(data);
+  return { status: 201, data };
+}
+
+const createSocialSnapshot: RequestHandler = async (req, res): Promise<void> => {
+  const result = await recordSocialSnapshot(req.body, "manual");
+  if ("error" in result) res.status(result.status).json({ error: result.error });
+  else res.status(201).json(result.data);
 };
 
 router.post("/social/snapshots", createSocialSnapshot);
