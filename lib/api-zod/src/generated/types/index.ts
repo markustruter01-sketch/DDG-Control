@@ -133,6 +133,8 @@ export * from './projectMetricsResponse';
 export * from './projectNote';
 export * from './projectNotesResponse';
 export * from './projectUpdateRequest';
+export * from './publicSummary';
+export * from './publicSummaryPlatformsItem';
 export * from './sessionResult';
 export * from './socialPlatform';
 export * from './socialPlatformFigure';
