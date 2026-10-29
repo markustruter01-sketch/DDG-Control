@@ -54,6 +54,7 @@ async function audit(bot: string, kind: Kind, payload: unknown, result: Result) 
     record_id: typeof id === 'number' ? id : null,
     payload: (payload ?? {}) as object,
     status: result.status,
+    error: result.error?.slice(0, 300) ?? null,
   });
 }
 
@@ -64,8 +65,13 @@ const handle = (kind: Kind, run: (body: unknown, bot: string) => Promise<Result>
       res.status(401).json({ error: 'unknown bot key' });
       return;
     }
-    const result = await run(req.body, bot);
-    await audit(bot, kind, req.body, result);
+    let result: Result;
+    try {
+      result = await run(req.body, bot);
+    } catch {
+      result = { status: 500, error: 'could not save' };
+    }
+    await audit(bot, kind, req.body, result); // logged whether it worked or not
     if (result.error) res.status(result.status).json({ error: result.error });
     else res.status(result.status).json(result.data);
   };
@@ -83,7 +89,7 @@ const money = (
 };
 
 router.post('/bots/social', handle('social', async (body) => {
-  const result = await recordSocialSnapshot(body, 'bot');
+  const result = await recordSocialSnapshot(body);
   return 'error' in result ? { status: result.status, error: result.error } : { status: 201, data: result.data };
 }));
 router.post('/bots/expense', handle('expense', money(CreateInboundFinanceExpenseBody, createExpense)));

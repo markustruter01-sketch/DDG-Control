@@ -38,14 +38,14 @@ router.post('/asks/:id/done', async (req, res) => {
 
 /** One readable line per push so the log scans quickly. */
 function summarise(kind: string, p: Record<string, unknown>): string {
-  const cents = (v: unknown) => (typeof v === 'number' ? `$${(v / 100).toFixed(2)}` : '?');
+  const cents = (v: unknown) => (typeof v === 'number' ? `${v < 0 ? '−' : ''}$${(Math.abs(v) / 100).toFixed(2)}` : '?');
   if (kind === 'social') return `${p.platform ?? '?'} · ${p.followers ?? '?'} followers · ${p.project_slug ?? '?'}`;
   if (kind === 'expense' || kind === 'revenue') return `${p.name ?? '?'} · ${cents(p.amount_cents)} · ${p.project_slug ?? 'company'}`;
   if (kind === 'ask') return String(p.text ?? '?');
   return kind;
 }
 const toPush = (r: typeof botPushesTable.$inferSelect) => ({
-  id: r.id, bot: r.bot, kind: r.kind, record_id: r.record_id, status: r.status,
+  id: r.id, bot: r.bot, kind: r.kind, record_id: r.record_id, status: r.status, error: r.error,
   summary: summarise(r.kind, (r.payload ?? {}) as Record<string, unknown>),
   received_at: r.received_at.toISOString(), undone_at: iso(r.undone_at),
 });

@@ -1145,6 +1145,7 @@ export const ListBotPushesResponseItem = zod.object({
   "record_id": zod.number().int().nullable(),
   "summary": zod.string(),
   "status": zod.number().int(),
+  "error": zod.string().nullable(),
   "received_at": zod.string(),
   "undone_at": zod.string().nullable()
 })
@@ -1165,6 +1166,7 @@ export const UndoBotPushResponse = zod.object({
   "record_id": zod.number().int().nullable(),
   "summary": zod.string(),
   "status": zod.number().int(),
+  "error": zod.string().nullable(),
   "received_at": zod.string(),
   "undone_at": zod.string().nullable()
 })

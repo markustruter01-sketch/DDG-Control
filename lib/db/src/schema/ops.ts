@@ -12,6 +12,7 @@ export const botPushesTable = pgTable(
     record_id: integer("record_id"),
     payload: jsonb("payload").notNull(),
     status: integer("status").notNull(),
+    error: text("error"),
     received_at: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
     undone_at: timestamp("undone_at", { withTimezone: true }),
   },

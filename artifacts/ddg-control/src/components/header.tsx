@@ -10,6 +10,7 @@ const PAGES = [
   { href: '/', label: 'Home' },
   { href: '/money', label: 'Money' },
   { href: '/social', label: 'Social' },
+  { href: '/ops', label: 'Ops' },
 ];
 
 function useBrisbaneClock(): string {

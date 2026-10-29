@@ -70,8 +70,8 @@ router.get("/social/summary", async (_req, res): Promise<void> => {
 
 type SocialResult = { status: 201; data: Record<string, unknown> } | { status: 400 | 500; error: string };
 
-/** Saves one reading. Used by the owner's Social page and by bots (source "bot"). */
-export async function recordSocialSnapshot(input: unknown, source: "manual" | "bot"): Promise<SocialResult> {
+/** Saves one reading. Used by the Social page and by bots; which bot sent it is kept in the bot_pushes log. */
+export async function recordSocialSnapshot(input: unknown): Promise<SocialResult> {
   const parsed = CreateSocialSnapshotBody.strict().safeParse(input);
   if (!parsed.success) return { status: 400, error: zodErrorText(parsed.error) };
   const body = parsed.data;
@@ -90,7 +90,7 @@ export async function recordSocialSnapshot(input: unknown, source: "manual" | "b
       impressions_30d: body.impressions_30d ?? null,
       engagements_30d: body.engagements_30d ?? null,
       captured_on: brisbaneToday(),
-      source,
+      source: "manual",
     })
     .returning();
   if (!created) return { status: 500, error: "unable to record social numbers" };
@@ -109,7 +109,7 @@ export async function recordSocialSnapshot(input: unknown, source: "manual" | "b
 }
 
 const createSocialSnapshot: RequestHandler = async (req, res): Promise<void> => {
-  const result = await recordSocialSnapshot(req.body, "manual");
+  const result = await recordSocialSnapshot(req.body);
   if ("error" in result) res.status(result.status).json({ error: result.error });
   else res.status(201).json(result.data);
 };

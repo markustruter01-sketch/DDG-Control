@@ -46,7 +46,7 @@ export const socialSnapshotsTable = pgTable(
     ),
     check(
       "social_snapshots_source_check",
-      sql`${table.source} IN ('manual', 'youtube_api', 'bot')`,
+      sql`${table.source} IN ('manual', 'youtube_api')`,
     ),
   ],
 );

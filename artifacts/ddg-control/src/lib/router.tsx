@@ -4,6 +4,7 @@ import { Header } from '@/components/header';
 import { Home } from '@/pages/Home';
 import { Money } from '@/pages/Money';
 import { Social } from '@/pages/Social';
+import { Ops } from '@/pages/Ops';
 
 function Problem({ title }: { title: string }) {
   return (
@@ -21,6 +22,7 @@ export function Router() {
         <Route path="/" component={Home} />
         <Route path="/money" component={Money} />
         <Route path="/social" component={Social} />
+        <Route path="/ops" component={Ops} />
         <Route component={() => <Problem title="That page doesn't exist." />} />
       </Switch>
     </ErrorBoundary>

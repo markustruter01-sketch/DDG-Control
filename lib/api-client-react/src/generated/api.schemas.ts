@@ -616,6 +616,8 @@ export interface BotPush {
   record_id: number | null;
   summary: string;
   status: number;
+  /** @nullable */
+  error: string | null;
   received_at: string;
   /** @nullable */
   undone_at: string | null;

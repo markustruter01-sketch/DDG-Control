@@ -2238,11 +2238,13 @@ components:
           type: string
         status:
           type: integer
+        error:
+          type: [string, "null"]
         received_at:
           type: string
         undone_at:
           type: [string, "null"]
-      required: [id, bot, kind, record_id, summary, status, received_at, undone_at]
+      required: [id, bot, kind, record_id, summary, status, error, received_at, undone_at]
     BotPushList:
       type: array
       items:

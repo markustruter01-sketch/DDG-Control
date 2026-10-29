@@ -32,25 +32,27 @@ function useAuthenticationRequired(): boolean {
 }
 
 function LoginScreen({ initialError }: { initialError?: string }) {
+  const [email, setEmail] = useState(() => { try { return localStorage.getItem('ddg-login-email') ?? ''; } catch { return ''; } });
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [error, setError] = useState(initialError ?? '');
   const loginMutation = useLogin();
 
   const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const submittedPassword = password;
+    const sent = { email: email.trim(), password, code: code.replace(/\s/g, '') };
     setPassword('');
+    setCode('');
     setError('');
-
     try {
-      await loginMutation.mutateAsync({ data: { password: submittedPassword } });
+      await loginMutation.mutateAsync({ data: sent });
+      try { localStorage.setItem('ddg-login-email', sent.email); } catch { /* only a convenience */ }
       setAuthenticationRequired(false);
-      await queryClient.invalidateQueries({
-        queryKey: getGetSessionQueryKey(),
-        exact: true,
-      });
+      await queryClient.invalidateQueries({ queryKey: getGetSessionQueryKey(), exact: true });
     } catch (loginError) {
-      setError(serverErrorText(loginError, 'Unable to log in.'));
+      setError(serverErrorText(loginError, 'Unable to log in.') === 'invalid credentials'
+        ? 'Email, password or code is wrong. Codes change every 30 seconds.'
+        : serverErrorText(loginError, 'Unable to log in.'));
     }
   };
 
@@ -59,14 +61,24 @@ function LoginScreen({ initialError }: { initialError?: string }) {
       <form className="glass panel" onSubmit={submitLogin} data-testid="login-form">
         <img src={`${import.meta.env.BASE_URL}ddg-professional-white-transparent.png`} alt="DDG" style={{ width: 44, height: 44 }} />
         <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400 }}>DDG Control</h1>
+        <label className="field" htmlFor="login-email">
+          Email
+          <input id="login-email" name="email" type="email" autoComplete="username" value={email}
+            onChange={(event) => setEmail(event.target.value)} required />
+        </label>
         <label className="field" htmlFor="login-password">
           Password
           <input id="login-password" name="password" type="password" autoComplete="current-password" value={password}
             onChange={(event) => setPassword(event.target.value)} required data-testid="input-login-password" />
         </label>
+        <label className="field" htmlFor="login-code">
+          Authenticator code
+          <input id="login-code" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9 ]{6,7}" maxLength={7}
+            placeholder="6 digits from Google Authenticator" value={code} onChange={(event) => setCode(event.target.value)} required />
+        </label>
         {error && <p className="alert" role="alert" style={{ margin: 0 }} data-testid="error-login">{error}</p>}
         <button className="btn fill" type="submit" disabled={loginMutation.isPending} data-testid="button-login">
-          {loginMutation.isPending ? 'Logging in…' : 'Log in'}
+          {loginMutation.isPending ? 'Checking…' : 'Log in'}
         </button>
       </form>
     </div>
