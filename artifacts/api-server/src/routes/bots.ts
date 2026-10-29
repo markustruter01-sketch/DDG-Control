@@ -9,11 +9,8 @@ import { dailyBrief, inbox, sendMessage } from '../lib/messages';
 import { requestBodyRecord, zodErrorText } from './validation';
 
 /**
- * Where the Grok bots push numbers into Control. Each bot has its own key, so every push
- * is signed by the bot that sent it:
- *   DDG_BOT_KEYS = "freya:<key>,tyr:<key>,heimdall:<key>"   (one entry per bot)
- *   DDG_BOT_KEY  = Claude's own key (signed as "claude")
- * Sent as "Authorization: Bearer <key>". Bots can only ADD. Every push, accepted or
+ * Where the Grok bots push numbers into Control. Each bot has its own key (see lib/bot-keys),
+ * so every push is signed by the bot that sent it. Sent as "Authorization: Bearer <key>". Bots can only ADD. Every push, accepted or
  * rejected, goes in the bot_pushes log; Markus can review it and undo a wrong one.
  */
 const router: IRouter = Router();
