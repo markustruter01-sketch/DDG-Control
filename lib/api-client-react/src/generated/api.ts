@@ -82,6 +82,7 @@ import type {
   ProjectMetricsResponse,
   ProjectNotesResponse,
   ProjectUpdateRequest,
+  PublicSummary,
   SessionResult,
   SocialSnapshot,
   SocialSnapshotCreate,
@@ -3972,6 +3973,83 @@ export function useGetConnections<TData = Awaited<ReturnType<typeof getConnectio
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetConnectionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPublicSummaryUrl = () => {
+
+
+
+
+  return `/api/public/summary`
+}
+
+/**
+ * @summary Public numbers for the DDG website (no login) - social followers and charity only
+ */
+export const getPublicSummary = async ( options?: Parameters<typeof customFetch>[1]): Promise<PublicSummary> => {
+
+  return customFetch<PublicSummary>(getGetPublicSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicSummaryQueryKey = () => {
+    return [
+    `/api/public/summary`
+    ] as const;
+    }
+
+
+export const getGetPublicSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getPublicSummary>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicSummary>>> = ({ signal }) => getPublicSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicSummary>>>
+export type GetPublicSummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Public numbers for the DDG website (no login) - social followers and charity only
+ */
+
+export function useGetPublicSummary<TData = Awaited<ReturnType<typeof getPublicSummary>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicSummaryQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

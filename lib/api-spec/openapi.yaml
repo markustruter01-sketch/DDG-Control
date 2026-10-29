@@ -1285,6 +1285,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /public/summary:
+    get:
+      operationId: getPublicSummary
+      tags: [health]
+      summary: Public numbers for the DDG website (no login) - social followers and charity only
+      responses:
+        "200":
+          description: Public summary, cached for 5 minutes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicSummary"
   /messages:
     get:
       operationId: listMessages
@@ -2316,6 +2328,30 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/Connection"
+    PublicSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        updated_at:
+          type: string
+        followers_total:
+          type: [integer, "null"]
+        platforms:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              platform:
+                type: string
+              followers:
+                type: [integer, "null"]
+            required: [platform, followers]
+        coffee_bags_sold:
+          type: [integer, "null"]
+        coffee_charity_cents:
+          type: [integer, "null"]
+      required: [updated_at, followers_total, platforms, coffee_bags_sold, coffee_charity_cents]
     MessageInput:
       type: object
       additionalProperties: false

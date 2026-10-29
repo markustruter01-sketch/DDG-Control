@@ -1,7 +1,7 @@
 kind = "web"
 previewPath = "/"
-title = "DDG Control"
-description = "A project control home page that reads four project records from PostgreSQL and provides an overview page for each project."
+title = "DDG Website + Control"
+description = "Public DDG website at /, with DDG Control (owner only, 2FA) at a secret path."
 version = "1.0.0"
 id = "artifacts/ddg-control"
 router = "path"
@@ -18,6 +18,11 @@ run = "pnpm --filter @workspace/ddg-control run dev"
 build = [ "pnpm", "--filter", "@workspace/ddg-control", "run", "build" ]
 serve = "static"
 publicDir = "artifacts/ddg-control/dist/public"
+
+# DDG Control at its secret path (folder name set in vite.config.ts), then the public website.
+[[services.production.rewrites]]
+from = "/ctl-3gv376wpguby/*"
+to = "/ctl-3gv376wpguby/index.html"
 
 [[services.production.rewrites]]
 from = "/*"

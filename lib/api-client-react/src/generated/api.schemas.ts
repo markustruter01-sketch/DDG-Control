@@ -645,6 +645,23 @@ export interface Connection {
 
 export type ConnectionList = Connection[];
 
+export type PublicSummaryPlatformsItem = {
+  platform: string;
+  /** @nullable */
+  followers: number | null;
+};
+
+export interface PublicSummary {
+  updated_at: string;
+  /** @nullable */
+  followers_total: number | null;
+  platforms: PublicSummaryPlatformsItem[];
+  /** @nullable */
+  coffee_bags_sold: number | null;
+  /** @nullable */
+  coffee_charity_cents: number | null;
+}
+
 export interface MessageInput {
   /** @pattern ^[a-z]{2,20}$ */
   to: string;

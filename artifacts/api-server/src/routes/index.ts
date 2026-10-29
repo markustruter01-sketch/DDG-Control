@@ -8,6 +8,7 @@ import socialRouter from './social';
 import botsRouter from './bots';
 import fleetRouter, { fleetInboundRouter } from './fleet';
 import opsRouter from './ops';
+import publicRouter from './public';
 
 const router: IRouter = Router();
 router.use(healthRouter);
@@ -15,6 +16,8 @@ router.use(authRouter);
 // Grok bots push numbers with their own key (DDG_BOT_KEY), not the owner login.
 router.use(botsRouter);
 router.use(fleetInboundRouter);
+// The public website's numbers (followers + charity), no login.
+router.use(publicRouter);
 router.use(requireMonitorReadSession);
 // The owner edits money, social readings, the Needs-you list, and can undo bot pushes.
 router.use(financeRouter);

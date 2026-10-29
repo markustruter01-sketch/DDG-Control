@@ -1,6 +1,6 @@
-# [Project name]
+# DDG website + DDG Control
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+The public DDG company website (at `/`) and DDG Control, the owner-only company dashboard (at a secret path, behind email + password + Google Authenticator).
 
 ## Run & Operate
 
@@ -22,11 +22,18 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/ddg-control/index.html` + `site/` — public website (content in `site/content.ts`).
+- `artifacts/ddg-control/<secret folder>/index.html` + `src/` — DDG Control. The folder name is set once in `vite.config.ts` (`CONTROL_DIR`) and must match the rewrite in `.replit-artifact/artifact.toml`.
+- `src/lib/public-info.ts` — public facts shared by both; never put internal info there (the website bundles it).
+- `src/tokens.css` — Night Glass brand tokens shared by both.
+- `artifacts/api-server/src/routes/` — API. `public.ts` is the only unauthenticated data route (followers + charity). `bots.ts` = Grok bot pushes/messages (per-bot keys from secrets FREYA, TYR, HEIMDALL, PLUTUS; DDG_BOT_KEY = Claude).
+- `lib/db/src/schema/` — DB schema. `lib/api-spec/openapi.yaml` — API contract.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- One app, one domain: website and Control are two entry pages of one Vite build, so Control's code is never in the website bundle.
+- Every Grok bot push and message is logged in `bot_pushes` / `bot_messages`; the owner can undo pushes from Control → Ops.
+- Code changes come from GitHub (Claude). Don't edit code in Replit; pull from GitHub instead.
 
 ## Product
 
