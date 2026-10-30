@@ -1200,7 +1200,105 @@ export const GetPublicSummaryResponse = zod.object({
   "likes_30d": zod.number().int().nullable()
 })),
   "coffee_bags_sold": zod.number().int().nullable(),
-  "coffee_charity_cents": zod.number().int().nullable()
+  "coffee_charity_cents": zod.number().int().nullable(),
+  "services_open": zod.boolean().describe('DDG Build enquiries are open to the public'),
+  "services_open_on": zod.string().describe('Date (Brisbane) DDG Build opens, YYYY-MM-DD')
+})
+
+
+/**
+ * @summary DDG Build enquiry from the public website (no login). Refused before the opening date unless the owner is logged in (test).
+ */
+export const createEnquiryBodyFeaturesItemMax = 40;
+
+export const createEnquiryBodyFeaturesMax = 12;
+
+export const createEnquiryBodyNameMax = 80;
+
+export const createEnquiryBodyEmailMax = 160;
+
+export const createEnquiryBodyAboutMax = 300;
+
+export const createEnquiryBodyBallparkMax = 60;
+
+export const createEnquiryBodyFaxMax = 0;
+
+
+
+export const CreateEnquiryBody = zod.object({
+  "kind": zod.enum(['website', 'store', 'platform', 'app', 'ai', 'unsure']),
+  "features": zod.array(zod.string().min(1).max(createEnquiryBodyFeaturesItemMax)).max(createEnquiryBodyFeaturesMax),
+  "has_now": zod.enum(['nothing', 'brand', 'existing']),
+  "timing": zod.enum(['asap', 'soon', 'later', 'exploring']),
+  "budget": zod.enum(['under-5k', '5-15k', '15-40k', 'over-40k', 'unsure']),
+  "name": zod.string().min(1).max(createEnquiryBodyNameMax),
+  "email": zod.string().email().max(createEnquiryBodyEmailMax),
+  "about": zod.string().max(createEnquiryBodyAboutMax).optional(),
+  "ballpark": zod.string().max(createEnquiryBodyBallparkMax).optional(),
+  "fax": zod.string().max(createEnquiryBodyFaxMax).optional().describe('Left empty by people; bots that fill every field are refused')
+})
+
+export const CreateEnquiryResponse = zod.object({
+  "received": zod.boolean(),
+  "test": zod.boolean()
+})
+
+
+/**
+ * @summary DDG Build enquiries, newest first (owner only)
+ */
+export const ListEnquiriesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.string(),
+  "features": zod.array(zod.string()),
+  "has_now": zod.string(),
+  "timing": zod.string(),
+  "budget": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "about": zod.string().nullable(),
+  "ballpark": zod.string().nullable(),
+  "stage": zod.enum(['new', 'call', 'quote', 'won', 'lost']),
+  "notes": zod.string().nullable(),
+  "test": zod.boolean(),
+  "created_at": zod.string(),
+  "updated_at": zod.string()
+})
+export const ListEnquiriesResponse = zod.array(ListEnquiriesResponseItem)
+
+
+/**
+ * @summary Move an enquiry to another stage or change its notes (owner only)
+ */
+export const UpdateEnquiryParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateEnquiryBodyNotesMax = 2000;
+
+
+
+export const UpdateEnquiryBody = zod.object({
+  "stage": zod.enum(['new', 'call', 'quote', 'won', 'lost']).optional(),
+  "notes": zod.string().max(updateEnquiryBodyNotesMax).nullish()
+})
+
+export const UpdateEnquiryResponse = zod.object({
+  "id": zod.number().int(),
+  "kind": zod.string(),
+  "features": zod.array(zod.string()),
+  "has_now": zod.string(),
+  "timing": zod.string(),
+  "budget": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "about": zod.string().nullable(),
+  "ballpark": zod.string().nullable(),
+  "stage": zod.enum(['new', 'call', 'quote', 'won', 'lost']),
+  "notes": zod.string().nullable(),
+  "test": zod.boolean(),
+  "created_at": zod.string(),
+  "updated_at": zod.string()
 })
 
 

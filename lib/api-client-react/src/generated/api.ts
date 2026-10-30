@@ -34,6 +34,10 @@ import type {
   Decision,
   DecisionActionBody,
   DecisionWithNames,
+  Enquiry,
+  EnquiryInput,
+  EnquiryReceived,
+  EnquiryUpdate,
   Error,
   FinanceDebt,
   FinanceDebtCreate,
@@ -4061,6 +4065,260 @@ export function useGetPublicSummary<TData = Awaited<ReturnType<typeof getPublicS
 
 
 
+
+export const getCreateEnquiryUrl = () => {
+
+
+
+
+  return `/api/public/enquiry`
+}
+
+/**
+ * @summary DDG Build enquiry from the public website (no login). Refused before the opening date unless the owner is logged in (test).
+ */
+export const createEnquiry = async (enquiryInput: EnquiryInput, options?: Parameters<typeof customFetch>[1]): Promise<EnquiryReceived> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EnquiryReceived>(getCreateEnquiryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(enquiryInput)
+  }
+);}
+
+
+
+
+
+export const getCreateEnquiryMutationKey = () => ['createEnquiry'] as const;
+
+export const getCreateEnquiryMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEnquiry>>, TError,CreateEnquiryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createEnquiry>>, TError,CreateEnquiryMutationVariables, TContext> => {
+
+const mutationKey = getCreateEnquiryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEnquiry>>, CreateEnquiryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createEnquiry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateEnquiryMutationResult = NonNullable<Awaited<ReturnType<typeof createEnquiry>>>
+    export type CreateEnquiryMutationBody = BodyType<EnquiryInput>
+    export type CreateEnquiryMutationError = ErrorType<Error>
+    export type CreateEnquiryMutationVariables = {data: BodyType<EnquiryInput>}
+
+    /**
+ * @summary DDG Build enquiry from the public website (no login). Refused before the opening date unless the owner is logged in (test).
+ */
+export const useCreateEnquiry = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEnquiry>>, TError,CreateEnquiryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createEnquiry>>,
+        TError,
+        CreateEnquiryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateEnquiryMutationOptions(options));
+    }
+
+export const getListEnquiriesUrl = () => {
+
+
+
+
+  return `/api/enquiries`
+}
+
+/**
+ * @summary DDG Build enquiries, newest first (owner only)
+ */
+export const listEnquiries = async ( options?: Parameters<typeof customFetch>[1]): Promise<Enquiry[]> => {
+
+  return customFetch<Enquiry[]>(getListEnquiriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEnquiriesQueryKey = () => {
+    return [
+    `/api/enquiries`
+    ] as const;
+    }
+
+
+export const getListEnquiriesQueryOptions = <TData = Awaited<ReturnType<typeof listEnquiries>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEnquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEnquiriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEnquiries>>> = ({ signal }) => listEnquiries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEnquiries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEnquiriesQueryResult = NonNullable<Awaited<ReturnType<typeof listEnquiries>>>
+export type ListEnquiriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary DDG Build enquiries, newest first (owner only)
+ */
+
+export function useListEnquiries<TData = Awaited<ReturnType<typeof listEnquiries>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEnquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEnquiriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateEnquiryUrl = (id: number,) => {
+
+
+
+
+  return `/api/enquiries/${id}`
+}
+
+/**
+ * @summary Move an enquiry to another stage or change its notes (owner only)
+ */
+export const updateEnquiry = async (id: number,
+    enquiryUpdate: EnquiryUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Enquiry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Enquiry>(getUpdateEnquiryUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(enquiryUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateEnquiryMutationKey = () => ['updateEnquiry'] as const;
+
+export const getUpdateEnquiryMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEnquiry>>, TError,UpdateEnquiryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateEnquiry>>, TError,UpdateEnquiryMutationVariables, TContext> => {
+
+const mutationKey = getUpdateEnquiryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateEnquiry>>, UpdateEnquiryMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateEnquiry(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateEnquiryMutationResult = NonNullable<Awaited<ReturnType<typeof updateEnquiry>>>
+    export type UpdateEnquiryMutationBody = BodyType<EnquiryUpdate>
+    export type UpdateEnquiryMutationError = ErrorType<Error>
+    export type UpdateEnquiryMutationVariables = {id: number;data: BodyType<EnquiryUpdate>}
+
+    /**
+ * @summary Move an enquiry to another stage or change its notes (owner only)
+ */
+export const useUpdateEnquiry = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEnquiry>>, TError,UpdateEnquiryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateEnquiry>>,
+        TError,
+        UpdateEnquiryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateEnquiryMutationOptions(options));
+    }
 
 export const getListMessagesUrl = () => {
 
