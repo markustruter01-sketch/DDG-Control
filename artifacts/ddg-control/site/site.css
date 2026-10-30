@@ -86,14 +86,32 @@ p { margin: 0; }
 .s-footer div { display: flex; flex-direction: column; gap: 4px; }
 .s-footer b { color: var(--ng-text-2); font-weight: 500; }
 
+/* Phones: more in the first screen. Tighter hero, social numbers as a small
+   table, businesses two by two. */
 @media (max-width: 720px) {
+  .s-nav { padding-top: 14px; padding-bottom: 6px; }
   .s-nav nav { gap: 14px; font-size: 13px; }
   .s-hero { min-height: auto; }
-  .s-hero-copy { padding-top: 72px; }
-  .s-hero-social { width: calc(100% - 32px); padding: 16px; }
-  .s-main { padding: 48px 16px; gap: 56px; }
+  .s-hero-copy { padding-top: 20px; padding-bottom: 16px; gap: 12px; }
+  .s-eyebrow { font-size: 11px; }
+  .s-hero h1 { font-size: 31px; line-height: 1.08; }
+  .s-lead { font-size: 15px; line-height: 1.5; }
+  .s-hero-actions { margin-top: 2px; gap: 8px; }
+  .s-hero-actions .s-btn { min-height: 42px; padding: 0 16px; }
+  .s-hero-social { width: calc(100% - 32px); padding: 14px 16px; margin-bottom: 20px; }
+  .s-main { padding: 28px 16px 40px; gap: 40px; }
+  .s-main h2 { margin-bottom: 14px; }
+  .s-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .s-card { padding: 16px 14px; gap: 6px; border-radius: 16px; }
+  .s-card::before { left: 14px; right: 14px; }
+  .s-card h3 { font-size: 18px; }
+  .s-card p { font-size: 13.5px; line-height: 1.45; }
+  .s-card .s-product { font-size: 10.5px; }
+  .s-card .s-btn { min-height: 40px; padding: 0 12px; font-size: 13px; margin-top: 6px; }
   .s-nav, .s-hero-copy, .s-footer { padding-left: 16px; padding-right: 16px; }
-  .s-charity { grid-template-columns: 1fr; padding: 22px; }
+  .s-charity { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
+  .s-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .s-stats dd { font-size: 26px; }
   .s-row { grid-template-columns: 1fr; gap: 12px; }
   .s-row .s-btn { justify-self: start; }
 }

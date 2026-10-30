@@ -22,10 +22,18 @@
 @media (max-width: 900px) {
   .sf-platforms { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+/* Phones: one compact table (All + each platform; followers, views, likes). */
+.sf-table { display: none; width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.sf-table th, .sf-table td { padding: 6px 0; border-top: 1px solid var(--ng-hairline); text-align: right; font-size: 14px; }
+.sf-table thead th { border-top: 0; padding-top: 0; font: 400 10.5px/1.2 var(--ng-mono); letter-spacing: 1px; text-transform: uppercase; color: var(--ng-text-3); }
+.sf-table tbody th { text-align: left; font: 400 14px/1.3 var(--ng-sans); letter-spacing: normal; text-transform: none; color: var(--ng-text); }
+.sf-table tbody th a, .sf-table tbody th .sf-cell { display: inline-flex; align-items: center; min-height: 32px; gap: 8px; font-size: 13px; color: var(--ng-text-2); }
+.sf-table .sf-total th, .sf-table .sf-total td { font-size: 18px; color: var(--ng-text); border-top: 0; }
+.sf-table td { font-family: var(--ng-sans); color: var(--ng-text); }
+.sf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (max-width: 640px) {
-  .sf { gap: 12px; }
-  .sf-head { flex-basis: 100%; }
-  .sf-totals { flex-basis: 100%; justify-content: space-between; gap: 12px; }
-  .sf-totals .sf-main dd { font-size: 32px; }
-  .sf-platforms { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+  .sf { gap: 10px; }
+  .sf-head { flex-basis: 100%; flex-direction: row; align-items: baseline; justify-content: space-between; }
+  .sf-totals, .sf-platforms { display: none; }
+  .sf-table { display: table; }
 }
