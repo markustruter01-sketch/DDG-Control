@@ -96,7 +96,7 @@ export function Money() {
   const recurring = (expenses.data ?? []).filter((e) => e.kind !== 'one_off');
 
   return (
-    <div className="ng-page">
+    <div className="ng-page dusk">
       <div className="ng-wrap">
         <Header />
         <h1 style={{ margin: 0, fontSize: 32, fontWeight: 400 }}>Money</h1>

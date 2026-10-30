@@ -177,7 +177,7 @@ function BotLog() {
 
 export function Ops() {
   return (
-    <div className="ng-page">
+    <div className="ng-page dusk">
       <div className="ng-wrap">
         <Header />
         <h1 style={{ margin: 0, fontSize: 32, fontWeight: 400 }}>Ops</h1>

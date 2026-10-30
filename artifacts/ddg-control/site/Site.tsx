@@ -117,7 +117,7 @@ function Home() {
 
 function Creative() {
   return (
-    <div className="s-plain">
+    <div className="s-plain dusk">
       <Nav />
       <main className="s-main">
         <p className="s-eyebrow">DDG Creative</p>
@@ -148,7 +148,7 @@ function Footer() {
 
 function NotFound() {
   return (
-    <div className="s-plain">
+    <div className="s-plain dusk">
       <Nav />
       <main className="s-main"><h1 className="s-page-title">Page not found</h1><p><Link className="s-btn" href="/">Back home</Link></p></main>
     </div>
