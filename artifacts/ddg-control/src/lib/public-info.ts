@@ -12,5 +12,5 @@ export const SOCIALS: { platform: Platform; name: string; href: string | null }[
   { platform: 'instagram', name: 'Instagram', href: 'https://www.instagram.com/digitaldynamicsgroup/' },
   { platform: 'facebook', name: 'Facebook', href: null },
   { platform: 'x', name: 'X', href: 'https://x.com/DDGCompany' },
-  { platform: 'tiktok', name: 'TikTok', href: null },
+  { platform: 'tiktok', name: 'TikTok', href: 'https://www.tiktok.com/@ddg.company' },
 ];
