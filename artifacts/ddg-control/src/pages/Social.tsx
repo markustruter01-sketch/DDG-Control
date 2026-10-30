@@ -28,6 +28,8 @@ export function Social() {
   const [followers, setFollowers] = useState('');
   const [views, setViews] = useState('');
   const [likes, setLikes] = useState('');
+  const [viewsAll, setViewsAll] = useState('');
+  const [likesAll, setLikesAll] = useState('');
   const [message, setMessage] = useState('');
 
   const submit = async (event: FormEvent) => {
@@ -36,9 +38,9 @@ export function Social() {
     try {
       const f = whole(followers);
       if (f === null) throw new Error('Followers is needed.');
-      await save.mutateAsync({ data: { project_slug: account, platform, followers: f, impressions_30d: whole(views), engagements_30d: whole(likes) } });
+      await save.mutateAsync({ data: { project_slug: account, platform, followers: f, impressions_30d: whole(views), engagements_30d: whole(likes), views_all_time: whole(viewsAll), likes_all_time: whole(likesAll) } });
       await client.invalidateQueries({ queryKey: getGetOverviewQueryKey() });
-      setFollowers(''); setViews(''); setLikes('');
+      setFollowers(''); setViews(''); setLikes(''); setViewsAll(''); setLikesAll('');
       setMessage('Saved.');
     } catch (e) { setMessage(e instanceof Error && !('status' in e) ? e.message : serverErrorText(e, 'Could not save.')); }
   };
@@ -54,14 +56,14 @@ export function Social() {
         <section className="glass panel" aria-label="Current numbers">
           <div className="table-scroll">
             <table>
-              <thead><tr><th>Platform</th><th style={{ textAlign: 'right' }}>Followers</th><th style={{ textAlign: 'right' }}>Views · 30 days</th><th style={{ textAlign: 'right' }}>Likes · 30 days</th><th>Last reading</th></tr></thead>
+              <thead><tr><th>Platform</th><th style={{ textAlign: 'right' }}>Followers</th><th style={{ textAlign: 'right' }}>Views · all time</th><th style={{ textAlign: 'right' }}>Likes · all time</th><th style={{ textAlign: 'right' }}>Views · 30 days</th><th style={{ textAlign: 'right' }}>Likes · 30 days</th><th>Last reading</th></tr></thead>
               <tbody>
                 {SOCIALS.map((s) => {
                   const p = byPlatform.get(s.platform);
                   return (
                     <tr key={s.platform}>
                       <td><span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}><PlatformIcon platform={s.platform} />{s.name}</span></td>
-                      <td className="money">{count(p?.followers)}</td><td className="money">{count(p?.views_30d)}</td><td className="money">{count(p?.likes_30d)}</td>
+                      <td className="money">{count(p?.followers)}</td><td className="money">{count(p?.views_all_time)}</td><td className="money">{count(p?.likes_all_time)}</td><td className="money">{count(p?.views_30d)}</td><td className="money">{count(p?.likes_30d)}</td>
                       <td className="note">{p?.captured_on ?? 'No reading yet'}</td>
                     </tr>
                   );
@@ -87,6 +89,8 @@ export function Social() {
             <label className="field">Followers / subscribers<input value={followers} onChange={(e) => setFollowers(e.target.value)} inputMode="numeric" required /></label>
             <label className="field">Views, last 30 days<input value={views} onChange={(e) => setViews(e.target.value)} inputMode="numeric" placeholder="optional" /></label>
             <label className="field">Likes, last 30 days<input value={likes} onChange={(e) => setLikes(e.target.value)} inputMode="numeric" placeholder="optional" /></label>
+            <label className="field">Views, all time<input value={viewsAll} onChange={(e) => setViewsAll(e.target.value)} inputMode="numeric" placeholder="only if the platform shows it" /></label>
+            <label className="field">Likes, all time<input value={likesAll} onChange={(e) => setLikesAll(e.target.value)} inputMode="numeric" placeholder="only if the platform shows it" /></label>
             <button type="submit" className="btn fill" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save'}</button>
           </form>
           {message && <p role="status" className={message === 'Saved.' ? 'muted' : 'alert'} style={{ margin: 0 }}>{message}</p>}

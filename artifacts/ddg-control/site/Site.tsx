@@ -3,7 +3,7 @@ import type { PublicSummary } from '@workspace/api-client-react';
 import { Link, Route, Switch } from 'wouter';
 import { BusinessIcon } from '@/components/BusinessIcon';
 import { PlatformIcon } from '@/components/PlatformIcon';
-import { SocialFootprint } from '@/components/SocialFootprint';
+import { SocialFootprint, allTime } from '@/components/SocialFootprint';
 import { LAUNCH_DATE } from '@/lib/company';
 import { daysUntil } from '@/lib/money';
 import { SOCIALS, type Platform } from '@/lib/public-info';
@@ -157,8 +157,8 @@ function Home() {
         </div>
         <section className="s-hero-social glass-photo" aria-label="Social footprint, all platforms">
           <SocialFootprint
-            totals={summary && { followers: summary.followers_total, views_30d: summary.views_30d_total, likes_30d: summary.likes_30d_total }}
-            platforms={summary?.platforms} links />
+            totals={summary && allTime({ followers: summary.followers_total, views_all_time: summary.views_all_time_total, likes_all_time: summary.likes_all_time_total })}
+            platforms={summary?.platforms.map((p) => ({ platform: p.platform, ...allTime(p) }))} links />
         </section>
       </section>
 

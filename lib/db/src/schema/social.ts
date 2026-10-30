@@ -26,6 +26,9 @@ export const socialSnapshotsTable = pgTable(
     followers: integer("followers").notNull(),
     impressions_30d: integer("impressions_30d"),
     engagements_30d: integer("engagements_30d"),
+    // All-time totals, only when the platform itself shows one (Markus 31 Oct: show all time).
+    views_all_time: integer("views_all_time"),
+    likes_all_time: integer("likes_all_time"),
     captured_on: date("captured_on", { mode: "string" }).notNull(),
     source: text("source").notNull().default("manual"),
     created_at: timestamp("created_at").notNull().defaultNow(),

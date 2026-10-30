@@ -89,6 +89,8 @@ export async function recordSocialSnapshot(input: unknown): Promise<SocialResult
       followers: body.followers,
       impressions_30d: body.impressions_30d ?? null,
       engagements_30d: body.engagements_30d ?? null,
+      views_all_time: body.views_all_time ?? null,
+      likes_all_time: body.likes_all_time ?? null,
       captured_on: brisbaneToday(),
       source: "manual",
     })
@@ -101,6 +103,8 @@ export async function recordSocialSnapshot(input: unknown): Promise<SocialResult
     followers: created.followers,
     impressions_30d: created.impressions_30d,
     engagements_30d: created.engagements_30d,
+    views_all_time: created.views_all_time,
+    likes_all_time: created.likes_all_time,
     captured_on: created.captured_on,
     source: created.source,
   };

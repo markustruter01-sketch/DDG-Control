@@ -2302,11 +2302,15 @@ components:
           type: [integer, "null"]
         likes_30d:
           type: [integer, "null"]
+        views_all_time:
+          type: [integer, "null"]
+        likes_all_time:
+          type: [integer, "null"]
         platforms:
           type: array
           items:
             $ref: "#/components/schemas/OverviewSocialPlatform"
-      required: [followers, views_30d, likes_30d, platforms]
+      required: [followers, views_30d, likes_30d, views_all_time, likes_all_time, platforms]
     OverviewSocialPlatform:
       type: object
       additionalProperties: false
@@ -2320,9 +2324,13 @@ components:
           type: [integer, "null"]
         likes_30d:
           type: [integer, "null"]
+        views_all_time:
+          type: [integer, "null"]
+        likes_all_time:
+          type: [integer, "null"]
         captured_on:
           type: [string, "null"]
-      required: [platform, followers, views_30d, likes_30d, captured_on]
+      required: [platform, followers, views_30d, likes_30d, views_all_time, likes_all_time, captured_on]
     AskInput:
       type: object
       additionalProperties: false
@@ -2420,6 +2428,10 @@ components:
           type: [integer, "null"]
         likes_30d_total:
           type: [integer, "null"]
+        views_all_time_total:
+          type: [integer, "null"]
+        likes_all_time_total:
+          type: [integer, "null"]
         platforms:
           type: array
           items:
@@ -2434,7 +2446,11 @@ components:
                 type: [integer, "null"]
               likes_30d:
                 type: [integer, "null"]
-            required: [platform, followers, views_30d, likes_30d]
+              views_all_time:
+                type: [integer, "null"]
+              likes_all_time:
+                type: [integer, "null"]
+            required: [platform, followers, views_30d, likes_30d, views_all_time, likes_all_time]
         coffee_bags_sold:
           type: [integer, "null"]
         coffee_charity_cents:
@@ -2445,7 +2461,7 @@ components:
         services_open_on:
           type: string
           description: Date (Brisbane) DDG Build opens, YYYY-MM-DD
-      required: [updated_at, followers_total, views_30d_total, likes_30d_total, platforms, coffee_bags_sold, coffee_charity_cents, services_open, services_open_on]
+      required: [updated_at, followers_total, views_30d_total, likes_30d_total, views_all_time_total, likes_all_time_total, platforms, coffee_bags_sold, coffee_charity_cents, services_open, services_open_on]
     EnquiryInput:
       type: object
       additionalProperties: false
@@ -3270,6 +3286,16 @@ components:
           type: ["integer", "null"]
           minimum: 0
           maximum: 2000000000
+        views_all_time:
+          type: ["integer", "null"]
+          minimum: 0
+          maximum: 2000000000
+          description: All-time views, only if the platform shows an all-time number
+        likes_all_time:
+          type: ["integer", "null"]
+          minimum: 0
+          maximum: 2000000000
+          description: All-time likes, only if the platform shows an all-time number
       required: [project_slug, platform, followers]
     SocialSnapshot:
       type: object
@@ -3287,12 +3313,16 @@ components:
           type: ["integer", "null"]
         engagements_30d:
           type: ["integer", "null"]
+        views_all_time:
+          type: ["integer", "null"]
+        likes_all_time:
+          type: ["integer", "null"]
         captured_on:
           type: string
           format: date
         source:
           type: string
-      required: [id, project_slug, platform, followers, impressions_30d, engagements_30d, captured_on, source]
+      required: [id, project_slug, platform, followers, impressions_30d, engagements_30d, views_all_time, likes_all_time, captured_on, source]
     SocialPlatformFigure:
       type: object
       additionalProperties: false
