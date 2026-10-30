@@ -1,5 +1,6 @@
 /* Public DDG website — Night Glass. Photo on the home hero only; everything else graphite. */
 @import '../src/tokens.css';
+@import '../src/dusk.css';
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -21,7 +22,7 @@ p { margin: 0; }
 .s-hero {
   min-height: 92vh; display: flex; flex-direction: column;
   background-color: var(--ng-night);
-  background-image: linear-gradient(180deg, rgba(6,7,10,0.2) 0%, rgba(6,7,10,0.45) 55%, rgba(6,7,10,0.85) 100%), url('/backgrounds/david-becker.webp');
+  background-image: linear-gradient(180deg, rgba(6,7,10,0.2) 0%, rgba(6,7,10,0.45) 55%, rgba(6,7,10,0.85) 100%), var(--ng-photo);
   background-size: cover; background-position: center 35%;
 }
 .s-hero-copy { max-width: 1200px; width: 100%; margin: auto auto 0; padding: 48px 24px 28px; display: flex; flex-direction: column; gap: 18px; }

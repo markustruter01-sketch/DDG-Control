@@ -17,5 +17,7 @@
   --ng-problem: #ff6b6b;
   --ng-sans: Geist, system-ui, sans-serif;
   --ng-mono: 'Geist Mono', ui-monospace, monospace;
+  /* The one landscape photo: full on home pages, blurred "dusk" at the top of every other page. */
+  --ng-photo: url('/backgrounds/david-becker.webp');
   color-scheme: dark;
 }
