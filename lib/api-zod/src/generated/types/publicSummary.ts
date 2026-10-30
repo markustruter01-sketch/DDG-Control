@@ -11,6 +11,10 @@ export interface PublicSummary {
   updated_at: string;
   /** @nullable */
   followers_total: number | null;
+  /** @nullable */
+  views_30d_total: number | null;
+  /** @nullable */
+  likes_30d_total: number | null;
   platforms: PublicSummaryPlatformsItem[];
   /** @nullable */
   coffee_bags_sold: number | null;

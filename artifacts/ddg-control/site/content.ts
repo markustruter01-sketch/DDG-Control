@@ -1,5 +1,5 @@
 // Every word on the public website lives here. Links come from src/lib/public-info.ts (one source).
-import { PUBLIC_SITES } from '@/lib/public-info';
+import { BUSINESS_ACCENT, PUBLIC_SITES } from '@/lib/public-info';
 
 const site = (key: keyof typeof PUBLIC_SITES) => PUBLIC_SITES[key];
 
@@ -27,16 +27,16 @@ export type SiteBusiness = {
 };
 
 export const SITE_BUSINESSES: SiteBusiness[] = [
-  { key: 'coffee', name: 'DDG Coffee', product: 'Cattle Dog Coffee', accent: 'var(--ng-amber)', status: 'Open now',
+  { key: 'coffee', name: 'DDG Coffee', product: 'Cattle Dog Coffee', accent: BUSINESS_ACCENT.coffee, status: 'Open now',
     line: 'Coffee beans delivered to your door. $1 from every bag goes to animal welfare.',
     link: { label: 'Shop coffee', href: site('coffee'), external: true } },
-  { key: 'finance', name: 'DDG Finance', product: 'Trading platform', accent: 'var(--ng-mint)', status: 'From 1 Jan 2027',
+  { key: 'finance', name: 'DDG Finance', product: 'Trading platform', accent: BUSINESS_ACCENT.finance, status: 'From 1 Jan 2027',
     line: 'Our own algorithmic trading platform. Its public track record starts on 1 January 2027.',
     link: null, note: 'Paper trading. Not financial advice.' },
-  { key: 'fitness', name: 'DDG Fitness', product: 'Hypest', accent: 'var(--ng-volt)', status: 'In development',
+  { key: 'fitness', name: 'DDG Fitness', product: 'Hypest', accent: BUSINESS_ACCENT.fitness, status: 'In development',
     line: 'Fitness plans and coaching from specialist AI coaches, on your phone.',
     link: null },
-  { key: 'creative', name: 'DDG Creative', product: 'Studio', accent: 'var(--ng-violet)', status: 'Posting now',
+  { key: 'creative', name: 'DDG Creative', product: 'Studio', accent: BUSINESS_ACCENT.creative, status: 'Posting now',
     line: 'Vlogs, gaming clips, music and a novel.',
     link: { label: 'See projects', href: '/creative', external: false } },
 ];

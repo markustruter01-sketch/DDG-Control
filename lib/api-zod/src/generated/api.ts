@@ -1186,14 +1186,18 @@ export const GetConnectionsResponse = zod.array(GetConnectionsResponseItem)
 
 
 /**
- * @summary Public numbers for the DDG website (no login) - social followers and charity only
+ * @summary Public numbers for the DDG website (no login) - social followers, views and likes, and charity only
  */
 export const GetPublicSummaryResponse = zod.object({
   "updated_at": zod.string(),
   "followers_total": zod.number().int().nullable(),
+  "views_30d_total": zod.number().int().nullable(),
+  "likes_30d_total": zod.number().int().nullable(),
   "platforms": zod.array(zod.object({
   "platform": zod.string(),
-  "followers": zod.number().int().nullable()
+  "followers": zod.number().int().nullable(),
+  "views_30d": zod.number().int().nullable(),
+  "likes_30d": zod.number().int().nullable()
 })),
   "coffee_bags_sold": zod.number().int().nullable(),
   "coffee_charity_cents": zod.number().int().nullable()
