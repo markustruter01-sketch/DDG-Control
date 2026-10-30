@@ -1289,7 +1289,7 @@ paths:
     get:
       operationId: getPublicSummary
       tags: [health]
-      summary: Public numbers for the DDG website (no login) - social followers and charity only
+      summary: Public numbers for the DDG website (no login) - social followers, views and likes, and charity only
       responses:
         "200":
           description: Public summary, cached for 5 minutes
@@ -2336,6 +2336,10 @@ components:
           type: string
         followers_total:
           type: [integer, "null"]
+        views_30d_total:
+          type: [integer, "null"]
+        likes_30d_total:
+          type: [integer, "null"]
         platforms:
           type: array
           items:
@@ -2346,12 +2350,16 @@ components:
                 type: string
               followers:
                 type: [integer, "null"]
-            required: [platform, followers]
+              views_30d:
+                type: [integer, "null"]
+              likes_30d:
+                type: [integer, "null"]
+            required: [platform, followers, views_30d, likes_30d]
         coffee_bags_sold:
           type: [integer, "null"]
         coffee_charity_cents:
           type: [integer, "null"]
-      required: [updated_at, followers_total, platforms, coffee_bags_sold, coffee_charity_cents]
+      required: [updated_at, followers_total, views_30d_total, likes_30d_total, platforms, coffee_bags_sold, coffee_charity_cents]
     MessageInput:
       type: object
       additionalProperties: false

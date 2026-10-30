@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { PublicSummary } from '@workspace/api-client-react';
 import { Link, Route, Switch } from 'wouter';
 import { PlatformIcon } from '@/components/PlatformIcon';
+import { SocialFootprint } from '@/components/SocialFootprint';
 import { SOCIALS, type Platform } from '@/lib/public-info';
 import { CHARITY, COMPANY, CREATIVE, HERO, SITE_BUSINESSES, type SiteBusiness } from './content';
 
@@ -10,7 +11,7 @@ const count = (n: number | null | undefined) => (n === null || n === undefined ?
 const dollars = (cents: number | null | undefined) =>
   cents === null || cents === undefined ? '—' : `$${(cents / 100).toLocaleString('en-AU', { maximumFractionDigits: 0 })}`;
 
-/** Live public numbers (followers, charity). Shows dashes until loaded or if unavailable. */
+/** Live public numbers (social footprint, charity). Shows dashes until loaded or if unavailable. */
 function usePublicSummary(): PublicSummary | null {
   const [data, setData] = useState<PublicSummary | null>(null);
   useEffect(() => {
@@ -37,20 +38,17 @@ function Nav() {
   );
 }
 
-function Socials({ summary, showCounts }: { summary: PublicSummary | null; showCounts: boolean }) {
+/** Footer: icon links to each DDG account. */
+function Socials() {
   return (
     <ul className="s-socials">
-      {SOCIALS.filter((s) => s.href).map((s) => {
-        const followers = summary?.platforms.find((p) => p.platform === s.platform)?.followers;
-        return (
-          <li key={s.platform}>
-            <a href={s.href!} target="_blank" rel="noopener noreferrer" aria-label={`DDG on ${s.name}`}>
-              <PlatformIcon platform={s.platform as Platform} size={showCounts ? 20 : 18} />
-              {showCounts && <span><b>{count(followers)}</b><i>{s.name}</i></span>}
-            </a>
-          </li>
-        );
-      })}
+      {SOCIALS.filter((s) => s.href).map((s) => (
+        <li key={s.platform}>
+          <a href={s.href!} target="_blank" rel="noopener noreferrer" aria-label={`DDG on ${s.name}`}>
+            <PlatformIcon platform={s.platform as Platform} size={18} />
+          </a>
+        </li>
+      ))}
     </ul>
   );
 }
@@ -85,11 +83,11 @@ function Home() {
             <Link className="s-btn" href="/creative">Watch us build</Link>
           </div>
         </div>
-        <div className="s-hero-social glass-photo">
-          <span className="s-label">Followers</span>
-          <b className="s-big">{count(summary?.followers_total)}</b>
-          <Socials summary={summary} showCounts />
-        </div>
+        <section className="s-hero-social glass-photo" aria-label="Social footprint, all platforms">
+          <SocialFootprint
+            totals={summary && { followers: summary.followers_total, views_30d: summary.views_30d_total, likes_30d: summary.likes_30d_total }}
+            platforms={summary?.platforms} links />
+        </section>
       </section>
 
       <main className="s-main">
@@ -141,7 +139,7 @@ function Footer() {
   return (
     <footer className="s-footer">
       <div><b>{COMPANY.legalName}</b><span>ABN {COMPANY.abn} · {COMPANY.place}</span></div>
-      <Socials summary={null} showCounts={false} />
+      <Socials />
     </footer>
   );
 }

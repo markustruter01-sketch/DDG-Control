@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/header';
 import { BotAvatar } from '@/components/BotAvatar';
 import { PlatformIcon } from '@/components/PlatformIcon';
+import { SocialFootprint } from '@/components/SocialFootprint';
 import {
   BOTS, BUSINESSES, CLAUDE_HOME, CREATIVE_PROJECTS, FINANCE_BOT_NAMES, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
 } from '@/lib/company';
@@ -28,39 +29,10 @@ function Term({ label, value, sign }: { label: string; value: string; sign?: str
   );
 }
 
-type Metric = 'followers' | 'views_30d' | 'likes_30d';
-const METRICS: { key: Metric; label: string }[] = [
-  { key: 'followers', label: 'Followers' },
-  { key: 'views_30d', label: 'Views · 30 days' },
-  { key: 'likes_30d', label: 'Likes · 30 days' },
-];
-
 function SocialPanel({ social }: { social: OverviewResponse['social'] | undefined }) {
-  const [metric, setMetric] = useState<Metric>('followers');
-  const byPlatform = new Map(social?.platforms.map((p) => [p.platform, p]));
   return (
     <section className="glass panel" aria-label="Social footprint, all platforms">
-      <div className="equation" style={{ alignItems: 'center' }}>
-        <span className="term" style={{ minWidth: 150 }}>
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Social footprint</h2>
-          <span className="label">{METRICS.find((m) => m.key === metric)!.label}</span>
-        </span>
-        <span className="num" style={{ fontSize: 38, fontWeight: 400 }}>{count(social?.[metric])}</span>
-        <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--ng-edge)' }} aria-hidden="true" />
-        {SOCIALS.map((s) => (
-          <span key={s.platform} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minWidth: 84 }}>
-            <span className="muted" style={{ display: 'flex' }}><PlatformIcon platform={s.platform} size={18} /></span>
-            <span style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: 'tabular-nums' }}>{count(byPlatform.get(s.platform)?.[metric])}</span>
-          </span>
-        ))}
-        <div className="nav" role="tablist" aria-label="Social measure" style={{ padding: 0, marginLeft: 'auto' }}>
-          {METRICS.map((m) => (
-            <button key={m.key} type="button" role="tab" aria-selected={metric === m.key} className="btn"
-              style={{ border: 0, minHeight: 40, background: metric === m.key ? 'rgba(255,255,255,0.10)' : 'transparent' }}
-              onClick={() => setMetric(m.key)}>{m.label.split(' ·')[0]}</button>
-          ))}
-        </div>
-      </div>
+      <SocialFootprint totals={social} platforms={social?.platforms} />
     </section>
   );
 }

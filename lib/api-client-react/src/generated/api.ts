@@ -3994,7 +3994,7 @@ export const getGetPublicSummaryUrl = () => {
 }
 
 /**
- * @summary Public numbers for the DDG website (no login) - social followers and charity only
+ * @summary Public numbers for the DDG website (no login) - social followers, views and likes, and charity only
  */
 export const getPublicSummary = async ( options?: Parameters<typeof customFetch>[1]): Promise<PublicSummary> => {
 
@@ -4041,7 +4041,7 @@ export type GetPublicSummaryQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Public numbers for the DDG website (no login) - social followers and charity only
+ * @summary Public numbers for the DDG website (no login) - social followers, views and likes, and charity only
  */
 
 export function useGetPublicSummary<TData = Awaited<ReturnType<typeof getPublicSummary>>, TError = ErrorType<unknown>>(

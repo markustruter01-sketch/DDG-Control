@@ -10,4 +10,8 @@ export type PublicSummaryPlatformsItem = {
   platform: string;
   /** @nullable */
   followers: number | null;
+  /** @nullable */
+  views_30d: number | null;
+  /** @nullable */
+  likes_30d: number | null;
 };
