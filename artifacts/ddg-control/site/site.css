@@ -60,28 +60,24 @@ p { margin: 0; }
 .s-main { width: 100%; max-width: 1200px; margin: 0 auto; padding: 64px 24px; display: flex; flex-direction: column; gap: 72px; }
 .s-main h2 { font-size: clamp(26px, 3vw, 36px); margin-bottom: 24px; }
 .s-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
-.s-card { position: relative; isolation: isolate; padding: 22px; border-radius: 18px; background: var(--ng-glass-plain); border: 1px solid var(--ng-edge); display: flex; flex-direction: column; gap: 10px; overflow: hidden; transition: border-color 0.25s, translate 0.25s; }
-.s-card::before { content: ''; position: absolute; left: 22px; right: 22px; top: 0; height: 2px; background: var(--accent); opacity: 0.85; }
+/* Card style A "Aura" (Markus 31 Oct): big live number and a soft glow in the business colour. */
+.s-card { position: relative; isolation: isolate; padding: 22px; border-radius: 20px; background: #101116; border: 1px solid var(--ng-edge); display: flex; flex-direction: column; gap: 10px; overflow: hidden; transition: border-color 0.25s, translate 0.25s; }
+.s-card::before { content: ''; position: absolute; right: -120px; top: -140px; width: 360px; height: 360px; border-radius: 50%; z-index: -1; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 34%, transparent), transparent); transition: opacity 0.3s; }
 .s-card h3 { font-size: 22px; }
 .s-card p { color: var(--ng-text-2); }
 .s-card .s-btn { margin-top: auto; align-self: flex-start; }
 .s-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .s-ico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--ng-edge); background: rgba(255,255,255,0.04); color: var(--ng-text); }
+.s-card .s-ico { border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent); }
 .s-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 .s-status { display: inline-flex; align-items: center; gap: 8px; font: 500 11px/1 var(--ng-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ng-text-3); }
 /* Headline number: big and light, label in small mono under it. */
 .s-stat { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
-.s-stat b { font-size: 44px; font-weight: 300; line-height: 1; letter-spacing: -0.02em; color: var(--ng-text); font-variant-numeric: tabular-nums; }
+.s-stat b { font-size: 76px; font-weight: 200; line-height: 0.95; letter-spacing: -0.04em; color: var(--ng-text); font-variant-numeric: tabular-nums; }
 .s-stat span { font: 500 10.5px/1.3 var(--ng-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ng-text-3); }
-/* The business's line icon, drawn large and faint in the corner. pathLength=1 lets it draw on. */
-.s-card-art { position: absolute; right: -46px; bottom: -40px; z-index: -1; color: rgba(255,255,255,0.07); pointer-events: none; transition: color 0.4s; }
-.s-card-art * { stroke-dasharray: 1; stroke-dashoffset: 0; }
 @media (hover: hover) {
   .s-card:hover { border-color: rgba(255,255,255,0.22); translate: 0 -4px; }
-  .s-card:hover .s-card-art { color: rgba(255,255,255,0.13); }
-  .s-card:hover .s-card-art * { animation: s-draw 1.1s ease-out; }
 }
-@keyframes s-draw { from { stroke-dashoffset: 1; } }
 .s-product { font: 500 12px/1 var(--ng-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ng-text) !important; }
 .s-note { font-size: 13px; color: var(--ng-text-3) !important; }
 
@@ -111,9 +107,8 @@ p { margin: 0; }
     rotateX(calc(var(--r) * 58deg)) rotateZ(calc(var(--r) * var(--sr)));
   will-change: transform;
 }
-.s-fan[data-motion] .s-card > :not(.s-card-art) { opacity: clamp(0, calc((var(--q) - 0.55) / 0.35), 1); }
-.s-fan[data-motion] .s-card-art * { stroke-dashoffset: calc(1 - clamp(0, calc((var(--q) - 0.4) / 0.6), 1)); }
-.s-fan[data-motion] .s-card::before { transform: scaleX(clamp(0.12, calc((var(--q) - 0.5) / 0.5), 1)); transform-origin: left; }
+.s-fan[data-motion] .s-card > * { opacity: clamp(0, calc((var(--q) - 0.55) / 0.35), 1); }
+.s-fan[data-motion] .s-card::before { opacity: clamp(0.25, calc((var(--q) - 0.3) / 0.7), 1); }
 .s-fan[data-motion] .s-card::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.09) 50%, transparent 65%);
@@ -173,6 +168,29 @@ p { margin: 0; }
 .s-ballpark span { font: 500 10.5px/1.3 var(--ng-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ng-text-3); }
 .s-form-error { color: var(--ng-problem); font-size: 14px; }
 
+/* What we built, as chips on the business cards (card style A) */
+.s-chips-built { flex-direction: row; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.s-chips-built li { padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); font-size: 12px; color: rgba(255,255,255,0.82); }
+.s-chips-built li::before { display: none; }
+
+/* Social footprint in the hero: a collapsed panel that clearly says what it is */
+.s-hero-social > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; cursor: pointer; font-size: 16px; font-weight: 600; }
+.s-hero-social > summary::-webkit-details-marker { display: none; }
+.s-hero-social > summary::after { content: ''; width: 9px; height: 9px; border-right: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(45deg); margin: 0 6px 4px; transition: transform 0.2s; }
+.s-hero-social[open] > summary::after { transform: rotate(-135deg); margin-bottom: -4px; }
+.s-sum-note { margin-left: auto; font: 500 11px/1.3 var(--ng-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ng-text-2); }
+.s-hero-social[open] > summary { margin-bottom: 12px; }
+.s-hero-social .sf-head h2 { display: none; }
+
+/* Phones and tablets: cards and panels rise in gently as they scroll into view
+   (browsers without scroll timelines simply show them still). */
+@media (max-width: 1023px) and (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .s-card, .s-case, .s-service, .s-steps li, .s-charity { animation: s-rise linear both; animation-timeline: view(); animation-range: entry 0% entry 70%; }
+    @keyframes s-rise { from { opacity: 0.15; translate: 0 44px; scale: 0.96; } }
+  }
+}
+
 /* Charity */
 .s-charity { display: grid; grid-template-columns: 1.4fr 1fr; gap: 32px; align-items: center; padding: 32px; border-radius: 22px; background: var(--ng-glass-plain); border: 1px solid var(--ng-edge); }
 .s-charity h2 { margin-bottom: 12px; }
@@ -219,10 +237,13 @@ p { margin: 0; }
   .s-card .s-product { font-size: 10.5px; }
   .s-card .s-btn { min-height: 40px; padding: 0 12px; font-size: 13px; margin-top: 6px; }
   .s-card-top { flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+  .s-chips-built { flex-direction: column; gap: 4px; }
+  .s-chips-built li { border: 0; border-radius: 0; padding: 0 0 0 12px; font-size: 12px; color: var(--ng-text-2); }
+  .s-chips-built li::before { display: block; }
+  .s-hero-social > summary { font-size: 15px; white-space: nowrap; }
   .s-ico { width: 36px; height: 36px; border-radius: 10px; }
-  .s-stat b { font-size: 30px; }
+  .s-stat b { font-size: 46px; }
   .s-stat span { font-size: 9.5px; }
-  .s-card-art { width: 150px; height: 150px; right: -36px; bottom: -30px; }
   .s-nav, .s-hero-copy, .s-footer { padding-left: 16px; padding-right: 16px; }
   .s-charity { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
   .s-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
