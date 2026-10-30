@@ -63,15 +63,24 @@ p { margin: 0; }
 .s-product { font: 500 12px/1 var(--ng-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ng-text) !important; }
 .s-note { font-size: 13px; color: var(--ng-text-3) !important; }
 
-/* PC showcase (Site.tsx useFan sets data-fan and --p). Cards start as a tilted stack in the
-   middle and fan out into the row by 60% of the scroll; scrolling up stacks them again.
+/* PC showcase (Site.tsx useFan sets data-fan and --p, 0..1). Cards start as a tilted glass
+   stack with a soft glow behind it, then leave one after another (each over 36% of the
+   scroll, 8% apart, all landed by 60%). As a card lands its text fades in, its colour line
+   draws across and a light sheen passes over it. Scrolling up plays it backwards.
    Without data-fan this is the plain grid above. */
 .s-fan[data-fan] { height: 257vh; }
 .s-fan[data-fan] .s-fan-stage { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
-.s-fan[data-fan] h2 { opacity: clamp(0, calc(var(--p) / 0.34), 1); }
+.s-fan[data-fan] .s-fan-stage::before {
+  content: ''; position: absolute; left: 50%; top: 55%; width: 900px; height: 600px; translate: -50% -50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(124, 201, 232, 0.16), transparent);
+  opacity: calc(1 - clamp(0, calc(var(--p) / 0.6), 1));
+}
+.s-fan[data-fan] h2 { opacity: clamp(0, calc(var(--p) / 0.34), 1); translate: 0 calc((1 - clamp(0, calc(var(--p) / 0.34), 1)) * 24px); }
 .s-fan[data-fan] .s-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); perspective: 1400px; }
 .s-fan[data-fan] .s-card {
-  --r: calc(1 - clamp(0, calc(var(--p) / 0.6), 1));
+  --q: clamp(0, calc((var(--p) - var(--i) * 0.08) / 0.36), 1);
+  --e: calc(var(--q) * var(--q) * (3 - 2 * var(--q)));
+  --r: calc(1 - var(--e));
   background: rgba(16, 18, 24, 0.62);
   backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
@@ -79,6 +88,13 @@ p { margin: 0; }
     translate3d(calc(var(--r) * (1.5 - var(--i)) * (100% + 16px)), calc(var(--r) * var(--sy)), calc(var(--r) * var(--sz)))
     rotateX(calc(var(--r) * 58deg)) rotateZ(calc(var(--r) * var(--sr)));
   will-change: transform;
+}
+.s-fan[data-fan] .s-card > * { opacity: clamp(0, calc((var(--q) - 0.55) / 0.35), 1); }
+.s-fan[data-fan] .s-card::before { transform: scaleX(clamp(0.12, calc((var(--q) - 0.5) / 0.5), 1)); transform-origin: left; }
+.s-fan[data-fan] .s-card::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.09) 50%, transparent 65%);
+  transform: translateX(calc((clamp(0, calc((var(--q) - 0.5) / 0.5), 1) * 2 - 1) * 110%));
 }
 .s-fan[data-fan] .s-card:nth-child(1) { --i: 0; --sy: 0px; --sz: 0px; --sr: -7deg; }
 .s-fan[data-fan] .s-card:nth-child(2) { --i: 1; --sy: -22px; --sz: -60px; --sr: -2deg; }
