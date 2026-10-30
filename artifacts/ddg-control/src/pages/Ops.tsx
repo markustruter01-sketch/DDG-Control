@@ -7,7 +7,10 @@ import {
 import { Header } from '@/components/header';
 import { serverErrorText } from '@/lib/errors';
 
-const STATE_DOT: Record<string, string> = { ok: '#ffffff', stale: 'var(--ng-amber)', off: 'transparent' };
+// Connected = white dot; late = amber ring (a filled amber dot means a problem); off = grey ring.
+const STATE_DOT: Record<string, string> = {
+  ok: 'inset 0 0 0 4px #ffffff', stale: 'inset 0 0 0 1.5px var(--ng-amber)', off: 'inset 0 0 0 1px rgba(255,255,255,0.55)',
+};
 const when = (iso: string | null) => (iso
   ? new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Brisbane', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(iso))
   : '—');
@@ -25,7 +28,7 @@ function Connections() {
               <tr key={f.key}>
                 <td>{f.label}</td>
                 <td><span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                  <span className="dot" style={{ background: STATE_DOT[f.state], boxShadow: f.state === 'off' ? 'inset 0 0 0 1px rgba(255,255,255,0.55)' : undefined }} />
+                  <span className="dot" style={{ boxShadow: STATE_DOT[f.state] }} />
                   {f.state === 'ok' ? 'Connected' : f.state === 'stale' ? 'Late' : 'Not connected'}
                 </span></td>
                 <td className="muted">{f.detail}</td>

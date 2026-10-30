@@ -180,7 +180,7 @@ export function Home() {
   const overview = useGetOverview();
   const days = daysUntil(LAUNCH_DATE);
   const activeBots = [HEIMDALL, ...BOTS].filter((b) => b.active).length;
-  const accentOf = (slug: string | null) => BUSINESSES.find((b) => b.slug === slug)?.accent ?? 'var(--ng-ice)';
+  const accentOf = (slug: string | null) => BUSINESSES.find((b) => b.slug === slug)?.accent ?? 'var(--ng-text-3)';
   return (
     <div className="ng-page photo">
       <div className="ng-wrap">

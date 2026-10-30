@@ -4,7 +4,7 @@
 export const LAUNCH_DATE = '2027-01-01';
 
 // Public facts (also used by the public website) live in public-info.ts.
-import { PUBLIC_SITES, SOCIALS, type Platform } from './public-info';
+import { BUSINESS_ACCENT, PUBLIC_SITES, SOCIALS, type Platform } from './public-info';
 export { SOCIALS, type Platform };
 
 export type Business = {
@@ -19,13 +19,13 @@ export type Business = {
 };
 
 export const BUSINESSES: Business[] = [
-  { slug: 'finance', name: 'DDG Finance', sub: 'Trading platform · paper accounts', accent: 'var(--ng-mint)', icon: 'finance',
+  { slug: 'finance', name: 'DDG Finance', sub: 'Trading platform · paper accounts', accent: BUSINESS_ACCENT.finance, icon: 'finance',
     next: 'Reset all accounts to $100k and start the record on 1 Jan', site: null, admin: null },
-  { slug: 'coffee', name: 'DDG Coffee', sub: 'Cattle Dog Coffee · live shop', accent: 'var(--ng-amber)', icon: 'coffee',
+  { slug: 'coffee', name: 'DDG Coffee', sub: 'Cattle Dog Coffee · live shop', accent: BUSINESS_ACCENT.coffee, icon: 'coffee',
     next: 'RSPCA page after RSPCA QLD approval', site: PUBLIC_SITES.coffee, admin: null },
-  { slug: 'fitness', name: 'DDG Fitness', sub: 'Hypest · AI coaching app', accent: 'var(--ng-volt)', icon: 'fitness',
+  { slug: 'fitness', name: 'DDG Fitness', sub: 'Hypest · AI coaching app', accent: BUSINESS_ACCENT.fitness, icon: 'fitness',
     next: 'Home design B, exercise guides, then publish', site: null, admin: null },
-  { slug: 'creative', name: 'DDG Creative', sub: 'Vlogs · clips · music · novel', accent: 'var(--ng-violet)', icon: 'creative',
+  { slug: 'creative', name: 'DDG Creative', sub: 'Vlogs · clips · music · novel', accent: BUSINESS_ACCENT.creative, icon: 'creative',
     next: 'Threads of Empire release, late Jan 2027', site: PUBLIC_SITES.creative, admin: null },
 ];
 
