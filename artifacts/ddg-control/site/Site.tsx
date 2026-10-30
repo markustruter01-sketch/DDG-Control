@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PublicSummary } from '@workspace/api-client-react';
 import { Link, Route, Switch } from 'wouter';
+import { BusinessIcon } from '@/components/BusinessIcon';
 import { PlatformIcon } from '@/components/PlatformIcon';
+import { SocialFootprint } from '@/components/SocialFootprint';
+import { LAUNCH_DATE } from '@/lib/company';
+import { daysUntil } from '@/lib/money';
 import { SOCIALS, type Platform } from '@/lib/public-info';
 import { CHARITY, COMPANY, CREATIVE, HERO, SITE_BUSINESSES, type SiteBusiness } from './content';
 
@@ -10,7 +14,7 @@ const count = (n: number | null | undefined) => (n === null || n === undefined ?
 const dollars = (cents: number | null | undefined) =>
   cents === null || cents === undefined ? '—' : `$${(cents / 100).toLocaleString('en-AU', { maximumFractionDigits: 0 })}`;
 
-/** Live public numbers (followers, charity). Shows dashes until loaded or if unavailable. */
+/** Live public numbers (social footprint, charity). Shows dashes until loaded or if unavailable. */
 function usePublicSummary(): PublicSummary | null {
   const [data, setData] = useState<PublicSummary | null>(null);
   useEffect(() => {
@@ -23,6 +27,51 @@ function usePublicSummary(): PublicSummary | null {
   }, []);
   return data;
 }
+
+/** PC scroll motion. Sets data-motion and --p (0..1) on the element as the page scrolls;
+ *  site.css does the movement, and scrolling back up plays it backwards. `span` is how many
+ *  pixels of scrolling take --p from 0 to 1. Off on small screens and for reduced motion. */
+function useScrollMotion<T extends HTMLElement>(span: (r: DOMRect) => number) {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const mq = window.matchMedia('(min-width: 1024px) and (min-height: 600px) and (prefers-reduced-motion: no-preference)');
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--p', Math.min(1, Math.max(0, -r.top / Math.max(1, span(r)))).toFixed(4));
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+    const stop = () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      cancelAnimationFrame(frame);
+      frame = 0;
+    };
+    const apply = () => {
+      stop();
+      if (mq.matches) {
+        el.dataset.motion = '';
+        update();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll);
+      } else {
+        delete el.dataset.motion;
+        el.style.removeProperty('--p');
+      }
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => { mq.removeEventListener('change', apply); stop(); };
+  }, []); // span is a fixed module-level function
+  return ref;
+}
+// Hero: --p runs from 0 to 1 while the hero scrolls out of view.
+const heroSpan = (r: DOMRect) => r.height;
+// Cards: --p runs from 0 to 1 while the cards stay pinned on screen.
+const fanSpan = (r: DOMRect) => r.height - window.innerHeight;
 
 function Nav() {
   return (
@@ -37,28 +86,44 @@ function Nav() {
   );
 }
 
-function Socials({ summary, showCounts }: { summary: PublicSummary | null; showCounts: boolean }) {
+/** Footer: icon links to each DDG account. */
+function Socials() {
   return (
     <ul className="s-socials">
-      {SOCIALS.filter((s) => s.href).map((s) => {
-        const followers = summary?.platforms.find((p) => p.platform === s.platform)?.followers;
-        return (
-          <li key={s.platform}>
-            <a href={s.href!} target="_blank" rel="noopener noreferrer" aria-label={`DDG on ${s.name}`}>
-              <PlatformIcon platform={s.platform as Platform} size={showCounts ? 20 : 18} />
-              {showCounts && <span><b>{count(followers)}</b><i>{s.name}</i></span>}
-            </a>
-          </li>
-        );
-      })}
+      {SOCIALS.filter((s) => s.href).map((s) => (
+        <li key={s.platform}>
+          <a href={s.href!} target="_blank" rel="noopener noreferrer" aria-label={`DDG on ${s.name}`}>
+            <PlatformIcon platform={s.platform as Platform} size={18} />
+          </a>
+        </li>
+      ))}
     </ul>
   );
 }
 
-function BusinessCard({ b }: { b: SiteBusiness }) {
+/** The headline number on each business card. Live numbers show "—" until loaded, never a guess. */
+function cardStat(key: SiteBusiness['key'], s: PublicSummary | null): { value: string; label: string } {
+  switch (key) {
+    case 'coffee': return { value: count(s?.coffee_bags_sold), label: 'Bags sold' };
+    case 'finance': {
+      const days = daysUntil(LAUNCH_DATE);
+      return days > 0 ? { value: String(days), label: 'Days to the public record' } : { value: 'Live', label: 'Public track record' };
+    }
+    case 'fitness': return { value: 'Soon', label: 'AI coaches on your phone' };
+    case 'creative': return { value: count(s?.followers_total), label: 'Followers, all platforms' };
+  }
+}
+
+function BusinessCard({ b, summary }: { b: SiteBusiness; summary: PublicSummary | null }) {
+  const stat = cardStat(b.key, summary);
   return (
     <article className="s-card" style={{ ['--accent' as string]: b.accent }}>
-      <div className="s-card-top"><span className="s-dot" /> <span className="s-status">{b.status}</span></div>
+      <BusinessIcon icon={b.key} size={220} strokeWidth={0.45} className="s-card-art" />
+      <div className="s-card-top">
+        <span className="s-ico"><BusinessIcon icon={b.key} size={22} strokeWidth={1.6} /></span>
+        <span className="s-status"><span className="s-dot" />{b.status}</span>
+      </div>
+      <p className="s-stat"><b>{stat.value}</b><span>{stat.label}</span></p>
       <h3>{b.name}</h3>
       <p className="s-product">{b.product}</p>
       <p>{b.line}</p>
@@ -72,9 +137,11 @@ function BusinessCard({ b }: { b: SiteBusiness }) {
 
 function Home() {
   const summary = usePublicSummary();
+  const hero = useScrollMotion<HTMLElement>(heroSpan);
+  const fan = useScrollMotion<HTMLElement>(fanSpan);
   return (
     <>
-      <section className="s-hero">
+      <section ref={hero} className="s-hero">
         <Nav />
         <div className="s-hero-copy">
           <p className="s-eyebrow">{HERO.eyebrow}</p>
@@ -85,17 +152,19 @@ function Home() {
             <Link className="s-btn" href="/creative">Watch us build</Link>
           </div>
         </div>
-        <div className="s-hero-social glass-photo">
-          <span className="s-label">Followers</span>
-          <b className="s-big">{count(summary?.followers_total)}</b>
-          <Socials summary={summary} showCounts />
-        </div>
+        <section className="s-hero-social glass-photo" aria-label="Social footprint, all platforms">
+          <SocialFootprint
+            totals={summary && { followers: summary.followers_total, views_30d: summary.views_30d_total, likes_30d: summary.likes_30d_total }}
+            platforms={summary?.platforms} links />
+        </section>
       </section>
 
       <main className="s-main">
-        <section id="businesses" aria-labelledby="b-title">
-          <h2 id="b-title">Four businesses</h2>
-          <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} />)}</div>
+        <section id="businesses" ref={fan} className="s-fan" aria-labelledby="b-title">
+          <div className="s-fan-stage">
+            <h2 id="b-title">Four businesses</h2>
+            <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} summary={summary} />)}</div>
+          </div>
         </section>
 
         <section id="charity" className="s-charity" aria-labelledby="c-title">
@@ -141,7 +210,7 @@ function Footer() {
   return (
     <footer className="s-footer">
       <div><b>{COMPANY.legalName}</b><span>ABN {COMPANY.abn} · {COMPANY.place}</span></div>
-      <Socials summary={null} showCounts={false} />
+      <Socials />
     </footer>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Link } from 'wouter';
 import {
   getListAsksQueryKey, useCompleteAsk, useGetOverview, useListAsks, type OverviewResponse,
@@ -6,18 +6,13 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/header';
 import { BotAvatar } from '@/components/BotAvatar';
+import { BusinessIcon } from '@/components/BusinessIcon';
 import { PlatformIcon } from '@/components/PlatformIcon';
+import { SocialFootprint } from '@/components/SocialFootprint';
 import {
   BOTS, BUSINESSES, CLAUDE_HOME, CREATIVE_PROJECTS, FINANCE_BOT_NAMES, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
 } from '@/lib/company';
 import { aud, count, daysUntil } from '@/lib/money';
-
-const ICON_PATHS: Record<Business['icon'], ReactNode> = {
-  finance: <path d="M5 20v-6M10 20V9M15 20v-9M20 20V4" />,
-  coffee: <><path d="M4 9h13v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z" /><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17" /><path d="M8 3v2M12 3v2" /></>,
-  fitness: <path d="M3 10v4M6 7v10M18 7v10M21 10v4M6 12h12" />,
-  creative: <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M10 9.5v5l4.5-2.5z" /></>,
-};
 
 function Term({ label, value, sign }: { label: string; value: string; sign?: string }) {
   return (
@@ -28,39 +23,10 @@ function Term({ label, value, sign }: { label: string; value: string; sign?: str
   );
 }
 
-type Metric = 'followers' | 'views_30d' | 'likes_30d';
-const METRICS: { key: Metric; label: string }[] = [
-  { key: 'followers', label: 'Followers' },
-  { key: 'views_30d', label: 'Views · 30 days' },
-  { key: 'likes_30d', label: 'Likes · 30 days' },
-];
-
 function SocialPanel({ social }: { social: OverviewResponse['social'] | undefined }) {
-  const [metric, setMetric] = useState<Metric>('followers');
-  const byPlatform = new Map(social?.platforms.map((p) => [p.platform, p]));
   return (
     <section className="glass panel" aria-label="Social footprint, all platforms">
-      <div className="equation" style={{ alignItems: 'center' }}>
-        <span className="term" style={{ minWidth: 150 }}>
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Social footprint</h2>
-          <span className="label">{METRICS.find((m) => m.key === metric)!.label}</span>
-        </span>
-        <span className="num" style={{ fontSize: 38, fontWeight: 400 }}>{count(social?.[metric])}</span>
-        <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--ng-edge)' }} aria-hidden="true" />
-        {SOCIALS.map((s) => (
-          <span key={s.platform} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minWidth: 84 }}>
-            <span className="muted" style={{ display: 'flex' }}><PlatformIcon platform={s.platform} size={18} /></span>
-            <span style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: 'tabular-nums' }}>{count(byPlatform.get(s.platform)?.[metric])}</span>
-          </span>
-        ))}
-        <div className="nav" role="tablist" aria-label="Social measure" style={{ padding: 0, marginLeft: 'auto' }}>
-          {METRICS.map((m) => (
-            <button key={m.key} type="button" role="tab" aria-selected={metric === m.key} className="btn"
-              style={{ border: 0, minHeight: 40, background: metric === m.key ? 'rgba(255,255,255,0.10)' : 'transparent' }}
-              onClick={() => setMetric(m.key)}>{m.label.split(' ·')[0]}</button>
-          ))}
-        </div>
-      </div>
+      <SocialFootprint totals={social} platforms={social?.platforms} />
     </section>
   );
 }
@@ -152,7 +118,7 @@ function BusinessCard({ b, data }: { b: Business; data: Businesses }) {
     <article className="glass biz">
       <div className="biz-top">
         <span className="biz-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICON_PATHS[b.icon]}</svg>
+          <BusinessIcon icon={b.icon} />
         </span>
         <span className="biz-name"><b>{b.name}</b><span>{b.sub}</span></span>
         <span className="dot" style={{ background: b.accent }} aria-hidden="true" />
@@ -178,13 +144,14 @@ function ExternalButton({ href, label, fill = false }: { href: string | null; la
 
 function NeedsYou({ accentOf }: { accentOf: (slug: string | null) => string }) {
   const client = useQueryClient();
-  const asks = useListAsks();
+  // Re-checks every minute (and when you come back to the tab), so bot and Claude items appear on their own.
+  const asks = useListAsks({ query: { queryKey: getListAsksQueryKey(), refetchInterval: 60_000 } });
   const done = useCompleteAsk({ mutation: { onSuccess: () => client.invalidateQueries({ queryKey: getListAsksQueryKey() }) } });
   const items = asks.data ?? [];
   return (
-    <section className="glass panel grow-1" aria-label="Needs you">
+    <section className="glass panel grow-1 needs" aria-label="Needs you">
       <div className="panel-head"><h2>Needs you</h2><Link href="/ops" className="label">{items.length} open · Add ›</Link></div>
-      <ul className="list">
+      <ul className="list needs-list" tabIndex={0} aria-label="Open items">
         {items.map((a) => (
           <li key={a.id}>
             <span className="dot" style={{ width: 6, height: 6, background: accentOf(a.business) }} aria-hidden="true" />
@@ -208,7 +175,7 @@ export function Home() {
   const overview = useGetOverview();
   const days = daysUntil(LAUNCH_DATE);
   const activeBots = [HEIMDALL, ...BOTS].filter((b) => b.active).length;
-  const accentOf = (slug: string | null) => BUSINESSES.find((b) => b.slug === slug)?.accent ?? 'var(--ng-ice)';
+  const accentOf = (slug: string | null) => BUSINESSES.find((b) => b.slug === slug)?.accent ?? 'var(--ng-text-3)';
   return (
     <div className="ng-page photo">
       <div className="ng-wrap">

@@ -58,6 +58,14 @@ button, input, select { font: inherit; color: inherit; }
 .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
 .grow-1 { flex: 1 1 360px; } .grow-15 { flex: 1.5 1 460px; } .grow-17 { flex: 1.7 1 620px; } .grow-09 { flex: 0.9 1 300px; }
 
+/* Needs you: a long list scrolls inside the panel instead of stretching the page.
+   On wide screens the panel takes its height from Team / Launch beside it. */
+.needs-list { flex: 1 1 auto; min-height: 0; max-height: 420px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.25) transparent; }
+@media (min-width: 1100px) {
+  .needs { contain: size; min-height: 280px; }
+  .needs-list { max-height: none; }
+}
+
 /* Money equation */
 .equation { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 18px; }
 .term { display: flex; flex-direction: column; gap: 4px; }
@@ -145,7 +153,7 @@ td.money { font-family: var(--ng-mono); text-align: right; }
 .stats .strong { grid-column: 1 / -1; padding-top: 6px; border-top: 1px solid var(--ng-hairline); }
 .stats .strong dd { font-size: 22px; font-weight: 400; }
 .avatar-img { flex: none; object-fit: contain; }
-.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 10; margin: 0; padding: 10px 16px; color: var(--ng-text); font-size: 13.5px; border-color: rgba(255,107,107,0.5); background: rgba(16,18,24,0.85); }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 10; margin: 0; padding: 10px 16px; color: var(--ng-text); font-size: 13.5px; border-color: color-mix(in srgb, var(--ng-problem) 50%, transparent); background: rgba(16,18,24,0.85); }
 
 /* Bot idle moves: small and occasional (BotAvatar picks one at random). */
 .avatar-img { transform-origin: 50% 90%; }
