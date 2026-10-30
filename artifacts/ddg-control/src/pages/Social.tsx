@@ -45,7 +45,7 @@ export function Social() {
 
   const byPlatform = new Map(overview.data?.social.platforms.map((p) => [p.platform, p]));
   return (
-    <div className="ng-page">
+    <div className="ng-page dusk">
       <div className="ng-wrap">
         <Header />
         <h1 style={{ margin: 0, fontSize: 32, fontWeight: 400 }}>Social</h1>

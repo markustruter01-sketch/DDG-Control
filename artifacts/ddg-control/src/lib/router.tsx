@@ -8,7 +8,7 @@ import { Ops } from '@/pages/Ops';
 
 function Problem({ title }: { title: string }) {
   return (
-    <div className="ng-page"><div className="ng-wrap"><Header />
+    <div className="ng-page dusk"><div className="ng-wrap"><Header />
       <h1 style={{ margin: 0, fontWeight: 400 }}>{title}</h1>
       <p><Link href="/" className="btn fill">Back to home</Link></p>
     </div></div>
