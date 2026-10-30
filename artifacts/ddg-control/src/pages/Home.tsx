@@ -144,13 +144,14 @@ function ExternalButton({ href, label, fill = false }: { href: string | null; la
 
 function NeedsYou({ accentOf }: { accentOf: (slug: string | null) => string }) {
   const client = useQueryClient();
-  const asks = useListAsks();
+  // Re-checks every minute (and when you come back to the tab), so bot and Claude items appear on their own.
+  const asks = useListAsks({ query: { queryKey: getListAsksQueryKey(), refetchInterval: 60_000 } });
   const done = useCompleteAsk({ mutation: { onSuccess: () => client.invalidateQueries({ queryKey: getListAsksQueryKey() }) } });
   const items = asks.data ?? [];
   return (
-    <section className="glass panel grow-1" aria-label="Needs you">
+    <section className="glass panel grow-1 needs" aria-label="Needs you">
       <div className="panel-head"><h2>Needs you</h2><Link href="/ops" className="label">{items.length} open · Add ›</Link></div>
-      <ul className="list">
+      <ul className="list needs-list" tabIndex={0} aria-label="Open items">
         {items.map((a) => (
           <li key={a.id}>
             <span className="dot" style={{ width: 6, height: 6, background: accentOf(a.business) }} aria-hidden="true" />
