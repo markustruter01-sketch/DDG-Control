@@ -63,6 +63,28 @@ p { margin: 0; }
 .s-product { font: 500 12px/1 var(--ng-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ng-text) !important; }
 .s-note { font-size: 13px; color: var(--ng-text-3) !important; }
 
+/* PC showcase (Site.tsx useFan sets data-fan and --p). Cards start as a tilted stack in the
+   middle and fan out into the row by 60% of the scroll; scrolling up stacks them again.
+   Without data-fan this is the plain grid above. */
+.s-fan[data-fan] { height: 257vh; }
+.s-fan[data-fan] .s-fan-stage { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+.s-fan[data-fan] h2 { opacity: clamp(0, calc(var(--p) / 0.34), 1); }
+.s-fan[data-fan] .s-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); perspective: 1400px; }
+.s-fan[data-fan] .s-card {
+  --r: calc(1 - clamp(0, calc(var(--p) / 0.6), 1));
+  background: rgba(16, 18, 24, 0.62);
+  backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  transform:
+    translate3d(calc(var(--r) * (1.5 - var(--i)) * (100% + 16px)), calc(var(--r) * var(--sy)), calc(var(--r) * var(--sz)))
+    rotateX(calc(var(--r) * 58deg)) rotateZ(calc(var(--r) * var(--sr)));
+  will-change: transform;
+}
+.s-fan[data-fan] .s-card:nth-child(1) { --i: 0; --sy: 0px; --sz: 0px; --sr: -7deg; }
+.s-fan[data-fan] .s-card:nth-child(2) { --i: 1; --sy: -22px; --sz: -60px; --sr: -2deg; }
+.s-fan[data-fan] .s-card:nth-child(3) { --i: 2; --sy: -44px; --sz: -120px; --sr: 3deg; }
+.s-fan[data-fan] .s-card:nth-child(4) { --i: 3; --sy: -66px; --sz: -180px; --sr: 8deg; }
+
 /* Charity */
 .s-charity { display: grid; grid-template-columns: 1.4fr 1fr; gap: 32px; align-items: center; padding: 32px; border-radius: 22px; background: var(--ng-glass-plain); border: 1px solid var(--ng-edge); }
 .s-charity h2 { margin-bottom: 12px; }

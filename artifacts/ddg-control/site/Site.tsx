@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PublicSummary } from '@workspace/api-client-react';
 import { Link, Route, Switch } from 'wouter';
 import { PlatformIcon } from '@/components/PlatformIcon';
@@ -23,6 +23,48 @@ function usePublicSummary(): PublicSummary | null {
     return () => { live = false; };
   }, []);
   return data;
+}
+
+/** PC showcase: the business cards start as a tilted glass stack and fan out into a row
+ *  as you scroll; scrolling back up stacks them again. Sets data-fan and --p (0..1 scroll
+ *  progress) on the section; site.css does the rest. Off on small screens and for
+ *  reduced motion, where the cards are a plain grid. */
+function useFan<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const mq = window.matchMedia('(min-width: 1024px) and (min-height: 600px) and (prefers-reduced-motion: no-preference)');
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--p', Math.min(1, Math.max(0, -r.top / (r.height - window.innerHeight))).toFixed(4));
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+    const stop = () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      cancelAnimationFrame(frame);
+      frame = 0;
+    };
+    const apply = () => {
+      stop();
+      if (mq.matches) {
+        el.dataset.fan = '';
+        update();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll);
+      } else {
+        delete el.dataset.fan;
+        el.style.removeProperty('--p');
+      }
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => { mq.removeEventListener('change', apply); stop(); };
+  }, []);
+  return ref;
 }
 
 function Nav() {
@@ -70,6 +112,7 @@ function BusinessCard({ b }: { b: SiteBusiness }) {
 
 function Home() {
   const summary = usePublicSummary();
+  const fan = useFan<HTMLElement>();
   return (
     <>
       <section className="s-hero">
@@ -91,9 +134,11 @@ function Home() {
       </section>
 
       <main className="s-main">
-        <section id="businesses" aria-labelledby="b-title">
-          <h2 id="b-title">Four businesses</h2>
-          <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} />)}</div>
+        <section id="businesses" ref={fan} className="s-fan" aria-labelledby="b-title">
+          <div className="s-fan-stage">
+            <h2 id="b-title">Four businesses</h2>
+            <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} />)}</div>
+          </div>
         </section>
 
         <section id="charity" className="s-charity" aria-labelledby="c-title">
