@@ -117,7 +117,7 @@ button, input, select { font: inherit; color: inherit; }
 
 /* Forms + tables (graphite pages) */
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ng-text-2); flex: 1 1 160px; }
-.field input, .field select { min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); color: var(--ng-text); }
+.field input, .field select, .field textarea { min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); color: var(--ng-text); }
 .form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
 .table-scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
@@ -169,3 +169,9 @@ td.money { font-family: var(--ng-mono); text-align: right; }
 @keyframes idle-wiggle { 0%, 100% { transform: none; } 20% { transform: rotate(-5deg); } 40% { transform: rotate(5deg); } 60% { transform: rotate(-3deg); } 80% { transform: rotate(2deg); } }
 @media (prefers-reduced-motion: reduce) { .avatar-img { animation: none !important; } }
 .bot.paused { opacity: 0.45; }
+
+/* Clients (DDG Build enquiries) */
+.field textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; min-height: 0; resize: vertical; font: inherit; }
+.clients > li.client { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--ng-hairline); }
+.client-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.client-facts { display: flex; flex-direction: column; gap: 2px; }

@@ -7,7 +7,8 @@ import { SocialFootprint } from '@/components/SocialFootprint';
 import { LAUNCH_DATE } from '@/lib/company';
 import { daysUntil } from '@/lib/money';
 import { SOCIALS, type Platform } from '@/lib/public-info';
-import { CHARITY, COMPANY, CREATIVE, HERO, SITE_BUSINESSES, type SiteBusiness } from './content';
+import { Build } from './Build';
+import { CHARITY, COMPANY, CONTROL_CASE, CREATIVE, HERO, SITE_BUSINESSES, type SiteBusiness } from './content';
 
 const LOGO = '/ddg-professional-white-transparent.png';
 const count = (n: number | null | undefined) => (n === null || n === undefined ? '—' : n.toLocaleString('en-AU'));
@@ -80,6 +81,7 @@ function Nav() {
       <nav aria-label="Site">
         <a href="/#businesses">Businesses</a>
         <Link href="/creative">Creative</Link>
+        <a href="/#build">Build</a>
         <a href="/#charity">Charity</a>
       </nav>
     </header>
@@ -127,6 +129,7 @@ function BusinessCard({ b, summary }: { b: SiteBusiness; summary: PublicSummary 
       <h3>{b.name}</h3>
       <p className="s-product">{b.product}</p>
       <p>{b.line}</p>
+      <ul className="s-built" aria-label="What we built">{b.built.map((x) => <li key={x}>{x}</li>)}</ul>
       {b.note && <p className="s-note">{b.note}</p>}
       {b.link && (b.link.external
         ? <a className="s-btn" href={b.link.href} target="_blank" rel="noopener noreferrer">{b.link.label} ↗</a>
@@ -166,6 +169,17 @@ function Home() {
             <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} summary={summary} />)}</div>
           </div>
         </section>
+
+        <section className="s-case glass-plain" aria-labelledby="case-title">
+          <div>
+            <p className="s-eyebrow">How it all connects</p>
+            <h2 id="case-title">{CONTROL_CASE.title}</h2>
+            <p>{CONTROL_CASE.line}</p>
+          </div>
+          <ul className="s-built">{CONTROL_CASE.built.map((x) => <li key={x}>{x}</li>)}</ul>
+        </section>
+
+        <Build summary={summary} />
 
         <section id="charity" className="s-charity" aria-labelledby="c-title">
           <div>

@@ -668,6 +668,138 @@ export interface PublicSummary {
   coffee_bags_sold: number | null;
   /** @nullable */
   coffee_charity_cents: number | null;
+  /** DDG Build enquiries are open to the public */
+  services_open: boolean;
+  /** Date (Brisbane) DDG Build opens, YYYY-MM-DD */
+  services_open_on: string;
+}
+
+export type EnquiryInputKind = typeof EnquiryInputKind[keyof typeof EnquiryInputKind];
+
+
+export const EnquiryInputKind = {
+  website: 'website',
+  store: 'store',
+  platform: 'platform',
+  app: 'app',
+  ai: 'ai',
+  unsure: 'unsure',
+} as const;
+
+export type EnquiryInputHasNow = typeof EnquiryInputHasNow[keyof typeof EnquiryInputHasNow];
+
+
+export const EnquiryInputHasNow = {
+  nothing: 'nothing',
+  brand: 'brand',
+  existing: 'existing',
+} as const;
+
+export type EnquiryInputTiming = typeof EnquiryInputTiming[keyof typeof EnquiryInputTiming];
+
+
+export const EnquiryInputTiming = {
+  asap: 'asap',
+  soon: 'soon',
+  later: 'later',
+  exploring: 'exploring',
+} as const;
+
+export type EnquiryInputBudget = typeof EnquiryInputBudget[keyof typeof EnquiryInputBudget];
+
+
+export const EnquiryInputBudget = {
+  'under-5k': 'under-5k',
+  '5-15k': '5-15k',
+  '15-40k': '15-40k',
+  'over-40k': 'over-40k',
+  unsure: 'unsure',
+} as const;
+
+export interface EnquiryInput {
+  kind: EnquiryInputKind;
+  /**
+     * @maxItems 12
+     * @items.minLength 1
+     * @items.maxLength 40
+     */
+  features: string[];
+  has_now: EnquiryInputHasNow;
+  timing: EnquiryInputTiming;
+  budget: EnquiryInputBudget;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /** @maxLength 160 */
+  email: string;
+  /** @maxLength 300 */
+  about?: string;
+  /** @maxLength 60 */
+  ballpark?: string;
+  /**
+     * Left empty by people; bots that fill every field are refused
+     * @maxLength 0
+     */
+  fax?: string;
+}
+
+export interface EnquiryReceived {
+  received: boolean;
+  test: boolean;
+}
+
+export type EnquiryUpdateStage = typeof EnquiryUpdateStage[keyof typeof EnquiryUpdateStage];
+
+
+export const EnquiryUpdateStage = {
+  new: 'new',
+  call: 'call',
+  quote: 'quote',
+  won: 'won',
+  lost: 'lost',
+} as const;
+
+export interface EnquiryUpdate {
+  stage?: EnquiryUpdateStage;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export type EnquiryStage = typeof EnquiryStage[keyof typeof EnquiryStage];
+
+
+export const EnquiryStage = {
+  new: 'new',
+  call: 'call',
+  quote: 'quote',
+  won: 'won',
+  lost: 'lost',
+} as const;
+
+export interface Enquiry {
+  id: number;
+  kind: string;
+  features: string[];
+  has_now: string;
+  timing: string;
+  budget: string;
+  name: string;
+  email: string;
+  /** @nullable */
+  about: string | null;
+  /** @nullable */
+  ballpark: string | null;
+  stage: EnquiryStage;
+  /** @nullable */
+  notes: string | null;
+  test: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface MessageInput {

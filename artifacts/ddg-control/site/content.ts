@@ -24,20 +24,25 @@ export type SiteBusiness = {
   accent: string;
   link: { label: string; href: string; external: boolean } | null;
   note?: string;
+  built: string[]; // what we built: the portfolio facts
 };
 
 export const SITE_BUSINESSES: SiteBusiness[] = [
   { key: 'coffee', name: 'DDG Coffee', product: 'Cattle Dog Coffee', accent: BUSINESS_ACCENT.coffee, status: 'Open now',
     line: 'Coffee beans delivered to your door. $1 from every bag goes to animal welfare.',
+    built: ['Online shop with Stripe checkout', 'Orders and charity tracked live', 'Sales feed into our command centre'],
     link: { label: 'Shop coffee', href: site('coffee'), external: true } },
   { key: 'finance', name: 'DDG Finance', product: 'Trading platform', accent: BUSINESS_ACCENT.finance, status: 'From 1 Jan 2027',
     line: 'Our own algorithmic trading platform. Its public track record starts on 1 January 2027.',
+    built: ['4 trading bots on 2 brokers, checked every hour', 'Protective stops and an hourly check against the broker', 'Pre-registered research tests and an AI council'],
     link: null, note: 'Paper trading. Not financial advice.' },
   { key: 'fitness', name: 'DDG Fitness', product: 'Hypest', accent: BUSINESS_ACCENT.fitness, status: 'In development',
     line: 'Fitness plans and coaching from specialist AI coaches, on your phone.',
+    built: ['AI coaches for 6 training styles', 'Plans built from 86 exercises', 'Subscriptions and a health check'],
     link: null },
   { key: 'creative', name: 'DDG Creative', product: 'Studio', accent: BUSINESS_ACCENT.creative, status: 'Posting now',
     line: 'Vlogs, gaming clips, music and a novel.',
+    built: ['Vlogs and a short every day', 'Threads of Empire, a novel, late Jan 2027', 'DDG Music, an AI music channel (coming)'],
     link: { label: 'See projects', href: '/creative', external: false } },
 ];
 
@@ -56,3 +61,55 @@ export const CREATIVE: CreativeProject[] = [
   { name: 'DDG Music', line: 'An AI music channel.', status: 'Coming soon', href: null },
   { name: 'Threads of Empire', line: 'Our first novel. Releasing late January 2027 on every major free platform, including Audible.', status: 'Late Jan 2027', href: null },
 ];
+
+// ── DDG Build: we build platforms for other businesses (opens 1 Jan 2027) ──────────────
+// The opening date comes from the server (/api/public/summary), not from here.
+// Prices: about 25% below 2026 Australian guide ranges (Markus 31 Oct). No GST: DDG is not GST-registered.
+
+export const CONTROL_CASE = {
+  title: 'Behind the scenes: DDG Control',
+  line: 'Our private command centre. Every business, every number and every AI employee on one screen.',
+  built: ['Two-step login, owner only', 'Nine AI employees report through a checked, undoable API', 'Live numbers from the shop, the trading platform and socials'],
+};
+
+export type ServiceKey = 'website' | 'store' | 'platform' | 'app' | 'ai';
+export type Service = {
+  key: ServiceKey; name: string; line: string; from: number; to: number; proof: string; features: string[];
+};
+export const SERVICES: Service[] = [
+  { key: 'website', name: 'Business website', line: 'Fast, good-looking, on your own domain and easy to update.', from: 1500, to: 4500,
+    proof: 'Like this website', features: ['Contact form', 'Bookings', 'Blog or news', 'Logo and brand help', 'Copywriting', 'Two languages'] },
+  { key: 'store', name: 'Online store', line: 'Sell online with card payments, stock and shipping.', from: 7500, to: 22500,
+    proof: 'Like Cattle Dog Coffee', features: ['Card payments (Stripe)', 'Subscriptions', 'Stock tracking', 'Shipping rates', 'Customer accounts', 'Discount codes', 'Admin dashboard'] },
+  { key: 'platform', name: 'Web platform', line: 'Logins, payments, dashboards and tools your team or customers use every day.', from: 11250, to: 45000,
+    proof: 'Like DDG Control and DDG Finance', features: ['User logins', 'Payments or subscriptions', 'Admin dashboard', 'Reports and charts', 'Connect to other apps', 'Roles and permissions', 'AI features'] },
+  { key: 'app', name: 'Phone app', line: 'A first version of your app for iPhone and Android.', from: 11250, to: 30000,
+    proof: 'Like Hypest (in development)', features: ['iPhone and Android', 'User logins', 'In-app payments', 'Reminders and notifications', 'AI features'] },
+  { key: 'ai', name: 'AI assistant or automation', line: 'An AI that answers, books, reads documents or runs a task for you.', from: 3750, to: 26250,
+    proof: 'Like our nine AI employees', features: ['Answers customers', 'Books appointments', 'Reads documents', 'Connects to your apps (Xero, CRM…)', 'Writes reports', 'Runs on a schedule'] },
+];
+export const CARE = 'Care plans from $40 a month for a website and $225 a month for an app. Extra work $110–$185 an hour.';
+
+export const BUILD_STEPS = [
+  { title: 'Tell us', line: 'Five quick questions and you see a ballpark price straight away.' },
+  { title: 'Free call', line: 'We talk it through and agree exactly what gets built.' },
+  { title: 'Fixed quote', line: 'One price for the agreed work, paid in stages.' },
+  { title: 'Build and launch', line: 'You see progress every week, then we launch and look after it.' },
+];
+
+export const BUILD_FORM = {
+  kinds: [...SERVICES.map((s) => ({ key: s.key as ServiceKey | 'unsure', label: s.name })), { key: 'unsure' as const, label: 'Not sure yet' }],
+  hasNow: [{ key: 'nothing', label: 'Nothing yet' }, { key: 'brand', label: 'A brand or design' }, { key: 'existing', label: 'An old site or app to replace' }],
+  timing: [{ key: 'asap', label: 'As soon as possible' }, { key: 'soon', label: 'In 1–3 months' }, { key: 'later', label: 'Later' }, { key: 'exploring', label: 'Just exploring' }],
+  budget: [{ key: 'under-5k', label: 'Under $5k' }, { key: '5-15k', label: '$5k–$15k' }, { key: '15-40k', label: '$15k–$40k' }, { key: 'over-40k', label: 'Over $40k' }, { key: 'unsure', label: 'Not sure' }],
+} as const;
+
+const aud = (n: number) => `$${(Math.round(n / 250) * 250).toLocaleString('en-AU')}`;
+/** Ballpark from the price table: no extras ticked = bottom half of the range, all ticked = top half. */
+export function ballpark(kind: ServiceKey | 'unsure', ticked: number): string | null {
+  const s = SERVICES.find((x) => x.key === kind);
+  if (!s) return null;
+  const share = s.features.length ? Math.min(1, ticked / s.features.length) : 0;
+  const span = s.to - s.from;
+  return `${aud(s.from + span * 0.5 * share)}–${aud(s.from + span * (0.5 + 0.5 * share))}`;
+}

@@ -5,6 +5,7 @@ import { Home } from '@/pages/Home';
 import { Money } from '@/pages/Money';
 import { Social } from '@/pages/Social';
 import { Ops } from '@/pages/Ops';
+import { Clients } from '@/pages/Clients';
 
 function Problem({ title }: { title: string }) {
   return (
@@ -23,6 +24,7 @@ export function Router() {
         <Route path="/money" component={Money} />
         <Route path="/social" component={Social} />
         <Route path="/ops" component={Ops} />
+        <Route path="/clients" component={Clients} />
         <Route component={() => <Problem title="That page doesn't exist." />} />
       </Switch>
     </ErrorBoundary>

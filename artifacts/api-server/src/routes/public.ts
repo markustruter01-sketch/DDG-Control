@@ -1,8 +1,10 @@
 import { GetPublicSummaryResponse } from '@workspace/api-zod';
 import { Router, type IRouter } from 'express';
 import { computeOverview } from './overview';
+import { SERVICES_OPEN_ON, servicesOpen } from './build';
 
-// The only numbers the public DDG website can see: social followers, views and likes, and the charity total.
+// The only numbers the public DDG website can see: social followers, views and likes, the charity total,
+// and whether DDG Build enquiries are open.
 // No login. Cached so visitors never load the shop or database directly.
 const router: IRouter = Router();
 const FIVE_MINUTES = 5 * 60_000;
@@ -23,6 +25,8 @@ router.get('/public/summary', async (_req, res) => {
         })),
         coffee_bags_sold: o.businesses.coffee?.bags_sold ?? null,
         coffee_charity_cents: o.businesses.coffee?.charity_cents ?? null,
+        services_open: servicesOpen(),
+        services_open_on: SERVICES_OPEN_ON,
       }),
     };
   }
