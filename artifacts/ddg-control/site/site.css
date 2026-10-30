@@ -29,8 +29,12 @@ p { margin: 0; }
   background-size: cover; background-position: center 35%;
   transform-origin: 50% 40%;
   transform: scale(calc(1 + var(--p, 0) * 0.14));
-  filter: brightness(calc(1 - var(--p, 0) * 0.55)) blur(calc(var(--p, 0) * 5px));
+  will-change: transform;
 }
+/* Dims the photo as it scrolls away. Opacity and transform only, so the browser
+   never repaints the big photo while scrolling (filters on it caused the lag). */
+.s-hero::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: #07080b; opacity: calc(var(--p, 0) * 0.55); will-change: opacity; }
+.s-hero[data-motion] .s-hero-social { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(16, 18, 24, 0.8); }
 .s-hero[data-motion] .s-hero-copy { translate: 0 calc(var(--p) * -120px); opacity: calc(1 - var(--p) * 1.6); }
 .s-hero[data-motion] .s-hero-social { translate: 0 calc(var(--p) * -50px); opacity: calc(1 - var(--p) * 1.2); }
 .s-hero-copy { max-width: 1200px; width: 100%; margin: auto auto 0; padding: 48px 24px 28px; display: flex; flex-direction: column; gap: 18px; }
@@ -81,11 +85,11 @@ p { margin: 0; }
 .s-product { font: 500 12px/1 var(--ng-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ng-text) !important; }
 .s-note { font-size: 13px; color: var(--ng-text-3) !important; }
 
-/* PC showcase (Site.tsx useScrollMotion sets data-motion and --p, 0..1). Cards start as a tilted glass
+/* PC showcase (Site.tsx useScrollMotion sets data-motion and --p, 0..1). Cards start as a tilted
    stack with a soft glow behind it, then leave one after another (each over 36% of the
-   scroll, 8% apart, all landed by 60%). As a card lands its text fades in, its colour line
-   draws across and a light sheen passes over it. Scrolling up plays it backwards.
-   Without data-motion this is the plain grid above. */
+   scroll, 8% apart, all landed by 60%). As a card lands its text fades in and its colour
+   glow brightens. Scrolling up plays it backwards. Only transform and opacity change while
+   scrolling (no blur or filters), so it stays smooth. Without data-motion: the plain grid. */
 .s-fan[data-motion] { height: 257vh; }
 .s-fan[data-motion] .s-fan-stage { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
 .s-fan[data-motion] .s-fan-stage::before {
@@ -99,9 +103,7 @@ p { margin: 0; }
   --q: clamp(0, calc((var(--p) - var(--i) * 0.08) / 0.36), 1);
   --e: calc(var(--q) * var(--q) * (3 - 2 * var(--q)));
   --r: calc(1 - var(--e));
-  background: rgba(16, 18, 24, 0.62);
-  backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
   transform:
     translate3d(calc(var(--r) * (1.5 - var(--i)) * (100% + 16px)), calc(var(--r) * var(--sy)), calc(var(--r) * var(--sz)))
     rotateX(calc(var(--r) * 58deg)) rotateZ(calc(var(--r) * var(--sr)));
@@ -109,11 +111,6 @@ p { margin: 0; }
 }
 .s-fan[data-motion] .s-card > * { opacity: clamp(0, calc((var(--q) - 0.55) / 0.35), 1); }
 .s-fan[data-motion] .s-card::before { opacity: clamp(0.25, calc((var(--q) - 0.3) / 0.7), 1); }
-.s-fan[data-motion] .s-card::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.09) 50%, transparent 65%);
-  transform: translateX(calc((clamp(0, calc((var(--q) - 0.5) / 0.5), 1) * 2 - 1) * 110%));
-}
 .s-fan[data-motion] .s-card:nth-child(1) { --i: 0; --sy: 0px; --sz: 0px; --sr: -7deg; }
 .s-fan[data-motion] .s-card:nth-child(2) { --i: 1; --sy: -22px; --sz: -60px; --sr: -2deg; }
 .s-fan[data-motion] .s-card:nth-child(3) { --i: 2; --sy: -44px; --sz: -120px; --sr: 3deg; }
