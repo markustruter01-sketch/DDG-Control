@@ -20,4 +20,8 @@ export interface PublicSummary {
   coffee_bags_sold: number | null;
   /** @nullable */
   coffee_charity_cents: number | null;
+  /** DDG Build enquiries are open to the public */
+  services_open: boolean;
+  /** Date (Brisbane) DDG Build opens, YYYY-MM-DD */
+  services_open_on: string;
 }

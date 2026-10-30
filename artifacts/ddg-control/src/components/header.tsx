@@ -11,6 +11,7 @@ const PAGES = [
   { href: '/money', label: 'Money' },
   { href: '/social', label: 'Social' },
   { href: '/ops', label: 'Ops' },
+  { href: '/clients', label: 'Clients' },
 ];
 
 function useBrisbaneClock(): string {

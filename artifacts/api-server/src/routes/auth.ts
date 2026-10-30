@@ -70,7 +70,7 @@ function getAuthConfiguration(): AuthConfiguration | null {
   return { adminEmail, adminPassword, sessionSecret, totpSecret };
 }
 
-function getClientAddress(req: Request): string {
+export function getClientAddress(req: Request): string {
   const firstForwardedAddress = req
     .get("x-forwarded-for")
     ?.split(",")[0]
@@ -312,6 +312,12 @@ export const requireAuth: RequestHandler = (req, res, next): void => {
 
   next();
 };
+
+/** True when the request carries a valid owner login. Lets Markus try public forms before they open. */
+export function isOwnerRequest(req: Request): boolean {
+  const configuration = getAuthConfiguration();
+  return Boolean(configuration && hasValidSession(req, configuration.sessionSecret));
+}
 
 export const requireRealOwnerSession: RequestHandler = (req, res, next): void => {
   // Dev bypass never counts as the owner: changes always need a real login (the app shows the login screen on 401).

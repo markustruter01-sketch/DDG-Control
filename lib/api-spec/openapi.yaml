@@ -1297,6 +1297,86 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublicSummary"
+  /public/enquiry:
+    post:
+      operationId: createEnquiry
+      tags: [health]
+      summary: DDG Build enquiry from the public website (no login). Refused before the opening date unless the owner is logged in (test).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnquiryInput"
+      responses:
+        "201":
+          description: Received
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnquiryReceived"
+        "400":
+          description: Bad input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Not open yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too many enquiries from this address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /enquiries:
+    get:
+      operationId: listEnquiries
+      tags: [finance]
+      summary: DDG Build enquiries, newest first (owner only)
+      responses:
+        "200":
+          description: Enquiries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Enquiry"
+  /enquiries/{id}:
+    post:
+      operationId: updateEnquiry
+      tags: [finance]
+      summary: Move an enquiry to another stage or change its notes (owner only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnquiryUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enquiry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /messages:
     get:
       operationId: listMessages
@@ -2359,7 +2439,112 @@ components:
           type: [integer, "null"]
         coffee_charity_cents:
           type: [integer, "null"]
-      required: [updated_at, followers_total, views_30d_total, likes_30d_total, platforms, coffee_bags_sold, coffee_charity_cents]
+        services_open:
+          type: boolean
+          description: DDG Build enquiries are open to the public
+        services_open_on:
+          type: string
+          description: Date (Brisbane) DDG Build opens, YYYY-MM-DD
+      required: [updated_at, followers_total, views_30d_total, likes_30d_total, platforms, coffee_bags_sold, coffee_charity_cents, services_open, services_open_on]
+    EnquiryInput:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum: [website, store, platform, app, ai, unsure]
+        features:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        has_now:
+          type: string
+          enum: [nothing, brand, existing]
+        timing:
+          type: string
+          enum: [asap, soon, later, exploring]
+        budget:
+          type: string
+          enum: [under-5k, 5-15k, 15-40k, over-40k, unsure]
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        email:
+          type: string
+          format: email
+          maxLength: 160
+        about:
+          type: string
+          maxLength: 300
+        ballpark:
+          type: string
+          maxLength: 60
+        fax:
+          type: string
+          maxLength: 0
+          description: Left empty by people; bots that fill every field are refused
+      required: [kind, features, has_now, timing, budget, name, email]
+    EnquiryReceived:
+      type: object
+      additionalProperties: false
+      properties:
+        received:
+          type: boolean
+        test:
+          type: boolean
+      required: [received, test]
+    EnquiryUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        stage:
+          type: string
+          enum: [new, call, quote, won, lost]
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+    Enquiry:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        has_now:
+          type: string
+        timing:
+          type: string
+        budget:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        about:
+          type: [string, "null"]
+        ballpark:
+          type: [string, "null"]
+        stage:
+          type: string
+          enum: [new, call, quote, won, lost]
+        notes:
+          type: [string, "null"]
+        test:
+          type: boolean
+        created_at:
+          type: string
+        updated_at:
+          type: string
+      required: [id, kind, features, has_now, timing, budget, name, email, about, ballpark, stage, notes, test, created_at, updated_at]
     MessageInput:
       type: object
       additionalProperties: false
