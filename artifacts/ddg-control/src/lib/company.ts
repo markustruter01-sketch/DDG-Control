@@ -4,6 +4,7 @@
 export const LAUNCH_DATE = '2027-01-01';
 
 // Public facts (also used by the public website) live in public-info.ts.
+import type { BusinessIconName } from '@/components/BusinessIcon';
 import { BUSINESS_ACCENT, PUBLIC_SITES, SOCIALS, type Platform } from './public-info';
 export { SOCIALS, type Platform };
 
@@ -12,7 +13,7 @@ export type Business = {
   name: string;
   sub: string;
   accent: string;
-  icon: 'finance' | 'coffee' | 'fitness' | 'creative';
+  icon: BusinessIconName;
   next: string;
   site: string | null;
   admin: string | null;

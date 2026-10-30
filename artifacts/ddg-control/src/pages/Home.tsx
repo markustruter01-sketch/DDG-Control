@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Link } from 'wouter';
 import {
   getListAsksQueryKey, useCompleteAsk, useGetOverview, useListAsks, type OverviewResponse,
@@ -6,19 +6,13 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/header';
 import { BotAvatar } from '@/components/BotAvatar';
+import { BusinessIcon } from '@/components/BusinessIcon';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import { SocialFootprint } from '@/components/SocialFootprint';
 import {
   BOTS, BUSINESSES, CLAUDE_HOME, CREATIVE_PROJECTS, FINANCE_BOT_NAMES, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
 } from '@/lib/company';
 import { aud, count, daysUntil } from '@/lib/money';
-
-const ICON_PATHS: Record<Business['icon'], ReactNode> = {
-  finance: <path d="M5 20v-6M10 20V9M15 20v-9M20 20V4" />,
-  coffee: <><path d="M4 9h13v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z" /><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17" /><path d="M8 3v2M12 3v2" /></>,
-  fitness: <path d="M3 10v4M6 7v10M18 7v10M21 10v4M6 12h12" />,
-  creative: <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M10 9.5v5l4.5-2.5z" /></>,
-};
 
 function Term({ label, value, sign }: { label: string; value: string; sign?: string }) {
   return (
@@ -124,7 +118,7 @@ function BusinessCard({ b, data }: { b: Business; data: Businesses }) {
     <article className="glass biz">
       <div className="biz-top">
         <span className="biz-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICON_PATHS[b.icon]}</svg>
+          <BusinessIcon icon={b.icon} />
         </span>
         <span className="biz-name"><b>{b.name}</b><span>{b.sub}</span></span>
         <span className="dot" style={{ background: b.accent }} aria-hidden="true" />
