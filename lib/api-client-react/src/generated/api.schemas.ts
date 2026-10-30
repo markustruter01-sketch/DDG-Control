@@ -490,6 +490,10 @@ export interface OverviewSocialPlatform {
   /** @nullable */
   likes_30d: number | null;
   /** @nullable */
+  views_all_time: number | null;
+  /** @nullable */
+  likes_all_time: number | null;
+  /** @nullable */
   captured_on: string | null;
 }
 
@@ -500,6 +504,10 @@ export interface OverviewSocial {
   views_30d: number | null;
   /** @nullable */
   likes_30d: number | null;
+  /** @nullable */
+  views_all_time: number | null;
+  /** @nullable */
+  likes_all_time: number | null;
   platforms: OverviewSocialPlatform[];
 }
 
@@ -653,6 +661,10 @@ export type PublicSummaryPlatformsItem = {
   views_30d: number | null;
   /** @nullable */
   likes_30d: number | null;
+  /** @nullable */
+  views_all_time: number | null;
+  /** @nullable */
+  likes_all_time: number | null;
 };
 
 export interface PublicSummary {
@@ -663,6 +675,10 @@ export interface PublicSummary {
   views_30d_total: number | null;
   /** @nullable */
   likes_30d_total: number | null;
+  /** @nullable */
+  views_all_time_total: number | null;
+  /** @nullable */
+  likes_all_time_total: number | null;
   platforms: PublicSummaryPlatformsItem[];
   /** @nullable */
   coffee_bags_sold: number | null;
@@ -1306,6 +1322,20 @@ export interface SocialSnapshotCreate {
      * @nullable
      */
   engagements_30d?: number | null;
+  /**
+     * All-time views, only if the platform shows an all-time number
+     * @minimum 0
+     * @maximum 2000000000
+     * @nullable
+     */
+  views_all_time?: number | null;
+  /**
+     * All-time likes, only if the platform shows an all-time number
+     * @minimum 0
+     * @maximum 2000000000
+     * @nullable
+     */
+  likes_all_time?: number | null;
 }
 
 export interface SocialSnapshot {
@@ -1317,6 +1347,10 @@ export interface SocialSnapshot {
   impressions_30d: number | null;
   /** @nullable */
   engagements_30d: number | null;
+  /** @nullable */
+  views_all_time: number | null;
+  /** @nullable */
+  likes_all_time: number | null;
   captured_on: string;
   source: string;
 }

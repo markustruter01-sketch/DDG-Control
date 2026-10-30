@@ -14,5 +14,9 @@ export interface OverviewSocial {
   views_30d: number | null;
   /** @nullable */
   likes_30d: number | null;
+  /** @nullable */
+  views_all_time: number | null;
+  /** @nullable */
+  likes_all_time: number | null;
   platforms: OverviewSocialPlatform[];
 }

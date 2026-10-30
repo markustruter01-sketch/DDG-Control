@@ -16,6 +16,10 @@ export interface SocialSnapshot {
   impressions_30d: number | null;
   /** @nullable */
   engagements_30d: number | null;
+  /** @nullable */
+  views_all_time: number | null;
+  /** @nullable */
+  likes_all_time: number | null;
   captured_on: Date;
   source: string;
 }

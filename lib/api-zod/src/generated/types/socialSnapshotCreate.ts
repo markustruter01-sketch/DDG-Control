@@ -28,4 +28,18 @@ export interface SocialSnapshotCreate {
      * @nullable
      */
   engagements_30d?: number | null;
+  /**
+     * All-time views, only if the platform shows an all-time number
+     * @minimum 0
+     * @maximum 2000000000
+     * @nullable
+     */
+  views_all_time?: number | null;
+  /**
+     * All-time likes, only if the platform shows an all-time number
+     * @minimum 0
+     * @maximum 2000000000
+     * @nullable
+     */
+  likes_all_time?: number | null;
 }

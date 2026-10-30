@@ -3,7 +3,7 @@ import type { PublicSummary } from '@workspace/api-client-react';
 import { Link, Route, Switch } from 'wouter';
 import { BusinessIcon } from '@/components/BusinessIcon';
 import { PlatformIcon } from '@/components/PlatformIcon';
-import { SocialFootprint } from '@/components/SocialFootprint';
+import { SocialFootprint, allTime } from '@/components/SocialFootprint';
 import { LAUNCH_DATE } from '@/lib/company';
 import { daysUntil } from '@/lib/money';
 import { SOCIALS, type Platform } from '@/lib/public-info';
@@ -120,7 +120,6 @@ function BusinessCard({ b, summary }: { b: SiteBusiness; summary: PublicSummary 
   const stat = cardStat(b.key, summary);
   return (
     <article className="s-card" style={{ ['--accent' as string]: b.accent }}>
-      <BusinessIcon icon={b.key} size={220} strokeWidth={0.45} className="s-card-art" />
       <div className="s-card-top">
         <span className="s-ico"><BusinessIcon icon={b.key} size={22} strokeWidth={1.6} /></span>
         <span className="s-status"><span className="s-dot" />{b.status}</span>
@@ -129,7 +128,7 @@ function BusinessCard({ b, summary }: { b: SiteBusiness; summary: PublicSummary 
       <h3>{b.name}</h3>
       <p className="s-product">{b.product}</p>
       <p>{b.line}</p>
-      <ul className="s-built" aria-label="What we built">{b.built.map((x) => <li key={x}>{x}</li>)}</ul>
+      <ul className="s-built s-chips-built" aria-label="What we built">{b.built.map((x) => <li key={x}>{x}</li>)}</ul>
       {b.note && <p className="s-note">{b.note}</p>}
       {b.link && (b.link.external
         ? <a className="s-btn" href={b.link.href} target="_blank" rel="noopener noreferrer">{b.link.label} ↗</a>
@@ -155,11 +154,16 @@ function Home() {
             <Link className="s-btn" href="/creative">Watch us build</Link>
           </div>
         </div>
-        <section className="s-hero-social glass-photo" aria-label="Social footprint, all platforms">
+        {/* Collapsed by default so the first screen stays clean; opens to every platform's numbers. */}
+        <details className="s-hero-social glass-photo">
+          <summary>
+            <span>Social footprint</span>
+            <span className="s-sum-note">{count(summary?.followers_total)} followers</span>
+          </summary>
           <SocialFootprint
-            totals={summary && { followers: summary.followers_total, views_30d: summary.views_30d_total, likes_30d: summary.likes_30d_total }}
-            platforms={summary?.platforms} links />
-        </section>
+            totals={summary && allTime({ followers: summary.followers_total, views_all_time: summary.views_all_time_total, likes_all_time: summary.likes_all_time_total })}
+            platforms={summary?.platforms.map((p) => ({ platform: p.platform, ...allTime(p) }))} links />
+        </details>
       </section>
 
       <main className="s-main">

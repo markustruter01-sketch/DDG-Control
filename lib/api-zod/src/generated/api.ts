@@ -598,6 +598,12 @@ export const createSocialSnapshotBodyImpressions30dMax = 2000000000;
 export const createSocialSnapshotBodyEngagements30dMin = 0;
 export const createSocialSnapshotBodyEngagements30dMax = 2000000000;
 
+export const createSocialSnapshotBodyViewsAllTimeMin = 0;
+export const createSocialSnapshotBodyViewsAllTimeMax = 2000000000;
+
+export const createSocialSnapshotBodyLikesAllTimeMin = 0;
+export const createSocialSnapshotBodyLikesAllTimeMax = 2000000000;
+
 
 
 export const CreateSocialSnapshotBody = zod.object({
@@ -605,7 +611,9 @@ export const CreateSocialSnapshotBody = zod.object({
   "platform": zod.enum(['instagram', 'facebook', 'tiktok', 'youtube', 'x', 'linkedin']),
   "followers": zod.number().int().min(createSocialSnapshotBodyFollowersMin).max(createSocialSnapshotBodyFollowersMax),
   "impressions_30d": zod.number().int().min(createSocialSnapshotBodyImpressions30dMin).max(createSocialSnapshotBodyImpressions30dMax).nullish(),
-  "engagements_30d": zod.number().int().min(createSocialSnapshotBodyEngagements30dMin).max(createSocialSnapshotBodyEngagements30dMax).nullish()
+  "engagements_30d": zod.number().int().min(createSocialSnapshotBodyEngagements30dMin).max(createSocialSnapshotBodyEngagements30dMax).nullish(),
+  "views_all_time": zod.number().int().min(createSocialSnapshotBodyViewsAllTimeMin).max(createSocialSnapshotBodyViewsAllTimeMax).nullish().describe('All-time views, only if the platform shows an all-time number'),
+  "likes_all_time": zod.number().int().min(createSocialSnapshotBodyLikesAllTimeMin).max(createSocialSnapshotBodyLikesAllTimeMax).nullish().describe('All-time likes, only if the platform shows an all-time number')
 })
 
 export const CreateSocialSnapshotResponse = zod.object({
@@ -615,6 +623,8 @@ export const CreateSocialSnapshotResponse = zod.object({
   "followers": zod.number().int(),
   "impressions_30d": zod.number().int().nullable(),
   "engagements_30d": zod.number().int().nullable(),
+  "views_all_time": zod.number().int().nullable(),
+  "likes_all_time": zod.number().int().nullable(),
   "captured_on": zod.coerce.date(),
   "source": zod.string()
 })
@@ -1035,11 +1045,15 @@ export const GetOverviewResponse = zod.object({
   "followers": zod.number().int().nullable(),
   "views_30d": zod.number().int().nullable(),
   "likes_30d": zod.number().int().nullable(),
+  "views_all_time": zod.number().int().nullable(),
+  "likes_all_time": zod.number().int().nullable(),
   "platforms": zod.array(zod.object({
   "platform": zod.enum(['youtube', 'instagram', 'facebook', 'x', 'tiktok']),
   "followers": zod.number().int().nullable(),
   "views_30d": zod.number().int().nullable(),
   "likes_30d": zod.number().int().nullable(),
+  "views_all_time": zod.number().int().nullable(),
+  "likes_all_time": zod.number().int().nullable(),
   "captured_on": zod.string().nullable()
 }))
 }),
@@ -1193,11 +1207,15 @@ export const GetPublicSummaryResponse = zod.object({
   "followers_total": zod.number().int().nullable(),
   "views_30d_total": zod.number().int().nullable(),
   "likes_30d_total": zod.number().int().nullable(),
+  "views_all_time_total": zod.number().int().nullable(),
+  "likes_all_time_total": zod.number().int().nullable(),
   "platforms": zod.array(zod.object({
   "platform": zod.string(),
   "followers": zod.number().int().nullable(),
   "views_30d": zod.number().int().nullable(),
-  "likes_30d": zod.number().int().nullable()
+  "likes_30d": zod.number().int().nullable(),
+  "views_all_time": zod.number().int().nullable(),
+  "likes_all_time": zod.number().int().nullable()
 })),
   "coffee_bags_sold": zod.number().int().nullable(),
   "coffee_charity_cents": zod.number().int().nullable(),

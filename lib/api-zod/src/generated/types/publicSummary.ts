@@ -15,6 +15,10 @@ export interface PublicSummary {
   views_30d_total: number | null;
   /** @nullable */
   likes_30d_total: number | null;
+  /** @nullable */
+  views_all_time_total: number | null;
+  /** @nullable */
+  likes_all_time_total: number | null;
   platforms: PublicSummaryPlatformsItem[];
   /** @nullable */
   coffee_bags_sold: number | null;

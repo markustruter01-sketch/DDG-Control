@@ -78,6 +78,8 @@ export async function computeOverview() {
       followers: total(mine.map((r) => r.followers)),
       views_30d: total(mine.map((r) => r.impressions_30d)),
       likes_30d: total(mine.map((r) => r.engagements_30d)),
+      views_all_time: total(mine.map((r) => r.views_all_time)),
+      likes_all_time: total(mine.map((r) => r.likes_all_time)),
       captured_on: days[0] ?? null,
     };
   });
@@ -97,6 +99,8 @@ export async function computeOverview() {
       followers: total(platforms.map((p) => p.followers)),
       views_30d: total(platforms.map((p) => p.views_30d)),
       likes_30d: total(platforms.map((p) => p.likes_30d)),
+      views_all_time: total(platforms.map((p) => p.views_all_time)),
+      likes_all_time: total(platforms.map((p) => p.likes_all_time)),
       platforms,
     },
     businesses: {
