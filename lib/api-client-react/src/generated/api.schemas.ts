@@ -483,7 +483,7 @@ export type OverviewSocialPlatformPlatform = typeof OverviewSocialPlatformPlatfo
 export const OverviewSocialPlatformPlatform = {
   youtube: 'youtube',
   instagram: 'instagram',
-  facebook: 'facebook',
+  spotify: 'spotify',
   x: 'x',
   tiktok: 'tiktok',
 } as const;
@@ -1305,7 +1305,7 @@ export type SocialPlatform = typeof SocialPlatform[keyof typeof SocialPlatform];
 
 export const SocialPlatform = {
   instagram: 'instagram',
-  facebook: 'facebook',
+  spotify: 'spotify',
   tiktok: 'tiktok',
   youtube: 'youtube',
   x: 'x',

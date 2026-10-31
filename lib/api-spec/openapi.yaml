@@ -2323,7 +2323,7 @@ components:
       properties:
         platform:
           type: string
-          enum: [youtube, instagram, facebook, x, tiktok]
+          enum: [youtube, instagram, spotify, x, tiktok]
         followers:
           type: [integer, "null"]
         views_30d:
@@ -3277,7 +3277,7 @@ components:
         $ref: "#/components/schemas/FinanceDebt"
     SocialPlatform:
       type: string
-      enum: [instagram, facebook, tiktok, youtube, x, linkedin]
+      enum: [instagram, spotify, tiktok, youtube, x, linkedin]
     SocialSnapshotCreate:
       type: object
       additionalProperties: false

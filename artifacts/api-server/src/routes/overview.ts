@@ -1,10 +1,11 @@
 import { GetOverviewResponse } from '@workspace/api-zod';
-import { db, expensesTable, fleetBotSnapshotsTable, fleetSnapshotsTable, projectsTable, revenueEntriesTable, socialSnapshotsTable } from '@workspace/db';
+import { db, expensesTable, fleetBotSnapshotsTable, fleetSnapshotsTable, projectsTable, revenueEntriesTable } from '@workspace/db';
 import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import { Router, type IRouter } from 'express';
 import { getCattleDogCoffeeProfit } from '../lib/cdc-store';
 import { CHARITY, revenueShareCents } from '../lib/charity';
 import { getHypestSummary } from '../lib/hypest-store';
+import { socialRows } from '../lib/social-rows';
 
 const router: IRouter = Router();
 const COFFEE = 'cattle-dog-coffee';
@@ -16,7 +17,7 @@ const toCents = (value: bigint | string | number | null): number => {
   return n;
 };
 
-const PLATFORMS = ['youtube', 'instagram', 'facebook', 'x', 'tiktok'] as const;
+const PLATFORMS = ['youtube', 'instagram', 'spotify', 'x', 'tiktok'] as const;
 
 /**
  * The home-screen equation, all time, AUD cents:
@@ -37,7 +38,7 @@ export async function computeOverview() {
     db.select({ project_id: revenueEntriesTable.project_id, total: sql<string>`coalesce(sum(${revenueEntriesTable.amount_cents}), 0)` })
       .from(revenueEntriesTable).where(and(gte(revenueEntriesTable.received_on, CHARITY.revenueShareFrom)))
       .groupBy(revenueEntriesTable.project_id),
-    db.select().from(socialSnapshotsTable).orderBy(desc(socialSnapshotsTable.captured_on), desc(socialSnapshotsTable.id)).limit(1000),
+    socialRows({ limit: 1000 }),
     getCattleDogCoffeeProfit(),
     db.select().from(fleetSnapshotsTable).orderBy(desc(fleetSnapshotsTable.generated_at)).limit(1),
     getHypestSummary(),

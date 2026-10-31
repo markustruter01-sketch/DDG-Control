@@ -573,7 +573,7 @@ export const GetSocialSummaryResponse = zod.object({
   "total_followers": zod.number().int(),
   "followers_change_30d": zod.number().int().nullable(),
   "platforms": zod.array(zod.object({
-  "platform": zod.enum(['instagram', 'facebook', 'tiktok', 'youtube', 'x', 'linkedin']),
+  "platform": zod.enum(['instagram', 'spotify', 'tiktok', 'youtube', 'x', 'linkedin']),
   "followers": zod.number().int(),
   "followers_change_30d": zod.number().int().nullable().describe('Null when there is no reading from 30 or more days ago.'),
   "impressions_30d": zod.number().int().nullable(),
@@ -608,7 +608,7 @@ export const createSocialSnapshotBodyLikesAllTimeMax = 2000000000;
 
 export const CreateSocialSnapshotBody = zod.object({
   "project_slug": zod.string().min(1),
-  "platform": zod.enum(['instagram', 'facebook', 'tiktok', 'youtube', 'x', 'linkedin']),
+  "platform": zod.enum(['instagram', 'spotify', 'tiktok', 'youtube', 'x', 'linkedin']),
   "followers": zod.number().int().min(createSocialSnapshotBodyFollowersMin).max(createSocialSnapshotBodyFollowersMax),
   "impressions_30d": zod.number().int().min(createSocialSnapshotBodyImpressions30dMin).max(createSocialSnapshotBodyImpressions30dMax).nullish(),
   "engagements_30d": zod.number().int().min(createSocialSnapshotBodyEngagements30dMin).max(createSocialSnapshotBodyEngagements30dMax).nullish(),
@@ -619,7 +619,7 @@ export const CreateSocialSnapshotBody = zod.object({
 export const CreateSocialSnapshotResponse = zod.object({
   "id": zod.number().int(),
   "project_slug": zod.string(),
-  "platform": zod.enum(['instagram', 'facebook', 'tiktok', 'youtube', 'x', 'linkedin']),
+  "platform": zod.enum(['instagram', 'spotify', 'tiktok', 'youtube', 'x', 'linkedin']),
   "followers": zod.number().int(),
   "impressions_30d": zod.number().int().nullable(),
   "engagements_30d": zod.number().int().nullable(),
@@ -1050,7 +1050,7 @@ export const GetOverviewResponse = zod.object({
   "views_all_time": zod.number().int().nullable(),
   "likes_all_time": zod.number().int().nullable(),
   "platforms": zod.array(zod.object({
-  "platform": zod.enum(['youtube', 'instagram', 'facebook', 'x', 'tiktok']),
+  "platform": zod.enum(['youtube', 'instagram', 'spotify', 'x', 'tiktok']),
   "followers": zod.number().int().nullable(),
   "views_30d": zod.number().int().nullable(),
   "likes_30d": zod.number().int().nullable(),
