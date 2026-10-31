@@ -24,6 +24,10 @@ export interface PublicSummary {
   coffee_bags_sold: number | null;
   /** @nullable */
   coffee_charity_cents: number | null;
+  /** 1% of every non-Coffee business's revenue since the start date, AUD cents */
+  charity_revenue_share_cents: number;
+  charity_revenue_share_pct: number;
+  charity_revenue_share_from: string;
   /** DDG Build enquiries are open to the public */
   services_open: boolean;
   /** Date (Brisbane) DDG Build opens, YYYY-MM-DD */

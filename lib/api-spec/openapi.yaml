@@ -2282,6 +2282,12 @@ components:
           type: [integer, "null"]
         net_cents:
           type: [integer, "null"]
+        charity_coffee_cents:
+          type: [integer, "null"]
+          description: Cattle Dog Coffee's $1 per bag (from the shop)
+        charity_revenue_share_cents:
+          type: integer
+          description: 1% of every other business's revenue from the start date (lib/charity.ts)
         donated_via_link_cents:
           type: [integer, "null"]
         coffee_store:
@@ -2291,7 +2297,7 @@ components:
           type: array
           items:
             type: string
-      required: [expenses_cents, gross_revenue_cents, debt_cents, charity_cents, net_cents, donated_via_link_cents, coffee_store, notes]
+      required: [expenses_cents, gross_revenue_cents, debt_cents, charity_cents, net_cents, charity_coffee_cents, charity_revenue_share_cents, donated_via_link_cents, coffee_store, notes]
     OverviewSocial:
       type: object
       additionalProperties: false
@@ -2455,13 +2461,20 @@ components:
           type: [integer, "null"]
         coffee_charity_cents:
           type: [integer, "null"]
+        charity_revenue_share_cents:
+          type: integer
+          description: 1% of every non-Coffee business's revenue since the start date, AUD cents
+        charity_revenue_share_pct:
+          type: number
+        charity_revenue_share_from:
+          type: string
         services_open:
           type: boolean
           description: DDG Build enquiries are open to the public
         services_open_on:
           type: string
           description: Date (Brisbane) DDG Build opens, YYYY-MM-DD
-      required: [updated_at, followers_total, views_30d_total, likes_30d_total, views_all_time_total, likes_all_time_total, platforms, coffee_bags_sold, coffee_charity_cents, services_open, services_open_on]
+      required: [updated_at, followers_total, views_30d_total, likes_30d_total, views_all_time_total, likes_all_time_total, platforms, coffee_bags_sold, coffee_charity_cents, charity_revenue_share_cents, charity_revenue_share_pct, charity_revenue_share_from, services_open, services_open_on]
     EnquiryInput:
       type: object
       additionalProperties: false

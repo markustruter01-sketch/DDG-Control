@@ -1037,6 +1037,8 @@ export const GetOverviewResponse = zod.object({
   "debt_cents": zod.number().int().nullable(),
   "charity_cents": zod.number().int().nullable(),
   "net_cents": zod.number().int().nullable(),
+  "charity_coffee_cents": zod.number().int().nullable().describe('Cattle Dog Coffee\'s $1 per bag (from the shop)'),
+  "charity_revenue_share_cents": zod.number().int().describe('1% of every other business\'s revenue from the start date (lib/charity.ts)'),
   "donated_via_link_cents": zod.number().int().nullable(),
   "coffee_store": zod.enum(['ok', 'unavailable']),
   "notes": zod.array(zod.string())
@@ -1219,6 +1221,9 @@ export const GetPublicSummaryResponse = zod.object({
 })),
   "coffee_bags_sold": zod.number().int().nullable(),
   "coffee_charity_cents": zod.number().int().nullable(),
+  "charity_revenue_share_cents": zod.number().int().describe('1% of every non-Coffee business\'s revenue since the start date, AUD cents'),
+  "charity_revenue_share_pct": zod.number(),
+  "charity_revenue_share_from": zod.string(),
   "services_open": zod.boolean().describe('DDG Build enquiries are open to the public'),
   "services_open_on": zod.string().describe('Date (Brisbane) DDG Build opens, YYYY-MM-DD')
 })

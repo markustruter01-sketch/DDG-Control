@@ -2,6 +2,7 @@ import { GetPublicSummaryResponse } from '@workspace/api-zod';
 import { Router, type IRouter } from 'express';
 import { computeOverview } from './overview';
 import { SERVICES_OPEN_ON, servicesOpen } from './build';
+import { CHARITY } from '../lib/charity';
 
 // The only numbers the public DDG website can see: social followers, views and likes, the charity total,
 // and whether DDG Build enquiries are open.
@@ -28,6 +29,9 @@ router.get('/public/summary', async (_req, res) => {
         })),
         coffee_bags_sold: o.businesses.coffee?.bags_sold ?? null,
         coffee_charity_cents: o.businesses.coffee?.charity_cents ?? null,
+        charity_revenue_share_cents: o.money.charity_revenue_share_cents,
+        charity_revenue_share_pct: CHARITY.revenueSharePct,
+        charity_revenue_share_from: CHARITY.revenueShareFrom,
         services_open: servicesOpen(),
         services_open_on: SERVICES_OPEN_ON,
       }),
