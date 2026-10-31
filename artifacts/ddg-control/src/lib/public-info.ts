@@ -6,11 +6,12 @@ export const PUBLIC_SITES = {
   creative: 'https://www.youtube.com/@DigitalDynamicsGroup',
 } as const;
 
-export type Platform = 'youtube' | 'instagram' | 'facebook' | 'x' | 'tiktok';
+export type Platform = 'youtube' | 'instagram' | 'spotify' | 'x' | 'tiktok';
 export const SOCIALS: { platform: Platform; name: string; href: string | null }[] = [
   { platform: 'youtube', name: 'YouTube', href: 'https://www.youtube.com/@DigitalDynamicsGroup' },
   { platform: 'instagram', name: 'Instagram', href: 'https://www.instagram.com/digitaldynamicsgroup/' },
-  { platform: 'facebook', name: 'Facebook', href: null },
+  // Podcast on Spotify (Markus 31 Oct: Spotify replaces Facebook). Link needed.
+  { platform: 'spotify', name: 'Spotify', href: null },
   { platform: 'x', name: 'X', href: 'https://x.com/DDGCompany' },
   { platform: 'tiktok', name: 'TikTok', href: 'https://www.tiktok.com/@ddg.company' },
 ];

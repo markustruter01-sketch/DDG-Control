@@ -1,9 +1,10 @@
 import { SendMessageBody } from '@workspace/api-zod';
-import { asksTable, botMessagesTable, botPushesTable, db, fleetSnapshotsTable, socialSnapshotsTable } from '@workspace/db';
+import { asksTable, botMessagesTable, botPushesTable, db, fleetSnapshotsTable } from '@workspace/db';
 import { and, asc, desc, eq, gt, inArray, isNull, max, or } from 'drizzle-orm';
 import { botKeys } from './bot-keys';
 import { getCattleDogCoffeeProfit } from './cdc-store';
 import { getHypestSummary } from './hypest-store';
+import { latestSocialAt } from './social-rows';
 import { computeOverview } from '../routes/overview';
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
@@ -16,11 +17,11 @@ export async function getConnections() {
     getCattleDogCoffeeProfit(),
     getHypestSummary(),
     db.select({ at: max(fleetSnapshotsTable.generated_at) }).from(fleetSnapshotsTable),
-    db.select({ at: max(socialSnapshotsTable.created_at) }).from(socialSnapshotsTable),
+    latestSocialAt(),
     db.select({ bot: botPushesTable.bot, at: max(botPushesTable.received_at) }).from(botPushesTable).groupBy(botPushesTable.bot),
   ]);
   const fleetAt = fleet[0]?.at ?? null;
-  const socialAt = social[0]?.at ?? null;
+  const socialAt = social;
   const rows = [
     store.ok
       ? { key: 'coffee', label: 'Coffee shop', state: 'ok', detail: 'Sales and charity read live from the shop', as_of: store.data.generatedAt.toISOString() }

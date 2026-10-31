@@ -21,6 +21,13 @@ export interface OverviewMoney {
   charity_cents: number | null;
   /** @nullable */
   net_cents: number | null;
+  /**
+     * Cattle Dog Coffee's $1 per bag (from the shop)
+     * @nullable
+     */
+  charity_coffee_cents: number | null;
+  /** 1% of every other business's revenue from the start date (lib/charity.ts) */
+  charity_revenue_share_cents: number;
   /** @nullable */
   donated_via_link_cents: number | null;
   coffee_store: OverviewMoneyCoffeeStore;

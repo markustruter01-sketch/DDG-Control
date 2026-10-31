@@ -464,6 +464,13 @@ export interface OverviewMoney {
   charity_cents: number | null;
   /** @nullable */
   net_cents: number | null;
+  /**
+     * Cattle Dog Coffee's $1 per bag (from the shop)
+     * @nullable
+     */
+  charity_coffee_cents: number | null;
+  /** 1% of every other business's revenue from the start date (lib/charity.ts) */
+  charity_revenue_share_cents: number;
   /** @nullable */
   donated_via_link_cents: number | null;
   coffee_store: OverviewMoneyCoffeeStore;
@@ -476,7 +483,7 @@ export type OverviewSocialPlatformPlatform = typeof OverviewSocialPlatformPlatfo
 export const OverviewSocialPlatformPlatform = {
   youtube: 'youtube',
   instagram: 'instagram',
-  facebook: 'facebook',
+  spotify: 'spotify',
   x: 'x',
   tiktok: 'tiktok',
 } as const;
@@ -684,6 +691,10 @@ export interface PublicSummary {
   coffee_bags_sold: number | null;
   /** @nullable */
   coffee_charity_cents: number | null;
+  /** 1% of every non-Coffee business's revenue since the start date, AUD cents */
+  charity_revenue_share_cents: number;
+  charity_revenue_share_pct: number;
+  charity_revenue_share_from: string;
   /** DDG Build enquiries are open to the public */
   services_open: boolean;
   /** Date (Brisbane) DDG Build opens, YYYY-MM-DD */
@@ -1294,7 +1305,7 @@ export type SocialPlatform = typeof SocialPlatform[keyof typeof SocialPlatform];
 
 export const SocialPlatform = {
   instagram: 'instagram',
-  facebook: 'facebook',
+  spotify: 'spotify',
   tiktok: 'tiktok',
   youtube: 'youtube',
   x: 'x',

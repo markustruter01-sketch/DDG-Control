@@ -3,7 +3,8 @@ import {
   CreateSocialSnapshotResponse,
   GetSocialSummaryResponse,
 } from "@workspace/api-zod";
-import { db, projectsTable, socialSnapshotsTable } from "@workspace/db";
+import { db, projectsTable, socialSnapshotsV2Table } from "@workspace/db";
+import { socialRows } from "../lib/social-rows";
 import { asc, desc, eq } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import { zodErrorText } from "./validation";
@@ -24,8 +25,7 @@ export async function computeSocialSummary() {
     db.select({ id: projectsTable.id, slug: projectsTable.slug })
       .from(projectsTable)
       .orderBy(asc(projectsTable.sort_order)),
-    db.select().from(socialSnapshotsTable)
-      .orderBy(desc(socialSnapshotsTable.captured_on), desc(socialSnapshotsTable.id)),
+    socialRows({ limit: 5000 }),
   ]);
   const cutoff = minusDays(brisbaneToday(), 30);
   let total = 0;
@@ -82,7 +82,7 @@ export async function recordSocialSnapshot(input: unknown): Promise<SocialResult
     .limit(1);
   if (!project) return { status: 400, error: "unknown project" };
   const [created] = await db
-    .insert(socialSnapshotsTable)
+    .insert(socialSnapshotsV2Table)
     .values({
       project_id: project.id,
       platform: body.platform,

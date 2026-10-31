@@ -193,6 +193,7 @@ function Home() {
           </div>
           <dl className="s-stats">
             <div><dt>Given from coffee sales</dt><dd>{dollars(summary?.coffee_charity_cents)}</dd></div>
+            <div><dt>1% of other revenue · from 1 Jan 2027</dt><dd>{dollars(summary?.charity_revenue_share_cents)}</dd></div>
             <div><dt>Bags sold</dt><dd>{count(summary?.coffee_bags_sold)}</dd></div>
           </dl>
         </section>

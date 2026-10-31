@@ -1,5 +1,6 @@
-import { db, debtsTable, expensesTable, revenueEntriesTable, metricSnapshotsV2Table, socialSnapshotsTable, projectsTable } from '@workspace/db';
+import { db, debtsTable, expensesTable, revenueEntriesTable, metricSnapshotsV2Table, projectsTable } from '@workspace/db';
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { socialRows } from '../lib/social-rows';
 import { Router, type IRouter } from 'express';
 
 const router: IRouter = Router();
@@ -36,11 +37,9 @@ router.get('/monitor', async (_req, res): Promise<void> => {
       day: sql<string>`to_char(${metricSnapshotsV2Table.captured_at}, 'YYYY-MM-DD')` }).from(metricSnapshotsV2Table)
       .where(and(eq(metricSnapshotsV2Table.key, 'customers_30d'), lte(sql<string>`to_char(${metricSnapshotsV2Table.captured_at}, 'YYYY-MM-DD')`, today)))
       .orderBy(desc(metricSnapshotsV2Table.captured_at), desc(metricSnapshotsV2Table.id)).limit(501),
-    db.select({ id: socialSnapshotsTable.id, project_id: socialSnapshotsTable.project_id, platform: socialSnapshotsTable.platform,
-      followers: socialSnapshotsTable.followers, impressions: socialSnapshotsTable.impressions_30d,
-      engagements: socialSnapshotsTable.engagements_30d, day: socialSnapshotsTable.captured_on })
-      .from(socialSnapshotsTable).where(lte(socialSnapshotsTable.captured_on, today))
-      .orderBy(desc(socialSnapshotsTable.captured_on), desc(socialSnapshotsTable.id)).limit(501),
+    socialRows({ upTo: today, limit: 501 }).then((rows) => rows.map((r) => ({
+      id: r.id, project_id: r.project_id, platform: r.platform, followers: r.followers,
+      impressions: r.impressions_30d, engagements: r.engagements_30d, day: r.captured_on }))),
     db.select({ id: metricSnapshotsV2Table.id, project_id: metricSnapshotsV2Table.project_id, value: metricSnapshotsV2Table.value,
       day: sql<string>`to_char(${metricSnapshotsV2Table.captured_at}, 'YYYY-MM-DD')` }).from(metricSnapshotsV2Table)
       .where(and(eq(metricSnapshotsV2Table.key, 'sales_30d'), lte(sql<string>`to_char(${metricSnapshotsV2Table.captured_at}, 'YYYY-MM-DD')`, today)))

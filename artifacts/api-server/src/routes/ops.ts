@@ -1,10 +1,11 @@
 import { CompleteAskParams, CreateAskBody, UndoBotPushParams } from '@workspace/api-zod';
 import {
-  asksTable, botMessagesTable, botPushesTable, db, expensesTable, revenueEntriesTable, socialSnapshotsTable,
+  asksTable, botMessagesTable, botPushesTable, db, expensesTable, revenueEntriesTable,
 } from '@workspace/db';
 import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { Router, type IRouter } from 'express';
 import { getConnections, sendMessage, toMessage } from '../lib/messages';
+import { socialTableFor } from '../lib/social-rows';
 import { zodErrorText } from './validation';
 
 // Owner-only (mounted behind the login): Needs-you list, bot push log, feed health, messages.
@@ -52,7 +53,7 @@ router.get('/bot-pushes', async (_req, res) => {
   res.json((await db.select().from(botPushesTable).orderBy(desc(botPushesTable.received_at)).limit(200)).map(toPush));
 });
 
-const TABLE_FOR = { social: socialSnapshotsTable, expense: expensesTable, revenue: revenueEntriesTable, ask: asksTable } as const;
+const TABLE_FOR = { expense: expensesTable, revenue: revenueEntriesTable, ask: asksTable } as const;
 
 router.post('/bot-pushes/:id/undo', async (req, res) => {
   const params = UndoBotPushParams.safeParse(req.params);
@@ -62,7 +63,8 @@ router.post('/bot-pushes/:id/undo', async (req, res) => {
     if (!push) return { status: 404 as const, error: 'not found' };
     if (push.undone_at) return { status: 409 as const, error: 'already undone' };
     if (push.record_id === null) return { status: 409 as const, error: 'this push created nothing' };
-    const table = TABLE_FOR[push.kind as keyof typeof TABLE_FOR];
+    // Social readings live in two tables; the id says which (lib/social-rows).
+    const table = push.kind === 'social' ? socialTableFor(push.record_id) : TABLE_FOR[push.kind as keyof typeof TABLE_FOR];
     if (!table) return { status: 409 as const, error: 'unknown kind' };
     await tx.delete(table).where(eq(table.id, push.record_id));
     const [row] = await tx.update(botPushesTable).set({ undone_at: new Date() }).where(eq(botPushesTable.id, push.id)).returning();
