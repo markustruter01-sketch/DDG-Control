@@ -8,7 +8,7 @@ import { Header } from '@/components/header';
 import { BotAvatar } from '@/components/BotAvatar';
 import { BusinessIcon } from '@/components/BusinessIcon';
 import { PlatformIcon } from '@/components/PlatformIcon';
-import { SocialFootprint } from '@/components/SocialFootprint';
+import { SocialFootprint, allTime } from '@/components/SocialFootprint';
 import {
   BOTS, BUSINESSES, CLAUDE_HOME, CREATIVE_PROJECTS, FINANCE_BOT_NAMES, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
 } from '@/lib/company';
@@ -26,7 +26,7 @@ function Term({ label, value, sign }: { label: string; value: string; sign?: str
 function SocialPanel({ social }: { social: OverviewResponse['social'] | undefined }) {
   return (
     <section className="glass panel" aria-label="Social footprint, all platforms">
-      <SocialFootprint totals={social} platforms={social?.platforms} />
+      <SocialFootprint totals={social && allTime(social)} platforms={social?.platforms.map((p) => ({ platform: p.platform, ...allTime(p) }))} />
     </section>
   );
 }

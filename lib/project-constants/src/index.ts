@@ -122,7 +122,7 @@ export type MetricUnit = (typeof METRIC_DEFINITIONS)[MetricKey]["unit"];
 // Social audience numbers shown on the Home "Social" row.
 export const SOCIAL_PLATFORMS = [
   "instagram",
-  "facebook",
+  "spotify",
   "tiktok",
   "youtube",
   "x",
@@ -131,7 +131,7 @@ export const SOCIAL_PLATFORMS = [
 export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
 export const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
   instagram: "Instagram",
-  facebook: "Facebook",
+  spotify: "Spotify",
   tiktok: "TikTok",
   youtube: "YouTube",
   x: "X",

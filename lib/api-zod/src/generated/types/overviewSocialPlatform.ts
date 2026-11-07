@@ -16,5 +16,9 @@ export interface OverviewSocialPlatform {
   /** @nullable */
   likes_30d: number | null;
   /** @nullable */
+  views_all_time: number | null;
+  /** @nullable */
+  likes_all_time: number | null;
+  /** @nullable */
   captured_on: string | null;
 }

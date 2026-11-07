@@ -3,7 +3,8 @@ import {
   CreateSocialSnapshotResponse,
   GetSocialSummaryResponse,
 } from "@workspace/api-zod";
-import { db, projectsTable, socialSnapshotsTable } from "@workspace/db";
+import { db, projectsTable, socialSnapshotsV2Table } from "@workspace/db";
+import { socialRows } from "../lib/social-rows";
 import { asc, desc, eq } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import { zodErrorText } from "./validation";
@@ -24,8 +25,7 @@ export async function computeSocialSummary() {
     db.select({ id: projectsTable.id, slug: projectsTable.slug })
       .from(projectsTable)
       .orderBy(asc(projectsTable.sort_order)),
-    db.select().from(socialSnapshotsTable)
-      .orderBy(desc(socialSnapshotsTable.captured_on), desc(socialSnapshotsTable.id)),
+    socialRows({ limit: 5000 }),
   ]);
   const cutoff = minusDays(brisbaneToday(), 30);
   let total = 0;
@@ -82,13 +82,15 @@ export async function recordSocialSnapshot(input: unknown): Promise<SocialResult
     .limit(1);
   if (!project) return { status: 400, error: "unknown project" };
   const [created] = await db
-    .insert(socialSnapshotsTable)
+    .insert(socialSnapshotsV2Table)
     .values({
       project_id: project.id,
       platform: body.platform,
       followers: body.followers,
       impressions_30d: body.impressions_30d ?? null,
       engagements_30d: body.engagements_30d ?? null,
+      views_all_time: body.views_all_time ?? null,
+      likes_all_time: body.likes_all_time ?? null,
       captured_on: brisbaneToday(),
       source: "manual",
     })
@@ -101,6 +103,8 @@ export async function recordSocialSnapshot(input: unknown): Promise<SocialResult
     followers: created.followers,
     impressions_30d: created.impressions_30d,
     engagements_30d: created.engagements_30d,
+    views_all_time: created.views_all_time,
+    likes_all_time: created.likes_all_time,
     captured_on: created.captured_on,
     source: created.source,
   };

@@ -1,8 +1,8 @@
-import { siFacebook, siInstagram, siTiktok, siX, siYoutube } from 'simple-icons';
+import { siInstagram, siSpotify, siTiktok, siX, siYoutube } from 'simple-icons';
 import type { Platform } from '@/lib/public-info';
 
 const ICONS: Record<Platform, { path: string; title: string }> = {
-  youtube: siYoutube, instagram: siInstagram, facebook: siFacebook, x: siX, tiktok: siTiktok,
+  youtube: siYoutube, instagram: siInstagram, spotify: siSpotify, x: siX, tiktok: siTiktok,
 };
 
 /** Platform logo in white, per Night Glass (no brand colours on the panel). */

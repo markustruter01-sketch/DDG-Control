@@ -1,9 +1,11 @@
 import { GetOverviewResponse } from '@workspace/api-zod';
-import { db, expensesTable, fleetBotSnapshotsTable, fleetSnapshotsTable, projectsTable, revenueEntriesTable, socialSnapshotsTable } from '@workspace/db';
-import { desc, eq, sql } from 'drizzle-orm';
+import { db, expensesTable, fleetBotSnapshotsTable, fleetSnapshotsTable, projectsTable, revenueEntriesTable } from '@workspace/db';
+import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import { Router, type IRouter } from 'express';
 import { getCattleDogCoffeeProfit } from '../lib/cdc-store';
+import { CHARITY, revenueShareCents } from '../lib/charity';
 import { getHypestSummary } from '../lib/hypest-store';
+import { socialRows } from '../lib/social-rows';
 
 const router: IRouter = Router();
 const COFFEE = 'cattle-dog-coffee';
@@ -15,24 +17,28 @@ const toCents = (value: bigint | string | number | null): number => {
   return n;
 };
 
-const PLATFORMS = ['youtube', 'instagram', 'facebook', 'x', 'tiktok'] as const;
+const PLATFORMS = ['youtube', 'instagram', 'spotify', 'x', 'tiktok'] as const;
 
 /**
  * The home-screen equation, all time, AUD cents:
  *   expenses − gross revenue = debt,   gross revenue − expenses − charity = net profit.
  * Expenses = one-off payments recorded in Money (recurring rows are forecasts, not payments).
  * Gross revenue = Money's revenue ledger (Coffee rows excluded) + the Coffee store's own total, so Coffee is never counted twice.
- * Charity = the Coffee store's per-bag RSPCA contribution.
+ * Charity = the Coffee store's $1-per-bag RSPCA contribution + 1% of every other business's
+ *   revenue received from CHARITY.revenueShareFrom (lib/charity.ts).
  * If a part can't be read, it and everything built on it is null — never guessed.
  */
 export async function computeOverview() {
-  const [projects, spent, ledger, social, store, fleet, hypest] = await Promise.all([
+  const [projects, spent, ledger, ledgerSinceShare, social, store, fleet, hypest] = await Promise.all([
     db.select({ id: projectsTable.id, slug: projectsTable.slug }).from(projectsTable),
     db.select({ total: sql<string>`coalesce(sum(${expensesTable.amount_cents}), 0)` }).from(expensesTable)
       .where(eq(expensesTable.kind, 'one_off')),
     db.select({ project_id: revenueEntriesTable.project_id, total: sql<string>`coalesce(sum(${revenueEntriesTable.amount_cents}), 0)` })
       .from(revenueEntriesTable).groupBy(revenueEntriesTable.project_id),
-    db.select().from(socialSnapshotsTable).orderBy(desc(socialSnapshotsTable.captured_on), desc(socialSnapshotsTable.id)).limit(1000),
+    db.select({ project_id: revenueEntriesTable.project_id, total: sql<string>`coalesce(sum(${revenueEntriesTable.amount_cents}), 0)` })
+      .from(revenueEntriesTable).where(and(gte(revenueEntriesTable.received_on, CHARITY.revenueShareFrom)))
+      .groupBy(revenueEntriesTable.project_id),
+    socialRows({ limit: 1000 }),
     getCattleDogCoffeeProfit(),
     db.select().from(fleetSnapshotsTable).orderBy(desc(fleetSnapshotsTable.generated_at)).limit(1),
     getHypestSummary(),
@@ -48,11 +54,19 @@ export async function computeOverview() {
     .filter((row) => row.project_id === null || slugOf.get(row.project_id) !== COFFEE)
     .reduce((sum, row) => sum + toCents(row.total), 0);
 
+  // 1% of every non-Coffee business's revenue from the start date (Coffee gives $1 a bag instead).
+  const shareBase = ledgerSinceShare
+    .filter((row) => row.project_id === null || slugOf.get(row.project_id) !== COFFEE)
+    .reduce((sum, row) => sum + toCents(row.total), 0);
+  const charityShare = revenueShareCents(shareBase);
+
   let gross: number | null = null;
   let charity: number | null = null;
+  let charityCoffee: number | null = null;
   if (store.ok) {
     gross = ledgerRevenue + store.data.allTime.grossRevenueCents;
-    charity = store.data.allTime.charityCents;
+    charityCoffee = store.data.allTime.charityCents;
+    charity = charityCoffee + charityShare;
   } else {
     notes.push(`Coffee store not reachable (${store.error}), so revenue, debt, charity and net profit are hidden.`);
   }
@@ -78,6 +92,8 @@ export async function computeOverview() {
       followers: total(mine.map((r) => r.followers)),
       views_30d: total(mine.map((r) => r.impressions_30d)),
       likes_30d: total(mine.map((r) => r.engagements_30d)),
+      views_all_time: total(mine.map((r) => r.views_all_time)),
+      likes_all_time: total(mine.map((r) => r.likes_all_time)),
       captured_on: days[0] ?? null,
     };
   });
@@ -91,12 +107,15 @@ export async function computeOverview() {
     read_at: new Date().toISOString(),
     money: {
       expenses_cents: expenses, gross_revenue_cents: gross, debt_cents: debt, charity_cents: charity, net_cents: net,
+      charity_coffee_cents: charityCoffee, charity_revenue_share_cents: charityShare,
       donated_via_link_cents: null, coffee_store: store.ok ? 'ok' : 'unavailable', notes,
     },
     social: {
       followers: total(platforms.map((p) => p.followers)),
       views_30d: total(platforms.map((p) => p.views_30d)),
       likes_30d: total(platforms.map((p) => p.likes_30d)),
+      views_all_time: total(platforms.map((p) => p.views_all_time)),
+      likes_all_time: total(platforms.map((p) => p.likes_all_time)),
       platforms,
     },
     businesses: {

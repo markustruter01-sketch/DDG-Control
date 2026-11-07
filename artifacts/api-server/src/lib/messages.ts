@@ -1,9 +1,10 @@
 import { SendMessageBody } from '@workspace/api-zod';
-import { asksTable, botMessagesTable, botPushesTable, db, fleetSnapshotsTable, socialSnapshotsTable } from '@workspace/db';
+import { asksTable, botMessagesTable, botPushesTable, db, fleetSnapshotsTable } from '@workspace/db';
 import { and, asc, desc, eq, gt, inArray, isNull, max, or } from 'drizzle-orm';
 import { botKeys } from './bot-keys';
 import { getCattleDogCoffeeProfit } from './cdc-store';
 import { getHypestSummary } from './hypest-store';
+import { latestSocialAt } from './social-rows';
 import { computeOverview } from '../routes/overview';
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
@@ -12,15 +13,17 @@ const HOUR = 3_600_000;
 const age = (d: Date | null) => (d ? Date.now() - d.getTime() : Infinity);
 
 export async function getConnections() {
-  const [store, hypest, fleet, social, pushes] = await Promise.all([
+  const [store, hypest, fleet, social, pushes, sent, read] = await Promise.all([
     getCattleDogCoffeeProfit(),
     getHypestSummary(),
     db.select({ at: max(fleetSnapshotsTable.generated_at) }).from(fleetSnapshotsTable),
-    db.select({ at: max(socialSnapshotsTable.created_at) }).from(socialSnapshotsTable),
+    latestSocialAt(),
     db.select({ bot: botPushesTable.bot, at: max(botPushesTable.received_at) }).from(botPushesTable).groupBy(botPushesTable.bot),
+    db.select({ bot: botMessagesTable.sender, at: max(botMessagesTable.created_at) }).from(botMessagesTable).groupBy(botMessagesTable.sender),
+    db.select({ bot: botMessagesTable.recipient, at: max(botMessagesTable.read_at) }).from(botMessagesTable).groupBy(botMessagesTable.recipient),
   ]);
   const fleetAt = fleet[0]?.at ?? null;
-  const socialAt = social[0]?.at ?? null;
+  const socialAt = social;
   const rows = [
     store.ok
       ? { key: 'coffee', label: 'Coffee shop', state: 'ok', detail: 'Sales and charity read live from the shop', as_of: store.data.generatedAt.toISOString() }
@@ -32,10 +35,16 @@ export async function getConnections() {
       : { key: 'fitness', label: 'Hypest', state: 'off', detail: 'Not connected until Hypest is published', as_of: null },
     { key: 'social', label: 'Social numbers', state: age(socialAt) < 8 * 24 * HOUR ? 'ok' : socialAt ? 'stale' : 'off',
       detail: socialAt ? 'Latest reading from Freya or the Social page' : 'No readings yet', as_of: iso(socialAt) },
+    // A bot counts as active when it pushed data, sent a message, or read its messages. Bots run twice a day.
     ...botKeys().map(({ bot }) => {
-      const at = pushes.find((p) => p.bot === bot)?.at ?? null;
-      return { key: `bot-${bot}`, label: `Bot · ${bot[0]!.toUpperCase()}${bot.slice(1)}`, state: at ? 'ok' : 'off',
-        detail: at ? 'Key set; last push received' : 'Key set; nothing pushed yet', as_of: iso(at) };
+      const pushed = pushes.find((p) => p.bot === bot)?.at ?? null;
+      const seen = [pushed, sent.find((m) => m.bot === bot)?.at, read.find((m) => m.bot === bot)?.at]
+        .filter((d): d is Date => d instanceof Date)
+        .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
+      return { key: `bot-${bot}`, label: `Bot · ${bot[0]!.toUpperCase()}${bot.slice(1)}`,
+        state: !seen ? 'off' : age(seen) < 36 * HOUR ? 'ok' : 'stale',
+        detail: !seen ? 'Key set; not heard from yet' : pushed ? 'Active; has pushed data' : 'Active; messages only, no data pushed yet',
+        as_of: iso(seen) };
     }),
   ];
   return rows;
