@@ -43,6 +43,25 @@ function Connections() {
   );
 }
 
+const PAGE_SIZE = 10;
+
+/** 10 rows per page, newest first. Returns the rows to show and the page controls. */
+function usePages<T>(rows: T[] | undefined) {
+  const [page, setPage] = useState(0);
+  const all = rows ?? [];
+  const pages = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
+  const current = Math.min(page, pages - 1);
+  const shown = all.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
+  const controls = pages > 1 && (
+    <div className="pager" role="navigation" aria-label="Pages">
+      <button type="button" className="btn" disabled={current === 0} onClick={() => setPage(current - 1)}>Newer</button>
+      <span className="note">Page {current + 1} of {pages}</span>
+      <button type="button" className="btn" disabled={current >= pages - 1} onClick={() => setPage(current + 1)}>Older</button>
+    </div>
+  );
+  return { shown, controls };
+}
+
 const KIND_LABEL: Record<string, string> = { ask: 'to-do', social: 'social', expense: 'expense', revenue: 'revenue' };
 const name = (who: string) => (who === 'all' ? 'All bots' : who[0]!.toUpperCase() + who.slice(1));
 
@@ -50,6 +69,7 @@ function Messages() {
   const client = useQueryClient();
   const list = useListMessages({ query: { queryKey: getListMessagesQueryKey(), refetchInterval: 60_000 } });
   const send = useSendMessage();
+  const { shown, controls } = usePages(list.data);
   const [to, setTo] = useState('all');
   const [text, setText] = useState('');
   const [message, setMessage] = useState('');
@@ -76,11 +96,11 @@ function Messages() {
         <button type="submit" className="btn fill" disabled={send.isPending}>{send.isPending ? 'Sending…' : 'Send'}</button>
       </form>
       {message && <p role="alert" className="alert" style={{ margin: 0 }}>{message}</p>}
-      <div className="table-scroll" style={{ maxHeight: 360 }}>
+      <div className="table-scroll">
         <table>
           <thead><tr><th>When</th><th>From → To</th><th>Message</th><th>Read</th></tr></thead>
           <tbody>
-            {(list.data ?? []).map((m) => (
+            {shown.map((m) => (
               <tr key={m.id}>
                 <td className="note" style={{ whiteSpace: 'nowrap' }}>{when(m.created_at)}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>{name(m.from)} → {name(m.to)}</td>
@@ -92,6 +112,7 @@ function Messages() {
           </tbody>
         </table>
       </div>
+      {controls}
     </section>
   );
 }
@@ -135,6 +156,7 @@ function BotLog() {
   const client = useQueryClient();
   const pushes = useListBotPushes();
   const undo = useUndoBotPush();
+  const { shown, controls } = usePages(pushes.data);
   const [error, setError] = useState('');
   const doUndo = async (id: number, summary: string) => {
     if (!window.confirm(`Undo this push and remove what it added?\n\n${summary}`)) return;
@@ -153,7 +175,7 @@ function BotLog() {
         <table>
           <thead><tr><th>When</th><th>Bot</th><th>What</th><th>Details</th><th>Result</th><th><span className="sr-only">Undo</span></th></tr></thead>
           <tbody>
-            {(pushes.data ?? []).map((p) => {
+            {shown.map((p) => {
               const accepted = p.status < 300;
               return (
                 <tr key={p.id} style={p.undone_at ? { opacity: 0.45 } : undefined}>
@@ -174,6 +196,7 @@ function BotLog() {
           </tbody>
         </table>
       </div>
+      {controls}
     </section>
   );
 }
