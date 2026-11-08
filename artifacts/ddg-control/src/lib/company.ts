@@ -68,9 +68,12 @@ export const LEDGER_BUSINESSES = [
 export const ledgerLabel = (slug: string | null) => LEDGER_BUSINESSES.find((b) => b.slug === (slug ?? ''))?.label ?? slug ?? 'DDG (company)';
 
 // DDG Finance bot names (from the platform's bot registry). Unknown ids show as sent.
+// jerome_macro was Bullion; renamed Atlas V2 on 8 Nov 2026 (it runs Atlas's equity core alone).
 export const FINANCE_BOT_NAMES: Record<string, string> = {
-  oracle: 'Atlas', spy_qqq_trend: 'Momentum', jerome_macro: 'Bullion', forex_ai: 'Forex', forex_gump: 'Forex Gump',
+  oracle: 'Atlas', jerome_macro: 'Atlas V2', spy_qqq_trend: 'Momentum', forex_ai: 'Forex', forex_gump: 'Forex Gump',
 };
+/** Card order: the order of FINANCE_BOT_NAMES; unknown ids last. */
+export const botOrder = (id: string) => { const i = Object.keys(FINANCE_BOT_NAMES).indexOf(id); return i < 0 ? 99 : i; };
 
 // DDG Creative projects shown on its card and (later) the website's Creative page.
 export const CREATIVE_PROJECTS = ['Vlogs', 'Gaming clips', 'Music', 'Novel'];
