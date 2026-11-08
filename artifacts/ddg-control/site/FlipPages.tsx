@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
 /**
- * Website home: two screens on one sheet (same turn as DDG Finance's dashboard).
- * Scrolling past the end of either screen turns the sheet over (like lifting an
- * A4 page and flipping it) to the other one, so scrolling on keeps flipping:
- * down at the bottom turns forward, up at the top turns back. Also PageDown/PageUp
- * and a swipe. On small or short screens (where the hero isn't one screen) the
- * two simply stack and the page scrolls normally, with no animation.
+ * Website home: one-screen sections on a sheet (same turn as DDG Finance's dashboard).
+ * No scrolling: each scroll turns the sheet over (like lifting an A4 page and flipping
+ * it) to the next screen, or the one before when scrolling up; after the last comes
+ * the first. Also arrow keys, PageDown/PageUp, a swipe and the dots on the right. On
+ * small or short screens the screens simply stack and the page scrolls normally.
  */
 export const FLIP_QUERY = '(min-width: 1024px) and (min-height: 700px)'; // = the hero's one-screen layout (site.css)
 const FLIP_MS = 1200;          // matches the CSS: 600ms out, then 600ms in from 560ms
@@ -25,43 +24,46 @@ function useMedia(query: string): boolean {
   return match;
 }
 
-export function FlipPages({ pages, side, onSide }: {
-  pages: [ReactNode, ReactNode]; side: 0 | 1; onSide: (s: 0 | 1) => void;
+export function FlipPages({ pages, side, onSide, labels }: {
+  pages: ReactNode[]; side: number; onSide: (s: number) => void; labels: string[];
 }) {
   const flipMode = useMedia(FLIP_QUERY);
   const reduced = useMedia('(prefers-reduced-motion: reduce)');
-  const [anim, setAnim] = useState<'down' | 'up' | null>(null);
+  const [anim, setAnim] = useState<{ dir: 'down' | 'up'; from: number } | null>(null);
   const shown = useRef(side);
-  const nextDir = useRef<'down' | 'up' | null>(null);  // set by scroll/swipe/keys; buttons go by page order
-  const refs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
+  const nextDir = useRef<'down' | 'up' | null>(null);  // set by scroll/swipe/keys; links and dots go by page order
+  const refs = useRef<(HTMLDivElement | null)[]>([]);
+  const n = pages.length;
 
-  // Animate whenever the side changes (wheel, keys, swipe or the top-bar buttons).
-  // Layout effect: the animation classes land before the first paint of the new side.
+  // Animate whenever the screen changes (wheel, keys, swipe, dots or menu links).
+  // Layout effect: the animation classes land before the first paint of the new screen.
   useLayoutEffect(() => {
     if (side === shown.current) return;
-    const dir = nextDir.current ?? (side > shown.current ? 'down' : 'up');
+    const from = shown.current;
+    const dir = nextDir.current ?? (side > from ? 'down' : 'up');
     nextDir.current = null;
     shown.current = side;
     if (!flipMode) {
-      refs[side].current?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+      refs.current[side]?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
       return;
     }
-    refs[side].current?.scrollTo({ top: 0 });
-    setAnim(dir);
+    refs.current[side]?.scrollTo({ top: 0 });
+    setAnim({ dir, from });
     const t = window.setTimeout(() => setAnim(null), reduced ? REDUCED_MS : FLIP_MS);
     return () => window.clearTimeout(t);
   }, [side, flipMode, reduced]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Turn to the other screen, in the direction of the scroll.
+  // Turn to the next screen (down) or the one before (up); past the last comes the first.
   const turn = useCallback((dir: 'down' | 'up') => {
     if (anim) return;
     nextDir.current = dir;
-    onSide(side === 0 ? 1 : 0);
-  }, [anim, side, onSide]);
+    onSide(dir === 'down' ? (side + 1) % n : (side - 1 + n) % n);
+  }, [anim, side, onSide, n]);
 
   useEffect(() => {
     if (!flipMode) return;
-    const page = () => refs[side].current;
+    const page = () => refs.current[side];
+    // A screen only scrolls inside itself when it is taller than the window (short screens).
     const atBottom = (el: HTMLElement) => el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
     const onWheel = (e: WheelEvent) => {
       const el = page();
@@ -82,9 +84,9 @@ export function FlipPages({ pages, side, onSide }: {
     };
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-      if (e.key === 'PageDown') turn('down');
-      if (e.key === 'PageUp') turn('up');
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      if (e.key === 'PageDown' || e.key === 'ArrowDown') turn('down');
+      if (e.key === 'PageUp' || e.key === 'ArrowUp') turn('up');
     };
     window.addEventListener('wheel', onWheel, { passive: true });
     window.addEventListener('touchstart', onStart, { passive: true });
@@ -96,19 +98,27 @@ export function FlipPages({ pages, side, onSide }: {
       window.removeEventListener('touchend', onEnd);
       window.removeEventListener('keydown', onKey);
     };
-  }, [flipMode, side, turn]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [flipMode, side, turn]);
 
   return (
-    <div className={`flip-stage${flipMode ? ' on' : ''}${anim ? ` flipping-${anim}` : ''}${reduced ? ' reduced' : ''}`}>
+    <div className={`flip-stage${flipMode ? ' on' : ''}${anim ? ` flipping-${anim.dir}` : ''}${reduced ? ' reduced' : ''}`}>
       {pages.map((content, i) => {
         const current = i === side;
-        const cls = !flipMode ? '' : current ? (anim ? ' is-current flip-in' : ' is-current') : anim ? ' flip-out' : ' is-away';
+        const cls = !flipMode ? '' : current ? (anim ? ' is-current flip-in' : ' is-current') : anim?.from === i ? ' flip-out' : ' is-away';
         return (
-          <div key={i} ref={refs[i]} className={`flip-page${cls}`} aria-hidden={flipMode && !current ? true : undefined}>
+          <div key={i} ref={(el) => { refs.current[i] = el; }} className={`flip-page${cls}`} aria-hidden={flipMode && !current ? true : undefined}>
             {content}
           </div>
         );
       })}
+      {flipMode && (
+        <nav className="flip-dots" aria-label="Screens">
+          {labels.map((l, i) => (
+            <button key={l} type="button" aria-label={l} aria-current={i === side ? 'true' : undefined}
+              className={i === side ? 'on' : ''} onClick={() => { if (!anim) onSide(i); }} />
+          ))}
+        </nav>
+      )}
     </div>
   );
 }
