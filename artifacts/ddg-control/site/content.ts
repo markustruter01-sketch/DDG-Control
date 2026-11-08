@@ -23,17 +23,16 @@ export const HIRE = {
   cta: 'See how we build',
 };
 
-/** Our work, along the bottom of the first screen. Wide = a desktop dashboard, phone and book are tall. */
-export type WorkItem = { key: string; name: string; line: string; img: string; alt: string; shape: 'wide' | 'phone' | 'book' };
+/** Our work, along the bottom of the first screen. Wide = a desktop dashboard, phone is tall. */
+export type WorkItem = { key: string; name: string; line: string; img: string; alt: string; shape: 'wide' | 'phone' };
 export const WORK: WorkItem[] = [
   { key: 'finance', name: 'DDG Finance', line: 'Trading dashboard', img: '/work/finance.webp', alt: 'DDG Finance trading dashboard', shape: 'wide' },
   { key: 'coffee', name: 'DDG Coffee', line: 'Cattle Dog Coffee admin', img: '/work/coffee.webp', alt: 'Cattle Dog Coffee admin dashboard', shape: 'wide' },
   { key: 'fitness', name: 'DDG Fitness', line: 'Hypest', img: '/work/hypest.webp', alt: 'Hypest fitness app on a phone', shape: 'phone' },
-  { key: 'creative', name: 'DDG Creative', line: 'Novel', img: '/work/threads-of-empire.webp?v=2', alt: 'Threads of Empire book cover', shape: 'book' },
 ];
 
 export type SiteBusiness = {
-  key: 'coffee' | 'finance' | 'fitness' | 'creative';
+  key: 'coffee' | 'finance' | 'fitness';
   name: string;
   product: string;
   line: string;
@@ -57,27 +56,14 @@ export const SITE_BUSINESSES: SiteBusiness[] = [
     line: 'Fitness plans and coaching from specialist AI coaches, on your phone.',
     built: ['AI coaches for 6 training styles', 'Plans built from 86 exercises', 'Subscriptions and a health check'],
     link: null },
-  { key: 'creative', name: 'DDG Creative', product: 'Studio', accent: BUSINESS_ACCENT.creative, status: 'Posting now',
-    line: 'Vlogs, gaming clips, music and a novel.',
-    built: ['Vlogs and a short every day', 'Threads of Empire, a novel, late Jan 2027', 'DDG Music, an AI music channel (coming)'],
-    link: { label: 'See projects', href: '/creative', external: false } },
 ];
 
 export const CHARITY = {
   title: 'Helping RSPCA Queensland',
-  body: 'Every bag of Cattle Dog Coffee gives $1 to RSPCA Queensland. From 1 January 2027, 1% of everything else DDG earns, from Finance, Fitness and Creative, goes to them too. Want to help directly? Donate to RSPCA Queensland.',
+  body: 'Every bag of Cattle Dog Coffee gives $1 to RSPCA Queensland. From 1 January 2027, 1% of everything else DDG earns, from Finance and Fitness, goes to them too. Want to help directly? Donate to RSPCA Queensland.',
   donate: { label: 'Donate to RSPCA Queensland', href: 'https://www.rspcaqld.org.au/get-involved/ways-you-can-donate/make-a-donation' },
 };
 
-export type CreativeProject = { name: string; line: string; status: string; href: string | null };
-export const CREATIVE: CreativeProject[] = [
-  { name: 'Vlogs', line: 'Behind the scenes of building DDG and its four businesses with nine AI employees.', status: 'New episodes',
-    href: site('creative') },
-  { name: 'Shorts', line: 'A new short every day at 9:30 pm Brisbane time.', status: 'Daily', href: site('creative') },
-  { name: 'Gaming clips', line: 'Clips from our gaming sessions.', status: 'Coming soon', href: null },
-  { name: 'DDG Music', line: 'An AI music channel.', status: 'Coming soon', href: null },
-  { name: 'Threads of Empire', line: 'Our first novel. Releasing late January 2027 on every major free platform, including Audible.', status: 'Late Jan 2027', href: null },
-];
 
 // ── DDG Build: we build platforms for other businesses (opens 1 Jan 2027) ──────────────
 // The opening date comes from the server (/api/public/summary), not from here.
