@@ -6,8 +6,8 @@ import { PlatformIcon } from '@/components/PlatformIcon';
 import { LAUNCH_DATE } from '@/lib/company';
 import { daysUntil } from '@/lib/money';
 import { SOCIALS, type Platform } from '@/lib/public-info';
-import { Build } from './Build';
-import { CHARITY, COMPANY, CONTROL_CASE, HERO, HIRE, SITE_BUSINESSES, WORK, type SiteBusiness } from './content';
+import { Build, EnquiryForm } from './Build';
+import { CHARITY, COMPANY, CONTROL_CASE, HERO, HIRE, SITE_BUSINESSES, START, WORK, type SiteBusiness } from './content';
 
 const LOGO = '/ddg-professional-white-transparent.png';
 const count = (n: number | null | undefined) => (n === null || n === undefined ? '—' : n.toLocaleString('en-AU'));
@@ -158,12 +158,12 @@ function Home() {
             </figure>
           ))}
           {/* Hire us: sits at the end of the work row, the whole card links to #build. */}
-          <a className="s-hire glass-photo" href="#build">
+          <Link className="s-hire glass-photo" href="/start">
             <span className="s-eyebrow">{HIRE.eyebrow}</span>
             <b>{HIRE.title}</b>
             <span>{HIRE.line}</span>
             <span className="s-hire-go">{HIRE.cta} →</span>
-          </a>
+          </Link>
         </div>
       </section>
 
@@ -204,6 +204,22 @@ function Home() {
   );
 }
 
+/** /start: the one-page enquiry form, linked from the hire card and the Build section. */
+function Start() {
+  return (
+    <div className="s-plain dusk">
+      <Nav />
+      <main className="s-main s-start">
+        <p className="s-eyebrow">{START.eyebrow}</p>
+        <h1 className="s-page-title">{START.title}</h1>
+        <p className="s-lead">{START.line}</p>
+        <EnquiryForm />
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
 function Footer() {
   return (
     <footer className="s-footer">
@@ -226,6 +242,7 @@ export function Site() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/start" component={Start} />
       <Route component={NotFound} />
     </Switch>
   );
