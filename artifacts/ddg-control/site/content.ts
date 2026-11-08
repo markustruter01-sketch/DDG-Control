@@ -11,9 +11,26 @@ export const COMPANY = {
 
 export const HERO = {
   eyebrow: 'Digital Dynamics Group · Brisbane',
-  title: 'Four businesses. One founder. A team of AI employees.',
-  body: 'DDG runs a coffee brand, a trading platform, an AI fitness coach and a creative studio. Claude writes the code, nine Grok bots run the day-to-day, and we share how it all gets built.',
+  title: 'We build and run software businesses.',
+  body: 'Trading, fitness, coffee and creative, each running on platforms we design and build in-house. We build them for clients too.',
 };
+
+/** The one card beside the headline: hire us. Links to the Build section. */
+export const HIRE = {
+  eyebrow: 'Build with DDG',
+  title: 'Need software built?',
+  line: 'Websites, online stores, apps and dashboards, built the way we build our own.',
+  cta: 'See how we build',
+};
+
+/** Our work, along the bottom of the first screen. Wide = a desktop dashboard, phone and book are tall. */
+export type WorkItem = { key: string; name: string; line: string; img: string; alt: string; shape: 'wide' | 'phone' | 'book' };
+export const WORK: WorkItem[] = [
+  { key: 'finance', name: 'DDG Finance', line: 'Trading dashboard', img: '/work/finance.webp', alt: 'DDG Finance trading dashboard', shape: 'wide' },
+  { key: 'coffee', name: 'DDG Coffee', line: 'Cattle Dog Coffee admin', img: '/work/coffee.webp', alt: 'Cattle Dog Coffee admin dashboard', shape: 'wide' },
+  { key: 'fitness', name: 'DDG Fitness', line: 'Hypest', img: '/work/hypest.webp', alt: 'Hypest fitness app on a phone', shape: 'phone' },
+  { key: 'creative', name: 'DDG Creative', line: 'Novel', img: '/work/threads-of-empire.webp', alt: 'Threads of Empire book cover', shape: 'book' },
+];
 
 export type SiteBusiness = {
   key: 'coffee' | 'finance' | 'fitness' | 'creative';
