@@ -3,12 +3,11 @@ import type { PublicSummary } from '@workspace/api-client-react';
 import { Link, Route, Switch } from 'wouter';
 import { BusinessIcon } from '@/components/BusinessIcon';
 import { PlatformIcon } from '@/components/PlatformIcon';
-import { SocialFootprint, allTime } from '@/components/SocialFootprint';
 import { LAUNCH_DATE } from '@/lib/company';
 import { daysUntil } from '@/lib/money';
 import { SOCIALS, type Platform } from '@/lib/public-info';
 import { Build } from './Build';
-import { CHARITY, COMPANY, CONTROL_CASE, CREATIVE, HERO, SITE_BUSINESSES, type SiteBusiness } from './content';
+import { CHARITY, COMPANY, CONTROL_CASE, CREATIVE, HERO, HIRE, SITE_BUSINESSES, WORK, type SiteBusiness } from './content';
 
 const LOGO = '/ddg-professional-white-transparent.png';
 const count = (n: number | null | undefined) => (n === null || n === undefined ? '—' : n.toLocaleString('en-AU'));
@@ -143,27 +142,30 @@ function Home() {
   const fan = useScrollMotion<HTMLElement>(fanSpan);
   return (
     <>
+      {/* First screen: who we are, one card to hire us, and our work. Fits one screen on PC. */}
       <section ref={hero} className="s-hero">
         <Nav />
-        <div className="s-hero-copy">
-          <p className="s-eyebrow">{HERO.eyebrow}</p>
-          <h1>{HERO.title}</h1>
-          <p className="s-lead">{HERO.body}</p>
-          <div className="s-hero-actions">
-            <a className="s-btn fill" href="#businesses">Our businesses</a>
-            <Link className="s-btn" href="/creative">Watch us build</Link>
+        <div className="s-hero-top">
+          <div className="s-hero-copy">
+            <p className="s-eyebrow">{HERO.eyebrow}</p>
+            <h1>{HERO.title}</h1>
+            <p className="s-lead">{HERO.body}</p>
           </div>
+          <a className="s-hire glass-photo" href="#build">
+            <span className="s-eyebrow">{HIRE.eyebrow}</span>
+            <b>{HIRE.title}</b>
+            <span>{HIRE.line}</span>
+            <span className="s-hire-go">{HIRE.cta} →</span>
+          </a>
         </div>
-        {/* Collapsed by default so the first screen stays clean; opens to every platform's numbers. */}
-        <details className="s-hero-social glass-photo">
-          <summary>
-            <span>Social footprint</span>
-            <span className="s-sum-note">{count(summary?.followers_total)} followers</span>
-          </summary>
-          <SocialFootprint
-            totals={summary && allTime({ followers: summary.followers_total, views_all_time: summary.views_all_time_total, likes_all_time: summary.likes_all_time_total })}
-            platforms={summary?.platforms.map((p) => ({ platform: p.platform, ...allTime(p) }))} links />
-        </details>
+        <div className="s-work" aria-label="Our work">
+          {WORK.map((w) => (
+            <figure key={w.key} className={`s-work-${w.shape}`}>
+              <div className="s-work-frame"><img src={w.img} alt={w.alt} loading="eager" /></div>
+              <figcaption><b>{w.name}</b> · {w.line}</figcaption>
+            </figure>
+          ))}
+        </div>
       </section>
 
       <main className="s-main">
