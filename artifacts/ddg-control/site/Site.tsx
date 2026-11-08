@@ -7,7 +7,7 @@ import { LAUNCH_DATE } from '@/lib/company';
 import { daysUntil } from '@/lib/money';
 import { SOCIALS, type Platform } from '@/lib/public-info';
 import { Build } from './Build';
-import { CHARITY, COMPANY, CONTROL_CASE, CREATIVE, HERO, HIRE, SITE_BUSINESSES, WORK, type SiteBusiness } from './content';
+import { CHARITY, COMPANY, CONTROL_CASE, HERO, HIRE, SITE_BUSINESSES, WORK, type SiteBusiness } from './content';
 
 const LOGO = '/ddg-professional-white-transparent.png';
 const count = (n: number | null | undefined) => (n === null || n === undefined ? '—' : n.toLocaleString('en-AU'));
@@ -79,7 +79,6 @@ function Nav() {
       <Link href="/" className="s-brand" aria-label="DDG home"><img src={LOGO} alt="" /><b>DDG</b></Link>
       <nav aria-label="Site">
         <a href="/#businesses">Businesses</a>
-        <Link href="/creative">Creative</Link>
         <a href="/#build">Build</a>
         <a href="/#charity">Charity</a>
       </nav>
@@ -111,7 +110,6 @@ function cardStat(key: SiteBusiness['key'], s: PublicSummary | null): { value: s
       return days > 0 ? { value: String(days), label: 'Days to the public record' } : { value: 'Live', label: 'Public track record' };
     }
     case 'fitness': return { value: 'Soon', label: 'AI coaches on your phone' };
-    case 'creative': return { value: count(s?.followers_total), label: 'Followers, all platforms' };
   }
 }
 
@@ -171,7 +169,7 @@ function Home() {
       <main className="s-main">
         <section id="businesses" ref={fan} className="s-fan" aria-labelledby="b-title">
           <div className="s-fan-stage">
-            <h2 id="b-title">Four businesses</h2>
+            <h2 id="b-title">Three businesses</h2>
             <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} summary={summary} />)}</div>
           </div>
         </section>
@@ -205,28 +203,6 @@ function Home() {
   );
 }
 
-function Creative() {
-  return (
-    <div className="s-plain dusk">
-      <Nav />
-      <main className="s-main">
-        <p className="s-eyebrow">DDG Creative</p>
-        <h1 className="s-page-title">What we make</h1>
-        <div className="s-list">
-          {CREATIVE.map((p) => (
-            <article key={p.name} className="s-row">
-              <div><h3>{p.name}</h3><p>{p.line}</p></div>
-              <span className="s-status">{p.status}</span>
-              {p.href && <a className="s-btn" href={p.href} target="_blank" rel="noopener noreferrer">Watch ↗</a>}
-            </article>
-          ))}
-        </div>
-      </main>
-      <Footer />
-    </div>
-  );
-}
-
 function Footer() {
   return (
     <footer className="s-footer">
@@ -249,7 +225,6 @@ export function Site() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/creative" component={Creative} />
       <Route component={NotFound} />
     </Switch>
   );

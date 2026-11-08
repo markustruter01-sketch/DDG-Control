@@ -32,7 +32,7 @@ export const WORK: WorkItem[] = [
 ];
 
 export type SiteBusiness = {
-  key: 'coffee' | 'finance' | 'fitness' | 'creative';
+  key: 'coffee' | 'finance' | 'fitness';
   name: string;
   product: string;
   line: string;
@@ -56,27 +56,14 @@ export const SITE_BUSINESSES: SiteBusiness[] = [
     line: 'Fitness plans and coaching from specialist AI coaches, on your phone.',
     built: ['AI coaches for 6 training styles', 'Plans built from 86 exercises', 'Subscriptions and a health check'],
     link: null },
-  { key: 'creative', name: 'DDG Creative', product: 'Studio', accent: BUSINESS_ACCENT.creative, status: 'Posting now',
-    line: 'Vlogs, gaming clips, music and a novel.',
-    built: ['Vlogs and a short every day', 'Threads of Empire, a novel, late Jan 2027', 'DDG Music, an AI music channel (coming)'],
-    link: { label: 'See projects', href: '/creative', external: false } },
 ];
 
 export const CHARITY = {
   title: 'Helping RSPCA Queensland',
-  body: 'Every bag of Cattle Dog Coffee gives $1 to RSPCA Queensland. From 1 January 2027, 1% of everything else DDG earns, from Finance, Fitness and Creative, goes to them too. Want to help directly? Donate to RSPCA Queensland.',
+  body: 'Every bag of Cattle Dog Coffee gives $1 to RSPCA Queensland. From 1 January 2027, 1% of everything else DDG earns, from Finance and Fitness, goes to them too. Want to help directly? Donate to RSPCA Queensland.',
   donate: { label: 'Donate to RSPCA Queensland', href: 'https://www.rspcaqld.org.au/get-involved/ways-you-can-donate/make-a-donation' },
 };
 
-export type CreativeProject = { name: string; line: string; status: string; href: string | null };
-export const CREATIVE: CreativeProject[] = [
-  { name: 'Vlogs', line: 'Behind the scenes of building DDG and its four businesses with nine AI employees.', status: 'New episodes',
-    href: site('creative') },
-  { name: 'Shorts', line: 'A new short every day at 9:30 pm Brisbane time.', status: 'Daily', href: site('creative') },
-  { name: 'Gaming clips', line: 'Clips from our gaming sessions.', status: 'Coming soon', href: null },
-  { name: 'DDG Music', line: 'An AI music channel.', status: 'Coming soon', href: null },
-  { name: 'Threads of Empire', line: 'Our first novel. Releasing late January 2027 on every major free platform, including Audible.', status: 'Late Jan 2027', href: null },
-];
 
 // ── DDG Build: we build platforms for other businesses (opens 1 Jan 2027) ──────────────
 // The opening date comes from the server (/api/public/summary), not from here.
