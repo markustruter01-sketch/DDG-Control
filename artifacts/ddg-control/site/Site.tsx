@@ -126,11 +126,16 @@ function Home() {
             </figure>
           ))}
           {/* Hire us: sits at the end of the work row, the whole card links to #build. */}
-          <Link className="s-hire glass-photo" href="/start">
-            <span className="s-eyebrow">{HIRE.eyebrow}</span>
-            <b>{HIRE.title}</b>
-            <span>{HIRE.line}</span>
-            <span className="s-hire-go">{HIRE.cta} →</span>
+          <Link className="s-hire" href="/start">
+            <span className="s-hire-in">
+              <span className="s-hire-status"><i aria-hidden="true" />{HIRE.status}</span>
+              <b>{HIRE.title}</b>
+              <span className="s-hire-price">{HIRE.priceFrom} <strong>{HIRE.price}</strong></span>
+              <ul className="s-hire-done" aria-label="What we have built">
+                {HIRE.done.map((d) => <li key={d}><span aria-hidden="true">→</span>{d}<em>done</em></li>)}
+              </ul>
+              <span className="s-hire-go">{HIRE.cta}<span className="s-hire-arrow" aria-hidden="true">→</span></span>
+            </span>
           </Link>
         </div>
         <button className="s-flip-hint" type="button" onClick={() => setSide(1)}>Scroll ↓</button>
