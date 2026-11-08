@@ -7,10 +7,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/header';
 import { BotAvatar } from '@/components/BotAvatar';
 import { BusinessIcon } from '@/components/BusinessIcon';
+import { INTERNAL_SITES } from '@/lib/internal-sites';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import { SocialFootprint, allTime } from '@/components/SocialFootprint';
 import {
-  BOTS, BUSINESSES, CLAUDE_HOME, CREATIVE_PROJECTS, FINANCE_BOT_NAMES, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
+  BOTS, BUSINESSES, CLAUDE_HOME, CREATIVE_PROJECTS, FINANCE_BOT_NAMES, botOrder, GROK_HOME, HEIMDALL, LAUNCH_DATE, SOCIALS, TOOLS, type Business,
 } from '@/lib/company';
 import { aud, count, daysUntil } from '@/lib/money';
 
@@ -80,7 +81,7 @@ function statsFor(slug: string, data: Businesses): Stat[] {
       const f = data?.finance;
       if (!f) return [{ label: 'Bots', value: '—' }, { label: 'Portfolio', value: '—', strong: true }];
       return [
-        ...f.bots.map((b) => ({ label: `${FINANCE_BOT_NAMES[b.bot_id] ?? b.bot_id}${b.paused ? ' · paused' : ''}`, value: usd(b.equity_cents) })),
+        ...[...f.bots].sort((x, y) => botOrder(x.bot_id) - botOrder(y.bot_id)).map((b) => ({ label: `${FINANCE_BOT_NAMES[b.bot_id] ?? b.bot_id}${b.paused ? ' · paused' : ''}`, value: usd(b.equity_cents) })),
         { label: `Portfolio · ${pct(f.total_equity_cents, f.total_starting_cents)}`, value: usd(f.total_equity_cents), strong: true },
       ];
     }
@@ -130,7 +131,7 @@ function BusinessCard({ b, data }: { b: Business; data: Businesses }) {
       </dl>
       <span className="accent-line" style={{ background: `linear-gradient(90deg, ${b.accent} 0 32px, var(--ng-edge) 32px)` }} aria-hidden="true" />
       <div className="biz-actions">
-        <ExternalButton href={b.site} label="Open site" />
+        <ExternalButton href={b.site ?? INTERNAL_SITES[b.slug] ?? null} label="Open site" />
         <ExternalButton href={b.admin} label="Admin" fill />
       </div>
     </article>
