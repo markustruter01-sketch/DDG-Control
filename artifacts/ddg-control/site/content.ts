@@ -23,13 +23,12 @@ export const HIRE = {
   cta: 'See how we build',
 };
 
-/** Our work, along the bottom of the first screen. Wide = a desktop dashboard, phone and book are tall. */
-export type WorkItem = { key: string; name: string; line: string; img: string; alt: string; shape: 'wide' | 'phone' | 'book' };
+/** Our work, along the bottom of the first screen. Wide = a desktop dashboard, phone is tall. */
+export type WorkItem = { key: string; name: string; line: string; img: string; alt: string; shape: 'wide' | 'phone' };
 export const WORK: WorkItem[] = [
   { key: 'finance', name: 'DDG Finance', line: 'Trading dashboard', img: '/work/finance.webp', alt: 'DDG Finance trading dashboard', shape: 'wide' },
   { key: 'coffee', name: 'DDG Coffee', line: 'Cattle Dog Coffee admin', img: '/work/coffee.webp', alt: 'Cattle Dog Coffee admin dashboard', shape: 'wide' },
   { key: 'fitness', name: 'DDG Fitness', line: 'Hypest', img: '/work/hypest.webp', alt: 'Hypest fitness app on a phone', shape: 'phone' },
-  { key: 'creative', name: 'DDG Creative', line: 'Novel', img: '/work/threads-of-empire.webp?v=2', alt: 'Threads of Empire book cover', shape: 'book' },
 ];
 
 export type SiteBusiness = {
