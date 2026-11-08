@@ -140,7 +140,7 @@ function Home() {
   const fan = useScrollMotion<HTMLElement>(fanSpan);
   return (
     <>
-      {/* First screen: who we are, one card to hire us, and our work. Fits one screen on PC. */}
+      {/* First screen: who we are, then our work and a card to hire us. Fits one screen on PC. */}
       <section ref={hero} className="s-hero">
         <Nav />
         <div className="s-hero-top">
@@ -149,12 +149,6 @@ function Home() {
             <h1>{HERO.title}</h1>
             <p className="s-lead">{HERO.body}</p>
           </div>
-          <a className="s-hire glass-photo" href="#build">
-            <span className="s-eyebrow">{HIRE.eyebrow}</span>
-            <b>{HIRE.title}</b>
-            <span>{HIRE.line}</span>
-            <span className="s-hire-go">{HIRE.cta} →</span>
-          </a>
         </div>
         <div className="s-work" aria-label="Our work">
           {WORK.map((w) => (
@@ -163,6 +157,13 @@ function Home() {
               <figcaption><b>{w.name}</b> · {w.line}</figcaption>
             </figure>
           ))}
+          {/* Hire us: sits at the end of the work row, the whole card links to #build. */}
+          <a className="s-hire glass-photo" href="#build">
+            <span className="s-eyebrow">{HIRE.eyebrow}</span>
+            <b>{HIRE.title}</b>
+            <span>{HIRE.line}</span>
+            <span className="s-hire-go">{HIRE.cta} →</span>
+          </a>
         </div>
       </section>
 
