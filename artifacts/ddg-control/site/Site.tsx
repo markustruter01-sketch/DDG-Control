@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PublicSummary } from '@workspace/api-client-react';
 import { Link, Route, Switch } from 'wouter';
 import { BusinessIcon } from '@/components/BusinessIcon';
@@ -7,6 +7,7 @@ import { LAUNCH_DATE } from '@/lib/company';
 import { daysUntil } from '@/lib/money';
 import { SOCIALS, type Platform } from '@/lib/public-info';
 import { Build, EnquiryForm } from './Build';
+import { FlipPages } from './FlipPages';
 import { CHARITY, COMPANY, CONTROL_CASE, HERO, HIRE, SITE_BUSINESSES, START, WORK, type SiteBusiness } from './content';
 
 const LOGO = '/ddg-professional-white-transparent.png';
@@ -27,51 +28,6 @@ function usePublicSummary(): PublicSummary | null {
   }, []);
   return data;
 }
-
-/** PC scroll motion. Sets data-motion and --p (0..1) on the element as the page scrolls;
- *  site.css does the movement, and scrolling back up plays it backwards. `span` is how many
- *  pixels of scrolling take --p from 0 to 1. Off on small screens and for reduced motion. */
-function useScrollMotion<T extends HTMLElement>(span: (r: DOMRect) => number) {
-  const ref = useRef<T>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const mq = window.matchMedia('(min-width: 1024px) and (min-height: 600px) and (prefers-reduced-motion: no-preference)');
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      const r = el.getBoundingClientRect();
-      el.style.setProperty('--p', Math.min(1, Math.max(0, -r.top / Math.max(1, span(r)))).toFixed(4));
-    };
-    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
-    const stop = () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      cancelAnimationFrame(frame);
-      frame = 0;
-    };
-    const apply = () => {
-      stop();
-      if (mq.matches) {
-        el.dataset.motion = '';
-        update();
-        window.addEventListener('scroll', onScroll, { passive: true });
-        window.addEventListener('resize', onScroll);
-      } else {
-        delete el.dataset.motion;
-        el.style.removeProperty('--p');
-      }
-    };
-    apply();
-    mq.addEventListener('change', apply);
-    return () => { mq.removeEventListener('change', apply); stop(); };
-  }, []); // span is a fixed module-level function
-  return ref;
-}
-// Hero: --p runs from 0 to 1 while the hero scrolls out of view.
-const heroSpan = (r: DOMRect) => r.height;
-// Cards: --p runs from 0 to 1 while the cards stay pinned on screen.
-const fanSpan = (r: DOMRect) => r.height - window.innerHeight;
 
 function Nav() {
   return (
@@ -134,14 +90,28 @@ function BusinessCard({ b, summary }: { b: SiteBusiness; summary: PublicSummary 
   );
 }
 
+// Sections on the second screen that the menu links to (/#businesses etc.).
+const DETAIL_IDS = ['businesses', 'build', 'charity'];
+
 function Home() {
   const summary = usePublicSummary();
-  const hero = useScrollMotion<HTMLElement>(heroSpan);
-  const fan = useScrollMotion<HTMLElement>(fanSpan);
-  return (
-    <>
-      {/* First screen: who we are, then our work and a card to hire us. Fits one screen on PC. */}
-      <section ref={hero} className="s-hero">
+  const [side, setSide] = useState<0 | 1>(0);
+  // A menu link to a section turns to the second screen, then scrolls to it.
+  useEffect(() => {
+    const go = () => {
+      const id = window.location.hash.slice(1);
+      if (!DETAIL_IDS.includes(id)) return;
+      setSide(1);
+      window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 1250);
+    };
+    go();
+    window.addEventListener('hashchange', go);
+    return () => window.removeEventListener('hashchange', go);
+  }, []);
+
+  const overview = (
+      /* First screen: who we are, then our work and a card to hire us. Fits one screen on PC. */
+      <section className="s-hero">
         <Nav />
         <div className="s-hero-top">
           <div className="s-hero-copy">
@@ -165,10 +135,15 @@ function Home() {
             <span className="s-hire-go">{HIRE.cta} →</span>
           </Link>
         </div>
+        <button className="s-flip-hint" type="button" onClick={() => setSide(1)}>Scroll for more ↓</button>
       </section>
+  );
 
+  const detail = (
+    <div className="s-detail">
+      <Nav />
       <main className="s-main">
-        <section id="businesses" ref={fan} className="s-fan" aria-labelledby="b-title">
+        <section id="businesses" className="s-fan" aria-labelledby="b-title">
           <div className="s-fan-stage">
             <h2 id="b-title">Three businesses</h2>
             <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} summary={summary} />)}</div>
@@ -200,8 +175,10 @@ function Home() {
         </section>
       </main>
       <Footer />
-    </>
+    </div>
   );
+
+  return <FlipPages pages={[overview, detail]} side={side} onSide={setSide} />;
 }
 
 /** /start: the one-page enquiry form, linked from the hire card and the Build section. */
