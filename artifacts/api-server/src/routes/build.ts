@@ -9,10 +9,10 @@ import { getClientAddress, isOwnerRequest } from './auth';
 import { zodErrorText } from './validation';
 
 // DDG Build: people who want DDG to build something. Public enquiries open on one date
-// (Markus, 31 Oct 2026: 1 Jan 2027). Before then only a logged-in owner can send one (a test).
+// (Markus, 8 Nov 2026: open now; was 1 Jan 2027). Before it only a logged-in owner can send one (a test).
 
 /** Brisbane date DDG Build opens. One source: the website asks /public/summary. */
-export const SERVICES_OPEN_ON = process.env.DDG_BUILD_OPENS_ON ?? '2027-01-01';
+export const SERVICES_OPEN_ON = process.env.DDG_BUILD_OPENS_ON ?? '2026-11-08';
 const brisbaneToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Brisbane' }).format(new Date());
 export const servicesOpen = () => brisbaneToday() >= SERVICES_OPEN_ON;
 

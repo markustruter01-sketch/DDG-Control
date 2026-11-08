@@ -180,6 +180,9 @@ p { margin: 0; }
 .s-chip:has(input:focus-visible) { outline: 2px solid var(--ng-ice); outline-offset: 2px; }
 .s-form input:not([type='radio']):not([type='checkbox']), .s-form select { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.04); color: var(--ng-text); font: inherit; font-size: 15px; width: 100%; box-sizing: border-box; }
 .s-form select option { color: #0b0c0f; }
+.s-form textarea { min-height: 84px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.04); color: var(--ng-text); font: inherit; font-size: 15px; width: 100%; box-sizing: border-box; resize: vertical; }
+.s-start { max-width: 760px; gap: 14px; }
+.s-start .s-form { margin-top: 12px; }
 .s-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .s-hp { position: absolute !important; left: -10000px; width: 1px; height: 1px; opacity: 0; }
 .s-form-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 6px; border-top: 1px solid var(--ng-hairline); }

@@ -65,7 +65,7 @@ export const CHARITY = {
 };
 
 
-// ── DDG Build: we build platforms for other businesses (opens 1 Jan 2027) ──────────────
+// ── DDG Build: we build platforms for other businesses (open from 8 Nov 2026) ─────────
 // The opening date comes from the server (/api/public/summary), not from here.
 // Prices: about 25% below 2026 Australian guide ranges (Markus 31 Oct). No GST: DDG is not GST-registered.
 
@@ -94,11 +94,21 @@ export const SERVICES: Service[] = [
 export const CARE = 'Care plans from $40 a month for a website and $225 a month for an app. Extra work $110–$185 an hour.';
 
 export const BUILD_STEPS = [
-  { title: 'Tell us', line: 'Five quick questions and you see a ballpark price straight away.' },
+  { title: 'Tell us', line: 'Five quick questions on one page.' },
   { title: 'Free call', line: 'We talk it through and agree exactly what gets built.' },
   { title: 'Fixed quote', line: 'One price for the agreed work, paid in stages.' },
   { title: 'Build and launch', line: 'You see progress every week, then we launch and look after it.' },
 ];
+
+/** The one-page enquiry form (/start, and the Build section). Five questions, nothing more. */
+export const START = {
+  eyebrow: 'DDG Build',
+  title: 'Tell us what you want built.',
+  line: 'Five quick questions. We read every one and email you to set up a free call.',
+  aboutLabel: 'What should it do?',
+  aboutHint: 'A sentence or two: who it is for and the main things it needs to do.',
+  done: 'Thanks, we have it. We will email you to set up a free call.',
+};
 
 export const BUILD_FORM = {
   kinds: [...SERVICES.map((s) => ({ key: s.key as ServiceKey | 'unsure', label: s.name })), { key: 'unsure' as const, label: 'Not sure yet' }],
@@ -106,13 +116,3 @@ export const BUILD_FORM = {
   timing: [{ key: 'asap', label: 'As soon as possible' }, { key: 'soon', label: 'In 1–3 months' }, { key: 'later', label: 'Later' }, { key: 'exploring', label: 'Just exploring' }],
   budget: [{ key: 'under-5k', label: 'Under $5k' }, { key: '5-15k', label: '$5k–$15k' }, { key: '15-40k', label: '$15k–$40k' }, { key: 'over-40k', label: 'Over $40k' }, { key: 'unsure', label: 'Not sure' }],
 } as const;
-
-const aud = (n: number) => `$${(Math.round(n / 250) * 250).toLocaleString('en-AU')}`;
-/** Ballpark from the price table: no extras ticked = bottom half of the range, all ticked = top half. */
-export function ballpark(kind: ServiceKey | 'unsure', ticked: number): string | null {
-  const s = SERVICES.find((x) => x.key === kind);
-  if (!s) return null;
-  const share = s.features.length ? Math.min(1, ticked / s.features.length) : 0;
-  const span = s.to - s.from;
-  return `${aud(s.from + span * 0.5 * share)}–${aud(s.from + span * (0.5 + 0.5 * share))}`;
-}
