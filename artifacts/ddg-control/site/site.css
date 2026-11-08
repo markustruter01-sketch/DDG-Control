@@ -29,6 +29,9 @@ p { margin: 0; }
   background-size: cover; background-position: center 35%;
 }
 .s-hero-top { width: 100%; box-sizing: border-box; margin: auto auto 0; padding: 24px var(--s-gutter) clamp(24px, 2.6vh, 44px); display: flex; flex-wrap: wrap; align-items: flex-end; gap: 28px 40px; }
+/* "Need yours built?": the one bright line on the page, in the brand's mint-to-ice; links to /start. */
+.s-ask { font-weight: 600; white-space: nowrap; background: linear-gradient(90deg, var(--ng-mint), var(--ng-ice)); -webkit-background-clip: text; background-clip: text; color: transparent; text-decoration: none; }
+.s-ask:hover { text-decoration: underline; text-decoration-color: var(--ng-ice); text-underline-offset: 4px; }
 .s-hero-copy { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 /* The "hire us" card at the end of the work row; the whole card is the link to #build. */
 .s-hire { min-height: 0; display: flex; justify-content: flex-end; flex-direction: column; gap: clamp(8px, 0.6vw, 12px); padding: clamp(20px, 1.6vw, 32px) clamp(22px, 1.8vw, 36px); transition: background 0.15s; }
