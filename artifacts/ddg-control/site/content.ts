@@ -12,7 +12,8 @@ export const COMPANY = {
 export const HERO = {
   eyebrow: 'Digital Dynamics Group · Brisbane',
   title: 'From online stores to trading platforms, we build it all.',
-  body: 'Fitness apps, data systems, dashboards and more, built in-house and running live. Need yours built?',
+  body: 'Fitness apps, data systems, dashboards and more, built in-house and running live.',
+  ask: 'Need yours built?', // shown as a bright link to /start
 };
 
 /** The one card beside the headline: hire us. Links to the Build section. */
