@@ -11,14 +11,14 @@ export const COMPANY = {
 
 export const HERO = {
   eyebrow: 'Digital Dynamics Group · Brisbane',
-  title: 'We build and run software businesses.',
-  body: 'Trading, fitness, coffee and creative, each running on platforms we design and build in-house. We build them for clients too.',
+  title: 'From online stores to trading platforms, we build it all.',
+  body: 'Fitness apps, data systems, dashboards and more, built in-house and running live. Need yours built?',
 };
 
 /** The one card beside the headline: hire us. Links to the Build section. */
 export const HIRE = {
   eyebrow: 'Build with DDG',
-  title: 'Need software built?',
+  title: 'Start your build',
   line: 'Websites, online stores, apps and dashboards, built the way we build our own.',
   cta: 'See how we build',
 };
