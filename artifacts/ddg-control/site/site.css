@@ -12,10 +12,12 @@ h1, h2, h3 { margin: 0; font-weight: 400; letter-spacing: -0.01em; }
 p { margin: 0; }
 
 /* Nav */
-.s-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 1200px; margin: 0 auto; padding: 20px 24px; width: 100%; }
+/* Side margin of the first screen: grows with the screen, so wide monitors are used, not left empty. */
+:root { --s-gutter: clamp(16px, 4vw, 96px); }
+.s-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 auto; padding: 20px var(--s-gutter); width: 100%; box-sizing: border-box; }
 .s-brand { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; letter-spacing: 0.04em; }
 .s-brand img { width: 32px; height: 32px; object-fit: contain; }
-.s-nav nav { display: flex; gap: 22px; font-size: 14px; color: var(--ng-text-2); }
+.s-nav nav { display: flex; gap: clamp(16px, 1.4vw, 32px); font-size: clamp(14px, 0.85vw, 17px); color: var(--ng-text-2); }
 .s-nav nav a:hover { color: var(--ng-text); }
 
 /* Hero */
@@ -37,23 +39,23 @@ p { margin: 0; }
 .s-hero[data-motion] .s-hire { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(16, 18, 24, 0.8); }
 .s-hero[data-motion] .s-hero-top { translate: 0 calc(var(--p) * -120px); opacity: calc(1 - var(--p) * 1.6); }
 .s-hero[data-motion] .s-work { translate: 0 calc(var(--p) * -50px); opacity: calc(1 - var(--p) * 1.2); }
-.s-hero-top { max-width: 1200px; width: 100%; margin: auto auto 0; padding: 24px 24px 28px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 28px 40px; }
+.s-hero-top { width: 100%; box-sizing: border-box; margin: auto auto 0; padding: 24px var(--s-gutter) clamp(24px, 2.6vh, 44px); display: flex; flex-wrap: wrap; align-items: flex-end; gap: 28px 40px; }
 .s-hero-copy { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 /* The one "hire us" card beside the headline; the whole card is the link to #build. */
-.s-hire { flex: 1 1 300px; max-width: 380px; display: flex; flex-direction: column; gap: 8px; padding: 22px 24px; transition: background 0.15s; }
+.s-hire { flex: 0 1 clamp(320px, 22vw, 520px); max-width: clamp(320px, 22vw, 520px); display: flex; flex-direction: column; gap: clamp(8px, 0.6vw, 12px); padding: clamp(20px, 1.6vw, 32px) clamp(22px, 1.8vw, 36px); transition: background 0.15s; }
 .s-hire:hover { background: rgba(24, 27, 34, 0.66); }
-.s-hire b { font-size: 22px; font-weight: 500; }
-.s-hire > span:not(.s-eyebrow) { font-size: 15px; color: var(--ng-text-2); }
+.s-hire b { font-size: clamp(22px, 1.45vw, 32px); font-weight: 500; }
+.s-hire > span:not(.s-eyebrow) { font-size: clamp(15px, 0.95vw, 19px); color: var(--ng-text-2); }
 .s-hire > .s-hire-go { color: var(--ng-text); font-weight: 500; margin-top: 4px; }
 /* Our work: two wide dashboards, a phone and a book, all on one level line. */
-.s-work { max-width: 1152px; width: calc(100% - 48px); margin: 0 auto 28px; height: clamp(220px, 40vh, 420px); display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 0.62fr) minmax(0, 0.74fr); gap: 18px; }
+.s-work { width: calc(100% - 2 * var(--s-gutter)); margin: 0 auto clamp(24px, 3vh, 48px); height: clamp(220px, 44vh, 680px); display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 0.62fr) minmax(0, 0.74fr); gap: clamp(14px, 1.3vw, 30px); }
 .s-work figure { margin: 0; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
 .s-work-frame { flex: 1 1 auto; min-height: 0; display: flex; justify-content: center; }
 .s-work-frame img { display: block; height: 100%; max-width: 100%; object-fit: cover; object-position: top left; box-shadow: 0 24px 50px rgba(0,0,0,0.4); }
 .s-work-wide img { width: 100%; border-radius: 16px; border: 1px solid var(--ng-edge); }
 .s-work-phone img { aspect-ratio: 9 / 19.5; box-sizing: border-box; border-radius: 28px; border: 6px solid #1d2027; }
 .s-work-book img { aspect-ratio: 2 / 3; border-radius: 3px 8px 8px 3px; }
-.s-work figcaption { flex: none; font-size: 14.5px; color: var(--ng-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s-work figcaption { flex: none; font-size: clamp(14px, 0.85vw, 18px); color: var(--ng-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .s-work-phone figcaption, .s-work-book figcaption { text-align: center; }
 .s-work figcaption b { color: var(--ng-text); font-weight: 500; }
 @media (max-width: 1023px), (max-height: 699px) {
@@ -63,9 +65,9 @@ p { margin: 0; }
   .s-work-wide img { height: auto; aspect-ratio: 16 / 9; }
   .s-work-phone img, .s-work-book img { height: clamp(260px, 60vw, 420px); }
 }
-.s-eyebrow { font: 500 12px/1 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-text-2); }
-.s-hero h1 { font-size: clamp(36px, 5.4vw, 68px); line-height: 1.05; max-width: 19ch; }
-.s-lead { font-size: clamp(16px, 1.6vw, 19px); color: var(--ng-text-2); max-width: 60ch; }
+.s-eyebrow { font: 500 clamp(12px, 0.7vw, 15px)/1 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-text-2); }
+.s-hero h1 { font-size: clamp(36px, 4.4vw, 108px); line-height: 1.04; max-width: 20ch; }
+.s-lead { font-size: clamp(16px, 1.15vw, 24px); color: var(--ng-text-2); max-width: 60ch; }
 .glass-photo {
   background: rgba(16, 18, 24, 0.52); border: 1px solid var(--ng-edge); border-radius: 18px;
   backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
@@ -230,9 +232,22 @@ p { margin: 0; }
 @media (max-width: 720px) {
   .s-nav { padding-top: 14px; padding-bottom: 6px; }
   .s-nav nav { gap: 14px; font-size: 13px; }
-  .s-hero-top { padding-top: 20px; padding-bottom: 16px; gap: 20px; }
+  /* Phone first screen: headline, the hire card full width, then our work as a
+     sideways swipe row (each item snaps into place, the next one peeks in). */
+  .s-hero { height: auto; min-height: 0; }
+  .s-hero-top { padding-top: 28px; padding-bottom: 20px; gap: 18px; }
   .s-hero-copy { gap: 12px; }
-  .s-work { width: calc(100% - 32px); margin-bottom: 20px; }
+  .s-hire { flex-basis: 100%; max-width: none; padding: 18px 20px; }
+  .s-hire b { font-size: 20px; }
+  .s-work { display: flex; width: 100%; height: auto; margin: 0 0 24px; padding: 0 16px 6px; box-sizing: border-box; gap: 12px;
+    overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-left: 16px; scrollbar-width: none; }
+  .s-work::-webkit-scrollbar { display: none; }
+  .s-work figure { flex: 0 0 auto; scroll-snap-align: start; }
+  .s-work-wide { width: 86vw; }
+  .s-work-frame { height: 54vw; flex: none; }
+  .s-work-wide img { height: 100%; aspect-ratio: auto; }
+  .s-work-phone img, .s-work-book img { height: 100%; }
+  .s-work figcaption { font-size: 13.5px; }
   .s-eyebrow { font-size: 11px; }
   .s-hero h1 { font-size: 31px; line-height: 1.08; }
   .s-lead { font-size: 15px; line-height: 1.5; }
@@ -252,7 +267,7 @@ p { margin: 0; }
   .s-ico { width: 36px; height: 36px; border-radius: 10px; }
   .s-stat b { font-size: 46px; }
   .s-stat span { font-size: 9.5px; }
-  .s-nav, .s-hero-top, .s-footer { padding-left: 16px; padding-right: 16px; }
+  .s-footer { padding-left: 16px; padding-right: 16px; }
   .s-charity { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
   .s-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .s-stats dd { font-size: 26px; }
