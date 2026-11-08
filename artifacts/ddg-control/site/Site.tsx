@@ -90,19 +90,17 @@ function BusinessCard({ b, summary }: { b: SiteBusiness; summary: PublicSummary 
   );
 }
 
-// Sections on the second screen that the menu links to (/#businesses etc.).
-const DETAIL_IDS = ['businesses', 'build', 'charity'];
+// The home screens, in order. The menu links (/#businesses etc.) turn to that screen.
+const SCREENS = ['home', 'businesses', 'build', 'charity'];
 
 function Home() {
   const summary = usePublicSummary();
-  const [side, setSide] = useState<0 | 1>(0);
-  // A menu link to a section turns to the second screen, then scrolls to it.
+  const [side, setSide] = useState(0);
+  // A menu link to a section turns to that screen.
   useEffect(() => {
     const go = () => {
-      const id = window.location.hash.slice(1);
-      if (!DETAIL_IDS.includes(id)) return;
-      setSide(1);
-      window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 1250);
+      const i = SCREENS.indexOf(window.location.hash.slice(1));
+      if (i > 0) setSide(i);
     };
     go();
     window.addEventListener('hashchange', go);
@@ -135,21 +133,33 @@ function Home() {
             <span className="s-hire-go">{HIRE.cta} →</span>
           </Link>
         </div>
-        <button className="s-flip-hint" type="button" onClick={() => setSide(1)}>Scroll for more ↓</button>
+        <button className="s-flip-hint" type="button" onClick={() => setSide(1)}>Scroll ↓</button>
       </section>
   );
 
-  const detail = (
-    <div className="s-detail">
+  const businesses = (
+    <div className="s-screen">
       <Nav />
-      <main className="s-main">
-        <section id="businesses" className="s-fan" aria-labelledby="b-title">
-          <div className="s-fan-stage">
-            <h2 id="b-title">Three businesses</h2>
-            <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} summary={summary} />)}</div>
-          </div>
+      <main className="s-main s-screen-body">
+        <section id="businesses" aria-labelledby="b-title">
+          <h2 id="b-title">Three businesses</h2>
+          <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} summary={summary} />)}</div>
         </section>
-
+      </main>
+    </div>
+  );
+  const build = (
+    <div className="s-screen">
+      <Nav />
+      <main className="s-main s-screen-body">
+        <Build summary={summary} />
+      </main>
+    </div>
+  );
+  const charityScreen = (
+    <div className="s-screen">
+      <Nav />
+      <main className="s-main s-screen-body">
         <section className="s-case glass-plain" aria-labelledby="case-title">
           <div>
             <p className="s-eyebrow">How it all connects</p>
@@ -158,9 +168,6 @@ function Home() {
           </div>
           <ul className="s-built">{CONTROL_CASE.built.map((x) => <li key={x}>{x}</li>)}</ul>
         </section>
-
-        <Build summary={summary} />
-
         <section id="charity" className="s-charity" aria-labelledby="c-title">
           <div>
             <h2 id="c-title">{CHARITY.title}</h2>
@@ -178,7 +185,8 @@ function Home() {
     </div>
   );
 
-  return <FlipPages pages={[overview, detail]} side={side} onSide={setSide} />;
+  return <FlipPages pages={[overview, businesses, build, charityScreen]} side={side} onSide={setSide}
+    labels={['Home', 'Businesses', 'Build with us', 'Charity']} />;
 }
 
 /** /start: the one-page enquiry form, linked from the hire card and the Build section. */
