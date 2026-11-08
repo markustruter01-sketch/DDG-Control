@@ -41,14 +41,14 @@ p { margin: 0; }
 .s-hero[data-motion] .s-work { translate: 0 calc(var(--p) * -50px); opacity: calc(1 - var(--p) * 1.2); }
 .s-hero-top { width: 100%; box-sizing: border-box; margin: auto auto 0; padding: 24px var(--s-gutter) clamp(24px, 2.6vh, 44px); display: flex; flex-wrap: wrap; align-items: flex-end; gap: 28px 40px; }
 .s-hero-copy { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-/* The one "hire us" card beside the headline; the whole card is the link to #build. */
-.s-hire { flex: 0 1 clamp(320px, 22vw, 520px); max-width: clamp(320px, 22vw, 520px); display: flex; flex-direction: column; gap: clamp(8px, 0.6vw, 12px); padding: clamp(20px, 1.6vw, 32px) clamp(22px, 1.8vw, 36px); transition: background 0.15s; }
+/* The "hire us" card at the end of the work row; the whole card is the link to #build. */
+.s-hire { min-height: 0; display: flex; justify-content: flex-end; flex-direction: column; gap: clamp(8px, 0.6vw, 12px); padding: clamp(20px, 1.6vw, 32px) clamp(22px, 1.8vw, 36px); transition: background 0.15s; }
 .s-hire:hover { background: rgba(24, 27, 34, 0.66); }
 .s-hire b { font-size: clamp(22px, 1.45vw, 32px); font-weight: 500; }
 .s-hire > span:not(.s-eyebrow) { font-size: clamp(15px, 0.95vw, 19px); color: var(--ng-text-2); }
-.s-hire > .s-hire-go { color: var(--ng-text); font-weight: 500; margin-top: 4px; }
-/* Our work: two wide dashboards and a phone, all on one level line. */
-.s-work { width: calc(100% - 2 * var(--s-gutter)); margin: 0 auto clamp(24px, 3vh, 48px); height: clamp(220px, 44vh, 680px); display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 0.62fr); gap: clamp(14px, 1.3vw, 30px); }
+.s-hire > .s-hire-go { color: var(--ng-text); font-weight: 500; margin-top: clamp(4px, 1vh, 16px); }
+/* Our work: two wide dashboards, a phone and the hire card, all on one level line. */
+.s-work { width: calc(100% - 2 * var(--s-gutter)); margin: 0 auto clamp(24px, 3vh, 48px); height: clamp(220px, 44vh, 680px); display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 0.62fr) minmax(0, 1fr); gap: clamp(14px, 1.3vw, 30px); }
 .s-work figure { margin: 0; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
 .s-work-frame { flex: 1 1 auto; min-height: 0; display: flex; justify-content: center; }
 .s-work-frame img { display: block; height: 100%; max-width: 100%; object-fit: cover; object-position: top left; box-shadow: 0 24px 50px rgba(0,0,0,0.4); }
@@ -65,7 +65,7 @@ p { margin: 0; }
   .s-work-phone img { height: clamp(260px, 60vw, 420px); }
 }
 .s-eyebrow { font: 500 clamp(12px, 0.7vw, 15px)/1 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-text-2); }
-.s-hero h1 { font-size: clamp(36px, 4.4vw, 108px); line-height: 1.04; max-width: 20ch; }
+.s-hero h1 { font-size: clamp(34px, 3.8vw, 96px); line-height: 1.04; max-width: 28ch; }
 .s-lead { font-size: clamp(16px, 1.15vw, 24px); color: var(--ng-text-2); max-width: 60ch; }
 .glass-photo {
   background: rgba(16, 18, 24, 0.52); border: 1px solid var(--ng-edge); border-radius: 18px;
@@ -226,12 +226,12 @@ p { margin: 0; }
 @media (max-width: 720px) {
   .s-nav { padding-top: 14px; padding-bottom: 6px; }
   .s-nav nav { gap: 14px; font-size: 13px; }
-  /* Phone first screen: headline, the hire card full width, then our work as a
-     sideways swipe row (each item snaps into place, the next one peeks in). */
+  /* Phone first screen: headline, then a sideways swipe row (each item snaps into
+     place, the next one peeks in) that opens on the hire card, then our work. */
   .s-hero { height: auto; min-height: 0; }
   .s-hero-top { padding-top: 28px; padding-bottom: 20px; gap: 18px; }
   .s-hero-copy { gap: 12px; }
-  .s-hire { flex-basis: 100%; max-width: none; padding: 18px 20px; }
+  .s-hire { order: -1; flex: 0 0 auto; width: 78vw; box-sizing: border-box; height: calc(54vw + 32px); scroll-snap-align: start; padding: 18px 20px; }
   .s-hire b { font-size: 20px; }
   .s-work { display: flex; width: 100%; height: auto; margin: 0 0 24px; padding: 0 16px 6px; box-sizing: border-box; gap: 12px;
     overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-left: 16px; scrollbar-width: none; }
