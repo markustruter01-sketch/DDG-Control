@@ -5,15 +5,25 @@ import './social-footprint.css';
 
 /** One social footprint bar for DDG Control and the public website: followers,
  *  views and likes, all time, for every platform at once (Markus 31 Oct: all time).
- *  A platform that does not show an all-time number shows "—", never a guess. */
+ *  Until a platform's all-time number has been recorded, its latest 30-day number
+ *  shows instead, marked "30 days" (Markus 9 Nov); a new all-time reading replaces it.
+ *  Nothing recorded at all shows "—", never a guess. */
 export type SocialNumbers = {
   followers?: number | null;
   views?: number | null;
   likes?: number | null;
+  /** True when views or likes are the 30-day number, not all time. */
+  recent?: boolean;
 };
-type AllTime = { followers: number | null; views_all_time: number | null; likes_all_time: number | null };
-/** The all-time numbers from an API social summary. */
-export const allTime = (s: AllTime): SocialNumbers => ({ followers: s.followers, views: s.views_all_time, likes: s.likes_all_time });
+type Reading = { followers: number | null; views_all_time: number | null; likes_all_time: number | null;
+  views_30d: number | null; likes_30d: number | null };
+/** All-time numbers from an API social summary, falling back to the latest 30-day ones. */
+export const allTime = (s: Reading): SocialNumbers => ({
+  followers: s.followers,
+  views: s.views_all_time ?? s.views_30d,
+  likes: s.likes_all_time ?? s.likes_30d,
+  recent: (s.views_all_time == null && s.views_30d != null) || (s.likes_all_time == null && s.likes_30d != null),
+});
 
 export function SocialFootprint({ totals, platforms, links = false }: {
   totals: SocialNumbers | null | undefined;
@@ -26,7 +36,7 @@ export function SocialFootprint({ totals, platforms, links = false }: {
     <div className="sf">
       <div className="sf-head">
         <h2>Social footprint</h2>
-        <span className="sf-label">All time</span>
+        <span className="sf-label">{totals?.recent ? 'All time · 30 days where all-time is not in yet' : 'All time'}</span>
       </div>
       <dl className="sf-totals">
         <div className="sf-main"><dt className="sf-label">Followers</dt><dd>{count(totals?.followers)}</dd></div>
@@ -42,7 +52,7 @@ export function SocialFootprint({ totals, platforms, links = false }: {
               <PlatformIcon platform={s.platform} size={18} />
               <span className="sf-nums">
                 <b>{count(p?.followers)}</b>
-                <small>{noData ? 'No data' : `${count(p?.views)} views · ${count(p?.likes)} likes`}</small>
+                <small>{noData ? 'No data' : `${count(p?.views)} views · ${count(p?.likes)} likes${p?.recent ? ' · 30 days' : ''}`}</small>
               </span>
             </>
           );
