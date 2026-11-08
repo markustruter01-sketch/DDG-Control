@@ -18,10 +18,13 @@ export const HERO = {
 
 /** The one card beside the headline: hire us. Links to the Build section. */
 export const HIRE = {
-  eyebrow: 'Build with DDG',
-  title: 'Start your build',
-  line: 'Websites, online stores, apps and dashboards, built the way we build our own.',
-  cta: 'See how we build',
+  status: 'Taking new builds',
+  title: 'Got an idea? We\'ll build it.',
+  priceFrom: 'Websites from',
+  price: '$1,500', // = SERVICES website "from" price
+  // Things we have built (live 3D tracking = Gods Eye View and SilentWing: live public data on a 3D map).
+  done: ['Websites', 'Online stores', 'Apps + dashboards', 'Trading platforms', 'Live 3D tracking'],
+  cta: 'Start your build',
 };
 
 /** Our work, along the bottom of the first screen. Wide = a desktop dashboard, phone is tall. */
