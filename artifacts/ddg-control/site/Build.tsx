@@ -1,10 +1,10 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import type { PublicSummary } from '@workspace/api-client-react';
-import { BUILD_FORM, BUILD_STEPS, CARE, SERVICES, ballpark, type ServiceKey } from './content';
+import { BUILD_FORM, BUILD_STEPS, CARE, SERVICES, START, type ServiceKey } from './content';
 
 // DDG Build: we build platforms for other businesses. Shown as a teaser until the server says
-// it is open (1 Jan 2027). ?preview=build shows the full section; the server only accepts a
-// test enquiry from a logged-in owner before the opening date.
+// it is open (SERVICES_OPEN_ON on the server). ?preview=build shows the full section; the server
+// only accepts a test enquiry from a logged-in owner before the opening date.
 
 const ICONS: Record<ServiceKey, ReactNode> = {
   website: <><rect pathLength={1} x="3" y="4" width="18" height="16" rx="2" /><path pathLength={1} d="M3 9h18M6.5 6.5h.01M9.5 6.5h.01" /></>,
@@ -20,35 +20,33 @@ const aud = (n: number) => `$${n.toLocaleString('en-AU')}`;
 const openDate = (iso: string) => new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`));
 
 type Kind = ServiceKey | 'unsure';
-type Sent = { state: 'idle' } | { state: 'sending' } | { state: 'done'; test: boolean; estimate: string | null } | { state: 'error'; message: string };
+type Sent = { state: 'idle' } | { state: 'sending' } | { state: 'done'; test: boolean } | { state: 'error'; message: string };
 
-function EnquiryForm() {
+/** The one-page enquiry form: what, what it does, what exists, when and budget, who. */
+export function EnquiryForm() {
   const [kind, setKind] = useState<Kind | null>(null);
-  const [features, setFeatures] = useState<string[]>([]);
   const [hasNow, setHasNow] = useState('');
   const [timing, setTiming] = useState('');
   const [budget, setBudget] = useState('');
   const [sent, setSent] = useState<Sent>({ state: 'idle' });
-  const service = SERVICES.find((s) => s.key === kind);
-  const estimate = kind ? ballpark(kind, features.length) : null;
-
-  const pickKind = (k: Kind) => { setKind(k); setFeatures([]); };
-  const toggle = (f: string) => setFeatures((fs) => (fs.includes(f) ? fs.filter((x) => x !== f) : [...fs, f]));
 
   async function submit(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();
     const form = new FormData(ev.currentTarget);
-    if (!kind || !hasNow || !timing || !budget) return setSent({ state: 'error', message: 'Please answer questions 1, 3 and 4.' });
+    const name = String(form.get('name') ?? '').trim();
+    const email = String(form.get('email') ?? '').trim();
+    if (!kind || !hasNow || !timing || !budget || !name || !email) {
+      return setSent({ state: 'error', message: 'Please answer all five questions.' });
+    }
     setSent({ state: 'sending' });
     const body = {
-      kind, features, has_now: hasNow, timing, budget,
-      name: String(form.get('name') ?? ''), email: String(form.get('email') ?? ''),
-      about: String(form.get('about') ?? '') || undefined, ballpark: estimate ?? undefined, fax: String(form.get('fax') ?? ''),
+      kind, features: [], has_now: hasNow, timing, budget, name, email,
+      about: String(form.get('about') ?? '').trim() || undefined, fax: String(form.get('fax') ?? ''),
     };
     try {
       const r = await fetch('/api/public/enquiry', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
       const json = await r.json().catch(() => ({}));
-      if (r.ok) return setSent({ state: 'done', test: Boolean(json.test), estimate });
+      if (r.ok) return setSent({ state: 'done', test: Boolean(json.test) });
       setSent({ state: 'error', message: typeof json.error === 'string' ? json.error : 'Something went wrong. Please try again.' });
     } catch {
       setSent({ state: 'error', message: 'Could not send. Check your connection and try again.' });
@@ -58,9 +56,8 @@ function EnquiryForm() {
   if (sent.state === 'done') {
     return (
       <div className="s-form glass-plain" role="status">
-        <h3>{sent.test ? 'Test enquiry saved.' : 'Thanks, we have your enquiry.'}</h3>
-        {sent.estimate && <p className="s-ballpark"><b>{sent.estimate}</b><span>Ballpark for what you picked</span></p>}
-        <p>{sent.test ? 'It is in Control → Clients, marked Test.' : 'We will email you to set up a free call. The ballpark becomes a fixed quote once we agree exactly what gets built.'}</p>
+        <h3>{sent.test ? 'Test enquiry saved.' : START.done}</h3>
+        {sent.test && <p>It is in Control → Clients, marked Test.</p>}
       </div>
     );
   }
@@ -71,22 +68,16 @@ function EnquiryForm() {
         <legend><span>1</span> What do you want built?</legend>
         <div className="s-chips">
           {BUILD_FORM.kinds.map((k) => (
-            <label key={k.key} className="s-chip"><input type="radio" name="kind" checked={kind === k.key} onChange={() => pickKind(k.key)} />{k.label}</label>
+            <label key={k.key} className="s-chip"><input type="radio" name="kind" checked={kind === k.key} onChange={() => setKind(k.key)} />{k.label}</label>
           ))}
         </div>
       </fieldset>
-      {service && (
-        <fieldset>
-          <legend><span>2</span> What must it do? <em>Tick any</em></legend>
-          <div className="s-chips">
-            {service.features.map((f) => (
-              <label key={f} className="s-chip"><input type="checkbox" checked={features.includes(f)} onChange={() => toggle(f)} />{f}</label>
-            ))}
-          </div>
-        </fieldset>
-      )}
       <fieldset>
-        <legend><span>{service ? 3 : 2}</span> Do you have anything already?</legend>
+        <legend><span>2</span> {START.aboutLabel}</legend>
+        <textarea name="about" maxLength={300} rows={3} placeholder={START.aboutHint} aria-label={START.aboutLabel} />
+      </fieldset>
+      <fieldset>
+        <legend><span>3</span> Do you have anything already?</legend>
         <div className="s-chips">
           {BUILD_FORM.hasNow.map((h) => (
             <label key={h.key} className="s-chip"><input type="radio" name="has_now" checked={hasNow === h.key} onChange={() => setHasNow(h.key)} />{h.label}</label>
@@ -94,36 +85,31 @@ function EnquiryForm() {
         </div>
       </fieldset>
       <fieldset>
-        <legend><span>{service ? 4 : 3}</span> When, and roughly what budget?</legend>
+        <legend><span>4</span> When, and roughly what budget?</legend>
         <div className="s-pair">
           <select aria-label="When" value={timing} onChange={(e) => setTiming(e.target.value)}>
             <option value="" disabled>When</option>
             {BUILD_FORM.timing.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
           </select>
           <select aria-label="Budget" value={budget} onChange={(e) => setBudget(e.target.value)}>
-            <option value="" disabled>Budget</option>
+            <option value="" disabled>Budget (AUD)</option>
             {BUILD_FORM.budget.map((b) => <option key={b.key} value={b.key}>{b.label}</option>)}
           </select>
         </div>
       </fieldset>
       <fieldset>
-        <legend><span>{service ? 5 : 4}</span> Your details</legend>
+        <legend><span>5</span> How do we reach you?</legend>
         <div className="s-pair">
-          <input name="name" required maxLength={80} placeholder="Name" autoComplete="name" />
-          <input name="email" type="email" required maxLength={160} placeholder="Email" autoComplete="email" />
+          <input name="name" required maxLength={80} placeholder="Name" autoComplete="name" aria-label="Name" />
+          <input name="email" type="email" required maxLength={160} placeholder="Email" autoComplete="email" aria-label="Email" />
         </div>
-        <input name="about" maxLength={300} placeholder="One line about your business (optional)" />
         <input name="fax" tabIndex={-1} autoComplete="off" className="s-hp" aria-hidden="true" />
       </fieldset>
       <div className="s-form-foot">
-        <p className="s-ballpark">
-          <b>{estimate ?? (kind === 'unsure' ? 'Free call' : '—')}</b>
-          <span>{estimate ? 'Ballpark, before a fixed quote' : kind === 'unsure' ? 'We will help you work it out' : 'Pick what you want built to see a ballpark'}</span>
-        </p>
-        <button className="s-btn fill" type="submit" disabled={sent.state === 'sending'}>{sent.state === 'sending' ? 'Sending…' : 'Send enquiry'}</button>
+        <p className="s-note">We only use your details to reply. No GST: DDG is not registered for GST.</p>
+        <button className="s-btn fill" type="submit" disabled={sent.state === 'sending'}>{sent.state === 'sending' ? 'Sending…' : 'Send'}</button>
       </div>
       {sent.state === 'error' && <p className="s-form-error" role="alert">{sent.message}</p>}
-      <p className="s-note">We only use your details to reply to this enquiry. Prices in AUD; DDG is not registered for GST.</p>
     </form>
   );
 }
@@ -131,7 +117,7 @@ function EnquiryForm() {
 export function Build({ summary }: { summary: PublicSummary | null }) {
   const preview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === 'build';
   const open = Boolean(summary?.services_open);
-  const opensOn = summary?.services_open_on ?? '2027-01-01';
+  const opensOn = summary?.services_open_on ?? '2026-11-08';
   return (
     <section id="build" className="s-build" aria-labelledby="build-title">
       <p className="s-eyebrow">DDG Build{open ? '' : ` · opens ${openDate(opensOn)}`}</p>
@@ -162,7 +148,7 @@ export function Build({ summary }: { summary: PublicSummary | null }) {
           <ol className="s-steps">
             {BUILD_STEPS.map((s, i) => <li key={s.title}><span>{i + 1}</span><b>{s.title}</b><p>{s.line}</p></li>)}
           </ol>
-          <div id="start"><EnquiryForm /></div>
+          <p><a className="s-btn fill" href="/start">Start your build →</a></p>
         </>
       )}
     </section>
