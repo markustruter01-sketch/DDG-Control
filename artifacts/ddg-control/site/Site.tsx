@@ -115,7 +115,7 @@ function Home() {
           <div className="s-hero-copy">
             <p className="s-eyebrow">{HERO.eyebrow}</p>
             <h1>{HERO.title}</h1>
-            <p className="s-lead">{HERO.body}</p>
+            <p className="s-lead">{HERO.body} <Link className="s-ask" href="/start">{HERO.ask} →</Link></p>
           </div>
         </div>
         <div className="s-work" aria-label="Our work">
