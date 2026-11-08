@@ -34,11 +34,34 @@ p { margin: 0; }
 .s-ask:hover { text-decoration: underline; text-decoration-color: var(--ng-ice); text-underline-offset: 4px; }
 .s-hero-copy { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 /* The "hire us" card at the end of the work row; the whole card is the link to #build. */
-.s-hire { min-height: 0; display: flex; justify-content: flex-end; flex-direction: column; gap: clamp(8px, 0.6vw, 12px); padding: clamp(20px, 1.6vw, 32px) clamp(22px, 1.8vw, 36px); transition: background 0.15s; }
-.s-hire:hover { background: rgba(24, 27, 34, 0.66); }
-.s-hire b { font-size: clamp(22px, 1.45vw, 32px); font-weight: 500; }
-.s-hire > span:not(.s-eyebrow) { font-size: clamp(15px, 0.95vw, 19px); color: var(--ng-text-2); }
-.s-hire > .s-hire-go { color: var(--ng-text); font-weight: 500; margin-top: clamp(4px, 1vh, 16px); }
+/* The hire card: a slowly turning mint-to-ice edge, the website price, a ticked list of
+   things we have built, and a gradient button. The whole card links to /start. */
+@property --s-hire-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@keyframes s-hire-spin { to { --s-hire-ang: 360deg; } }
+@keyframes s-hire-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+@keyframes s-hire-tick { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+.s-hire { min-height: 0; display: flex; padding: 1.5px; border-radius: 20px; text-decoration: none; color: var(--ng-text);
+  background: conic-gradient(from var(--s-hire-ang), var(--ng-mint), var(--ng-ice), rgba(108,199,240,0.15), rgba(61,220,151,0.15), var(--ng-mint));
+  animation: s-hire-spin 6s linear infinite; box-shadow: 0 0 50px rgba(61, 220, 151, 0.16); }
+.s-hire-in { flex: 1; min-height: 0; overflow: hidden; border-radius: 19px; background: rgba(14, 16, 21, 0.93); padding: clamp(16px, 1.4vw, 28px);
+  display: flex; flex-direction: column; justify-content: center; gap: clamp(6px, 1vh, 14px); }
+.s-hire-status { display: flex; align-items: center; gap: 8px; font: 500 clamp(11px, 0.65vw, 13px)/1 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: #9fe8c6; }
+.s-hire-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--ng-mint); box-shadow: 0 0 10px var(--ng-mint); }
+.s-hire b { font-size: clamp(20px, 1.5vw, 32px); line-height: 1.1; font-weight: 500; letter-spacing: -0.01em; }
+.s-hire-price { font-size: clamp(14px, 0.9vw, 17px); color: var(--ng-text-2); }
+.s-hire-price strong { color: var(--ng-text); font-weight: 600; font-size: 1.15em; }
+.s-hire-done { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: clamp(2px, 0.5vh, 6px); font: 400 clamp(12px, 0.75vw, 14.5px)/1.5 var(--ng-mono); color: var(--ng-text-2); }
+.s-hire-done li { display: flex; gap: 8px; opacity: 0; animation: s-hire-tick 0.4s ease-out forwards; }
+.s-hire-done li span { color: var(--ng-ice); }
+.s-hire-done li em { margin-left: auto; font-style: normal; color: var(--ng-mint); }
+.s-hire-done li:nth-child(1) { animation-delay: 0.3s; } .s-hire-done li:nth-child(2) { animation-delay: 0.6s; }
+.s-hire-done li:nth-child(3) { animation-delay: 0.9s; } .s-hire-done li:nth-child(4) { animation-delay: 1.2s; }
+.s-hire-done li:nth-child(5) { animation-delay: 1.5s; }
+.s-hire-go { display: flex; align-items: center; justify-content: space-between; margin-top: clamp(2px, 0.6vh, 8px); min-height: clamp(40px, 4.6vh, 52px);
+  padding: 0 6px 0 20px; border-radius: 999px; background: linear-gradient(90deg, var(--ng-mint), var(--ng-ice)); color: #071410; font-weight: 600; font-size: clamp(14px, 0.9vw, 17px); }
+.s-hire-arrow { width: clamp(30px, 3.4vh, 40px); height: clamp(30px, 3.4vh, 40px); border-radius: 50%; background: #071410; color: #9fe8c6; display: inline-flex; align-items: center; justify-content: center; }
+.s-hire:hover .s-hire-arrow { animation: s-hire-nudge 0.9s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .s-hire { animation: none; } .s-hire-done li { animation: none; opacity: 1; } }
 /* Our work: two wide dashboards, a phone and the hire card, all on one level line. */
 .s-work { width: calc(100% - 2 * var(--s-gutter)); margin: 0 auto clamp(24px, 3vh, 48px); height: clamp(220px, 44vh, 680px); display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 0.62fr) minmax(0, 1fr); gap: clamp(14px, 1.3vw, 30px); }
 .s-work figure { margin: 0; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -239,7 +262,7 @@ p { margin: 0; }
   .s-hero { height: auto; min-height: 0; }
   .s-hero-top { padding-top: 28px; padding-bottom: 20px; gap: 18px; }
   .s-hero-copy { gap: 12px; }
-  .s-hire { order: -1; flex: 0 0 auto; width: 78vw; box-sizing: border-box; height: calc(54vw + 32px); scroll-snap-align: start; padding: 18px 20px; }
+  .s-hire { order: -1; flex: 0 0 auto; width: 82vw; box-sizing: border-box; scroll-snap-align: start; }
   .s-hire b { font-size: 20px; }
   .s-work { display: flex; width: 100%; height: auto; margin: 0 0 24px; padding: 0 16px 6px; box-sizing: border-box; gap: 12px;
     overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-left: 16px; scrollbar-width: none; }
