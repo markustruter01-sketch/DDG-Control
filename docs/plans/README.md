@@ -13,7 +13,7 @@ Last updated: Wed 11 Nov 2026 ~13:00 Brisbane (UTC+10) by Claude. For any Claude
 | DDG Control (private command centre) + public website ddg.limited | DDG-Control (this repo) | this folder | Live. Control done; website live with DDG Build section (opens 1 Jan 2027) |
 | DDG Finance (trading platform, paper) | quant-terminal | `docs/plans/README.md`, `docs/plans/finance-2027-plan.md` | Live; reliability work done 10–11 Nov; strategy lock 21–22 Nov; public record from 23 Nov (or 1 Jan, Markus to decide) |
 | DDG Coffee (Cattle Dog Coffee) | cattle-dog-coffee | `docs/plans/README.md` | Live and trading |
-| DDG Fitness (Hypest app) | ddg-hypest | `docs/HYPEST-BUILD-PLAN.md` (single plan, steps ticked as done) + `docs/TIERS-AND-BODY-SPEC.md`, `docs/COACH-AGENT-SPEC.md` | In development: Phases 1–3 built per the plan (Phase 3 merged as PR #39); not published to the public yet |
+| DDG Fitness (Hypest app) | ddg-hypest | `docs/HYPEST-BUILD-PLAN.md` (single plan, steps ticked as done) + `docs/TIERS-AND-BODY-SPEC.md`, `docs/COACH-AGENT-SPEC.md` | In development: Phase 3 work merged (PR #39); see the plan's ticks for what is done; not launched |
 | DDG Creative (vlogs, shorts, novel) | — | — | Content work; website page /creative |
 
 ## End state (what "done" means for 1 Jan 2027)
