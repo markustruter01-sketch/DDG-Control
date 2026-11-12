@@ -7,6 +7,7 @@ import { LAUNCH_DATE } from '@/lib/company';
 import { daysUntil } from '@/lib/money';
 import { SOCIALS, type Platform } from '@/lib/public-info';
 import { Build, EnquiryForm } from './Build';
+import { FinancePage } from './Finance';
 import { FlipPages } from './FlipPages';
 import { CHARITY, COMPANY, CONTROL_CASE, HERO, HIRE, SITE_BUSINESSES, START, WORK, type SiteBusiness } from './content';
 
@@ -35,6 +36,7 @@ function Nav() {
       <Link href="/" className="s-brand" aria-label="DDG home"><img src={LOGO} alt="" /><b>DDG</b></Link>
       <nav aria-label="Site">
         <a href="/#businesses">Businesses</a>
+        <Link href="/finance">Finance</Link>
         <a href="/#build">Build</a>
         <a href="/#charity">Charity</a>
       </nav>
@@ -233,6 +235,7 @@ export function Site() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/start" component={Start} />
+      <Route path="/finance">{() => <FinancePage Nav={Nav} Footer={Footer} />}</Route>
       <Route component={NotFound} />
     </Switch>
   );

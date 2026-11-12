@@ -302,3 +302,50 @@ p { margin: 0; }
   .s-form { padding: 18px; }
   .s-built { font-size: 12.5px; }
 }
+
+/* ── /finance: DDG Finance in public (Finance.tsx). Mint = the Finance accent. ── */
+.s-plain .f-main { gap: 56px; padding-bottom: 72px; }
+.f-glass { --accent: var(--ng-mint); }
+.f-head .s-lead { max-width: 760px; }
+.f-live { display: flex; align-items: center; gap: 10px; margin-top: 16px; font: 500 12px/1.3 var(--ng-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ng-text-3); }
+.f-pulse { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ng-text-3); }
+.f-pulse.on { background: var(--ng-mint); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ng-mint) 22%, transparent); }
+.f-record { gap: 14px; }
+.f-record h2 { margin-bottom: 0; }
+.f-numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 20px; }
+.f-numbers .s-stat b { font-size: clamp(30px, 3.4vw, 50px); overflow-wrap: anywhere; }
+.f-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.f-chart { margin: 8px 0 0; }
+.f-chart svg { display: block; width: 100%; height: clamp(180px, 28vw, 280px); }
+.f-zero { stroke: rgba(255,255,255,0.2); stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+.f-line { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.f-line-ddg { stroke: var(--ng-mint); }
+.f-line-spx { stroke: rgba(255,255,255,0.55); }
+.f-chart figcaption { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 10px; font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ng-text-3); }
+.f-key { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 8px; vertical-align: middle; }
+.f-key-ddg { background: var(--ng-mint); }
+.f-key-spx { background: rgba(255,255,255,0.55); }
+.f-bots { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.f-bot { gap: 12px; }
+.f-bot h3 { margin: 0; }
+.f-bot-stat { display: flex; align-items: baseline; gap: 10px; }
+.f-bot-stat b { font-size: 34px; font-weight: 300; color: var(--ng-text); font-variant-numeric: tabular-nums; }
+.f-bot-stat span { font: 500 11px/1.3 var(--ng-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ng-text-3); }
+.f-hold-title { font: 500 10.5px/1 var(--ng-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ng-text-3) !important; margin-top: 4px; }
+.f-holdings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.f-holdings li { display: grid; grid-template-columns: minmax(84px, 1.1fr) 2fr 52px; gap: 10px; align-items: center; font-size: 14px; color: var(--ng-text-2); }
+.f-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.f-bar i { display: block; height: 100%; border-radius: 3px; background: var(--ng-mint); }
+.f-bar i.f-neg { background: var(--ng-amber); }
+.f-holdings b { text-align: right; font: 500 13px/1 var(--ng-mono); color: var(--ng-text); font-variant-numeric: tabular-nums; }
+.f-after { margin-top: 14px; }
+.f-how { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.f-how li { gap: 8px; }
+.f-how h3 { font-size: 18px; margin: 0; }
+.f-paper { gap: 10px; }
+.f-paper h2 { margin-bottom: 0; }
+.f-fine { margin: 0 0 14px; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; color: var(--ng-text-2); }
+@media (max-width: 600px) {
+  .s-plain .f-main { gap: 40px; padding-left: 16px; padding-right: 16px; }
+  .f-holdings li { grid-template-columns: minmax(70px, 1fr) 1.4fr 48px; }
+}
