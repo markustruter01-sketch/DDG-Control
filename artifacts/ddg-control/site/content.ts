@@ -55,7 +55,7 @@ export const SITE_BUSINESSES: SiteBusiness[] = [
   { key: 'finance', name: 'DDG Finance', product: 'Trading platform', accent: BUSINESS_ACCENT.finance, status: 'From 1 Jan 2027',
     line: 'Our own algorithmic trading platform. Its public track record starts on 1 January 2027.',
     built: ['4 trading bots on 2 brokers, checked every hour', 'Protective stops and an hourly check against the broker', 'Pre-registered research tests and an AI council'],
-    link: null, note: 'Paper trading. Not financial advice.' },
+    link: { label: 'See the platform', href: '/finance', external: false }, note: 'Paper trading. Not financial advice.' },
   { key: 'fitness', name: 'DDG Fitness', product: 'Hypest', accent: BUSINESS_ACCENT.fitness, status: 'In development',
     line: 'Fitness plans and coaching from specialist AI coaches, on your phone.',
     built: ['AI coaches for 6 training styles', 'Plans built from 86 exercises', 'Subscriptions and a health check'],
@@ -120,3 +120,48 @@ export const BUILD_FORM = {
   timing: [{ key: 'asap', label: 'As soon as possible' }, { key: 'soon', label: 'In 1–3 months' }, { key: 'later', label: 'Later' }, { key: 'exploring', label: 'Just exploring' }],
   budget: [{ key: 'under-5k', label: 'Under $5k' }, { key: '5-15k', label: '$5k–$15k' }, { key: '15-40k', label: '$15k–$40k' }, { key: 'over-40k', label: 'Over $40k' }, { key: 'unsure', label: 'Not sure' }],
 } as const;
+
+// ── DDG Finance public page (/finance). Numbers come from /api/public/finance (the trading
+// platform's hourly push); only the words live here. Strategies lock 21–22 Nov 2026: update
+// FINANCE_BOTS then. Keys match the server's public keys (never internal account ids).
+export const FINANCE_PAGE = {
+  eyebrow: 'DDG Finance',
+  title: 'Our trading platform, in the open.',
+  lead: 'Four trading bots run our own strategies, checked every hour. From 1 January 2027 every result goes up here, good or bad, next to the S&P 500.',
+  note: 'Paper trading on broker practice accounts. Not financial advice. We don’t take outside money.',
+};
+
+export type FinanceBotKey = 'atlas' | 'atlas-v2' | 'momentum' | 'forex';
+export const FINANCE_BOTS: { key: FinanceBotKey; name: string; broker: string; line: string }[] = [
+  { key: 'atlas', name: 'Atlas', broker: 'Alpaca · paper',
+    line: 'Follows the trend of the S&P 500 and Nasdaq, up to 1.5x, with part of the account in bonds, gold, commodities and the US dollar when they trend.' },
+  { key: 'atlas-v2', name: 'Atlas V2', broker: 'Alpaca · paper',
+    line: 'The bolder Atlas: S&P 500 and Nasdaq trend only, up to 1.5x, plus a Bitcoin and Ethereum holding.' },
+  { key: 'momentum', name: 'Momentum', broker: 'Alpaca · paper',
+    line: 'Holds the 50 S&P 500 stocks with the strongest 12-month momentum, rebalanced monthly, and moves to cash when the market trend turns down.' },
+  { key: 'forex', name: 'Forex', broker: 'OANDA · practice',
+    line: 'Trades major currency pairs. Three AI models vote on each trade; fixed rules size it (0.5% risk a trade, at most 4 open) and set its stop.' },
+];
+export const FINANCE_LINEUP_NOTE = 'Strategies are final from 22 November 2026. This page is updated then.';
+
+export const FINANCE_HOW = [
+  { title: 'Rules written down first', line: 'Each strategy is tested on past data and registered before it trades: its rules, the test period and the bar it had to clear.' },
+  { title: 'Bots trade on their own', line: 'Every hour the platform runs each bot and places the orders its rules call for. Nobody picks trades by hand.' },
+  { title: 'Checked against the broker', line: 'The platform’s records are checked against the broker. If something looks wrong, an automatic safety switch can halt trading until it is checked.' },
+  { title: 'Compared with the research', line: 'Every day the live results are compared with what the research said should happen, and a health report goes out each morning.' },
+  { title: 'Shown here, as it happens', line: 'This page reads the same numbers we see, pushed from the platform every hour.' },
+];
+
+export const FINANCE_PAPER = {
+  title: 'The research paper',
+  line: 'Which strategies we chose and why, how they were tested, and the tests that failed. Written by Claude, the AI that builds the platform.',
+  status: 'Published after the strategies lock in late November 2026.',
+};
+
+export const FINANCE_FINE_PRINT = [
+  'Paper money: the bots trade on broker practice accounts, not real money.',
+  'Past results don’t predict future ones. Any of these strategies can lose money.',
+  'Some bots borrow to hold up to 1.5x, which makes losses bigger as well as gains.',
+  'The S&P 500 line is SPY with dividends included, over the same dates.',
+  'Not financial advice. DDG does not manage money for anyone else.',
+];

@@ -1,4 +1,5 @@
-import { GetPublicSummaryResponse } from '@workspace/api-zod';
+import { GetPublicFinanceResponse, GetPublicSummaryResponse } from '@workspace/api-zod';
+import { computePublicFinance } from '../lib/public-finance';
 import { Router, type IRouter } from 'express';
 import { computeOverview } from './overview';
 import { SERVICES_OPEN_ON, servicesOpen } from './build';
@@ -39,6 +40,18 @@ router.get('/public/summary', async (_req, res) => {
   }
   res.setHeader('Cache-Control', 'public, max-age=300');
   res.json(cached.body);
+});
+
+// DDG Finance's public page: performance against the S&P 500 from the record start and
+// what each bot holds, built only from the trading platform's hourly push. Cached 5 minutes.
+let financeCached: { at: number; body: ReturnType<typeof GetPublicFinanceResponse.parse> } | null = null;
+
+router.get('/public/finance', async (_req, res) => {
+  if (!financeCached || Date.now() - financeCached.at > FIVE_MINUTES) {
+    financeCached = { at: Date.now(), body: GetPublicFinanceResponse.parse(await computePublicFinance()) };
+  }
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.json(financeCached.body);
 });
 
 export default router;

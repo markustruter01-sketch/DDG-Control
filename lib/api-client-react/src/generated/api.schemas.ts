@@ -182,6 +182,36 @@ export interface FleetVersionDetail {
   matches_latest: boolean | null;
 }
 
+export interface FleetHoldingDetail {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  bot_id: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  label: string;
+  pct: number;
+}
+
+/**
+ * S&P 500 total return (dividends included) from the public record's start to the last completed session.
+ */
+export interface FleetBenchmarkDetail {
+  /**
+     * @minLength 1
+     * @maxLength 20
+     */
+  symbol: string;
+  /** @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ */
+  base_date: string;
+  /** @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ */
+  as_of: string;
+  total_return_pct: number;
+}
+
 export interface FleetSnapshotDetail {
   /** @maxItems 20 */
   bots_meta: FleetBotMetadata[];
@@ -193,6 +223,12 @@ export interface FleetSnapshotDetail {
   reconciliation: FleetReconciliationDetail | null;
   runner: FleetRunnerDetail | null;
   version: FleetVersionDetail | null;
+  /**
+     * What each bot holds, in plain groups, as a share of its own account (public Finance page).
+     * @maxItems 150
+     */
+  holdings?: FleetHoldingDetail[];
+  benchmark?: FleetBenchmarkDetail | null;
 }
 
 export interface FleetTradingSnapshot {
@@ -659,6 +695,62 @@ export interface Connection {
 }
 
 export type ConnectionList = Connection[];
+
+export interface PublicFinanceHolding {
+  label: string;
+  pct: number;
+}
+
+export interface PublicFinanceBot {
+  /** Public name key (atlas, atlas-v2, momentum, forex); never the internal account id. */
+  key: string;
+  /** @nullable */
+  equity_usd: number | null;
+  /**
+     * Since the record start; null before it.
+     * @nullable
+     */
+  return_pct: number | null;
+  paused: boolean;
+  holdings: PublicFinanceHolding[];
+}
+
+export interface PublicFinancePointBot {
+  key: string;
+  pct: number;
+}
+
+export interface PublicFinancePoint {
+  date: string;
+  fleet_pct: number;
+  /** @nullable */
+  sp500_pct: number | null;
+  bots: PublicFinancePointBot[];
+}
+
+export interface PublicFinance {
+  updated_at: string;
+  /** @nullable */
+  data_as_of: string | null;
+  /** The latest push from the trading platform is under 2 hours old. */
+  live: boolean;
+  /** First day of the public track record (YYYY-MM-DD, Brisbane). */
+  record_start: string;
+  record_started: boolean;
+  /** @nullable */
+  fleet_equity_usd: number | null;
+  /** @nullable */
+  fleet_return_pct: number | null;
+  /**
+     * S&P 500 (SPY) total return, dividends included, over the same period.
+     * @nullable
+     */
+  sp500_return_pct: number | null;
+  /** @nullable */
+  sp500_as_of: string | null;
+  bots: PublicFinanceBot[];
+  series: PublicFinancePoint[];
+}
 
 export type PublicSummaryPlatformsItem = {
   platform: string;

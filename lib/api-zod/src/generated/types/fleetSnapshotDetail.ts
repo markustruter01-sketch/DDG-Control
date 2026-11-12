@@ -5,7 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { FleetBenchmarkDetail } from './fleetBenchmarkDetail';
 import type { FleetBotMetadata } from './fleetBotMetadata';
+import type { FleetHoldingDetail } from './fleetHoldingDetail';
 import type { FleetIncidentDetail } from './fleetIncidentDetail';
 import type { FleetKillSwitchDetail } from './fleetKillSwitchDetail';
 import type { FleetPositionDetail } from './fleetPositionDetail';
@@ -24,4 +26,10 @@ export interface FleetSnapshotDetail {
   reconciliation: FleetReconciliationDetail | null;
   runner: FleetRunnerDetail | null;
   version: FleetVersionDetail | null;
+  /**
+     * What each bot holds, in plain groups, as a share of its own account (public Finance page).
+     * @maxItems 150
+     */
+  holdings?: FleetHoldingDetail[];
+  benchmark?: FleetBenchmarkDetail | null;
 }

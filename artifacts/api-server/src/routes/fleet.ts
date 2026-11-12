@@ -43,7 +43,11 @@ const detailFields = [
   "reconciliation",
   "runner",
   "version",
+  "holdings",
+  "benchmark",
 ] as const;
+const holdingDetailFields = ["bot_id", "label", "pct"] as const;
+const benchmarkFields = ["symbol", "base_date", "as_of", "total_return_pct"] as const;
 const botMetadataFields = [
   "bot_id",
   "strategy",
@@ -129,6 +133,7 @@ function getFleetDetailUnknownFieldError(value: unknown): string | undefined {
     ["bots_meta", botMetadataFields],
     ["positions", positionDetailFields],
     ["incidents", incidentDetailFields],
+    ["holdings", holdingDetailFields],
   ] as const;
   for (const [field, fields] of arrayChecks) {
     const error = arrayItemUnknownFieldError(
@@ -165,6 +170,7 @@ function getFleetDetailUnknownFieldError(value: unknown): string | undefined {
     ["reconciliation", reconciliationFields],
     ["runner", runnerFields],
     ["version", versionFields],
+    ["benchmark", benchmarkFields],
   ] as const) {
     const error = nestedUnknownFieldError(
       detail[field],
