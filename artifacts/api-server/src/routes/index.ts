@@ -10,6 +10,7 @@ import fleetRouter, { fleetInboundRouter } from './fleet';
 import opsRouter from './ops';
 import publicRouter from './public';
 import { buildOwnerRouter, buildPublicRouter } from './build';
+import { quotesOwnerRouter, quotesPublicRouter } from './quotes';
 
 const router: IRouter = Router();
 router.use(healthRouter);
@@ -20,12 +21,14 @@ router.use(fleetInboundRouter);
 // The public website's numbers (followers + charity), no login.
 router.use(publicRouter);
 router.use(buildPublicRouter); // DDG Build enquiries (public from the opening date)
+router.use(quotesPublicRouter); // DDG Build quotes: the client's private link
 router.use(requireMonitorReadSession);
 // The owner edits money, social readings, the Needs-you list, and can undo bot pushes.
 router.use(financeRouter);
 router.use(socialRouter);
 router.use(opsRouter);
 router.use(buildOwnerRouter);
+router.use(quotesOwnerRouter);
 // Everything else is read only: work and approvals happen in their original tools.
 router.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD') { next(); return; }

@@ -165,3 +165,23 @@ export const FINANCE_FINE_PRINT = [
   'The S&P 500 line is SPY with dividends included, over the same dates.',
   'Not financial advice. DDG does not manage money for anyone else.',
 ];
+// ── DDG Build quote page (/quote/<token>): the words; the quote itself comes from the API.
+// The terms are a plain summary until the lawyer-reviewed contract exists (ddg-build-plan.md).
+export const QUOTE_PAGE = {
+  eyebrow: 'DDG Build · Your quote',
+  notFound: 'We couldn’t find this quote. Please check the link we sent you.',
+  loadError: 'Something went wrong. Please try again, or reply to our email.',
+  gst: 'Prices in Australian dollars. DDG is not registered for GST, so no GST is added.',
+  termsTitle: 'How it works from here',
+  terms: [
+    'The price is fixed for everything listed above. Anything extra is quoted separately before we do it.',
+    'Paying the deposit books your build and we start. The rest is paid in stages as each part is delivered.',
+    'You see progress every week and can ask questions any time.',
+    'We send the full written contract before work starts.',
+  ],
+  agree: 'I accept this quote and how it works from here.',
+  accepted: (name: string) => `Accepted${name ? ` by ${name}` : ''}. Thank you!`,
+  invoice: 'We’ll email you the deposit invoice shortly.',
+  paid: 'Deposit received. Thank you! We’ll be in touch to start your build.',
+  closed: (status: 'withdrawn' | 'expired') => `This quote is ${status}. Reply to our email and we’ll send you a new one.`,
+};
