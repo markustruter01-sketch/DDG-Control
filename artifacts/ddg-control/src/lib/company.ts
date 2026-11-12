@@ -21,11 +21,11 @@ export type Business = {
 
 export const BUSINESSES: Business[] = [
   { slug: 'finance', name: 'DDG Finance', sub: 'Trading platform · paper accounts', accent: BUSINESS_ACCENT.finance, icon: 'finance',
-    next: 'Reset all accounts to $100k and start the record on 1 Jan', site: null, admin: null },
+    next: 'Lock strategies 21–22 Nov, public record from 1 Jan', site: null, admin: null },
   { slug: 'coffee', name: 'DDG Coffee', sub: 'Cattle Dog Coffee · live shop', accent: BUSINESS_ACCENT.coffee, icon: 'coffee',
     next: 'RSPCA page after RSPCA QLD approval', site: PUBLIC_SITES.coffee, admin: null },
   { slug: 'fitness', name: 'DDG Fitness', sub: 'Hypest · AI coaching app', accent: BUSINESS_ACCENT.fitness, icon: 'fitness',
-    next: 'Home design B, exercise guides, then publish', site: null, admin: null },
+    next: 'Real-phone checks, then AI key, payments and reviews', site: null, admin: null },
   { slug: 'creative', name: 'DDG Creative', sub: 'Vlogs · clips · music · novel', accent: BUSINESS_ACCENT.creative, icon: 'creative',
     next: 'Threads of Empire release, late Jan 2027', site: PUBLIC_SITES.creative, admin: null },
 ];
