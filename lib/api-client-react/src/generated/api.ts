@@ -86,6 +86,7 @@ import type {
   ProjectMetricsResponse,
   ProjectNotesResponse,
   ProjectUpdateRequest,
+  PublicFinance,
   PublicSummary,
   SessionResult,
   SocialSnapshot,
@@ -4054,6 +4055,83 @@ export function useGetPublicSummary<TData = Awaited<ReturnType<typeof getPublicS
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetPublicSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPublicFinanceUrl = () => {
+
+
+
+
+  return `/api/public/finance`
+}
+
+/**
+ * @summary Public DDG Finance numbers for the website (no login) - performance against the S&P 500 from the record start, and what each bot holds. Never keys, account numbers, orders, stops or alarms.
+ */
+export const getPublicFinance = async ( options?: Parameters<typeof customFetch>[1]): Promise<PublicFinance> => {
+
+  return customFetch<PublicFinance>(getGetPublicFinanceUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicFinanceQueryKey = () => {
+    return [
+    `/api/public/finance`
+    ] as const;
+    }
+
+
+export const getGetPublicFinanceQueryOptions = <TData = Awaited<ReturnType<typeof getPublicFinance>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicFinance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicFinanceQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicFinance>>> = ({ signal }) => getPublicFinance({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicFinance>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicFinanceQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicFinance>>>
+export type GetPublicFinanceQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Public DDG Finance numbers for the website (no login) - performance against the S&P 500 from the record start, and what each bot holds. Never keys, account numbers, orders, stops or alarms.
+ */
+
+export function useGetPublicFinance<TData = Awaited<ReturnType<typeof getPublicFinance>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicFinance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicFinanceQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -1230,6 +1230,41 @@ export const GetPublicSummaryResponse = zod.object({
 
 
 /**
+ * @summary Public DDG Finance numbers for the website (no login) - performance against the S&P 500 from the record start, and what each bot holds. Never keys, account numbers, orders, stops or alarms.
+ */
+export const GetPublicFinanceResponse = zod.object({
+  "updated_at": zod.coerce.date(),
+  "data_as_of": zod.coerce.date().nullable(),
+  "live": zod.boolean().describe('The latest push from the trading platform is under 2 hours old.'),
+  "record_start": zod.string().describe('First day of the public track record (YYYY-MM-DD, Brisbane).'),
+  "record_started": zod.boolean(),
+  "fleet_equity_usd": zod.number().nullable(),
+  "fleet_return_pct": zod.number().nullable(),
+  "sp500_return_pct": zod.number().nullable().describe('S&P 500 (SPY) total return, dividends included, over the same period.'),
+  "sp500_as_of": zod.string().nullable(),
+  "bots": zod.array(zod.object({
+  "key": zod.string().describe('Public name key (atlas, atlas-v2, momentum, forex); never the internal account id.'),
+  "equity_usd": zod.number().nullable(),
+  "return_pct": zod.number().nullable().describe('Since the record start; null before it.'),
+  "paused": zod.boolean(),
+  "holdings": zod.array(zod.object({
+  "label": zod.string(),
+  "pct": zod.number()
+}))
+})),
+  "series": zod.array(zod.object({
+  "date": zod.string(),
+  "fleet_pct": zod.number(),
+  "sp500_pct": zod.number().nullable(),
+  "bots": zod.array(zod.object({
+  "key": zod.string(),
+  "pct": zod.number()
+}))
+}))
+})
+
+
+/**
  * @summary DDG Build enquiry from the public website (no login). Refused before the opening date unless the owner is logged in (test).
  */
 export const createEnquiryBodyFeaturesItemMax = 40;
@@ -1539,6 +1574,16 @@ export const getInboundStateResponseTradingOneDetailOneRunnerOneStatusMax = 30;
 
 export const getInboundStateResponseTradingOneDetailOneVersionOneRunningMax = 40;
 
+export const getInboundStateResponseTradingOneDetailOneHoldingsItemBotIdMax = 64;
+
+export const getInboundStateResponseTradingOneDetailOneHoldingsItemLabelMax = 40;
+
+export const getInboundStateResponseTradingOneDetailOneHoldingsMax = 150;
+
+export const getInboundStateResponseTradingOneDetailOneBenchmarkOneSymbolMax = 20;
+
+export const getInboundStateResponseTradingOneDetailOneBenchmarkOneBaseDateRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+export const getInboundStateResponseTradingOneDetailOneBenchmarkOneAsOfRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
 
 
 export const GetInboundStateResponse = zod.object({
@@ -1627,7 +1672,18 @@ export const GetInboundStateResponse = zod.object({
   "version": zod.union([zod.object({
   "running": zod.string().max(getInboundStateResponseTradingOneDetailOneVersionOneRunningMax).nullable(),
   "matches_latest": zod.boolean().nullable()
-}),zod.null()])
+}),zod.null()]),
+  "holdings": zod.array(zod.object({
+  "bot_id": zod.string().min(1).max(getInboundStateResponseTradingOneDetailOneHoldingsItemBotIdMax),
+  "label": zod.string().min(1).max(getInboundStateResponseTradingOneDetailOneHoldingsItemLabelMax),
+  "pct": zod.number()
+})).max(getInboundStateResponseTradingOneDetailOneHoldingsMax).optional().describe('What each bot holds, in plain groups, as a share of its own account (public Finance page).'),
+  "benchmark": zod.union([zod.object({
+  "symbol": zod.string().min(1).max(getInboundStateResponseTradingOneDetailOneBenchmarkOneSymbolMax),
+  "base_date": zod.string().regex(getInboundStateResponseTradingOneDetailOneBenchmarkOneBaseDateRegExp),
+  "as_of": zod.string().regex(getInboundStateResponseTradingOneDetailOneBenchmarkOneAsOfRegExp),
+  "total_return_pct": zod.number()
+}).describe('S&P 500 total return (dividends included) from the public record\'s start to the last completed session.'),zod.null()]).optional()
 }),zod.null()])
 }),zod.enum(['unavailable'])])
 })
@@ -1880,6 +1936,16 @@ export const postInboundFleetBodyDetailRunnerOneStatusMax = 30;
 
 export const postInboundFleetBodyDetailVersionOneRunningMax = 40;
 
+export const postInboundFleetBodyDetailHoldingsItemBotIdMax = 64;
+
+export const postInboundFleetBodyDetailHoldingsItemLabelMax = 40;
+
+export const postInboundFleetBodyDetailHoldingsMax = 150;
+
+export const postInboundFleetBodyDetailBenchmarkOneSymbolMax = 20;
+
+export const postInboundFleetBodyDetailBenchmarkOneBaseDateRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+export const postInboundFleetBodyDetailBenchmarkOneAsOfRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
 
 
 export const PostInboundFleetBody = zod.object({
@@ -1945,7 +2011,18 @@ export const PostInboundFleetBody = zod.object({
   "version": zod.union([zod.object({
   "running": zod.string().max(postInboundFleetBodyDetailVersionOneRunningMax).nullable(),
   "matches_latest": zod.boolean().nullable()
-}),zod.null()])
+}),zod.null()]),
+  "holdings": zod.array(zod.object({
+  "bot_id": zod.string().min(1).max(postInboundFleetBodyDetailHoldingsItemBotIdMax),
+  "label": zod.string().min(1).max(postInboundFleetBodyDetailHoldingsItemLabelMax),
+  "pct": zod.number()
+})).max(postInboundFleetBodyDetailHoldingsMax).optional().describe('What each bot holds, in plain groups, as a share of its own account (public Finance page).'),
+  "benchmark": zod.union([zod.object({
+  "symbol": zod.string().min(1).max(postInboundFleetBodyDetailBenchmarkOneSymbolMax),
+  "base_date": zod.string().regex(postInboundFleetBodyDetailBenchmarkOneBaseDateRegExp),
+  "as_of": zod.string().regex(postInboundFleetBodyDetailBenchmarkOneAsOfRegExp),
+  "total_return_pct": zod.number()
+}).describe('S&P 500 total return (dividends included) from the public record\'s start to the last completed session.'),zod.null()]).optional()
 }).optional()
 })
 
@@ -2022,6 +2099,16 @@ export const getProjectFinanceFleetLatestResponseTwoDetailOneRunnerOneStatusMax 
 
 export const getProjectFinanceFleetLatestResponseTwoDetailOneVersionOneRunningMax = 40;
 
+export const getProjectFinanceFleetLatestResponseTwoDetailOneHoldingsItemBotIdMax = 64;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneHoldingsItemLabelMax = 40;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneHoldingsMax = 150;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneBenchmarkOneSymbolMax = 20;
+
+export const getProjectFinanceFleetLatestResponseTwoDetailOneBenchmarkOneBaseDateRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+export const getProjectFinanceFleetLatestResponseTwoDetailOneBenchmarkOneAsOfRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
 
 
 export const GetProjectFinanceFleetLatestResponse = zod.union([zod.object({
@@ -2105,7 +2192,18 @@ export const GetProjectFinanceFleetLatestResponse = zod.union([zod.object({
   "version": zod.union([zod.object({
   "running": zod.string().max(getProjectFinanceFleetLatestResponseTwoDetailOneVersionOneRunningMax).nullable(),
   "matches_latest": zod.boolean().nullable()
-}),zod.null()])
+}),zod.null()]),
+  "holdings": zod.array(zod.object({
+  "bot_id": zod.string().min(1).max(getProjectFinanceFleetLatestResponseTwoDetailOneHoldingsItemBotIdMax),
+  "label": zod.string().min(1).max(getProjectFinanceFleetLatestResponseTwoDetailOneHoldingsItemLabelMax),
+  "pct": zod.number()
+})).max(getProjectFinanceFleetLatestResponseTwoDetailOneHoldingsMax).optional().describe('What each bot holds, in plain groups, as a share of its own account (public Finance page).'),
+  "benchmark": zod.union([zod.object({
+  "symbol": zod.string().min(1).max(getProjectFinanceFleetLatestResponseTwoDetailOneBenchmarkOneSymbolMax),
+  "base_date": zod.string().regex(getProjectFinanceFleetLatestResponseTwoDetailOneBenchmarkOneBaseDateRegExp),
+  "as_of": zod.string().regex(getProjectFinanceFleetLatestResponseTwoDetailOneBenchmarkOneAsOfRegExp),
+  "total_return_pct": zod.number()
+}).describe('S&P 500 total return (dividends included) from the public record\'s start to the last completed session.'),zod.null()]).optional()
 }),zod.null()])
 })])
 

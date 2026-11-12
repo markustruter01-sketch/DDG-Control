@@ -1297,6 +1297,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublicSummary"
+  /public/finance:
+    get:
+      operationId: getPublicFinance
+      tags: [health]
+      summary: Public DDG Finance numbers for the website (no login) - performance against the S&P 500 from the record start, and what each bot holds. Never keys, account numbers, orders, stops or alarms.
+      responses:
+        "200":
+          description: Public finance numbers, cached for 5 minutes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicFinance"
   /public/enquiry:
     post:
       operationId: createEnquiry
@@ -2422,6 +2434,94 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/Connection"
+    PublicFinanceHolding:
+      type: object
+      additionalProperties: false
+      properties:
+        label:
+          type: string
+        pct:
+          type: number
+      required: [label, pct]
+    PublicFinanceBot:
+      type: object
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+          description: Public name key (atlas, atlas-v2, momentum, forex); never the internal account id.
+        equity_usd:
+          type: [number, "null"]
+        return_pct:
+          type: [number, "null"]
+          description: Since the record start; null before it.
+        paused:
+          type: boolean
+        holdings:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicFinanceHolding"
+      required: [key, equity_usd, return_pct, paused, holdings]
+    PublicFinancePointBot:
+      type: object
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+        pct:
+          type: number
+      required: [key, pct]
+    PublicFinancePoint:
+      type: object
+      additionalProperties: false
+      properties:
+        date:
+          type: string
+        fleet_pct:
+          type: number
+        sp500_pct:
+          type: [number, "null"]
+        bots:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicFinancePointBot"
+      required: [date, fleet_pct, sp500_pct, bots]
+    PublicFinance:
+      type: object
+      additionalProperties: false
+      properties:
+        updated_at:
+          type: string
+          format: date-time
+        data_as_of:
+          type: [string, "null"]
+          format: date-time
+        live:
+          type: boolean
+          description: The latest push from the trading platform is under 2 hours old.
+        record_start:
+          type: string
+          description: First day of the public track record (YYYY-MM-DD, Brisbane).
+        record_started:
+          type: boolean
+        fleet_equity_usd:
+          type: [number, "null"]
+        fleet_return_pct:
+          type: [number, "null"]
+        sp500_return_pct:
+          type: [number, "null"]
+          description: S&P 500 (SPY) total return, dividends included, over the same period.
+        sp500_as_of:
+          type: [string, "null"]
+        bots:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicFinanceBot"
+        series:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicFinancePoint"
+      required: [updated_at, data_as_of, live, record_start, record_started, fleet_equity_usd, fleet_return_pct, sp500_return_pct, sp500_as_of, bots, series]
     PublicSummary:
       type: object
       additionalProperties: false
@@ -3710,6 +3810,16 @@ components:
           oneOf:
             - $ref: "#/components/schemas/FleetVersionDetail"
             - type: "null"
+        holdings:
+          description: What each bot holds, in plain groups, as a share of its own account (public Finance page).
+          type: array
+          maxItems: 150
+          items:
+            $ref: "#/components/schemas/FleetHoldingDetail"
+        benchmark:
+          oneOf:
+            - $ref: "#/components/schemas/FleetBenchmarkDetail"
+            - type: "null"
       required:
         - bots_meta
         - positions
@@ -3718,6 +3828,46 @@ components:
         - reconciliation
         - runner
         - version
+    FleetHoldingDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        bot_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        label:
+          type: string
+          minLength: 1
+          maxLength: 40
+        pct:
+          type: number
+      required:
+        - bot_id
+        - label
+        - pct
+    FleetBenchmarkDetail:
+      description: S&P 500 total return (dividends included) from the public record's start to the last completed session.
+      type: object
+      additionalProperties: false
+      properties:
+        symbol:
+          type: string
+          minLength: 1
+          maxLength: 20
+        base_date:
+          type: string
+          pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        as_of:
+          type: string
+          pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        total_return_pct:
+          type: number
+      required:
+        - symbol
+        - base_date
+        - as_of
+        - total_return_pct
     FleetBotMetadata:
       type: object
       additionalProperties: false
