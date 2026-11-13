@@ -889,6 +889,125 @@ export interface EnquiryUpdate {
   notes?: string | null;
 }
 
+export interface QuoteInput {
+  /** @nullable */
+  enquiry_id: number | null;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  client_name: string;
+  /** @maxLength 200 */
+  client_email: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title: string;
+  /**
+     * @minItems 1
+     * @maxItems 30
+     * @items.minLength 1
+     * @items.maxLength 300
+     */
+  scope: string[];
+  /**
+     * @minimum 100
+     * @maximum 100000000
+     */
+  total_cents: number;
+  /**
+     * @minimum 10
+     * @maximum 100
+     */
+  deposit_pct: number;
+  /**
+     * @minimum 1
+     * @maximum 90
+     */
+  valid_days: number;
+}
+
+export type QuoteStatus = typeof QuoteStatus[keyof typeof QuoteStatus];
+
+
+export const QuoteStatus = {
+  sent: 'sent',
+  accepted: 'accepted',
+  paid: 'paid',
+  withdrawn: 'withdrawn',
+} as const;
+
+export interface Quote {
+  id: number;
+  link: string;
+  /** @nullable */
+  enquiry_id: number | null;
+  client_name: string;
+  client_email: string;
+  title: string;
+  scope: string[];
+  total_cents: number;
+  deposit_cents: number;
+  valid_until: string;
+  status: QuoteStatus;
+  /** @nullable */
+  accepted_name: string | null;
+  /** @nullable */
+  accepted_at: string | null;
+  /** @nullable */
+  paid_at: string | null;
+  created_at: string;
+}
+
+export type PublicQuoteStatus = typeof PublicQuoteStatus[keyof typeof PublicQuoteStatus];
+
+
+export const PublicQuoteStatus = {
+  sent: 'sent',
+  accepted: 'accepted',
+  paid: 'paid',
+  withdrawn: 'withdrawn',
+  expired: 'expired',
+} as const;
+
+export interface PublicQuote {
+  client_name: string;
+  title: string;
+  scope: string[];
+  total_cents: number;
+  deposit_cents: number;
+  valid_until: string;
+  status: PublicQuoteStatus;
+  /** @nullable */
+  accepted_name: string | null;
+  /** DDG's Stripe is set up, so accepting goes straight to the deposit payment. */
+  payments_ready: boolean;
+}
+
+export interface QuoteAcceptInput {
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  name: string;
+  agree: true;
+}
+
+export type QuoteAcceptResultStatus = typeof QuoteAcceptResultStatus[keyof typeof QuoteAcceptResultStatus];
+
+
+export const QuoteAcceptResultStatus = {
+  accepted: 'accepted',
+  paid: 'paid',
+} as const;
+
+export interface QuoteAcceptResult {
+  status: QuoteAcceptResultStatus;
+  /** @nullable */
+  checkout_url: string | null;
+}
+
 export type EnquiryStage = typeof EnquiryStage[keyof typeof EnquiryStage];
 
 

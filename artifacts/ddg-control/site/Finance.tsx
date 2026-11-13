@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 import type { PublicFinance, PublicFinancePoint } from '@workspace/api-client-react';
 import { daysUntil } from '@/lib/money';
 import {
-  FINANCE_BOTS, FINANCE_FINE_PRINT, FINANCE_HOW, FINANCE_LINEUP_NOTE, FINANCE_PAGE, FINANCE_PAPER, type FinanceBotKey,
+  FINANCE_BOTS, FINANCE_FINE_PRINT, FINANCE_HOLDINGS_NOTE, FINANCE_HOW, FINANCE_LINEUP_NOTE, FINANCE_PAGE, FINANCE_PAPER, type FinanceBotKey,
 } from './content';
 
 // ddg.limited/finance: DDG Finance in public. Every number comes from /api/public/finance
@@ -112,7 +112,7 @@ function Bots({ data }: { data: PublicFinance | null }) {
           );
         })}
       </div>
-      <p className="s-note f-after">{FINANCE_LINEUP_NOTE} Holdings are each bot’s share of its own account.</p>
+      <p className="s-note f-after">{FINANCE_LINEUP_NOTE} {FINANCE_HOLDINGS_NOTE}</p>
     </section>
   );
 }

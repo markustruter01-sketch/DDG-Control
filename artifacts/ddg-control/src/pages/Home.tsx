@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/header';
 import { BotAvatar } from '@/components/BotAvatar';
 import { BusinessIcon } from '@/components/BusinessIcon';
-import { INTERNAL_SITES } from '@/lib/internal-sites';
+import { INTERNAL_ADMIN, INTERNAL_SITES } from '@/lib/internal-sites';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import { SocialFootprint, allTime } from '@/components/SocialFootprint';
 import {
@@ -132,7 +132,7 @@ function BusinessCard({ b, data }: { b: Business; data: Businesses }) {
       <span className="accent-line" style={{ background: `linear-gradient(90deg, ${b.accent} 0 32px, var(--ng-edge) 32px)` }} aria-hidden="true" />
       <div className="biz-actions">
         <ExternalButton href={b.site ?? INTERNAL_SITES[b.slug] ?? null} label="Open site" />
-        <ExternalButton href={b.admin} label="Admin" fill />
+        <ExternalButton href={b.admin ?? INTERNAL_ADMIN[b.slug] ?? null} label="Admin" fill />
       </div>
     </article>
   );

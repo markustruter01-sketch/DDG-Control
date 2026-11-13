@@ -1303,6 +1303,172 @@ export const CreateEnquiryResponse = zod.object({
 
 
 /**
+ * @summary DDG Build quotes, newest first (owner only)
+ */
+export const ListQuotesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "link": zod.string(),
+  "enquiry_id": zod.number().int().nullable(),
+  "client_name": zod.string(),
+  "client_email": zod.string(),
+  "title": zod.string(),
+  "scope": zod.array(zod.string()),
+  "total_cents": zod.number().int(),
+  "deposit_cents": zod.number().int(),
+  "valid_until": zod.string(),
+  "status": zod.enum(['sent', 'accepted', 'paid', 'withdrawn']),
+  "accepted_name": zod.string().nullable(),
+  "accepted_at": zod.string().nullable(),
+  "paid_at": zod.string().nullable(),
+  "created_at": zod.string()
+})
+export const ListQuotesResponse = zod.array(ListQuotesResponseItem)
+
+
+/**
+ * @summary Create a fixed-price quote and its private client link (owner only)
+ */
+export const createQuoteBodyClientNameMax = 120;
+
+export const createQuoteBodyClientEmailMax = 200;
+
+export const createQuoteBodyTitleMax = 120;
+
+export const createQuoteBodyScopeItemMax = 300;
+
+export const createQuoteBodyScopeMax = 30;
+
+export const createQuoteBodyTotalCentsMin = 100;
+export const createQuoteBodyTotalCentsMax = 100000000;
+
+export const createQuoteBodyDepositPctMin = 10;
+export const createQuoteBodyDepositPctMax = 100;
+
+export const createQuoteBodyValidDaysMax = 90;
+
+
+
+export const CreateQuoteBody = zod.object({
+  "enquiry_id": zod.number().int().nullable(),
+  "client_name": zod.string().min(1).max(createQuoteBodyClientNameMax),
+  "client_email": zod.string().email().max(createQuoteBodyClientEmailMax),
+  "title": zod.string().min(1).max(createQuoteBodyTitleMax),
+  "scope": zod.array(zod.string().min(1).max(createQuoteBodyScopeItemMax)).min(1).max(createQuoteBodyScopeMax),
+  "total_cents": zod.number().int().min(createQuoteBodyTotalCentsMin).max(createQuoteBodyTotalCentsMax),
+  "deposit_pct": zod.number().int().min(createQuoteBodyDepositPctMin).max(createQuoteBodyDepositPctMax),
+  "valid_days": zod.number().int().min(1).max(createQuoteBodyValidDaysMax)
+})
+
+export const CreateQuoteResponse = zod.object({
+  "id": zod.number().int(),
+  "link": zod.string(),
+  "enquiry_id": zod.number().int().nullable(),
+  "client_name": zod.string(),
+  "client_email": zod.string(),
+  "title": zod.string(),
+  "scope": zod.array(zod.string()),
+  "total_cents": zod.number().int(),
+  "deposit_cents": zod.number().int(),
+  "valid_until": zod.string(),
+  "status": zod.enum(['sent', 'accepted', 'paid', 'withdrawn']),
+  "accepted_name": zod.string().nullable(),
+  "accepted_at": zod.string().nullable(),
+  "paid_at": zod.string().nullable(),
+  "created_at": zod.string()
+})
+
+
+/**
+ * @summary Withdraw a quote the client has not paid (owner only)
+ */
+export const WithdrawQuoteParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const WithdrawQuoteResponse = zod.object({
+  "id": zod.number().int(),
+  "link": zod.string(),
+  "enquiry_id": zod.number().int().nullable(),
+  "client_name": zod.string(),
+  "client_email": zod.string(),
+  "title": zod.string(),
+  "scope": zod.array(zod.string()),
+  "total_cents": zod.number().int(),
+  "deposit_cents": zod.number().int(),
+  "valid_until": zod.string(),
+  "status": zod.enum(['sent', 'accepted', 'paid', 'withdrawn']),
+  "accepted_name": zod.string().nullable(),
+  "accepted_at": zod.string().nullable(),
+  "paid_at": zod.string().nullable(),
+  "created_at": zod.string()
+})
+
+
+/**
+ * @summary A client's quote by its private link (no login)
+ */
+export const GetPublicQuoteParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const GetPublicQuoteResponse = zod.object({
+  "client_name": zod.string(),
+  "title": zod.string(),
+  "scope": zod.array(zod.string()),
+  "total_cents": zod.number().int(),
+  "deposit_cents": zod.number().int(),
+  "valid_until": zod.string(),
+  "status": zod.enum(['sent', 'accepted', 'paid', 'withdrawn', 'expired']),
+  "accepted_name": zod.string().nullable(),
+  "payments_ready": zod.boolean().describe('DDG\'s Stripe is set up, so accepting goes straight to the deposit payment.')
+})
+
+
+/**
+ * @summary After Stripe sends the client back, check the deposit with Stripe and return the quote (no login)
+ */
+export const CheckPublicQuotePaymentParams = zod.object({
+  "token": zod.coerce.string(),
+  "session_id": zod.coerce.string()
+})
+
+export const CheckPublicQuotePaymentResponse = zod.object({
+  "client_name": zod.string(),
+  "title": zod.string(),
+  "scope": zod.array(zod.string()),
+  "total_cents": zod.number().int(),
+  "deposit_cents": zod.number().int(),
+  "valid_until": zod.string(),
+  "status": zod.enum(['sent', 'accepted', 'paid', 'withdrawn', 'expired']),
+  "accepted_name": zod.string().nullable(),
+  "payments_ready": zod.boolean().describe('DDG\'s Stripe is set up, so accepting goes straight to the deposit payment.')
+})
+
+
+/**
+ * @summary The client accepts the quote (typed name + agreement). Returns a Stripe link for the deposit when DDG's Stripe is set up.
+ */
+export const AcceptPublicQuoteParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const acceptPublicQuoteBodyNameMin = 2;
+export const acceptPublicQuoteBodyNameMax = 120;
+
+
+
+export const AcceptPublicQuoteBody = zod.object({
+  "name": zod.string().min(acceptPublicQuoteBodyNameMin).max(acceptPublicQuoteBodyNameMax),
+  "agree": zod.literal(true)
+})
+
+export const AcceptPublicQuoteResponse = zod.object({
+  "status": zod.enum(['accepted', 'paid']),
+  "checkout_url": zod.string().nullable()
+})
+
+
+/**
  * @summary DDG Build enquiries, newest first (owner only)
  */
 export const ListEnquiriesResponseItem = zod.object({
