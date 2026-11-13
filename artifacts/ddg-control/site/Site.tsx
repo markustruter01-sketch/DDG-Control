@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type MouseEvent } from 'react';
+import { flushSync } from 'react-dom';
 import type { PublicSummary } from '@workspace/api-client-react';
-import { Link, Route, Switch } from 'wouter';
+import { Link, Route, Router, Switch, useLocation } from 'wouter';
 import { BusinessIcon } from '@/components/BusinessIcon';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import { LAUNCH_DATE } from '@/lib/company';
@@ -8,7 +9,6 @@ import { daysUntil } from '@/lib/money';
 import { SOCIALS, type Platform } from '@/lib/public-info';
 import { Build, EnquiryForm } from './Build';
 import { FinancePage } from './Finance';
-import { FlipPages } from './FlipPages';
 import { QuotePage } from './Quote';
 import { CHARITY, COMPANY, CONTROL_CASE, HERO, HIRE, SITE_BUSINESSES, START, WORK, type SiteBusiness } from './content';
 
@@ -31,15 +31,32 @@ function usePublicSummary(): PublicSummary | null {
   return data;
 }
 
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Scroll to a home section (#businesses, #build, #charity). */
+function toSection(id: string, smooth: boolean) {
+  document.getElementById(id)?.scrollIntoView({ behavior: smooth && !reducedMotion() ? 'smooth' : 'auto', block: 'start' });
+}
+
 function Nav() {
+  const [path, navigate] = useLocation();
+  // A section link: on the home page it scrolls there; from another page it opens home at that section.
+  const section = (id: string) => (e: MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    if (path === '/') {
+      history.replaceState(null, '', `/#${id}`);
+      toSection(id, true);
+    } else navigate(`/#${id}`);
+  };
   return (
     <header className="s-nav">
       <Link href="/" className="s-brand" aria-label="DDG home"><img src={LOGO} alt="" /><b>DDG</b></Link>
       <nav aria-label="Site">
-        <a href="/#businesses">Businesses</a>
+        <a href="/#businesses" onClick={section('businesses')}>Businesses</a>
         <Link href="/finance">Finance</Link>
-        <a href="/#build">Build</a>
-        <a href="/#charity">Charity</a>
+        <a href="/#build" onClick={section('build')}>Build</a>
+        <a href="/#charity" onClick={section('charity')}>Charity</a>
       </nav>
     </header>
   );
@@ -93,25 +110,17 @@ function BusinessCard({ b, summary }: { b: SiteBusiness; summary: PublicSummary 
   );
 }
 
-// The home screens, in order. The menu links (/#businesses etc.) turn to that screen.
-const SCREENS = ['home', 'businesses', 'build', 'charity'];
-
 function Home() {
   const summary = usePublicSummary();
-  const [side, setSide] = useState(0);
-  // A menu link to a section turns to that screen.
+  // Opened at a section (/#build from another page): go there once the page is drawn.
   useEffect(() => {
-    const go = () => {
-      const i = SCREENS.indexOf(window.location.hash.slice(1));
-      if (i > 0) setSide(i);
-    };
-    go();
-    window.addEventListener('hashchange', go);
-    return () => window.removeEventListener('hashchange', go);
+    const id = window.location.hash.slice(1);
+    if (id) toSection(id, false);
   }, []);
 
-  const overview = (
-      /* First screen: who we are, then our work and a card to hire us. Fits one screen on PC. */
+  return (
+    <>
+      {/* First screen: who we are, then our work and a card to hire us. Fits one screen on PC. */}
       <section className="s-hero">
         <Nav />
         <div className="s-hero-top">
@@ -128,7 +137,7 @@ function Home() {
               <figcaption><b>{w.name}</b> · {w.line}</figcaption>
             </figure>
           ))}
-          {/* Hire us: sits at the end of the work row, the whole card links to #build. */}
+          {/* Hire us: sits at the end of the work row, the whole card links to /start. */}
           <Link className="s-hire" href="/start">
             <span className="s-hire-in">
               <span className="s-hire-status"><i aria-hidden="true" />{HIRE.status}</span>
@@ -141,33 +150,13 @@ function Home() {
             </span>
           </Link>
         </div>
-        <button className="s-flip-hint" type="button" onClick={() => setSide(1)}>Scroll ↓</button>
       </section>
-  );
-
-  const businesses = (
-    <div className="s-screen">
-      <Nav />
-      <main className="s-main s-screen-body">
+      <main className="s-main">
         <section id="businesses" aria-labelledby="b-title">
           <h2 id="b-title">Three businesses</h2>
           <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} summary={summary} />)}</div>
         </section>
-      </main>
-    </div>
-  );
-  const build = (
-    <div className="s-screen">
-      <Nav />
-      <main className="s-main s-screen-body">
         <Build summary={summary} />
-      </main>
-    </div>
-  );
-  const charityScreen = (
-    <div className="s-screen">
-      <Nav />
-      <main className="s-main s-screen-body">
         <section className="s-case glass-plain" aria-labelledby="case-title">
           <div>
             <p className="s-eyebrow">How it all connects</p>
@@ -190,11 +179,8 @@ function Home() {
         </section>
       </main>
       <Footer />
-    </div>
+    </>
   );
-
-  return <FlipPages pages={[overview, businesses, build, charityScreen]} side={side} onSide={setSide}
-    labels={['Home', 'Businesses', 'Build with us', 'Charity']} />;
 }
 
 /** /start: the one-page enquiry form, linked from the hire card and the Build section. */
@@ -231,8 +217,23 @@ function NotFound() {
   );
 }
 
+/**
+ * Moving between pages: a short cross-fade (the browser's View Transitions, where it has
+ * them; otherwise the page just changes). A new page opens at the top unless it names a section.
+ */
+function fadeNav(navigate: (to: string, options?: object) => void, to: string, options?: object) {
+  const go = () => {
+    flushSync(() => navigate(to, options));
+    if (!to.includes('#')) window.scrollTo(0, 0);
+  };
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+  if (!doc.startViewTransition || reducedMotion()) go();
+  else doc.startViewTransition(go);
+}
+
 export function Site() {
   return (
+    <Router aroundNav={fadeNav}>
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/start" component={Start} />
@@ -240,5 +241,6 @@ export function Site() {
       <Route path="/quote/:token">{(params) => <QuotePage token={params.token} Nav={Nav} Footer={Footer} />}</Route>
       <Route component={NotFound} />
     </Switch>
+    </Router>
   );
 }
