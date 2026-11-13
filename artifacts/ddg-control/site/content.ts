@@ -143,6 +143,7 @@ export const FINANCE_BOTS: { key: FinanceBotKey; name: string; broker: string; l
     line: 'Trades major currency pairs. Three AI models vote on each trade; fixed rules size it (0.5% risk a trade, at most 4 open) and set its stop.' },
 ];
 export const FINANCE_LINEUP_NOTE = 'Strategies are final from 22 November 2026. This page is updated then.';
+export const FINANCE_HOLDINGS_NOTE = 'Holdings are each bot’s share of its own account. Vault is profit set aside in short-term US Treasury bills. Forex positions are leveraged, so they can add up to more than 100%.';
 
 export const FINANCE_HOW = [
   { title: 'Rules written down first', line: 'Each strategy is tested on past data and registered before it trades: its rules, the test period and the bar it had to clear.' },
