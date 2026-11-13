@@ -186,3 +186,47 @@ export const QUOTE_PAGE = {
   paid: 'Deposit received. Thank you! We’ll be in touch to start your build.',
   closed: (status: 'withdrawn' | 'expired') => `This quote is ${status}. Reply to our email and we’ll send you a new one.`,
 };
+
+// ── Home (the Canyon design, Markus 14 Nov 2026) ─────────────────────────────────────
+// The 3D canyon with the DDG core and the four business planets, then the at-a-glance
+// panel, the businesses, the command centre, Build and charity, joined by data pipes.
+export const HOME = {
+  eyebrow: 'Digital Dynamics Group · Brisbane',
+  title: ['We build', 'it all.'],
+  line: 'Coffee, trading and fitness, built in Brisbane. Yours could be next.',
+  workTitle: ['Built in Brisbane.', 'Running live.'],
+  next: { title: 'Yours next →', line: 'Websites from $1,500' },
+  glance: {
+    eyebrow: 'At a glance',
+    title: 'What DDG does, in six numbers',
+    countdown: { k: 'DDG Finance · going public', line: 'Until our trading bots’ track record goes public on 1 January 2027. From then, every result shows on this site, good or bad.' },
+    money: { k: 'DDG Finance · money our bots manage', line: 'Practice (paper) accounts, not real money yet. Each coloured bar is one bot and its strategy.' },
+    coffee: { k: 'DDG Coffee · gives back', line: 'from every bag of Cattle Dog Coffee we sell goes to RSPCA Queensland, to help animals.' },
+    bots: { k: 'DDG Finance · trading bots', value: '4', line: 'bots, each with its own strategy, trade on two brokers and are checked every hour.' },
+    coaches: { k: 'DDG Fitness · Hypest', value: '6', line: 'AI coaching styles in our fitness app: yoga, gym, endurance and more. Each builds you a plan.' },
+    team: { k: 'Behind it all · AI team', value: '9', line: 'AI employees help run DDG every day, and all report to one command centre.' },
+  },
+  coffee: { num: '01 · DDG Coffee · Open now', title: 'Beans to your door.', line: 'Cattle Dog Coffee, roasted and sent from Brisbane.',
+    stats: [['$1', 'to RSPCA from every bag'], ['$12', 'flat postage']] as [string, string][] },
+  finance: { num: '02 · DDG Finance · Paper trading', title: 'Four bots. In public.', line: 'Our own trading platform. Every result shown from 1 January 2027, good or bad.',
+    note: 'What each bot holds, as a share of its own account. Not financial advice.' },
+  fitness: { num: '03 · DDG Fitness · In development', title: 'A coach in your pocket.', line: 'Hypest. AI coaches build your plan and adjust it every week.',
+    stats: [['6', 'coaching styles'], ['86', 'exercises in the plan builder']] as [string, string][] },
+  connects: { eyebrow: 'How it connects', title: 'One command centre behind it all', note: 'Live data flows into DDG Control Centre' },
+  build: { eyebrow: 'DDG Build · fixed quotes · AUD · no GST', title: ['Your idea.', 'Built.'], cta: 'Start your build →' },
+};
+
+/** The command-centre diagram: the four businesses feed DDG Control Centre. */
+export const CONNECTS_MAP = {
+  left: [
+    { name: 'DDG Coffee', sub: 'CATTLE DOG COFFEE · SHOP', color: '#ffffff' },
+    { name: 'DDG Finance', sub: '4 TRADING BOTS', color: '#3ddc97' },
+    { name: 'DDG Fitness', sub: 'HYPEST · AI COACHES', color: '#6cc7f0' },
+    { name: 'DDG Creative', sub: 'VLOGS · MUSIC · NOVEL', color: '#a78bfa' },
+  ],
+  hub: { name: ['DDG Control', 'Centre'], sub: 'OWNER ONLY' },
+  right: [
+    { name: '9 AI employees', sub: 'CHECKED, UNDOABLE API', color: '#a78bfa' },
+    { name: 'ddg.limited', sub: 'PUBLIC NUMBERS', color: '#6cc7f0' },
+  ],
+};

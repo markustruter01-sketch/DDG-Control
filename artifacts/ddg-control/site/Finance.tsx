@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import type { PublicFinance, PublicFinancePoint } from '@workspace/api-client-react';
 import { daysUntil } from '@/lib/money';
+import { usePublicFinance } from './hooks';
 import {
   FINANCE_BOTS, FINANCE_FINE_PRINT, FINANCE_HOLDINGS_NOTE, FINANCE_HOW, FINANCE_LINEUP_NOTE, FINANCE_PAGE, FINANCE_PAPER, type FinanceBotKey,
 } from './content';
@@ -13,19 +14,6 @@ const usd = (n: number | null | undefined) => (n === null || n === undefined ? '
 const brisbaneTime = (iso: string | Date | null) =>
   iso ? new Date(iso).toLocaleString('en-AU', { timeZone: 'Australia/Brisbane', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '—';
 const longDate = (ymd: string) => new Date(`${ymd}T00:00:00+10:00`).toLocaleDateString('en-AU', { timeZone: 'Australia/Brisbane', day: 'numeric', month: 'long', year: 'numeric' });
-
-function usePublicFinance(): { data: PublicFinance | null; failed: boolean } {
-  const [state, setState] = useState<{ data: PublicFinance | null; failed: boolean }>({ data: null, failed: false });
-  useEffect(() => {
-    let live = true;
-    fetch('/api/public/finance')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((body: PublicFinance) => { if (live) setState({ data: body, failed: false }); })
-      .catch(() => { if (live) setState({ data: null, failed: true }); });
-    return () => { live = false; };
-  }, []);
-  return state;
-}
 
 /** Fleet vs S&P 500, % since the record start. Plain SVG; scales to its box. */
 function PerformanceChart({ series }: { series: PublicFinancePoint[] }) {

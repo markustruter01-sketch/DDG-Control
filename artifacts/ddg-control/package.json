@@ -17,12 +17,14 @@
     "react-dom": "catalog:",
     "recharts": "^2.15.4",
     "simple-icons": "13.21.0",
+    "three": "0.170.0",
     "wouter": "^3.3.5"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@types/three": "0.170.0",
     "@vitejs/plugin-react": "catalog:",
     "typescript": "~5.9.3",
     "vite": "catalog:"
