@@ -1345,6 +1345,120 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /quotes:
+    get:
+      operationId: listQuotes
+      tags: [finance]
+      summary: DDG Build quotes, newest first (owner only)
+      responses:
+        "200":
+          description: Quotes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quote"
+    post:
+      operationId: createQuote
+      tags: [finance]
+      summary: Create a fixed-price quote and its private client link (owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+  /quotes/{id}/withdraw:
+    post:
+      operationId: withdrawQuote
+      tags: [finance]
+      summary: Withdraw a quote the client has not paid (owner only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Withdrawn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+  /public/quotes/{token}:
+    get:
+      operationId: getPublicQuote
+      tags: [health]
+      summary: A client's quote by its private link (no login)
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicQuote"
+  /public/quotes/{token}/payment/{session_id}:
+    get:
+      operationId: checkPublicQuotePayment
+      tags: [health]
+      summary: After Stripe sends the client back, check the deposit with Stripe and return the quote (no login)
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The quote, paid if Stripe says so
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicQuote"
+  /public/quotes/{token}/accept:
+    post:
+      operationId: acceptPublicQuote
+      tags: [health]
+      summary: The client accepts the quote (typed name + agreement). Returns a Stripe link for the deposit when DDG's Stripe is set up.
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteAcceptInput"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteAcceptResult"
   /enquiries:
     get:
       operationId: listEnquiries
@@ -2636,6 +2750,132 @@ components:
         notes:
           type: [string, "null"]
           maxLength: 2000
+    QuoteInput:
+      type: object
+      additionalProperties: false
+      properties:
+        enquiry_id:
+          type: [integer, "null"]
+        client_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        client_email:
+          type: string
+          format: email
+          maxLength: 200
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        scope:
+          type: array
+          minItems: 1
+          maxItems: 30
+          items:
+            type: string
+            minLength: 1
+            maxLength: 300
+        total_cents:
+          type: integer
+          minimum: 100
+          maximum: 100000000
+        deposit_pct:
+          type: integer
+          minimum: 10
+          maximum: 100
+        valid_days:
+          type: integer
+          minimum: 1
+          maximum: 90
+      required: [enquiry_id, client_name, client_email, title, scope, total_cents, deposit_pct, valid_days]
+    Quote:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        link:
+          type: string
+        enquiry_id:
+          type: [integer, "null"]
+        client_name:
+          type: string
+        client_email:
+          type: string
+        title:
+          type: string
+        scope:
+          type: array
+          items:
+            type: string
+        total_cents:
+          type: integer
+        deposit_cents:
+          type: integer
+        valid_until:
+          type: string
+        status:
+          type: string
+          enum: [sent, accepted, paid, withdrawn]
+        accepted_name:
+          type: [string, "null"]
+        accepted_at:
+          type: [string, "null"]
+        paid_at:
+          type: [string, "null"]
+        created_at:
+          type: string
+      required: [id, link, enquiry_id, client_name, client_email, title, scope, total_cents, deposit_cents, valid_until, status, accepted_name, accepted_at, paid_at, created_at]
+    PublicQuote:
+      type: object
+      additionalProperties: false
+      properties:
+        client_name:
+          type: string
+        title:
+          type: string
+        scope:
+          type: array
+          items:
+            type: string
+        total_cents:
+          type: integer
+        deposit_cents:
+          type: integer
+        valid_until:
+          type: string
+        status:
+          type: string
+          enum: [sent, accepted, paid, withdrawn, expired]
+        accepted_name:
+          type: [string, "null"]
+        payments_ready:
+          type: boolean
+          description: DDG's Stripe is set up, so accepting goes straight to the deposit payment.
+      required: [client_name, title, scope, total_cents, deposit_cents, valid_until, status, accepted_name, payments_ready]
+    QuoteAcceptInput:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        agree:
+          type: boolean
+          enum: [true]
+      required: [name, agree]
+    QuoteAcceptResult:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [accepted, paid]
+        checkout_url:
+          type: [string, "null"]
+      required: [status, checkout_url]
     Enquiry:
       type: object
       additionalProperties: false

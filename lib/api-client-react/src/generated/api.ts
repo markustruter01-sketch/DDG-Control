@@ -87,7 +87,12 @@ import type {
   ProjectNotesResponse,
   ProjectUpdateRequest,
   PublicFinance,
+  PublicQuote,
   PublicSummary,
+  Quote,
+  QuoteAcceptInput,
+  QuoteAcceptResult,
+  QuoteInput,
   SessionResult,
   SocialSnapshot,
   SocialSnapshotCreate,
@@ -4230,6 +4235,493 @@ export const useCreateEnquiry = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getCreateEnquiryMutationOptions(options));
+    }
+
+export const getListQuotesUrl = () => {
+
+
+
+
+  return `/api/quotes`
+}
+
+/**
+ * @summary DDG Build quotes, newest first (owner only)
+ */
+export const listQuotes = async ( options?: Parameters<typeof customFetch>[1]): Promise<Quote[]> => {
+
+  return customFetch<Quote[]>(getListQuotesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListQuotesQueryKey = () => {
+    return [
+    `/api/quotes`
+    ] as const;
+    }
+
+
+export const getListQuotesQueryOptions = <TData = Awaited<ReturnType<typeof listQuotes>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listQuotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListQuotesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listQuotes>>> = ({ signal }) => listQuotes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listQuotes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListQuotesQueryResult = NonNullable<Awaited<ReturnType<typeof listQuotes>>>
+export type ListQuotesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary DDG Build quotes, newest first (owner only)
+ */
+
+export function useListQuotes<TData = Awaited<ReturnType<typeof listQuotes>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listQuotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListQuotesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateQuoteUrl = () => {
+
+
+
+
+  return `/api/quotes`
+}
+
+/**
+ * @summary Create a fixed-price quote and its private client link (owner only)
+ */
+export const createQuote = async (quoteInput: QuoteInput, options?: Parameters<typeof customFetch>[1]): Promise<Quote> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Quote>(getCreateQuoteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(quoteInput)
+  }
+);}
+
+
+
+
+
+export const getCreateQuoteMutationKey = () => ['createQuote'] as const;
+
+export const getCreateQuoteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createQuote>>, TError,CreateQuoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createQuote>>, TError,CreateQuoteMutationVariables, TContext> => {
+
+const mutationKey = getCreateQuoteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createQuote>>, CreateQuoteMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createQuote(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateQuoteMutationResult = NonNullable<Awaited<ReturnType<typeof createQuote>>>
+    export type CreateQuoteMutationBody = BodyType<QuoteInput>
+    export type CreateQuoteMutationError = ErrorType<unknown>
+    export type CreateQuoteMutationVariables = {data: BodyType<QuoteInput>}
+
+    /**
+ * @summary Create a fixed-price quote and its private client link (owner only)
+ */
+export const useCreateQuote = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createQuote>>, TError,CreateQuoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createQuote>>,
+        TError,
+        CreateQuoteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateQuoteMutationOptions(options));
+    }
+
+export const getWithdrawQuoteUrl = (id: number,) => {
+
+
+
+
+  return `/api/quotes/${id}/withdraw`
+}
+
+/**
+ * @summary Withdraw a quote the client has not paid (owner only)
+ */
+export const withdrawQuote = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Quote> => {
+
+  return customFetch<Quote>(getWithdrawQuoteUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getWithdrawQuoteMutationKey = () => ['withdrawQuote'] as const;
+
+export const getWithdrawQuoteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdrawQuote>>, TError,WithdrawQuoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof withdrawQuote>>, TError,WithdrawQuoteMutationVariables, TContext> => {
+
+const mutationKey = getWithdrawQuoteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof withdrawQuote>>, WithdrawQuoteMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  withdrawQuote(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type WithdrawQuoteMutationResult = NonNullable<Awaited<ReturnType<typeof withdrawQuote>>>
+
+    export type WithdrawQuoteMutationError = ErrorType<unknown>
+    export type WithdrawQuoteMutationVariables = {id: number}
+
+    /**
+ * @summary Withdraw a quote the client has not paid (owner only)
+ */
+export const useWithdrawQuote = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdrawQuote>>, TError,WithdrawQuoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof withdrawQuote>>,
+        TError,
+        WithdrawQuoteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getWithdrawQuoteMutationOptions(options));
+    }
+
+export const getGetPublicQuoteUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/quotes/${token}`
+}
+
+/**
+ * @summary A client's quote by its private link (no login)
+ */
+export const getPublicQuote = async (token: string, options?: Parameters<typeof customFetch>[1]): Promise<PublicQuote> => {
+
+  return customFetch<PublicQuote>(getGetPublicQuoteUrl(token),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicQuoteQueryKey = (token: string,) => {
+    return [
+    `/api/public/quotes/${token}`
+    ] as const;
+    }
+
+
+export const getGetPublicQuoteQueryOptions = <TData = Awaited<ReturnType<typeof getPublicQuote>>, TError = ErrorType<unknown>>(token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicQuote>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicQuoteQueryKey(token);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicQuote>>> = ({ signal }) => getPublicQuote(token, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: token !== null && token !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicQuote>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicQuoteQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicQuote>>>
+export type GetPublicQuoteQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary A client's quote by its private link (no login)
+ */
+
+export function useGetPublicQuote<TData = Awaited<ReturnType<typeof getPublicQuote>>, TError = ErrorType<unknown>>(
+ token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicQuote>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicQuoteQueryOptions(token,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCheckPublicQuotePaymentUrl = (token: string,
+    sessionId: string,) => {
+
+
+
+
+  return `/api/public/quotes/${token}/payment/${sessionId}`
+}
+
+/**
+ * @summary After Stripe sends the client back, check the deposit with Stripe and return the quote (no login)
+ */
+export const checkPublicQuotePayment = async (token: string,
+    sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<PublicQuote> => {
+
+  return customFetch<PublicQuote>(getCheckPublicQuotePaymentUrl(token,sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCheckPublicQuotePaymentQueryKey = (token: string,
+    sessionId: string,) => {
+    return [
+    `/api/public/quotes/${token}/payment/${sessionId}`
+    ] as const;
+    }
+
+
+export const getCheckPublicQuotePaymentQueryOptions = <TData = Awaited<ReturnType<typeof checkPublicQuotePayment>>, TError = ErrorType<unknown>>(token: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkPublicQuotePayment>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCheckPublicQuotePaymentQueryKey(token,sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkPublicQuotePayment>>> = ({ signal }) => checkPublicQuotePayment(token,sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: token !== null && token !== undefined && sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkPublicQuotePayment>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type CheckPublicQuotePaymentQueryResult = NonNullable<Awaited<ReturnType<typeof checkPublicQuotePayment>>>
+export type CheckPublicQuotePaymentQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary After Stripe sends the client back, check the deposit with Stripe and return the quote (no login)
+ */
+
+export function useCheckPublicQuotePayment<TData = Awaited<ReturnType<typeof checkPublicQuotePayment>>, TError = ErrorType<unknown>>(
+ token: string,
+    sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkPublicQuotePayment>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getCheckPublicQuotePaymentQueryOptions(token,sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAcceptPublicQuoteUrl = (token: string,) => {
+
+
+
+
+  return `/api/public/quotes/${token}/accept`
+}
+
+/**
+ * @summary The client accepts the quote (typed name + agreement). Returns a Stripe link for the deposit when DDG's Stripe is set up.
+ */
+export const acceptPublicQuote = async (token: string,
+    quoteAcceptInput: QuoteAcceptInput, options?: Parameters<typeof customFetch>[1]): Promise<QuoteAcceptResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<QuoteAcceptResult>(getAcceptPublicQuoteUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(quoteAcceptInput)
+  }
+);}
+
+
+
+
+
+export const getAcceptPublicQuoteMutationKey = () => ['acceptPublicQuote'] as const;
+
+export const getAcceptPublicQuoteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptPublicQuote>>, TError,AcceptPublicQuoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptPublicQuote>>, TError,AcceptPublicQuoteMutationVariables, TContext> => {
+
+const mutationKey = getAcceptPublicQuoteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptPublicQuote>>, AcceptPublicQuoteMutationVariables> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  acceptPublicQuote(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptPublicQuoteMutationResult = NonNullable<Awaited<ReturnType<typeof acceptPublicQuote>>>
+    export type AcceptPublicQuoteMutationBody = BodyType<QuoteAcceptInput>
+    export type AcceptPublicQuoteMutationError = ErrorType<unknown>
+    export type AcceptPublicQuoteMutationVariables = {token: string;data: BodyType<QuoteAcceptInput>}
+
+    /**
+ * @summary The client accepts the quote (typed name + agreement). Returns a Stripe link for the deposit when DDG's Stripe is set up.
+ */
+export const useAcceptPublicQuote = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptPublicQuote>>, TError,AcceptPublicQuoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptPublicQuote>>,
+        TError,
+        AcceptPublicQuoteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAcceptPublicQuoteMutationOptions(options));
     }
 
 export const getListEnquiriesUrl = () => {

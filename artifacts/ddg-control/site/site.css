@@ -349,3 +349,16 @@ p { margin: 0; }
   .s-plain .f-main { gap: 40px; padding-left: 16px; padding-right: 16px; }
   .f-holdings li { grid-template-columns: minmax(70px, 1fr) 1.4fr 48px; }
 }
+/* ── /quote/<token>: a client's private DDG Build quote (Quote.tsx). ── */
+.s-plain .q-main { gap: 18px; }
+.q-card { gap: 12px; }
+.q-card h2 { font-size: 22px; margin: 0; }
+.q-scope { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--ng-text-2); }
+.q-price { margin: 6px 0 0; display: grid; gap: 8px; }
+.q-price div { display: flex; justify-content: space-between; gap: 16px; border-top: 1px solid var(--ng-hairline); padding-top: 8px; }
+.q-price dt { color: var(--ng-text-2); }
+.q-price dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--ng-text); }
+.q-field { display: flex; flex-direction: column; gap: 6px; color: var(--ng-text-2); }
+.q-check { display: flex; gap: 10px; align-items: flex-start; color: var(--ng-text-2); }
+.q-check input { margin-top: 4px; }
+.q-done { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; font-size: 18px; color: var(--ng-text); }
