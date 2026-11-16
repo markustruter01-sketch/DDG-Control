@@ -1,14 +1,17 @@
 import { useEffect, useRef } from 'react';
 import {
-  AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, Color, DynamicDrawUsage, EdgesGeometry, Fog, Group,
-  IcosahedronGeometry, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, Points,
+  AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, Color, DynamicDrawUsage, Fog, Group,
+  LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, Points,
   PointsMaterial, Scene, SphereGeometry, Sprite, SpriteMaterial, SRGBColorSpace, TextureLoader, Vector3, WebGLRenderer,
   type Material,
 } from 'three';
+import { makeAirOrb } from './airOrb';
+import { makeWater } from './water';
 
 /**
- * Home background (fixed): a night canyon of ice-blue lines with the DDG core floating in the gap
- * and the four businesses orbiting it. Scrolling flattens the canyon into a grid seen from above,
+ * Home background (fixed): a night canyon of ice-blue lines with the DDG core, a fast-spinning
+ * ball of air, floating in the gap and the four businesses orbiting it. A river runs down the
+ * canyon floor towards the viewer, and the air ball churns the water beneath it. Scrolling flattens the canyon into a grid seen from above,
  * then the whole stage fades out as the "Built in Brisbane" section (#work) arrives.
  * Loaded lazily, so the page text never waits for it.
  */
@@ -100,19 +103,18 @@ export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: 
     const CORE = new Vector3(0, 13.5, 4);
     const orbit = new Group(); orbit.position.copy(CORE); scene.add(orbit);
     const core = new Group(); orbit.add(core);
-    const ico = new IcosahedronGeometry(1.7, 1), edges = new EdgesGeometry(ico);
-    const fade: Material[] = [
-      new LineBasicMaterial({ color: 0x6cc7f0, transparent: true, opacity: 0.9 }),
-      new MeshBasicMaterial({ color: 0x0c1824, transparent: true, opacity: 0.55 }),
-      new SpriteMaterial({ map: glowTexture('108,199,240'), blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.6 }),
-    ];
-    core.add(new LineSegments(edges, fade[0]), new Mesh(ico, fade[1]));
-    const halo = new Sprite(fade[2] as SpriteMaterial); halo.scale.set(10, 10, 1); core.add(halo);
+    orbit.renderOrder = 2; // drawn after the river, so the water never dims the orb
+    const ORB_R = 1.7;
+    const air = makeAirOrb(ORB_R, small);
+    const haloMat = new SpriteMaterial({ map: glowTexture('170,225,255'), blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.45 });
+    const fade: Material[] = [...air.materials, haloMat];
+    core.add(air.group);
+    const halo = new Sprite(haloMat); halo.scale.set(10, 10, 1); core.add(halo);
     const logoTex = new TextureLoader().load('/ddg-core-logo.jpg'); logoTex.colorSpace = SRGBColorSpace;
     const logoMat = new SpriteMaterial({ map: logoTex, blending: AdditiveBlending, depthTest: false, depthWrite: false, transparent: true, opacity: 0.95 });
     const logo = new Sprite(logoMat); logo.scale.set(2.5, 2.5, 1); logo.renderOrder = 10; orbit.add(logo);
     fade.push(logoMat);
-    disposables.push(ico, edges, logoTex);
+    disposables.push(...air.disposables, logoTex);
     const bodies = PLANETS.map((p) => {
       const plane = new Group(); plane.rotation.x = Math.PI / 2 + p.tilt; plane.rotation.y = p.tilt * 0.6; orbit.add(plane);
       const body = new Group(); plane.add(body);
@@ -126,6 +128,13 @@ export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: 
     });
     const baseOpacity = fade.map((m) => m.opacity);
     disposables.push(...fade);
+
+    // The river on the canyon floor and the spray the orb throws up from it.
+    const sprayTex = glowTexture('200,236,255');
+    const water = makeWater({ small, zNear: Z0, heightAt, fogColor: 0x0a0d16, glow: sprayTex });
+    scene.add(water.river, water.spray);
+    disposables.push(sprayTex, ...water.disposables);
+    let clock = 0;
 
     // Drag the hero to spin the core.
     let spinY = 0.2, spinX = 0.15, vy = 0, drag: { x: number; y: number } | null = null;
@@ -164,7 +173,8 @@ export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: 
         attr.needsUpdate = true; shownK = k;
       }
       lineMat.opacity = lerp(0.34, 0.16, k);
-      (scene.fog as Fog).near = lerp(30, 200, k); (scene.fog as Fog).far = lerp(150, 420, k);
+      const fog = scene.fog as Fog;
+      fog.near = lerp(30, 200, k); fog.far = lerp(150, 420, k);
       starMat.opacity = 0.8 * (1 - k);
       const camZ = lerp(42, 0, ease(p * 1.2));
       camera.position.set(0, lerp(9, small ? 95 : 70, k), camZ);
@@ -179,7 +189,12 @@ export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: 
       if (!drag) spinY += reduced ? 0 : vy + dt * 0.05;
       vy *= 0.94;
       orbit.rotation.y = spinY; orbit.rotation.x = spinX;
-      if (!reduced) { core.rotation.y += dt * 0.25; core.rotation.x += dt * 0.1; }
+      if (!reduced) { clock += dt; air.update(dt, clock); }
+      // The water drains away as the canyon flattens; the churning stops as the orb leaves.
+      water.update({
+        t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z, orbR: ORB_R * orbit.scale.x,
+        flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1 - ease(k * 3), fogNear: fog.near, fogFar: fog.far,
+      });
       bodies.forEach((b, i) => {
         if (!reduced) b.a += dt * b.p.spin;
         b.body.position.set(Math.cos(b.a) * b.p.r, Math.sin(b.a) * b.p.r, 0);
