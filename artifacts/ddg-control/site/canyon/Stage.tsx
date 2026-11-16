@@ -5,7 +5,7 @@ import {
 } from 'three';
 import { makeAirOrb } from './airOrb';
 import { makeSky } from './sky';
-import { LANDSCAPES, type LandscapeKey } from './landscapes';
+import { heightAt } from './landscapes';
 import { makeWater } from './water';
 
 /**
@@ -29,13 +29,12 @@ function glowTexture(rgb: string) {
   const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; return t;
 }
 
-export default function Stage({ fadeAt, landscape = 'canyon' }: { fadeAt: string; landscape?: LandscapeKey }) {
+export default function Stage({ fadeAt }: { fadeAt: string }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current!, stage = stageRef.current!;
-    const heightAt = LANDSCAPES[landscape];
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const small = innerWidth < 700;
     let renderer: WebGLRenderer;
@@ -87,10 +86,9 @@ export default function Stage({ fadeAt, landscape = 'canyon' }: { fadeAt: string
     disposables.push(...air.disposables, haloTex, haloMat);
 
     // The river on the canyon floor and the splashes the orb throws up from it.
-    const sprayTex = glowTexture('200,236,255');
-    const water = makeWater({ small, grid: { NX, NZ, W, D, Z0, base }, heightAt, fogColor: 0x0a0d16, glow: sprayTex });
+    const water = makeWater({ small, grid: { NX, NZ, W, D, Z0, base }, heightAt, fogColor: 0x0a0d16 });
     scene.add(water.river, water.spray);
-    disposables.push(sprayTex, ...water.disposables);
+    disposables.push(...water.disposables);
 
     const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
     resize(); addEventListener('resize', resize);
@@ -147,7 +145,7 @@ export default function Stage({ fadeAt, landscape = 'canyon' }: { fadeAt: string
       disposables.forEach((d) => d.dispose());
       renderer.dispose();
     };
-  }, [fadeAt, landscape]);
+  }, [fadeAt]);
 
   return <div className="cn-stage" ref={stageRef} aria-hidden="true"><canvas ref={canvasRef} /></div>;
 }

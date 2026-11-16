@@ -1,6 +1,6 @@
 import {
-  AdditiveBlending, BufferAttribute, BufferGeometry, DoubleSide, DynamicDrawUsage, Mesh, Points, PointsMaterial, ShaderMaterial,
-  Vector2, Vector3, type Texture,
+  BufferAttribute, BufferGeometry, DoubleSide, DynamicDrawUsage, InstancedMesh, Mesh, Object3D, ShaderMaterial, SphereGeometry,
+  Vector2, Vector3,
 } from 'three';
 import { SKY_GLSL } from './sky';
 
@@ -15,7 +15,8 @@ import { SKY_GLSL } from './sky';
  * Under the orb the water is pressed into a wide dish and dragged round in spiral arms,
  * clockwise seen from above, the same way the orb spins. The arms fade to nothing at the very
  * centre, so they do not meet in a point there.
- * Splashes: droplets flung out from under the orb; the furthest land on the banks.
+ * Splashes: beads of water flung out from under the orb, falling back under gravity; the
+ * furthest land on the banks.
  */
 
 // Shared by both shaders: how strongly the orb stirs the water at a distance d, and the spiral arms.
@@ -145,11 +146,32 @@ void main() {
   gl_FragColor = vec4(mix(col, uFog, fog), alpha * uOpacity);
 }`;
 
+// A droplet: a bead of water with a bright rim and a small highlight, on an instanced sphere.
+const DROP_VERT = /* glsl */ `
+varying vec3 vN;
+varying vec3 vV;
+void main() {
+  vec4 mv = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+  vN = normalize((modelViewMatrix * instanceMatrix * vec4(normal, 0.0)).xyz);
+  vV = -mv.xyz;
+  gl_Position = projectionMatrix * mv;
+}`;
+const DROP_FRAG = /* glsl */ `
+varying vec3 vN;
+varying vec3 vV;
+void main() {
+  vec3 n = normalize(vN), v = normalize(vV);
+  float facing = max(dot(n, v), 0.0), rim = pow(1.0 - facing, 2.0);
+  float glint = pow(max(dot(n, normalize(vec3(0.25, 0.85, 0.45))), 0.0), 26.0);
+  vec3 col = mix(vec3(0.16, 0.42, 0.56), vec3(0.75, 0.92, 1.0), rim) + glint * 0.9;
+  gl_FragColor = vec4(col, clamp(0.55 + rim * 0.4 + glint, 0.0, 1.0));
+}`;
+
 /** The land's grid, as Stage builds it: `base` holds the height of every grid point, row by row. */
 export type LandGrid = { NX: number; NZ: number; W: number; D: number; Z0: number; base: Float32Array };
-export type WaterOptions = { small: boolean; grid: LandGrid; heightAt: (x: number, z: number) => number; fogColor: number; glow: Texture };
+export type WaterOptions = { small: boolean; grid: LandGrid; heightAt: (x: number, z: number) => number; fogColor: number };
 
-export function makeWater({ small, grid, heightAt, fogColor, glow }: WaterOptions) {
+export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   // ── River ──────────────────────────────────────────────────────────────────────────────
   // LEVEL is the height of the surface at z = 0; SLOPE tilts it gently downhill towards the camera.
   // The sheet covers the land grid's own points within HALF of the centre line, back to Z_FAR.
@@ -189,17 +211,17 @@ export function makeWater({ small, grid, heightAt, fogColor, glow }: WaterOption
   river.renderOrder = 1; // after the land's lines, so the water covers the lines beneath it
 
   // ── Splashes ───────────────────────────────────────────────────────────────────────────
-  const N = small ? 150 : 280;
+  // Real droplets, not glowing dots: small beads of water, each stretched along the way it is
+  // flying, with a bright rim like a drop catching the light.
+  const N = small ? 44 : 80;
   const seed = new Float32Array(N * 3);
   for (let i = 0; i < N * 3; i++) seed[i] = Math.random();
-  const sprayPos = new Float32Array(N * 3), sprayCol = new Float32Array(N * 3);
-  const posAttr = new BufferAttribute(sprayPos, 3), colAttr = new BufferAttribute(sprayCol, 3);
-  posAttr.setUsage(DynamicDrawUsage); colAttr.setUsage(DynamicDrawUsage);
-  const sprayGeo = new BufferGeometry();
-  sprayGeo.setAttribute('position', posAttr); sprayGeo.setAttribute('color', colAttr);
-  const sprayMat = new PointsMaterial({ size: small ? 0.7 : 0.6, map: glow, vertexColors: true, blending: AdditiveBlending, transparent: true, depthWrite: false });
-  const spray = new Points(sprayGeo, sprayMat);
+  const dropGeo = new SphereGeometry(1, 10, 8);
+  const dropMat = new ShaderMaterial({ vertexShader: DROP_VERT, fragmentShader: DROP_FRAG, transparent: true, depthWrite: false });
+  const spray = new InstancedMesh(dropGeo, dropMat, N);
+  spray.instanceMatrix.setUsage(DynamicDrawUsage);
   spray.frustumCulled = false; spray.renderOrder = 7; // over the orb
+  const drop = new Object3D(), UP = new Vector3(0, 1, 0), vel = new Vector3();
 
   type Frame = {
     t: number; orbX: number; orbY: number; orbZ: number;
@@ -215,21 +237,26 @@ export function makeWater({ small, grid, heightAt, fogColor, glow }: WaterOption
     river.visible = spray.visible = f.show > 0.01;
     if (!river.visible) return;
 
-    const waterY = (levelAt(f.orbZ) - 0.4) * f.flat, power = f.stir * f.show;
+    const waterY = (levelAt(f.orbZ) - 0.4) * f.flat, power = f.stir * f.show, G = 18, LIFE = 1.5;
     for (let i = 0; i < N; i++) {
-      // Thrown up and out, carried clockwise by the wind. One in five is thrown hard enough to
-      // reach the banks. A droplet goes dark once it lands, on water or on land.
-      const a = seed[i * 3], b = seed[i * 3 + 1], c = seed[i * 3 + 2], far = i % 5 === 0;
-      const u = (b + f.t * (0.55 + c * 0.35)) % 1, s = u * 1.5;
-      const rad = 2.5 + a * 3.5 + (far ? 9 + c * 7 : 3 + c * 4) * s, ang = (a * 37 + c * 11) % 6.283 + 1.3 * s;
-      const x = f.orbX + rad * Math.cos(ang), z = f.orbZ + rad * Math.sin(ang);
-      const y = waterY + (far ? 8 + a * 4 : 4 + a * 4) * s - 7 * s * s;
-      const lit = y > waterY && y > heightAt(x, z) * f.flat ? Math.sqrt(1 - u) * power : 0;
-      sprayPos[i * 3] = x; sprayPos[i * 3 + 1] = y; sprayPos[i * 3 + 2] = z;
-      sprayCol[i * 3] = lit * 0.7; sprayCol[i * 3 + 1] = lit * 0.92; sprayCol[i * 3 + 2] = lit;
+      // Each droplet is thrown up and out from the churned water, carried a little way round by the
+      // wind, and falls back under gravity. One in four is thrown hard enough to reach the banks.
+      const a = seed[i * 3], b = seed[i * 3 + 1], c = seed[i * 3 + 2], far = i % 4 === 0;
+      const u = (b + (f.t / LIFE) * (0.8 + c * 0.4)) % 1, s = u * LIFE;
+      const out = far ? 10 + c * 6 : 3.5 + c * 4, up = far ? 10 + a * 3 : 6.5 + a * 4, wind = 0.5;
+      const rad = 2.5 + a * 3.5 + out * s, ang = (a * 37 + c * 11) % 6.283 + wind * s, cos = Math.cos(ang), sin = Math.sin(ang);
+      const x = f.orbX + rad * cos, z = f.orbZ + rad * sin, y = waterY + up * s - 0.5 * G * s * s;
+      const flying = power > 0.02 && y > waterY && y > heightAt(x, z) * f.flat;
+      const size = flying ? (0.05 + 0.08 * c * c) * Math.min(1, s * 14) * Math.min(1, power * 2) : 0;
+      vel.set(out * cos - rad * wind * sin, up - G * s, out * sin + rad * wind * cos);
+      const speed = vel.length();
+      drop.position.set(x, y, z);
+      drop.quaternion.setFromUnitVectors(UP, vel.divideScalar(speed || 1));
+      drop.scale.set(size, size * (1 + speed * 0.045), size);
+      drop.updateMatrix(); spray.setMatrixAt(i, drop.matrix);
     }
-    posAttr.needsUpdate = true; colAttr.needsUpdate = true;
+    spray.instanceMatrix.needsUpdate = true;
   };
 
-  return { river, spray, update, disposables: [riverGeo, riverMat, sprayGeo, sprayMat] as { dispose: () => void }[] };
+  return { river, spray, update, disposables: [riverGeo, riverMat, dropGeo, dropMat] as { dispose: () => void }[] };
 }

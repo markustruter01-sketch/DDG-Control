@@ -1,8 +1,11 @@
 /**
- * Data pipes on the home page: orthogonal glass pipes, top to bottom, linking each part of the
- * page to the next (work reel → at a glance → Coffee → Finance → Fitness → command centre).
- * Drawn into one SVG over the page from the live positions of the elements, so they follow
- * any layout (PC or phone) and redraw when it changes.
+ * The pipes down the home page. The river on the first screen is the AI core's power; below it,
+ * that same water runs through glass pipes from one part of the page to the next, so it reads
+ * as the core feeding everything beneath it.
+ *
+ * Each pipe is a glass tube that fills with water as the visitor scrolls down to it, with light
+ * glinting along the flow. They are drawn into one SVG behind the page from the live positions
+ * of the sections, so they follow any layout (PC or phone) and redraw when it changes.
  */
 
 const R = 18; // corner radius
@@ -15,53 +18,64 @@ function route(x1: number, y1: number, yb: number, x2: number, y2: number): stri
   return `M${x1} ${y1} V${yb - r} Q${x1} ${yb} ${x1 + s * r} ${yb} H${x2 - s * r} Q${x2} ${yb} ${x2} ${yb + r} V${y2}`;
 }
 
-export function drawWires(page: HTMLElement, svg: SVGSVGElement): void {
+/** Work out where the pipes go and draw them. Call again whenever the page's layout changes. */
+export function drawPipes(page: HTMLElement, svg: SVGSVGElement): void {
   const p = page.getBoundingClientRect();
   const box = (el: Element | null) => {
     if (!el) return null;
     const r = el.getBoundingClientRect();
-    return { x: r.left - p.left, y: r.top - p.top, w: r.width, h: r.height, r: r.right - p.left, b: r.bottom - p.top };
+    return { x: r.left - p.left, y: r.top - p.top, w: r.width, h: r.height, r: r.right - p.left, b: r.bottom - p.top, cx: r.left - p.left + r.width / 2 };
   };
   const q = (sel: string) => box(page.querySelector(sel));
-  const W = page.clientWidth;
+  const W = page.clientWidth, H = page.scrollHeight;
   const clampX = (x: number) => Math.min(W - 20, Math.max(20, x));
-  const paths: string[] = [], ports: string[] = [];
-  const pipe = (d: string, tint = '') => paths.push(
-    `<path class="wall" d="${d}"/><path class="hollow" d="${d}"/><path class="glass" d="${d}"/><path class="shine" d="${d}"/><path class="flow ${tint}" d="${d}"/>`);
-  const port = (x: number, y: number) => ports.push(`<circle class="port" cx="${x}" cy="${y}" r="9"/><circle class="port-in" cx="${x}" cy="${y}" r="3.5"/>`);
+  const out: string[] = [], ports: string[] = [];
+  let n = 0;
+  // One pipe: the glass, the water (drawn only as far as it has filled), and glints that show only on the water.
+  const pipe = (x1: number, y1: number, x2: number, y2: number, yb = (y1 + y2) / 2) => {
+    if (y2 - y1 < 28) return;
+    const a = clampX(x1), b = clampX(x2), d = route(a, y1, yb, b, y2), id = `cn-pipe-${n++}`;
+    out.push(
+      `<g class="pipe" data-y0="${y1}" data-y1="${y2}">` +
+      `<path class="wall" d="${d}"/><path class="hollow" d="${d}"/>` +
+      `<path class="water fill" pathLength="1" d="${d}"/>` +
+      `<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><path class="fill" pathLength="1" d="${d}" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round"/></mask>` +
+      `<g mask="url(#${id})"><path class="glint" d="${d}"/><path class="glint slow" d="${d}"/></g>` +
+      `<path class="shine" d="${d}"/></g>`);
+    ports.push(`<circle class="port" cx="${a}" cy="${y1}" r="8"/><circle class="port" cx="${b}" cy="${y2}" r="8"/>`);
+  };
 
-  // 1. Our work (the reel) feeds the at-a-glance panel.
-  const reel = q('.cn-reel'), head = q('#glance .cn-head');
-  const figs = [...page.querySelectorAll('.cn-reel figure')].slice(0, 2).map((f) => box(f)!);
-  if (reel && head) {
-    const yb = (reel.b + head.y) / 2, tx = head.x + 6;
-    figs.forEach((f, i) => { const fx = clampX(f.x + f.w / 2); pipe(route(fx, f.b + 6, yb, tx, head.y - 10), i ? 'white' : 'mint'); port(fx, f.b + 6); });
-    port(tx, head.y - 10);
+  const workHead = q('#work .cn-head'), reel = q('#work .s-work'), bizHead = q('#businesses h2');
+  const cards = [...page.querySelectorAll('#businesses .s-card')].map((c) => box(c)!);
+  const build = q('#build'), kase = q('.s-case'), charity = q('#charity');
+
+  // 1. From the river on the first screen, down into "Our work".
+  if (workHead) pipe(W / 2, 6, workHead.cx, workHead.y - 16);
+  // 2. Our work feeds the businesses.
+  if (reel && bizHead) pipe(reel.cx, reel.b + 14, bizHead.x + 10, bizHead.y - 16);
+  // 3. One branch to each business.
+  if (bizHead && cards.length) {
+    const top = Math.min(...cards.map((c) => c.y));
+    for (const c of cards) if (c.y - top < 4) pipe(bizHead.x + 10, bizHead.b + 10, c.cx, c.y - 10, bizHead.b + 10 + (top - bizHead.b - 20) / 2);
   }
+  // 4. Then on down the page: Build, how it connects, giving back.
+  const grid = q('#businesses .s-grid');
+  if (grid && build) pipe(grid.cx, grid.b + 12, build.x + 10, build.y - 16);
+  if (build && kase) pipe(build.x + 10, build.b + 12, kase.x + 34, kase.y - 10);
+  if (kase && charity) pipe(kase.cx, kase.b + 10, charity.cx, charity.y - 10);
 
-  // 2. Inside the panel: each tile hands on to the next, like a circuit.
-  const tiles = [...page.querySelectorAll('#glance .cn-tile')].map((t) => box(t)!);
-  for (let i = 0; i < tiles.length - 1; i++) {
-    const a = tiles[i], b = tiles[i + 1];
-    if (Math.abs(a.y - b.y) < 4) pipe(`M${a.r} ${a.y + a.h / 2} H${b.x}`);
-    else if (b.y >= a.b - 2 && Math.abs(a.x - b.x) < 4) pipe(`M${a.x + 28} ${a.b} V${b.y}`);
-  }
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.style.height = `${H}px`;
+  svg.innerHTML = out.join('') + ports.join('');
+}
 
-  // 3. Down the businesses to the command centre.
-  const last = tiles[tiles.length - 1];
-  const coffee = q('#coffee .cn-shot'), finance = q('#finance .cn-shot'), donuts = q('#finance .cn-donuts');
-  const fitness = q('#fitness .cn-shot'), fitSec = q('#fitness'), map = q('#connects .cn-map'), mapHead = q('#connects .cn-head');
-  const legs: [number, number, number, number, string][] = [];
-  if (last && coffee) legs.push([last.x + last.w / 2, last.b + 8, coffee.x + coffee.w * 0.25, coffee.y - 10, 'white']);
-  if (coffee && finance) legs.push([coffee.x + coffee.w / 2, coffee.b + 8, finance.x + finance.w / 2, finance.y - 10, 'mint']);
-  if (donuts && fitness) legs.push([donuts.x + donuts.w / 2, donuts.b + 30, fitness.x + fitness.w / 2, fitness.y - 10, '']);
-  if (fitness && fitSec && map && mapHead) legs.push([fitness.x + fitness.w / 2, Math.max(fitness.b, fitSec.b - 40) + 8, map.x + map.w / 2, mapHead.y - 10, 'violet']);
-  for (const [ax, y1, bx, y2, tint] of legs) {
-    const x1 = clampX(ax), x2 = clampX(bx);
-    if (y2 - y1 < 24) continue;
-    pipe(route(x1, y1, (y1 + y2) / 2, x2, y2), tint); port(x1, y1); port(x2, y2);
-  }
-
-  svg.setAttribute('viewBox', `0 0 ${W} ${page.scrollHeight}`);
-  svg.innerHTML = paths.join('') + ports.join('');
+/** Fill each pipe as far as the visitor has scrolled: the water front sits 70% down the screen. */
+export function fillPipes(page: HTMLElement, svg: SVGSVGElement): void {
+  const front = window.innerHeight * 0.7 - page.getBoundingClientRect().top;
+  svg.querySelectorAll<SVGGElement>('.pipe').forEach((g) => {
+    const y0 = Number(g.dataset.y0), y1 = Number(g.dataset.y1);
+    const full = Math.min(1, Math.max(0, (front - y0) / (y1 - y0)));
+    g.style.setProperty('--full', String(full));
+    g.classList.toggle('dry', full <= 0);
+  });
 }
