@@ -1,27 +1,20 @@
 import { useEffect, useRef } from 'react';
 import {
-  AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, Color, DoubleSide, DynamicDrawUsage, Fog, Group,
+  AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, DynamicDrawUsage, Fog, Group,
   LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, Points,
-  PointsMaterial, Scene, SphereGeometry, Sprite, SpriteMaterial, SRGBColorSpace, TextureLoader, Vector3, WebGLRenderer,
-  type Material,
+  PointsMaterial, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
 import { makeAirOrb } from './airOrb';
 import { makeWater } from './water';
 
 /**
  * Home background (fixed): a night canyon of ice-blue lines with the DDG core, a fast-spinning
- * ball of air, floating in the gap and the four businesses orbiting it. A river runs down the
- * canyon floor towards the viewer, and the air ball churns the water beneath it. Scrolling flattens the canyon into a grid seen from above,
- * then the whole stage fades out as the "Built in Brisbane" section (#work) arrives.
+ * ball of air, floating just above a river that runs down the canyon floor towards the viewer.
+ * The air ball churns the water beneath it, turning the same way it spins. Scrolling flattens
+ * the canyon into a grid seen from above, then the whole stage fades out as the
+ * "Built in Brisbane" section (#work) arrives.
  * Loaded lazily, so the page text never waits for it.
  */
-
-export const PLANETS = [
-  { key: 'coffee', label: 'Coffee', color: '#ffffff', target: 'coffee', r: 3.3, tilt: 0.35, spin: 0.22, size: 0.36, a: 0.4 },
-  { key: 'finance', label: 'Finance', color: '#3ddc97', target: 'finance', r: 4.4, tilt: -0.25, spin: 0.15, size: 0.46, a: 2.4 },
-  { key: 'fitness', label: 'Fitness', color: '#6cc7f0', target: 'fitness', r: 5.5, tilt: 0.18, spin: 0.1, size: 0.42, a: 4.3 },
-  { key: 'creative', label: 'Creative', color: '#a78bfa', target: 'connects', r: 6.6, tilt: -0.3, spin: 0.075, size: 0.4, a: 1.3 },
-] as const;
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const ease = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
@@ -49,16 +42,13 @@ function glowTexture(rgb: string) {
   g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
   const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; return t;
 }
-const rgbOf = (hex: string) => { const c = new Color(hex); return `${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)}`; };
 
-export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: (target: string) => void }) {
+export default function Stage({ fadeAt }: { fadeAt: string }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const labelsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current!, stage = stageRef.current!, labelBox = labelsRef.current!;
-    const labels = [...labelBox.querySelectorAll<HTMLButtonElement>('button')];
+    const canvas = canvasRef.current!, stage = stageRef.current!;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const small = innerWidth < 700;
     let renderer: WebGLRenderer;
@@ -100,59 +90,28 @@ export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: 
     scene.add(new Points(starGeo, starMat));
     disposables.push(starGeo, starMat);
 
-    // The DDG core with the four businesses in orbit, floating in the gap of the canyon.
-    const CORE = new Vector3(0, 9.5, 4); // low over the river, so the orb's underside nearly touches the water
+    // The DDG core: a ball of spinning air floating just above the river, with a soft glow round it.
+    const CORE = new Vector3(0, 9.5, 4), ORB_R = 1.7, HALO = 0.45;
     const orbit = new Group(); orbit.position.copy(CORE); scene.add(orbit);
-    const core = new Group(); orbit.add(core);
-    orbit.renderOrder = 2; // drawn after the river, so the water never dims the orb
-    const ORB_R = 1.7;
     const air = makeAirOrb(ORB_R);
-    const haloMat = new SpriteMaterial({ map: glowTexture('170,225,255'), blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.45 });
-    const fade: Material[] = [haloMat];
-    core.add(air.group);
-    const halo = new Sprite(haloMat); halo.scale.set(10, 10, 1); core.add(halo);
-    const logoTex = new TextureLoader().load('/ddg-core-logo.jpg'); logoTex.colorSpace = SRGBColorSpace;
-    const logoMat = new SpriteMaterial({ map: logoTex, blending: AdditiveBlending, depthTest: false, depthWrite: false, transparent: true, opacity: 0.95 });
-    const logo = new Sprite(logoMat); logo.scale.set(2.5, 2.5, 1); logo.renderOrder = 10; orbit.add(logo);
-    fade.push(logoMat);
-    disposables.push(...air.disposables, logoTex);
-    const bodies = PLANETS.map((p) => {
-      const plane = new Group(); plane.rotation.x = Math.PI / 2 + p.tilt; plane.rotation.y = p.tilt * 0.6; orbit.add(plane);
-      const body = new Group(); plane.add(body);
-      const ballGeo = new SphereGeometry(p.size, 32, 16);
-      const ballMat = new MeshBasicMaterial({ color: p.color, transparent: true });
-      const gMat = new SpriteMaterial({ map: glowTexture(rgbOf(p.color)), blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.9 });
-      const g = new Sprite(gMat); g.scale.set(p.size * 7, p.size * 7, 1);
-      body.add(new Mesh(ballGeo, ballMat), g);
-      fade.push(ballMat, gMat); disposables.push(ballGeo);
-      return { p, body, a: p.a as number };
-    });
-    const baseOpacity = fade.map((m) => m.opacity);
-    disposables.push(...fade);
+    const haloTex = glowTexture('170,225,255');
+    const haloMat = new SpriteMaterial({ map: haloTex, blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: HALO });
+    const halo = new Sprite(haloMat); halo.scale.set(10, 10, 1);
+    halo.renderOrder = 4; // after the river (1) and before the ball (5), so the ball sits in front of the water
+    orbit.add(halo, air.group);
+    disposables.push(...air.disposables, haloTex, haloMat);
 
-    // The river on the canyon floor and the spray the orb throws up from it.
+    // The river on the canyon floor and the splashes the orb throws up from it.
     const sprayTex = glowTexture('200,236,255');
     const water = makeWater({ small, zNear: Z0, heightAt, fogColor: 0x0a0d16, glow: sprayTex });
     scene.add(water.river, water.spray);
     disposables.push(sprayTex, ...water.disposables);
-    let clock = 0;
-
-    // Drag the hero to spin the core.
-    let spinY = 0.2, spinX = 0.15, vy = 0, drag: { x: number; y: number } | null = null;
-    const hero = document.querySelector<HTMLElement>('[data-hero]');
-    const down = (e: PointerEvent) => { if (e.target === hero) drag = { x: e.clientX, y: e.clientY }; };
-    const move = (e: PointerEvent) => {
-      if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag = { x: e.clientX, y: e.clientY };
-      vy = dx * 0.005; spinY += vy; spinX = Math.max(-0.5, Math.min(0.7, spinX + dy * 0.003));
-    };
-    const up = () => { drag = null; };
-    addEventListener('pointerdown', down); addEventListener('pointermove', move); addEventListener('pointerup', up);
 
     const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
     resize(); addEventListener('resize', resize);
 
-    const look = new Vector3(), v = new Vector3();
-    let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0;
+    const look = new Vector3();
+    let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -162,7 +121,7 @@ export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: 
       const fadeEl = document.getElementById(fadeAt);
       const top = fadeEl ? fadeEl.getBoundingClientRect().top : vh;
       const show = Math.min(1, Math.max(0, (top - vh * 0.3) / (vh * 0.55)));
-      stage.style.opacity = String(show); labelBox.style.opacity = String(show);
+      stage.style.opacity = String(show);
       if (show <= 0) return;
 
       // 0 → 1 over the hero and the room after it: the canyon settles into a flat grid seen from above.
@@ -186,10 +145,7 @@ export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: 
       const away = ease((p - 0.1) / 0.5);
       orbit.position.set(0, CORE.y + away * 26, CORE.z - away * 10);
       orbit.scale.setScalar(small ? 1.44 : 2.19);
-      fade.forEach((m, i) => { m.opacity = baseOpacity[i] * (1 - away); });
-      if (!drag) spinY += reduced ? 0 : vy + dt * 0.05;
-      vy *= 0.94;
-      orbit.rotation.y = spinY; orbit.rotation.x = spinX;
+      haloMat.opacity = HALO * (1 - away);
       if (!reduced) clock += dt;
       air.update(clock, 1 - away);
       // The water drains away as the canyon flattens; the churning stops as the orb leaves.
@@ -197,37 +153,16 @@ export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: 
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1 - ease(k * 3), fogNear: fog.near, fogFar: fog.far,
       });
-      bodies.forEach((b, i) => {
-        if (!reduced) b.a += dt * b.p.spin;
-        b.body.position.set(Math.cos(b.a) * b.p.r, Math.sin(b.a) * b.p.r, 0);
-        b.body.getWorldPosition(v); v.project(camera);
-        const x = (v.x * 0.5 + 0.5) * innerWidth, y = (-v.y * 0.5 + 0.5) * innerHeight;
-        const o = (1 - away) * (v.z < 1 ? 1 : 0);
-        labels[i].style.transform = `translate(${x + 14}px, ${y - 14}px)`;
-        labels[i].style.opacity = String(o); labels[i].style.pointerEvents = o > 0.5 ? 'auto' : 'none';
-      });
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
-      removeEventListener('pointerdown', down); removeEventListener('pointermove', move); removeEventListener('pointerup', up);
       removeEventListener('resize', resize);
       disposables.forEach((d) => d.dispose());
       renderer.dispose();
     };
   }, [fadeAt]);
 
-  return (
-    <>
-      <div className="cn-stage" ref={stageRef} aria-hidden="true"><canvas ref={canvasRef} /></div>
-      <div className="cn-labels" ref={labelsRef}>
-        {PLANETS.map((p) => (
-          <button key={p.key} type="button" className="cn-planet" style={{ ['--c' as string]: p.color }} onClick={() => onPlanet(p.target)}>
-            <i />{p.label}
-          </button>
-        ))}
-      </div>
-    </>
-  );
+  return <div className="cn-stage" ref={stageRef} aria-hidden="true"><canvas ref={canvasRef} /></div>;
 }

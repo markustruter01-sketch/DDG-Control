@@ -10,7 +10,8 @@ import {
  * its banks. It is shaded like real water at night: small waves that travel towards the camera
  * (down the canyon), a surface that mirrors the dark sky and the glow of the orb, colour that
  * goes from teal in the shallows to near-black in the deep middle, and foam along the banks.
- * Under the orb the water is pressed into a bowl, turns in spiral arms and sends rings outwards.
+ * Under the orb the water is pressed into a bowl and dragged round in spiral arms, clockwise seen
+ * from above, the same way the orb spins.
  * Splashes: droplets flung out from under the orb in low arcs.
  */
 
@@ -27,7 +28,7 @@ void main() {
   vec3 p = position;
   float d = length(p.xz - uOrb);
   float bowl = -1.1 * exp(-d * d / 16.0);
-  float rings = 0.45 * sin(d * 1.5 - uTime * 6.0) * exp(-d / 8.0);
+  float rings = 0.22 * sin(d * 1.5 - uTime * 6.0) * exp(-d / 8.0);
   float swell = 0.1 * sin(p.z * 0.55 + p.x * 0.4 + uTime * 2.2) + 0.06 * sin(p.z * 1.3 - p.x * 0.9 + uTime * 3.1);
   float lift = uStir * (bowl + rings) + swell;
   p.y += lift;
@@ -60,8 +61,10 @@ float noise(vec2 p) {
   vec2 u = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
 }
-float stirAt(float d) { return uStir * exp(-d * d / 90.0); }
-float armsAt(vec2 q, float d) { return sin(3.0 * atan(-q.y, q.x) + d * 0.9 - uTime * 5.0); }
+float stirAt(float d) { return uStir * exp(-d * d / 130.0); }
+// Spiral arms turning clockwise seen from above, the same way the orb spins.
+float armsAt(vec2 q, float d) { return sin(3.0 * atan(q.y, q.x) + d * 0.9 - uTime * 5.0); }
+vec2 turn(vec2 p, float a) { float c = cos(a), s = sin(a); return vec2(c * p.x - s * p.y, s * p.x + c * p.y); }
 // One travelling ripple: adds its slope to g.
 void ripple(vec2 f, float deg, float len, float amp, float speed, inout vec2 g) {
   float a = radians(deg), k = 6.2832 / len;
@@ -71,6 +74,10 @@ void ripple(vec2 f, float deg, float len, float amp, float speed, inout vec2 g) 
 // Slope of the small waves. They ride the current, which runs towards +z (the camera).
 // Sums of ripples of many sizes and headings, bent by slow noise so they never line up.
 vec2 slope(vec2 p, float detail) {
+  // Near the orb the ripples are bent round it, so the whole surface there looks dragged into the spin.
+  vec2 q = p - uOrb;
+  float twist = 1.1 * stirAt(length(q));
+  p = uOrb + turn(q, -twist);
   vec2 f = vec2(p.x, p.y - uTime * 4.0);
   f += 2.2 * vec2(noise(f * 0.13), noise(f * 0.13 + 31.7));
   vec2 g = vec2(0.0);
@@ -85,13 +92,13 @@ vec2 slope(vec2 p, float detail) {
   ripple(f2, -80.0, 0.93, 0.015, 3.9, fine);
   ripple(f2, 23.0, 0.61, 0.009, 4.6, fine);
   ripple(f2, -38.0, 0.47, 0.006, 5.2, fine);
-  return g + fine * detail;
+  return turn(g + fine * detail, twist);
 }
 // Height the orb adds: spiral arms and rings.
 float churnHeight(vec2 p) {
   vec2 q = p - uOrb;
   float d = length(q);
-  return stirAt(d) * (0.3 * armsAt(q, d) + 0.25 * sin(d * 1.5 - uTime * 6.0));
+  return stirAt(d) * (0.42 * armsAt(q, d) + 0.1 * sin(d * 1.5 - uTime * 6.0));
 }
 void main() {
   // Far away the finest ripples are smaller than a pixel, so they are faded out there.
@@ -121,7 +128,8 @@ void main() {
   float shore = (1.0 - smoothstep(0.0, 0.55, depth)) * smoothstep(0.1, 0.32, lace);
   vec2 q = vP - uOrb;
   float d = length(q);
-  float churn = stirAt(d) * (smoothstep(0.25, 1.0, armsAt(q, d)) * (0.35 + 1.6 * lace) + 0.3 * smoothstep(0.7, 1.0, sin(d * 1.5 - uTime * 6.0)));
+  float streaks = smoothstep(0.55, 1.0, sin(7.0 * atan(q.y, q.x) + d * 2.2 - uTime * 9.0));
+  float churn = stirAt(d) * (smoothstep(0.25, 1.0, armsAt(q, d)) * (0.35 + 1.6 * lace) + streaks * (0.1 + 1.2 * lace));
   float foam = clamp(shore * 0.85 + churn, 0.0, 1.0);
   col = mix(col, vec3(0.8, 0.93, 1.0), foam * 0.85);
 
@@ -205,7 +213,7 @@ export function makeWater({ small, zNear, heightAt, fogColor, glow }: WaterOptio
       const u = (b + f.t * (0.75 + c * 0.5)) % 1, s = u * 1.1;
       const rad = 2.2 + a * 2.6 + (3 + c * 4) * s, ang = (a * 37 + c * 11) % 6.283 + 1.6 * s;
       const h = (3.5 + a * 4) * s - 9 * s * s, lit = h > 0 ? (1 - u) * power : 0;
-      sprayPos[i * 3] = f.orbX + rad * Math.cos(ang); sprayPos[i * 3 + 1] = waterY + Math.max(0, h); sprayPos[i * 3 + 2] = f.orbZ - rad * Math.sin(ang);
+      sprayPos[i * 3] = f.orbX + rad * Math.cos(ang); sprayPos[i * 3 + 1] = waterY + Math.max(0, h); sprayPos[i * 3 + 2] = f.orbZ + rad * Math.sin(ang);
       sprayCol[i * 3] = lit * 0.7; sprayCol[i * 3 + 1] = lit * 0.92; sprayCol[i * 3 + 2] = lit;
     }
     posAttr.needsUpdate = true; colAttr.needsUpdate = true;

@@ -1,7 +1,7 @@
 import { AdditiveBlending, Group, Mesh, ShaderMaterial, SphereGeometry } from 'three';
 
 /**
- * The DDG core as a solid ball of spinning air. One smooth sphere whose surface is drawn by a
+ * The DDG core as a solid ball of spinning air (clockwise seen from above). One smooth sphere whose surface is drawn by a
  * shader: bands of wind racing round it on two tilted axes, a bright centre and a glowing rim,
  * so it reads as one dense ball and not as loose streaks. A second, slightly larger and much
  * fainter sphere adds a thin skin of wind just off the surface.
@@ -53,6 +53,7 @@ void main() {
     return;
   }
   vec3 col = mix(vec3(0.14, 0.46, 0.92), vec3(0.86, 0.97, 1.0), clamp(bands + centre * 0.5, 0.0, 1.0));
+  col *= 0.8 + 0.2 * normalize(vN).y; // a little darker underneath, so it reads as a round ball
   col += rim * vec3(0.45, 0.8, 1.0) * 0.9;
   gl_FragColor = vec4(col, clamp(0.58 + bands * 0.4 + rim * 0.45 + centre * 0.2, 0.0, 1.0) * uOpacity);
 }`;
@@ -67,7 +68,9 @@ export function makeAirOrb(R: number) {
   const ballMat = make(0), skinMat = make(1);
   const ballGeo = new SphereGeometry(R, 64, 48), skinGeo = new SphereGeometry(R * 1.14, 48, 32);
   const ball = new Mesh(ballGeo, ballMat), skin = new Mesh(skinGeo, skinMat);
-  skin.renderOrder = 1; // drawn over the ball
+  // Set on the meshes themselves: three.js sorts by each object's own order, and these must be drawn
+  // after the river (1), or the water behind the ball is painted over it.
+  ball.renderOrder = 5; skin.renderOrder = 6;
   group.add(ball, skin);
   /** `t` drives the spin (hold it still for reduced motion); `opacity` fades the whole orb. */
   const update = (t: number, opacity: number) => {
