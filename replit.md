@@ -23,6 +23,7 @@ The public DDG company website (at `/`) and DDG Control, the owner-only company 
 ## Where things live
 
 - `artifacts/ddg-control/index.html` + `site/` — public website (content in `site/content.ts`).
+- `site/canyon/` — the home page's 3D first screen (sky, land, river, air orb) and the water pipes down the page (`wires.ts`). Uses the `three` package; loaded on its own so the page's words never wait for it.
 - `artifacts/ddg-control/<secret folder>/index.html` + `src/` — DDG Control. The folder name is set once in `vite.config.ts` (`CONTROL_DIR`) and must match the rewrite in `.replit-artifact/artifact.toml`.
 - `src/lib/public-info.ts` — public facts shared by both; never put internal info there (the website bundles it).
 - `src/tokens.css` — Night Glass brand tokens shared by both.
@@ -45,7 +46,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- After pulling a change that adds a package, run `pnpm install --frozen-lockfile` before building. On 17 Nov 2026 the home page could not go live because `three` was in the lockfile but not installed in the workspace: typecheck and build failed until the install was run.
+- Pulling from GitHub does not change the live site. Publish after the build passes.
 
 ## Pointers
 
