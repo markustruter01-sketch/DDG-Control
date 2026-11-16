@@ -76,7 +76,7 @@ export default function Stage({ fadeAt, landscape = 'canyon' }: { fadeAt: string
     disposables.push(...sky.disposables);
 
     // The DDG core: a ball of spinning air floating just above the river, with a soft glow round it.
-    const CORE = new Vector3(0, 9.5, 4), ORB_R = 1.7, HALO = 0.45;
+    const CORE = new Vector3(0, 9.5, 9), ORB_R = 1.7, HALO = 0.45;
     const orbit = new Group(); orbit.position.copy(CORE); scene.add(orbit);
     const air = makeAirOrb(ORB_R);
     const haloTex = glowTexture('170,225,255');
