@@ -2,6 +2,7 @@ import {
   AdditiveBlending, BufferAttribute, BufferGeometry, DoubleSide, DynamicDrawUsage, Mesh, Points, PointsMaterial, ShaderMaterial,
   Vector2, Vector3, type Texture,
 } from 'three';
+import { SKY_GLSL } from './sky';
 
 /**
  * The river on the valley floor, and the splashes the air orb throws up from it.
@@ -9,7 +10,7 @@ import {
  * River: a sheet of water at one level, laid on the same grid as the land, so the shader knows
  * exactly how deep the water is at every point and can fade it out softly where it meets a bank.
  * It is shaded like real water at night: a near-glassy surface with slow swells that travel towards the camera (down
- * the valley), a surface that mirrors the dark sky and the glow of the orb, colour that goes
+ * the valley), a surface that mirrors the night sky (see sky.ts) and the glow of the orb, colour that goes
  * from teal in the shallows to near-black in the deep middle, and foam along the banks.
  * Under the orb the water is pressed into a wide dish and dragged round in spiral arms,
  * clockwise seen from above, the same way the orb spins. The arms fade to nothing at the very
@@ -55,6 +56,7 @@ void main() {
 
 export const WATER_FRAG = /* glsl */ `
 ${STIR}
+${SKY_GLSL}
 uniform float uGlow;
 uniform float uOpacity;
 uniform float uFogNear;
@@ -113,8 +115,9 @@ void main() {
   vec3 r = reflect(-v, n);
   float fresnel = 0.03 + 0.97 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
 
-  // What the surface mirrors: a night sky, lighter towards the horizon, and the orb's glow.
-  vec3 sky = mix(vec3(0.16, 0.27, 0.42), vec3(0.02, 0.035, 0.07), smoothstep(0.0, 0.55, r.y));
+  // What the surface mirrors: the real sky above it (stars and Milky Way, a little brighter than
+  // life so they read on the water), a soft lift towards the horizon, and the orb's glow.
+  vec3 sky = skyColor(normalize(vec3(r.x, abs(r.y) + 0.02, r.z))) * 1.7 + vec3(0.07, 0.12, 0.2) * (1.0 - smoothstep(0.0, 0.4, r.y));
   vec3 toOrb = normalize(uOrbPos - vWorld);
   float aim = max(dot(r, toOrb), 0.0);
   sky += vec3(0.75, 0.92, 1.0) * uGlow * (pow(aim, 70.0) * 1.6 + pow(aim, 12.0) * 0.4);

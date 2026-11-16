@@ -1,15 +1,15 @@
 import { useEffect, useRef } from 'react';
 import {
   AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, DynamicDrawUsage, Fog, Group,
-  LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, Points,
-  PointsMaterial, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, WebGLRenderer,
+  LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
 import { makeAirOrb } from './airOrb';
+import { makeSky } from './sky';
 import { LANDSCAPES, type LandscapeKey } from './landscapes';
 import { makeWater } from './water';
 
 /**
- * Home background (fixed): a night landscape of ice-blue lines (see landscapes.ts for its shape) with the DDG core, a fast-spinning
+ * Home background (fixed): a night sky with the Milky Way over a landscape of ice-blue lines (see landscapes.ts for its shape) with the DDG core, a fast-spinning
  * ball of air, floating just above a river that runs down the canyon floor towards the viewer.
  * The air ball churns the water beneath it, turning the same way it spins. Scrolling flattens
  * the canyon into a grid seen from above, then the whole stage fades out as the
@@ -70,12 +70,10 @@ export default function Stage({ fadeAt, landscape = 'canyon' }: { fadeAt: string
     scene.add(new Mesh(surfGeo, surfMat), new LineSegments(lineGeo, lineMat));
     disposables.push(surfGeo, lineGeo, surfMat, lineMat);
 
-    const starPos = new Float32Array(900 * 3);
-    for (let i = 0; i < 900; i++) { starPos[i * 3] = (Math.random() - 0.5) * 400; starPos[i * 3 + 1] = 40 + Math.random() * 120; starPos[i * 3 + 2] = -Math.random() * 360; }
-    const starGeo = new BufferGeometry(); starGeo.setAttribute('position', new BufferAttribute(starPos, 3));
-    const starMat = new PointsMaterial({ color: 0xffffff, size: 0.45, transparent: true, opacity: 0.8, depthWrite: false });
-    scene.add(new Points(starGeo, starMat));
-    disposables.push(starGeo, starMat);
+    // The night sky: stars and the Milky Way. The river mirrors the same sky.
+    const sky = makeSky(0x0a0d16);
+    scene.add(sky.dome);
+    disposables.push(...sky.disposables);
 
     // The DDG core: a ball of spinning air floating just above the river, with a soft glow round it.
     const CORE = new Vector3(0, 9.5, 4), ORB_R = 1.7, HALO = 0.45;
@@ -122,11 +120,11 @@ export default function Stage({ fadeAt, landscape = 'canyon' }: { fadeAt: string
       lineMat.opacity = lerp(0.34, 0.16, k);
       const fog = scene.fog as Fog;
       fog.near = lerp(30, 200, k); fog.far = lerp(150, 420, k);
-      starMat.opacity = 0.8 * (1 - k);
       const camZ = lerp(42, 0, ease(p * 1.2));
       camera.position.set(0, lerp(9, small ? 95 : 70, k), camZ);
       look.set(0, lerp(12, 0, k), lerp(camZ - 40, camZ - 0.01, k));
       camera.lookAt(look);
+      sky.update(camera.position, 1 - k);
 
       // The core drifts up and away as the canyon flattens.
       const away = ease((p - 0.1) / 0.5);
