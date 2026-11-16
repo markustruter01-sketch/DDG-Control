@@ -208,10 +208,9 @@ function Home() {
             <div>
               <h2 id="c-title">{CHARITY.title}</h2>
               <p>{CHARITY.body}</p>
-              <a className="s-btn fill" href={CHARITY.donate.href} target="_blank" rel="noopener noreferrer">{CHARITY.donate.label} ↗</a>
             </div>
             <dl className="s-stats">
-              <div><dt>Given from coffee sales</dt><dd>{dollars(summary?.coffee_charity_cents)}</dd></div>
+              <div><dt>Raised from coffee sales</dt><dd>{dollars(summary?.coffee_charity_cents)}</dd></div>
               <div><dt>1% of other revenue · from 1 Jan 2027</dt><dd>{dollars(summary?.charity_revenue_share_cents)}</dd></div>
               <div><dt>Bags sold</dt><dd>{count(summary?.coffee_bags_sold)}</dd></div>
             </dl>

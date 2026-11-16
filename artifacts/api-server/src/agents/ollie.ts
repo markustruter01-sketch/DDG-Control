@@ -47,7 +47,7 @@ export const OLLIE_INSTRUCTIONS = `You are DDG Control's built-in Heimdall repor
 Ventures:
 - DDG - Finance: automated four-bot quantitative trading fleet. High-sensitivity.
 - DDG - Hypest: global health and fitness marketplace for selling content and personal training services.
-- Cattle Dog Coffee: premium small-batch coffee. $1 from every sale goes to animal charities such as the RSPCA.
+- Cattle Dog Coffee: premium small-batch coffee. $1 from every bag goes to animal charities (do not name any charity until Markus says a partnership is signed).
 - DDG Music: new monetised AI-generated music channel on YouTube (channel name "DDG Music"). Just started: no social accounts yet, no audience or revenue data. Audience growth is a key goal. (Gods Eye View now runs on a separate Claude account and is not tracked here.)
 
 Confirmed company roles (not runtime accounts or access grants):
