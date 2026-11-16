@@ -1,6 +1,6 @@
 # DDG — company map and plans (start here)
 
-Last updated: Wed 11 Nov 2026 ~13:00 Brisbane (UTC+10) by Claude. For any Claude (any account) picking up DDG work. No secret values in these files; secrets are named only.
+Last updated: Tue 17 Nov 2026 Brisbane (UTC+10) by Claude. For any Claude (any account) picking up DDG work. No secret values in these files; secrets are named only.
 
 ## The company
 - **Digital Dynamics Group Pty Ltd (DDG)**, Brisbane. Solo founder Markus (ex-RAAF). Aim: financial freedom through altruistic value creation. Not GST-registered.
@@ -10,8 +10,8 @@ Last updated: Wed 11 Nov 2026 ~13:00 Brisbane (UTC+10) by Claude. For any Claude
 ## Where each platform's plan lives
 | Business / platform | Repo | Start-here file | State (11 Nov 2026) |
 |---|---|---|---|
-| DDG Control (private command centre) + public website ddg.limited | DDG-Control (this repo) | this folder | Live. Control done; website live with DDG Build section (opens 1 Jan 2027) |
-| DDG Finance (trading platform, paper) | quant-terminal | `docs/plans/README.md`, `docs/plans/finance-2027-plan.md` | Live; reliability work done 10–11 Nov; strategy lock 21–22 Nov; public record from 23 Nov (or 1 Jan, Markus to decide) |
+| DDG Control (private command centre) + public website ddg.limited | DDG-Control (this repo) | this folder | Live. Control done; new home page live 17 Nov. DDG Build enquiry form is open on the live site since 8 Nov (earlier notes said 1 Jan 2027; Markus to decide, see the audit) |
+| DDG Finance (trading platform, paper) | quant-terminal | `docs/plans/README.md`, `docs/plans/finance-2027-plan.md` | Live on paper accounts. 5-day gate stopped 17 Nov; fund roadmap agreed 17 Nov (`docs/plans/fund-roadmap-2026-11-17.md`); Phase 0 fixes not started |
 | DDG Coffee (Cattle Dog Coffee) | cattle-dog-coffee | `docs/plans/README.md` | Live and trading |
 | DDG Fitness (Hypest app) | ddg-hypest | `docs/HYPEST-BUILD-PLAN.md` (single plan, steps ticked as done) + `docs/TIERS-AND-BODY-SPEC.md`, `docs/COACH-AGENT-SPEC.md` | In development: Phase 3 work merged (PR #39); see the plan's ticks for what is done; not launched |
 | DDG Creative (vlogs, shorts, novel) | — | — | Content work; website page /creative |
@@ -25,6 +25,7 @@ Last updated: Wed 11 Nov 2026 ~13:00 Brisbane (UTC+10) by Claude. For any Claude
 - **DDG Build (client work):** quote page + Stripe deposit, lawyer contract, insurance, monthly limit on new projects (see `ddg-build-plan.md`).
 
 ## Files in this folder
+- `company-audit-2026-11-17.md` — **read this first for what to fix**: whole-company audit (sites, security, legal pages, money, operations), top actions in order, each finding marked checked / from notes / not checked.
 - `ddg-build-plan.md` — the contracting service (prices, process, what is built, what is left).
 - `company-handover-2026-10-30.md` — company overview, how it runs, completion snapshot (as of 30 Oct; Finance and Coffee sections are older than their own repos' files).
 - `website-and-control.md` — where the website and Control live, endpoints.
