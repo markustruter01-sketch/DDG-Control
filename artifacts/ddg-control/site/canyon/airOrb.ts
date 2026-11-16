@@ -23,7 +23,7 @@ function shellGeometry(radius: number, streaks: number, seed: number): BufferGeo
   const pos: number[] = [], col: number[] = [], idx: number[] = [];
   for (let s = 0; s < streaks; s++) {
     const lat0 = (rnd() * 2 - 1) * 1.25, lon0 = rnd() * Math.PI * 2;
-    const len = 1.1 + rnd() * 3.2, width = 0.018 + rnd() * 0.05, drift = (rnd() * 2 - 1) * 0.4;
+    const len = 1.4 + rnd() * 3.4, width = 0.014 + rnd() * 0.04, drift = (rnd() * 2 - 1) * 0.4;
     const white = rnd(); // 0 = ice blue, 1 = white
     const start = pos.length / 3;
     for (let j = 0; j <= SEG; j++) {
@@ -33,7 +33,7 @@ function shellGeometry(radius: number, streaks: number, seed: number): BufferGeo
       for (const side of [-1, 1]) {
         const la = lat + side * w, c = Math.cos(la);
         pos.push(radius * c * Math.cos(lon), radius * Math.sin(la), -radius * c * Math.sin(lon));
-        col.push(glow * (0.5 + 0.5 * white), glow * (0.82 + 0.18 * white), glow);
+        col.push(glow * (0.35 + 0.5 * white), glow * (0.72 + 0.23 * white), glow);
       }
       if (j < SEG) { const a = start + j * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     }
@@ -54,7 +54,7 @@ const SHELLS = [
 
 export function makeAirOrb(R: number, small: boolean) {
   const group = new Group();
-  const streakMat = new MeshBasicMaterial({ vertexColors: true, blending: AdditiveBlending, transparent: true, depthWrite: false, side: DoubleSide });
+  const streakMat = new MeshBasicMaterial({ vertexColors: true, opacity: 0.62, blending: AdditiveBlending, transparent: true, depthWrite: false, side: DoubleSide });
   const bodyMat = new MeshBasicMaterial({ color: 0x9fdcff, blending: AdditiveBlending, transparent: true, opacity: 0.07, depthWrite: false });
   const bodyGeo = new SphereGeometry(R * 0.96, 32, 20);
   group.add(new Mesh(bodyGeo, bodyMat));

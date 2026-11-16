@@ -1,5 +1,5 @@
 import {
-  AdditiveBlending, BufferAttribute, BufferGeometry, DynamicDrawUsage, Mesh, Points, PointsMaterial, ShaderMaterial,
+  AdditiveBlending, BufferAttribute, BufferGeometry, DoubleSide, DynamicDrawUsage, Mesh, Points, PointsMaterial, ShaderMaterial,
   Vector2, Vector3, type Texture,
 } from 'three';
 
@@ -21,8 +21,8 @@ varying float vDepth;
 void main() {
   vec3 p = position;
   float d = length(p.xz - uOrb);
-  float bowl = -0.7 * exp(-d * d / 10.0);
-  float rings = 0.4 * sin(d * 1.5 - uTime * 6.0) * exp(-d / 7.0);
+  float bowl = -0.8 * exp(-d * d / 14.0);
+  float rings = 0.5 * sin(d * 1.5 - uTime * 6.0) * exp(-d / 8.0);
   p.y += uStir * (bowl + rings) + 0.07 * sin(p.z * 0.9 + p.x * 1.3 + uTime * 3.0);
   vP = p.xz;
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
@@ -55,18 +55,18 @@ void main() {
   float streak = smoothstep(0.52, 0.85, body * 0.6 + fine * 0.5);
   vec3 col = mix(vec3(0.02, 0.09, 0.17), vec3(0.07, 0.35, 0.55), body);
   vec3 glint = vec3(0.62, 0.9, 1.0);
-  col += glint * streak * 0.65;
+  col += glint * streak * 0.45;
 
   // Under the orb: spiral arms turning the same way as the air, and rings running outwards.
   vec2 q = vP - uOrb;
   float d = length(q);
-  float stir = uStir * exp(-d * d / 55.0);
+  float stir = uStir * exp(-d * d / 90.0);
   float turn = uTime * 1.6;
   vec2 r = vec2(q.x * cos(turn) - q.y * sin(turn), q.x * sin(turn) + q.y * cos(turn));
   float arms = sin(3.0 * atan(-q.y, q.x) + d * 0.9 - uTime * 5.0);
   float foam = smoothstep(0.2, 1.0, arms) * (0.45 + 0.75 * fbm(r * 0.9));
   float rings = smoothstep(0.6, 1.0, sin(d * 1.5 - uTime * 6.0));
-  col += glint * stir * (foam * 0.85 + rings * 0.35);
+  col += glint * stir * (foam * 1.1 + rings * 0.5);
 
   float fog = smoothstep(uFogNear, uFogFar, vDepth);
   gl_FragColor = vec4(mix(col, uFog, fog), uOpacity * 0.9);
@@ -95,13 +95,13 @@ export function makeWater({ small, zNear, heightAt, fogColor, glow }: WaterOptio
     // The shader writes screen colours directly, so the fog colour is passed as plain 0-1 values.
     uFog: { value: new Vector3(((fogColor >> 16) & 255) / 255, ((fogColor >> 8) & 255) / 255, (fogColor & 255) / 255) }, uFogNear: { value: 30 }, uFogFar: { value: 150 },
   };
-  const riverMat = new ShaderMaterial({ uniforms, vertexShader: WATER_VERT, fragmentShader: WATER_FRAG, transparent: true, depthWrite: false });
+  const riverMat = new ShaderMaterial({ uniforms, vertexShader: WATER_VERT, fragmentShader: WATER_FRAG, transparent: true, depthWrite: false, side: DoubleSide });
   const river = new Mesh(riverGeo, riverMat);
   river.frustumCulled = false; // the shader moves the surface, so the stored bounds are not exact
   river.renderOrder = 1; // after the canyon lines, so the water covers the lines beneath it
 
   // ── Spray ──────────────────────────────────────────────────────────────────────────────
-  const SPOUT = small ? 130 : 240, SPLASH = small ? 110 : 200, N = SPOUT + SPLASH;
+  const SPOUT = small ? 200 : 420, SPLASH = small ? 140 : 300, N = SPOUT + SPLASH;
   const seed = new Float32Array(N * 3);
   for (let i = 0; i < N * 3; i++) seed[i] = Math.random();
   const sprayPos = new Float32Array(N * 3), sprayCol = new Float32Array(N * 3);
@@ -109,7 +109,7 @@ export function makeWater({ small, zNear, heightAt, fogColor, glow }: WaterOptio
   posAttr.setUsage(DynamicDrawUsage); colAttr.setUsage(DynamicDrawUsage);
   const sprayGeo = new BufferGeometry();
   sprayGeo.setAttribute('position', posAttr); sprayGeo.setAttribute('color', colAttr);
-  const sprayMat = new PointsMaterial({ size: small ? 0.5 : 0.42, map: glow, vertexColors: true, blending: AdditiveBlending, transparent: true, depthWrite: false });
+  const sprayMat = new PointsMaterial({ size: small ? 0.8 : 0.7, map: glow, vertexColors: true, blending: AdditiveBlending, transparent: true, depthWrite: false });
   const spray = new Points(sprayGeo, sprayMat);
   spray.frustumCulled = false; spray.renderOrder = 3;
 

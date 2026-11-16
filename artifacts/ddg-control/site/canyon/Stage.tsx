@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import {
-  AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, Color, DynamicDrawUsage, Fog, Group,
+  AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, Color, DoubleSide, DynamicDrawUsage, Fog, Group,
   LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, Points,
   PointsMaterial, Scene, SphereGeometry, Sprite, SpriteMaterial, SRGBColorSpace, TextureLoader, Vector3, WebGLRenderer,
   type Material,
@@ -87,7 +87,8 @@ export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: 
     for (let iz = 0; iz < NZ; iz++) { const a = iz * (NX + 1) + NX; seg.push(a, a + NX + 1); }
     const surfGeo = new BufferGeometry(); surfGeo.setAttribute('position', attr); surfGeo.setIndex(tri);
     const lineGeo = new BufferGeometry(); lineGeo.setAttribute('position', attr); lineGeo.setIndex(seg);
-    const surfMat = new MeshBasicMaterial({ color: 0x07090f, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+    // Both sides: the grid's triangles face downwards, so one-sided the surface was never drawn from above.
+    const surfMat = new MeshBasicMaterial({ color: 0x07090f, side: DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
     const lineMat = new LineBasicMaterial({ color: 0x6cc7f0, transparent: true, opacity: 0.34 });
     scene.add(new Mesh(surfGeo, surfMat), new LineSegments(lineGeo, lineMat));
     disposables.push(surfGeo, lineGeo, surfMat, lineMat);
