@@ -19,8 +19,12 @@ p { margin: 0; }
 /* Side margin of the first screen: grows with the screen, so wide monitors are used, not left empty. */
 :root { --s-gutter: clamp(16px, 4vw, 96px); }
 .s-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 auto; padding: 20px var(--s-gutter); width: 100%; box-sizing: border-box; }
-.s-brand { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; letter-spacing: 0.04em; }
-.s-brand img { width: 32px; height: 32px; object-fit: contain; }
+.s-brand { display: inline-flex; align-items: center; gap: 10px; font-size: clamp(16px, 1.15vw, 20px); letter-spacing: 0.01em; white-space: nowrap; }
+.s-brand b { font-weight: 500; }
+/* The glitch mark is on black; "screen" lets only its light parts show on the dark page. */
+.s-brand img { width: 34px; height: 34px; object-fit: contain; mix-blend-mode: screen; }
+.s-brand-short { display: none; }
+@media (max-width: 620px) { .s-brand-full { display: none; } .s-brand-short { display: inline; letter-spacing: 0.08em; } }
 .s-nav nav { display: flex; gap: clamp(16px, 1.4vw, 32px); font-size: clamp(14px, 0.85vw, 17px); color: var(--ng-text-2); }
 .s-nav nav a:hover { color: var(--ng-text); }
 
@@ -323,3 +327,62 @@ p { margin: 0; }
 .q-check { display: flex; gap: 10px; align-items: flex-start; color: var(--ng-text-2); }
 .q-check input { margin-top: 4px; }
 .q-done { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; font-size: 18px; color: var(--ng-text); }
+
+/* ── Home, first screen: the Canyon stage (site/canyon) with a few quiet words over it ──────────── */
+/* --cn-oy is where the orb's centre sits on screen; --cn-or is half the size of the frame round it. */
+.cn-top { background: var(--ng-night); --cn-oy: 56vh; --cn-or: 15vh; }
+.cn-stage { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.cn-stage canvas { width: 100%; height: 100%; display: block; }
+.cn-hero { position: relative; z-index: 1; height: 100vh; min-height: 560px; overflow: hidden; text-shadow: 0 1px 22px rgba(7, 8, 11, 0.9); }
+/* Darker at the top and the edges, so the words read clearly over the stars. */
+.cn-hero::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(7,8,11,0.6) 0%, rgba(7,8,11,0.25) 26%, rgba(7,8,11,0) 46%), radial-gradient(120% 90% at 50% 55%, rgba(7,8,11,0) 55%, rgba(7,8,11,0.55) 100%); }
+/* Four fine corner brackets frame the orb like a readout, with one label. */
+.cn-frame { position: absolute; left: 50%; top: var(--cn-oy); width: calc(2 * var(--cn-or)); height: calc(2 * var(--cn-or)); transform: translate(-50%, -50%); }
+.cn-frame i { position: absolute; width: 16px; height: 16px; border: 1px solid rgba(108, 199, 240, 0.7); }
+.cn-frame i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; }
+.cn-frame i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; }
+.cn-frame i:nth-child(3) { left: 0; bottom: 0; border-right: 0; border-top: 0; }
+.cn-frame i:nth-child(4) { right: 0; bottom: 0; border-left: 0; border-top: 0; }
+.cn-tag { position: absolute; left: calc(50% + var(--cn-or) + 14px); top: calc(var(--cn-oy) - var(--cn-or) - 4px); font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ng-ice); white-space: nowrap; }
+/* What the core powers, bottom left; the company's line, bottom right. */
+.cn-readout { position: absolute; left: var(--s-gutter); bottom: 6vh; margin: 0; padding: 0; list-style: none; }
+.cn-readout li { display: grid; grid-template-columns: 30px 84px auto; align-items: baseline; padding: 5px 0; font-size: 13px; color: var(--ng-text-3); }
+.cn-readout em { font: 500 11px var(--ng-mono); font-style: normal; color: var(--ng-ice); }
+.cn-readout b { font-size: 14.5px; font-weight: 500; color: var(--ng-text); }
+.cn-sign { position: absolute; right: var(--s-gutter); bottom: 6vh; text-align: right; }
+.cn-sign .s-eyebrow { color: var(--ng-ice); letter-spacing: 0.24em; }
+.cn-sign h1 { margin-top: 10px; font-size: clamp(26px, 3.6vw, 56px); font-weight: 300; letter-spacing: -0.03em; line-height: 1.08; }
+.cn-room { height: 90vh; }
+@media (max-width: 760px) {
+  .cn-top { --cn-or: 11vh; }
+  .cn-tag { left: 50%; transform: translateX(-50%); top: calc(var(--cn-oy) - var(--cn-or) - 26px); }
+  .cn-sign { left: var(--s-gutter); right: auto; bottom: auto; top: 13vh; text-align: left; }
+  .cn-readout li { grid-template-columns: 26px 76px auto; font-size: 12.5px; padding: 3px 0; }
+}
+
+/* ── Home, below the first screen: the sections, joined by pipes of the same water ─────────────── */
+.cn-page { position: relative; }
+.cn-page > section, .cn-page > main { position: relative; z-index: 1; }
+.cn-work { padding-top: clamp(110px, 16vh, 170px); }
+.cn-head { width: max-content; max-width: calc(100% - 2 * var(--s-gutter)); margin: 0 auto clamp(28px, 4vh, 48px); text-align: center; }
+.cn-head h2 { margin-top: 12px; font-size: clamp(26px, 3vw, 44px); }
+.cn-page .s-main { gap: clamp(96px, 13vh, 130px); padding-top: clamp(96px, 13vh, 130px); }
+.cn-page #businesses h2 { margin-bottom: clamp(72px, 10vh, 96px); }
+/* A pipe: dark glass, then the water inside it, then glints of light moving along the water. */
+.cn-pipes { position: absolute; left: 0; top: 0; width: 100%; z-index: 0; pointer-events: none; overflow: visible; }
+.cn-pipes path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.cn-pipes .wall { stroke: rgba(255, 255, 255, 0.13); stroke-width: 15; }
+.cn-pipes .hollow { stroke: #0b0e14; stroke-width: 12.5; }
+/* --full (0 to 1) is how far the water has run down this pipe; wires.ts sets it as you scroll. */
+.cn-pipes .fill { stroke-dasharray: 1 1; stroke-dashoffset: calc(1 - var(--full, 0)); }
+.cn-pipes .water { stroke: #1d6f93; stroke-width: 8.5; filter: drop-shadow(0 0 5px rgba(108, 199, 240, 0.45)); }
+.cn-pipes .glint { stroke: rgba(205, 238, 255, 0.75); stroke-width: 2.4; stroke-dasharray: 9 38; animation: cn-flow 1.3s linear infinite; }
+.cn-pipes .glint.slow { stroke: rgba(108, 199, 240, 0.8); stroke-width: 5; stroke-dasharray: 22 61; animation: cn-flow-slow 2.9s linear infinite; }
+.cn-pipes .shine { stroke: rgba(255, 255, 255, 0.16); stroke-width: 1.2; transform: translate(-3.2px, 0); }
+.cn-pipes .dry .water, .cn-pipes .dry g { opacity: 0; }
+.cn-pipes .port { fill: #0b0e14; stroke: rgba(108, 199, 240, 0.55); stroke-width: 1.5; }
+/* Each glint moves by a whole number of its own dash pattern, so the loop has no jump. */
+@keyframes cn-flow { to { stroke-dashoffset: -141; } }
+@keyframes cn-flow-slow { to { stroke-dashoffset: -166; } }
+@media (prefers-reduced-motion: reduce) { .cn-pipes .glint { animation: none; } }

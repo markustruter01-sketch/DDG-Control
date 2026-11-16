@@ -262,3 +262,11 @@ Heimdall is the current display name for the DDG Control GM/COO persona. Current
 - Separate identity proposal derives the nine display roles from one pure shared registry, preserves map IDs/metadata and stops automatic roster-to-database-agent insertion. Existing members, historical assignments and legacy report-writer identity remain untouched. Fresh empty member tables seed only the confirmed founder, conflict safely.
 - Built-in report-writer instructions now distinguish the writer from external Heimdall GM/COO and technical/historical task actors from company employee roles. Provider guards, data contract and legacy lookup remain. Missing writer actor stops before provider access; no writer was called.
 - Source inspection only for this identity proposal; no tests, compilation, independent peer review, member inventory, migrations, merge or deployment performed. Identity remains queued for the next larger integration batch. Do not overlap Replit edits.
+
+## 2026-11-17 Website home page: Canyon stage (Claude Fable 5.2, branch claude/canyon-air-orb)
+
+- Owner request in chat: make the Canyon design the website's home page. Website only (`artifacts/ddg-control/site`, `public` unchanged); Control, API, database and Finance strategy code untouched.
+- First screen is now a 3D stage (`site/canyon`: sky, land, river, air orb as the "AI core") with layout words from `HOME` in `site/content.ts`. Old hero work row and hire card moved into a new "Our work" section below it; the other sections are unchanged apart from the heading "Our businesses".
+- `site/canyon/wires.ts` draws water pipes between sections that fill as the page scrolls. Nav brand now shows the glitch mark (`/ddg-core-logo.jpg`) and the full company name on every website page.
+- Hero lists four businesses including Creative, at the owner's direction; the businesses section still has three cards (Creative was removed from the site on 8 Nov). Owner to decide.
+- Evidence: run locally in headless Chrome from an esbuild bundle of `site/main.tsx`, with stand-ins for `wouter` and `simple-icons` and no API. NOT run: `pnpm install`, `pnpm run typecheck`, the Vite build, any test. Not merged, not deployed. Unused after this change and left in place: `HERO` in content.ts, the `.s-hero*` rules in site.css.

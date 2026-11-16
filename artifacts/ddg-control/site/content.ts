@@ -186,3 +186,19 @@ export const QUOTE_PAGE = {
   paid: 'Deposit received. Thank you! We’ll be in touch to start your build.',
   closed: (status: 'withdrawn' | 'expired') => `This quote is ${status}. Reply to our email and we’ll send you a new one.`,
 };
+
+// ── Home: the first screen (the Canyon stage, Markus 17 Nov 2026) ─────────────────────
+// The orb on screen stands for the AI at the centre of DDG. The list names what it powers.
+export const HOME = {
+  eyebrow: 'Digital Dynamics Group',
+  title: 'We build it all.',
+  core: 'AI core · powering 4 businesses',
+  powers: [
+    { n: '01', name: 'Coffee', line: 'Beans to your door' },
+    { n: '02', name: 'Finance', line: 'Our own trading platform' },
+    { n: '03', name: 'Fitness', line: 'A coach in your pocket' },
+    { n: '04', name: 'Creative', line: 'Stories, music and a novel' },
+  ],
+  work: { eyebrow: 'Our work', title: 'Built in Brisbane. Running live.' },
+  businesses: 'Our businesses',
+};

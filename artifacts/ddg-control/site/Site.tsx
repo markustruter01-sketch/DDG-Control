@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { flushSync } from 'react-dom';
 import type { PublicSummary } from '@workspace/api-client-react';
 import { Link, Route, Router, Switch, useLocation } from 'wouter';
@@ -10,9 +10,13 @@ import { SOCIALS, type Platform } from '@/lib/public-info';
 import { Build, EnquiryForm } from './Build';
 import { FinancePage } from './Finance';
 import { QuotePage } from './Quote';
-import { CHARITY, COMPANY, CONTROL_CASE, HERO, HIRE, SITE_BUSINESSES, START, WORK, type SiteBusiness } from './content';
+import { drawPipes, fillPipes } from './canyon/wires';
+import { CHARITY, COMPANY, CONTROL_CASE, HIRE, HOME, SITE_BUSINESSES, START, WORK, type SiteBusiness } from './content';
 
-const LOGO = '/ddg-professional-white-transparent.png';
+// The 3D first screen is loaded on its own, so the page's words never wait for it.
+const Stage = lazy(() => import('./canyon/Stage'));
+
+const LOGO = '/ddg-core-logo.jpg'; // the DDG glitch mark, on black; site.css blends the black away
 const count = (n: number | null | undefined) => (n === null || n === undefined ? '—' : n.toLocaleString('en-AU'));
 const dollars = (cents: number | null | undefined) =>
   cents === null || cents === undefined ? '—' : `$${(cents / 100).toLocaleString('en-AU', { maximumFractionDigits: 0 })}`;
@@ -51,7 +55,7 @@ function Nav() {
   };
   return (
     <header className="s-nav">
-      <Link href="/" className="s-brand" aria-label="DDG home"><img src={LOGO} alt="" /><b>DDG</b></Link>
+      <Link href="/" className="s-brand" aria-label="Digital Dynamics Group home"><img src={LOGO} alt="" /><b><span className="s-brand-full">Digital Dynamics Group</span><span className="s-brand-short">DDG</span></b></Link>
       <nav aria-label="Site">
         <a href="/#businesses" onClick={section('businesses')}>Businesses</a>
         <Link href="/finance">Finance</Link>
@@ -110,8 +114,27 @@ function BusinessCard({ b, summary }: { b: SiteBusiness; summary: PublicSummary 
   );
 }
 
+/** Keeps the pipes drawn to the page's current layout, and filled to where the visitor has scrolled. */
+function usePipes() {
+  const page = useRef<HTMLDivElement>(null), svg = useRef<SVGSVGElement>(null);
+  useEffect(() => {
+    const p = page.current, v = svg.current;
+    if (!p || !v) return;
+    let raf = 0;
+    const fill = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => fillPipes(p, v)); };
+    const draw = () => { drawPipes(p, v); fill(); };
+    draw();
+    const watch = new ResizeObserver(draw);
+    watch.observe(p);
+    window.addEventListener('scroll', fill, { passive: true });
+    return () => { cancelAnimationFrame(raf); watch.disconnect(); window.removeEventListener('scroll', fill); };
+  }, []);
+  return { page, svg };
+}
+
 function Home() {
   const summary = usePublicSummary();
+  const pipes = usePipes();
   // Opened at a section (/#build from another page): go there once the page is drawn.
   useEffect(() => {
     const id = window.location.hash.slice(1);
@@ -120,64 +143,81 @@ function Home() {
 
   return (
     <>
-      {/* First screen: who we are, then our work and a card to hire us. Fits one screen on PC. */}
-      <section className="s-hero">
-        <Nav />
-        <div className="s-hero-top">
-          <div className="s-hero-copy">
-            <p className="s-eyebrow">{HERO.eyebrow}</p>
-            <h1>{HERO.title}</h1>
-            <p className="s-lead">{HERO.body} <Link className="s-ask" href="/start">{HERO.ask} →</Link></p>
+      {/* First screen: the 3D stage (night sky, canyon, river and the AI core) with a few quiet words over it. */}
+      <div className="cn-top">
+        <Suspense fallback={null}><Stage fadeAt="work" /></Suspense>
+        <section className="cn-hero">
+          <Nav />
+          <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
+          <p className="cn-tag">{HOME.core}</p>
+          <ul className="cn-readout" aria-label="What the AI core powers">
+            {HOME.powers.map((b) => <li key={b.n}><em>{b.n}</em><b>{b.name}</b><span>{b.line}</span></li>)}
+          </ul>
+          <div className="cn-sign">
+            <p className="s-eyebrow">{HOME.eyebrow}</p>
+            <h1>{HOME.title}</h1>
           </div>
-        </div>
-        <div className="s-work" aria-label="Our work">
-          {WORK.map((w) => (
-            <figure key={w.key} className={`s-work-${w.shape}`}>
-              <div className="s-work-frame"><img src={w.img} alt={w.alt} loading="eager" /></div>
-              <figcaption><b>{w.name}</b> · {w.line}</figcaption>
-            </figure>
-          ))}
-          {/* Hire us: sits at the end of the work row, the whole card links to /start. */}
-          <Link className="s-hire" href="/start">
-            <span className="s-hire-in">
-              <span className="s-hire-status"><i aria-hidden="true" />{HIRE.status}</span>
-              <b>{HIRE.title}</b>
-              <span className="s-hire-price">{HIRE.priceFrom} <strong>{HIRE.price}</strong></span>
-              <ul className="s-hire-done" aria-label="What we have built">
-                {HIRE.done.map((d) => <li key={d}><span aria-hidden="true">→</span>{d}<em>done</em></li>)}
-              </ul>
-              <span className="s-hire-go">{HIRE.cta}<span className="s-hire-arrow" aria-hidden="true">→</span></span>
-            </span>
-          </Link>
-        </div>
-      </section>
-      <main className="s-main">
-        <section id="businesses" aria-labelledby="b-title">
-          <h2 id="b-title">Three businesses</h2>
-          <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} summary={summary} />)}</div>
         </section>
-        <Build summary={summary} />
-        <section className="s-case glass-plain" aria-labelledby="case-title">
-          <div>
-            <p className="s-eyebrow">How it all connects</p>
-            <h2 id="case-title">{CONTROL_CASE.title}</h2>
-            <p>{CONTROL_CASE.line}</p>
+        {/* Room to scroll while the canyon settles flat and the core lifts away. */}
+        <div className="cn-room" aria-hidden="true" />
+      </div>
+      <div className="cn-page" ref={pipes.page}>
+        <svg className="cn-pipes" ref={pipes.svg} aria-hidden="true" />
+        {/* Our work and a card to hire us. */}
+        <section id="work" className="cn-work" aria-labelledby="w-title">
+          <div className="cn-head">
+            <p className="s-eyebrow">{HOME.work.eyebrow}</p>
+            <h2 id="w-title">{HOME.work.title}</h2>
           </div>
-          <ul className="s-built">{CONTROL_CASE.built.map((x) => <li key={x}>{x}</li>)}</ul>
-        </section>
-        <section id="charity" className="s-charity" aria-labelledby="c-title">
-          <div>
-            <h2 id="c-title">{CHARITY.title}</h2>
-            <p>{CHARITY.body}</p>
-            <a className="s-btn fill" href={CHARITY.donate.href} target="_blank" rel="noopener noreferrer">{CHARITY.donate.label} ↗</a>
+          <div className="s-work">
+            {WORK.map((w) => (
+              <figure key={w.key} className={`s-work-${w.shape}`}>
+                <div className="s-work-frame"><img src={w.img} alt={w.alt} loading="lazy" /></div>
+                <figcaption><b>{w.name}</b> · {w.line}</figcaption>
+              </figure>
+            ))}
+            {/* Hire us: sits at the end of the work row, the whole card links to /start. */}
+            <Link className="s-hire" href="/start">
+              <span className="s-hire-in">
+                <span className="s-hire-status"><i aria-hidden="true" />{HIRE.status}</span>
+                <b>{HIRE.title}</b>
+                <span className="s-hire-price">{HIRE.priceFrom} <strong>{HIRE.price}</strong></span>
+                <ul className="s-hire-done" aria-label="What we have built">
+                  {HIRE.done.map((d) => <li key={d}><span aria-hidden="true">→</span>{d}<em>done</em></li>)}
+                </ul>
+                <span className="s-hire-go">{HIRE.cta}<span className="s-hire-arrow" aria-hidden="true">→</span></span>
+              </span>
+            </Link>
           </div>
-          <dl className="s-stats">
-            <div><dt>Given from coffee sales</dt><dd>{dollars(summary?.coffee_charity_cents)}</dd></div>
-            <div><dt>1% of other revenue · from 1 Jan 2027</dt><dd>{dollars(summary?.charity_revenue_share_cents)}</dd></div>
-            <div><dt>Bags sold</dt><dd>{count(summary?.coffee_bags_sold)}</dd></div>
-          </dl>
         </section>
-      </main>
+        <main className="s-main">
+          <section id="businesses" aria-labelledby="b-title">
+            <h2 id="b-title">{HOME.businesses}</h2>
+            <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} summary={summary} />)}</div>
+          </section>
+          <Build summary={summary} />
+          <section className="s-case glass-plain" aria-labelledby="case-title">
+            <div>
+              <p className="s-eyebrow">How it all connects</p>
+              <h2 id="case-title">{CONTROL_CASE.title}</h2>
+              <p>{CONTROL_CASE.line}</p>
+            </div>
+            <ul className="s-built">{CONTROL_CASE.built.map((x) => <li key={x}>{x}</li>)}</ul>
+          </section>
+          <section id="charity" className="s-charity" aria-labelledby="c-title">
+            <div>
+              <h2 id="c-title">{CHARITY.title}</h2>
+              <p>{CHARITY.body}</p>
+              <a className="s-btn fill" href={CHARITY.donate.href} target="_blank" rel="noopener noreferrer">{CHARITY.donate.label} ↗</a>
+            </div>
+            <dl className="s-stats">
+              <div><dt>Given from coffee sales</dt><dd>{dollars(summary?.coffee_charity_cents)}</dd></div>
+              <div><dt>1% of other revenue · from 1 Jan 2027</dt><dd>{dollars(summary?.charity_revenue_share_cents)}</dd></div>
+              <div><dt>Bags sold</dt><dd>{count(summary?.coffee_bags_sold)}</dd></div>
+            </dl>
+          </section>
+        </main>
+      </div>
       <Footer />
     </>
   );
