@@ -29,9 +29,10 @@ const side = (x: number, width: number, power: number) => Math.min(1, Math.pow(M
 const bed = (x: number, z: number) => (fbm(x * 0.045, z * 0.045) - 0.55) * 3.1;
 const ORB_Z = 4;
 
-/** The original: a noisy canyon that opens out from a narrow floor. */
+/** The original: a noisy canyon that opens out from a narrow floor. Its walls are full height in
+ *  the distance and lower near the camera, so the foreground stays open. */
 const canyon: Landscape = (x, z) => {
-  const v = side(x, 24, 1.7);
+  const v = side(x, 24, 1.7) * (0.45 + 0.55 * step(25, -45, z));
   return (fbm(x * 0.045, z * 0.045) - 0.55) * 26 * (0.12 + v) + v * 11;
 };
 

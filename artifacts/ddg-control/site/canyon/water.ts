@@ -8,7 +8,7 @@ import {
  *
  * River: a sheet of water at one level, laid on the same grid as the land, so the shader knows
  * exactly how deep the water is at every point and can fade it out softly where it meets a bank.
- * It is shaded like real water at night: smooth ripples that travel towards the camera (down
+ * It is shaded like real water at night: a near-glassy surface with slow swells that travel towards the camera (down
  * the valley), a surface that mirrors the dark sky and the glow of the orb, colour that goes
  * from teal in the shallows to near-black in the deep middle, and foam along the banks.
  * Under the orb the water is pressed into a wide dish and dragged round in spiral arms,
@@ -41,7 +41,7 @@ void main() {
   float d = length(q);
   float dish = -0.9 * uStir * exp(-d * d / 40.0);
   float arms = 0.55 * swirl(q, d, 3.0, 0.9, 5.0) + 0.3 * swirl(q, d, 2.0, 0.35, 2.6);
-  float swell = 0.1 * sin(p.z * 0.55 + p.x * 0.4 + uTime * 2.2) + 0.06 * sin(p.z * 1.3 - p.x * 0.9 + uTime * 3.1);
+  float swell = 0.05 * sin(p.z * 0.3 + p.x * 0.2 + uTime * 1.6);
   float lift = dish + stirAt(d) * arms + swell;
   p.y += lift;
   vP = p.xz;
@@ -89,17 +89,17 @@ float snoise(vec2 v) {
   return 130.0 * dot(m, g);
 }
 vec2 turn(vec2 p, float a) { float c = cos(a), s = sin(a); return vec2(c * p.x - s * p.y, s * p.x + c * p.y); }
-// Height of the surface detail. Ripples of four sizes ride the current, which runs towards +z
+// Height of the surface detail. Slow swells ride the current, which runs towards +z
 // (the camera); near the orb they are bent round it and the spiral arms are added.
 float surface(vec2 p, float detail) {
   vec2 q = p - uOrb;
   float d = length(q), stir = stirAt(d);
   vec2 f = uOrb + turn(q, -1.1 * stir);
   f.y -= uTime * 4.0;
-  float h = 0.5 * snoise(f * vec2(0.2, 0.1));
-  h += 0.24 * snoise(f * vec2(0.47, 0.25) + vec2(3.1, -uTime * 0.35));
-  h += 0.11 * snoise(f * vec2(1.05, 0.6) + vec2(-uTime * 0.3, 5.2));
-  h += 0.05 * detail * snoise(f * vec2(2.2, 1.3) + vec2(uTime * 0.4, 1.7));
+  // Away from the orb the water is close to glass: two long, low swells and a faint finer one.
+  float h = 0.22 * snoise(f * vec2(0.13, 0.065));
+  h += 0.07 * snoise(f * vec2(0.3, 0.16) + vec2(3.1, -uTime * 0.3));
+  h += 0.012 * detail * snoise(f * vec2(0.8, 0.45) + vec2(-uTime * 0.25, 5.2));
   h += stir * (0.5 * swirl(q, d, 3.0, 0.9, 5.0) + 0.14 * swirl(q, d, 7.0, 2.2, 9.0));
   return h;
 }
@@ -130,7 +130,7 @@ void main() {
   vec2 q = vP - uOrb;
   float d = length(q), stir = stirAt(d);
   float lace = (0.5 + 0.5 * snoise(vP * 0.55 + vec2(0.0, -uTime * 1.3))) * (0.5 + 0.5 * snoise(vP * 1.5 + vec2(1.3, -uTime * 2.0)));
-  float shore = (1.0 - smoothstep(0.0, 0.7, depth)) * smoothstep(0.12, 0.34, lace) * (0.55 + 1.6 * stir);
+  float shore = (1.0 - smoothstep(0.0, 0.5, depth)) * smoothstep(0.14, 0.36, lace) * (0.3 + 1.8 * stir);
   float churn = stir * 1.3 * (smoothstep(0.2, 1.0, swirl(q, d, 3.0, 0.9, 5.0)) * (0.35 + 1.7 * lace) + smoothstep(0.5, 1.0, swirl(q, d, 7.0, 2.2, 9.0)) * (0.1 + 1.3 * lace));
   float foam = clamp(shore + churn, 0.0, 1.0);
   col = mix(col, vec3(0.8, 0.93, 1.0), foam * 0.85);

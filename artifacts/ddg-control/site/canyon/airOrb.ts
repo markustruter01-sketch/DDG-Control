@@ -43,13 +43,14 @@ void main() {
   vec3 b = rotY(rotZ(vObj, -0.55), uTime * 9.5 + 2.0);
   float n1 = noise3(a * vec3(1.5, 8.0, 1.5)) * 0.65 + noise3(a * vec3(3.2, 17.0, 3.2) + 4.0) * 0.35;
   float n2 = noise3(b * vec3(2.2, 12.0, 2.2) + 9.0);
-  float bands = smoothstep(0.42, 0.78, n1) * 0.75 + smoothstep(0.5, 0.85, n2) * 0.45;
+  // Kept light: the white streaks are an accent on the ball, not its main surface.
+  float bands = (smoothstep(0.5, 0.82, n1) * 0.75 + smoothstep(0.58, 0.88, n2) * 0.45) * 0.55;
 
   float facing = abs(dot(normalize(vN), normalize(vV)));
   float rim = pow(1.0 - facing, 2.2);
   float centre = pow(facing, 2.5);
   if (uSkin > 0.5) {
-    gl_FragColor = vec4(vec3(0.6, 0.88, 1.0), bands * 0.3 * pow(facing, 0.7) * uOpacity);
+    gl_FragColor = vec4(vec3(0.6, 0.88, 1.0), bands * 0.25 * pow(facing, 0.7) * uOpacity);
     return;
   }
   vec3 col = mix(vec3(0.14, 0.46, 0.92), vec3(0.86, 0.97, 1.0), clamp(bands + centre * 0.5, 0.0, 1.0));
