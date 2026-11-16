@@ -5,10 +5,11 @@ import {
   PointsMaterial, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
 import { makeAirOrb } from './airOrb';
+import { LANDSCAPES, type LandscapeKey } from './landscapes';
 import { makeWater } from './water';
 
 /**
- * Home background (fixed): a night canyon of ice-blue lines with the DDG core, a fast-spinning
+ * Home background (fixed): a night landscape of ice-blue lines (see landscapes.ts for its shape) with the DDG core, a fast-spinning
  * ball of air, floating just above a river that runs down the canyon floor towards the viewer.
  * The air ball churns the water beneath it, turning the same way it spins. Scrolling flattens
  * the canyon into a grid seen from above, then the whole stage fades out as the
@@ -19,21 +20,6 @@ import { makeWater } from './water';
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const ease = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 
-// Canyon heights: smooth value noise, with a valley down the middle where the core floats.
-const hash = (x: number, y: number) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
-const sm = (t: number) => t * t * (3 - 2 * t);
-function noise(x: number, y: number) {
-  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
-  const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
-  const u = sm(xf), w = sm(yf);
-  return a + (b - a) * u + (c - a) * w + (a - b - c + d) * u * w;
-}
-function fbm(x: number, y: number) { let v = 0, amp = 1, f = 1; for (let i = 0; i < 5; i++) { v += amp * noise(x * f, y * f); amp *= 0.5; f *= 2.03; } return v; }
-function heightAt(x: number, z: number) {
-  const valley = Math.min(1, Math.pow(Math.abs(x) / 24, 1.7));
-  return (fbm(x * 0.045, z * 0.045) - 0.55) * 26 * (0.12 + valley) + valley * 11;
-}
-
 function glowTexture(rgb: string) {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const g = c.getContext('2d')!;
@@ -43,12 +29,13 @@ function glowTexture(rgb: string) {
   const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; return t;
 }
 
-export default function Stage({ fadeAt }: { fadeAt: string }) {
+export default function Stage({ fadeAt, landscape = 'canyon' }: { fadeAt: string; landscape?: LandscapeKey }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current!, stage = stageRef.current!;
+    const heightAt = LANDSCAPES[landscape];
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const small = innerWidth < 700;
     let renderer: WebGLRenderer;
@@ -103,7 +90,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
 
     // The river on the canyon floor and the splashes the orb throws up from it.
     const sprayTex = glowTexture('200,236,255');
-    const water = makeWater({ small, zNear: Z0, heightAt, fogColor: 0x0a0d16, glow: sprayTex });
+    const water = makeWater({ small, grid: { NX, NZ, W, D, Z0, base }, heightAt, fogColor: 0x0a0d16, glow: sprayTex });
     scene.add(water.river, water.spray);
     disposables.push(sprayTex, ...water.disposables);
 
@@ -162,7 +149,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       disposables.forEach((d) => d.dispose());
       renderer.dispose();
     };
-  }, [fadeAt]);
+  }, [fadeAt, landscape]);
 
   return <div className="cn-stage" ref={stageRef} aria-hidden="true"><canvas ref={canvasRef} /></div>;
 }
