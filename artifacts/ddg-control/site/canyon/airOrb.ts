@@ -1,77 +1,78 @@
-import {
-  AdditiveBlending, BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, SphereGeometry,
-  type Material,
-} from 'three';
+import { AdditiveBlending, Group, Mesh, ShaderMaterial, SphereGeometry } from 'three';
 
 /**
- * The DDG core as a ball of spinning air: three shells of thin wind streaks wrapped round a
- * sphere, each shell on its own tilted axis and speed. Every streak is bright at its head and
- * fades to nothing at its tail, so the ball reads as fast-moving air and not as a solid object.
+ * The DDG core as a solid ball of spinning air. One smooth sphere whose surface is drawn by a
+ * shader: bands of wind racing round it on two tilted axes, a bright centre and a glowing rim,
+ * so it reads as one dense ball and not as loose streaks. A second, slightly larger and much
+ * fainter sphere adds a thin skin of wind just off the surface.
  */
 
-// Fixed seed, so the orb looks the same on every visit.
-function seeded(seed: number) {
-  let s = seed >>> 0;
-  return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+const VERT = /* glsl */ `
+varying vec3 vObj;
+varying vec3 vN;
+varying vec3 vV;
+void main() {
+  vObj = normalize(position);
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vN = normalMatrix * normal;
+  vV = -mv.xyz;
+  gl_Position = projectionMatrix * mv;
+}`;
+
+const FRAG = /* glsl */ `
+uniform float uTime;
+uniform float uOpacity;
+uniform float uSkin; // 0 = the ball itself, 1 = the faint outer skin
+varying vec3 vObj;
+varying vec3 vN;
+varying vec3 vV;
+float hash3(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+float noise3(vec3 p) {
+  vec3 i = floor(p), f = fract(p);
+  vec3 u = f * f * (3.0 - 2.0 * f);
+  float a = mix(mix(hash3(i), hash3(i + vec3(1.0, 0.0, 0.0)), u.x), mix(hash3(i + vec3(0.0, 1.0, 0.0)), hash3(i + vec3(1.0, 1.0, 0.0)), u.x), u.y);
+  float b = mix(mix(hash3(i + vec3(0.0, 0.0, 1.0)), hash3(i + vec3(1.0, 0.0, 1.0)), u.x), mix(hash3(i + vec3(0.0, 1.0, 1.0)), hash3(i + vec3(1.0, 1.0, 1.0)), u.x), u.y);
+  return mix(a, b, u.z);
 }
+vec3 rotY(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(c * p.x + s * p.z, p.y, -s * p.x + c * p.z); }
+vec3 rotX(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(p.x, c * p.y - s * p.z, s * p.y + c * p.z); }
+vec3 rotZ(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(c * p.x - s * p.y, s * p.x + c * p.y, p.z); }
+void main() {
+  // Wind bands: noise stretched along the direction of spin, on two tilted axes at two speeds.
+  vec3 a = rotY(rotX(vObj, 0.28), uTime * 6.0);
+  vec3 b = rotY(rotZ(vObj, -0.55), uTime * 9.5 + 2.0);
+  float n1 = noise3(a * vec3(1.5, 8.0, 1.5)) * 0.65 + noise3(a * vec3(3.2, 17.0, 3.2) + 4.0) * 0.35;
+  float n2 = noise3(b * vec3(2.2, 12.0, 2.2) + 9.0);
+  float bands = smoothstep(0.42, 0.78, n1) * 0.75 + smoothstep(0.5, 0.85, n2) * 0.45;
 
-const SEG = 22; // pieces per streak
-
-/** One shell: `streaks` ribbons on a sphere of `radius`, heads leading in the +Y spin direction. */
-function shellGeometry(radius: number, streaks: number, seed: number): BufferGeometry {
-  const rnd = seeded(seed);
-  const pos: number[] = [], col: number[] = [], idx: number[] = [];
-  for (let s = 0; s < streaks; s++) {
-    const lat0 = (rnd() * 2 - 1) * 1.25, lon0 = rnd() * Math.PI * 2;
-    const len = 1.4 + rnd() * 3.4, width = 0.014 + rnd() * 0.04, drift = (rnd() * 2 - 1) * 0.4;
-    const white = rnd(); // 0 = ice blue, 1 = white
-    const start = pos.length / 3;
-    for (let j = 0; j <= SEG; j++) {
-      const t = j / SEG;
-      const lon = lon0 - t * len, lat = lat0 + drift * t, w = width * (1 - t * 0.85);
-      const glow = Math.pow(1 - t, 1.6) * Math.min(1, t * 9 + 0.15);
-      for (const side of [-1, 1]) {
-        const la = lat + side * w, c = Math.cos(la);
-        pos.push(radius * c * Math.cos(lon), radius * Math.sin(la), -radius * c * Math.sin(lon));
-        col.push(glow * (0.35 + 0.5 * white), glow * (0.72 + 0.23 * white), glow);
-      }
-      if (j < SEG) { const a = start + j * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-    }
+  float facing = abs(dot(normalize(vN), normalize(vV)));
+  float rim = pow(1.0 - facing, 2.2);
+  float centre = pow(facing, 2.5);
+  if (uSkin > 0.5) {
+    gl_FragColor = vec4(vec3(0.6, 0.88, 1.0), bands * 0.3 * pow(facing, 0.7) * uOpacity);
+    return;
   }
-  const geo = new BufferGeometry();
-  geo.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
-  geo.setAttribute('color', new BufferAttribute(new Float32Array(col), 3));
-  geo.setIndex(idx);
-  return geo;
-}
+  vec3 col = mix(vec3(0.14, 0.46, 0.92), vec3(0.86, 0.97, 1.0), clamp(bands + centre * 0.5, 0.0, 1.0));
+  col += rim * vec3(0.45, 0.8, 1.0) * 0.9;
+  gl_FragColor = vec4(col, clamp(0.58 + bands * 0.4 + rim * 0.45 + centre * 0.2, 0.0, 1.0) * uOpacity);
+}`;
 
-// radius (× orb radius), streak count, turns per second (radians), axis tilt (x, z)
-const SHELLS = [
-  { r: 1.0, n: 46, speed: 5.4, tx: 0.1, tz: 0.08 },
-  { r: 0.8, n: 30, speed: 7.6, tx: -0.42, tz: 0.3 },
-  { r: 1.17, n: 16, speed: 3.4, tx: 0.3, tz: -0.22 },
-];
-
-export function makeAirOrb(R: number, small: boolean) {
+export function makeAirOrb(R: number) {
   const group = new Group();
-  const streakMat = new MeshBasicMaterial({ vertexColors: true, opacity: 0.62, blending: AdditiveBlending, transparent: true, depthWrite: false, side: DoubleSide });
-  const bodyMat = new MeshBasicMaterial({ color: 0x9fdcff, blending: AdditiveBlending, transparent: true, opacity: 0.07, depthWrite: false });
-  const bodyGeo = new SphereGeometry(R * 0.96, 32, 20);
-  group.add(new Mesh(bodyGeo, bodyMat));
-  const disposables: { dispose: () => void }[] = [bodyGeo];
-  const spinners = SHELLS.map((s, i) => {
-    const axis = new Group(); axis.rotation.set(s.tx, 0, s.tz); group.add(axis);
-    const geo = shellGeometry(R * s.r, small ? Math.round(s.n * 0.7) : s.n, 11 + i * 97);
-    const mesh = new Mesh(geo, streakMat); axis.add(mesh);
-    disposables.push(geo);
-    return { mesh, speed: s.speed };
+  const make = (skin: number) => new ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uOpacity: { value: 1 }, uSkin: { value: skin } },
+    vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false,
+    ...(skin ? { blending: AdditiveBlending } : {}),
   });
-  const materials: Material[] = [streakMat, bodyMat];
-  /** Spin the shells; a slow wobble keeps the ball from looking mechanical. */
-  const update = (dt: number, t: number) => {
-    for (const s of spinners) s.mesh.rotation.y += dt * s.speed;
-    group.rotation.z = Math.sin(t * 0.7) * 0.06;
-    group.position.y = Math.sin(t * 1.3) * 0.06;
+  const ballMat = make(0), skinMat = make(1);
+  const ballGeo = new SphereGeometry(R, 64, 48), skinGeo = new SphereGeometry(R * 1.14, 48, 32);
+  const ball = new Mesh(ballGeo, ballMat), skin = new Mesh(skinGeo, skinMat);
+  skin.renderOrder = 1; // drawn over the ball
+  group.add(ball, skin);
+  /** `t` drives the spin (hold it still for reduced motion); `opacity` fades the whole orb. */
+  const update = (t: number, opacity: number) => {
+    for (const m of [ballMat, skinMat]) { m.uniforms.uTime.value = t; m.uniforms.uOpacity.value = opacity; }
+    group.position.y = Math.sin(t * 1.3) * 0.05;
   };
-  return { group, materials, disposables, update };
+  return { group, update, disposables: [ballGeo, skinGeo, ballMat, skinMat] as { dispose: () => void }[] };
 }

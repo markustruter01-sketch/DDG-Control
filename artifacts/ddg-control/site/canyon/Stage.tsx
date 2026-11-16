@@ -101,14 +101,14 @@ export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: 
     disposables.push(starGeo, starMat);
 
     // The DDG core with the four businesses in orbit, floating in the gap of the canyon.
-    const CORE = new Vector3(0, 13.5, 4);
+    const CORE = new Vector3(0, 9.5, 4); // low over the river, so the orb's underside nearly touches the water
     const orbit = new Group(); orbit.position.copy(CORE); scene.add(orbit);
     const core = new Group(); orbit.add(core);
     orbit.renderOrder = 2; // drawn after the river, so the water never dims the orb
     const ORB_R = 1.7;
-    const air = makeAirOrb(ORB_R, small);
+    const air = makeAirOrb(ORB_R);
     const haloMat = new SpriteMaterial({ map: glowTexture('170,225,255'), blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.45 });
-    const fade: Material[] = [...air.materials, haloMat];
+    const fade: Material[] = [haloMat];
     core.add(air.group);
     const halo = new Sprite(haloMat); halo.scale.set(10, 10, 1); core.add(halo);
     const logoTex = new TextureLoader().load('/ddg-core-logo.jpg'); logoTex.colorSpace = SRGBColorSpace;
@@ -190,10 +190,11 @@ export default function Stage({ fadeAt, onPlanet }: { fadeAt: string; onPlanet: 
       if (!drag) spinY += reduced ? 0 : vy + dt * 0.05;
       vy *= 0.94;
       orbit.rotation.y = spinY; orbit.rotation.x = spinX;
-      if (!reduced) { clock += dt; air.update(dt, clock); }
+      if (!reduced) clock += dt;
+      air.update(clock, 1 - away);
       // The water drains away as the canyon flattens; the churning stops as the orb leaves.
       water.update({
-        t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z, orbR: ORB_R * orbit.scale.x,
+        t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1 - ease(k * 3), fogNear: fog.near, fogFar: fog.far,
       });
       bodies.forEach((b, i) => {
