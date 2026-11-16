@@ -362,7 +362,11 @@ p { margin: 0; }
 }
 
 /* ── Home, below the first screen: the sections, joined by pipes of the same water ─────────────── */
-.cn-page { position: relative; }
+.cn-page { position: relative; z-index: 1; background: var(--ng-graphite); }
+/* The page below slides up over the first screen as one sheet with a long feathered top edge,
+   so the night scene melts into the page colour instead of ending on a hard line. */
+.cn-page::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 55vh; pointer-events: none;
+  background: linear-gradient(180deg, rgba(20,21,24,0) 0%, rgba(20,21,24,0.35) 40%, rgba(20,21,24,0.8) 75%, var(--ng-graphite) 100%); }
 .cn-page > section, .cn-page > main { position: relative; z-index: 1; }
 .cn-work { padding-top: clamp(110px, 16vh, 170px); }
 .cn-head { width: max-content; max-width: calc(100% - 2 * var(--s-gutter)); margin: 0 auto clamp(28px, 4vh, 48px); text-align: center; }
@@ -386,3 +390,27 @@ p { margin: 0; }
 @keyframes cn-flow { to { stroke-dashoffset: -141; } }
 @keyframes cn-flow-slow { to { stroke-dashoffset: -166; } }
 @media (prefers-reduced-motion: reduce) { .cn-pipes .glint { animation: none; } }
+
+/* Our work, compact: small tiles on one line on a PC, a two-by-two block on a phone, so the whole
+   row fits on one screen with the heading. (The base .s-work rules above were sized for the old
+   full-height first screen.) */
+.cn-work .s-work { height: clamp(140px, 25vh, 280px); width: min(100% - 2 * var(--s-gutter), 1080px); grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 0.62fr) minmax(0, 1fr); gap: clamp(10px, 1.1vw, 20px); }
+.cn-work .s-work-wide { grid-column: auto; }
+.cn-work .s-work-wide img, .cn-work .s-work-phone img { height: 100%; aspect-ratio: auto; }
+.cn-work .s-work-phone img { aspect-ratio: 9 / 19.5; border-radius: 16px; border-width: 4px; }
+.cn-work .s-work-wide img { border-radius: 12px; }
+.cn-work .s-work figcaption { font-size: 13px; }
+.cn-work .s-hire { border-radius: 16px; }
+.cn-work .s-hire-in { border-radius: 15px; padding: 14px; gap: 6px; }
+.cn-work .s-hire b { font-size: clamp(15px, 1.15vw, 20px); }
+.cn-work .s-hire-done { display: none; }
+.cn-work .s-hire-go { min-height: 34px; font-size: 13.5px; padding-left: 14px; }
+.cn-work .s-hire-arrow { width: 26px; height: 26px; }
+@media (max-width: 720px) {
+  .cn-work .s-work { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); height: auto; width: 100%; padding: 0 16px; gap: 12px 10px; overflow: visible; scroll-snap-type: none; }
+  .cn-work .s-work figure, .cn-work .s-work-wide, .cn-work .s-hire { width: auto; min-width: 0; }
+  .cn-work .s-work-frame { height: 25vw; }
+  .cn-work .s-work-phone .s-work-frame { height: 36vw; }
+  .cn-work .s-hire { order: 0; }
+  .cn-work .s-work figcaption { font-size: 12px; }
+}

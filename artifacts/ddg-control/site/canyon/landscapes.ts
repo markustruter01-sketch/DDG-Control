@@ -22,7 +22,7 @@ const side = (x: number, width: number, power: number) => Math.min(1, Math.pow(M
 /** A noisy canyon that opens out from a narrow floor. Its walls are full height in the distance
  *  and lower near the camera, so the foreground stays open. */
 export function heightAt(x: number, z: number): number {
-  const v = side(x, 24, 1.7) * (0.45 + 0.55 * step(25, -45, z)) * 0.72;
+  const v = side(x, 24, 1.7) * (0.45 + 0.55 * step(25, -45, z)) * 0.36;
   const h = (fbm(x * 0.045, z * 0.045) - 0.55) * 26 * (0.12 + v) + v * 11;
   // A low shelf either side keeps the river in its bed where the walls are at their lowest.
   return Math.max(h, step(9, 16, Math.abs(x)) * 7 - 1.2);
