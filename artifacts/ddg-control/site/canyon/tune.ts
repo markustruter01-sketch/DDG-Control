@@ -4,7 +4,7 @@
  * block of text that can be pasted back to Claude, who then makes those the real defaults.
  */
 
-type Spec = { key: string; label: string; min: number; max: number; step: number; group: string; names?: string[] };
+type Spec = { key: string; label: string; min: number; max: number; step: number; group: string; names?: string[]; text?: true };
 
 import { QUOTES } from '../content';
 
@@ -89,6 +89,29 @@ export const SPECS: Spec[] = [
   { group: 'Quote', key: 'quoteAlign', label: 'Place (0 left, 1 middle, 2 right)', min: 0, max: 2, step: 1 },
   { group: 'Quote', key: 'quoteWidth', label: 'Line length', min: 12, max: 70, step: 1 },
   { group: 'Quote', key: 'quoteLift', label: 'Move up / down', min: -5, max: 40, step: 0.5 },
+  // Soft frosted-glass patch behind the quote
+  { group: 'Quote background', key: 'qbOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Quote background', key: 'qbDark', label: 'Darkness', min: 0, max: 1, step: 0.02 },
+  { group: 'Quote background', key: 'qbBlur', label: 'Frost (blur behind)', min: 0, max: 40, step: 1 },
+  { group: 'Quote background', key: 'qbTint', label: 'Colour (0 black ← → 1 deep blue)', min: 0, max: 1, step: 0.05 },
+  { group: 'Quote background', key: 'qbPadX', label: 'Width around the text', min: 0, max: 200, step: 2 },
+  { group: 'Quote background', key: 'qbPadY', label: 'Height around the text', min: 0, max: 120, step: 2 },
+  { group: 'Quote background', key: 'qbRadius', label: 'Rounded corners', min: 0, max: 120, step: 2 },
+  { group: 'Quote background', key: 'qbFade', label: 'Edge fall-off (soft ← → softer)', min: 0, max: 50, step: 1 },
+  // "Scroll down" hint
+  { group: 'Scroll hint', key: 'shOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Scroll hint', key: 'shText', label: 'Words (leave empty for arrow only)', min: 0, max: 0, step: 0, text: true },
+  { group: 'Scroll hint', key: 'shArrow', label: 'Arrow style', min: 0, max: 7, step: 1, names: ['Chevron', 'Double chevron', 'Thin arrow', 'Long line arrow', 'Mouse', 'Triangle', 'Circle', 'None'] },
+  { group: 'Scroll hint', key: 'shAnim', label: 'Movement', min: 0, max: 5, step: 1, names: ['Still', 'Bounce down', 'Float up and down', 'Fade in and out', 'Drop and fade', 'Line runs down'] },
+  { group: 'Scroll hint', key: 'shSpeed', label: 'Seconds per move', min: 0.6, max: 5, step: 0.1 },
+  { group: 'Scroll hint', key: 'shTravel', label: 'How far it moves', min: 0, max: 30, step: 1 },
+  { group: 'Scroll hint', key: 'shLayout', label: 'Arrow (0 under words, 1 above, 2 right)', min: 0, max: 2, step: 1 },
+  { group: 'Scroll hint', key: 'shFont', label: 'Font', min: 0, max: 13, step: 1, names: BRAND_FONTS.map((f) => f[0]) },
+  { group: 'Scroll hint', key: 'shSize', label: 'Size', min: 0.5, max: 2.5, step: 0.05 },
+  { group: 'Scroll hint', key: 'shSpacing', label: 'Letter spacing', min: 0, max: 0.8, step: 0.02 },
+  { group: 'Scroll hint', key: 'shCaps', label: 'Capitals (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Scroll hint', key: 'shBright', label: 'Brightness', min: 0.1, max: 1, step: 0.05 },
+  { group: 'Scroll hint', key: 'shPlace', label: 'Place (0 top ← → 100 bottom of screen)', min: 0, max: 100, step: 1 },
   // The name and logo above the orb
   { group: 'Name and logo', key: 'brandFont', label: 'Font', min: 0, max: 13, step: 1, names: BRAND_FONTS.map((f) => f[0]) },
   { group: 'Name and logo', key: 'brandSize', label: 'Text size', min: 0.5, max: 2.5, step: 0.05 },
@@ -114,10 +137,15 @@ export const DEFAULTS: Record<string, number> = {
   starsEvery: 4.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
   pipeOn: 1, pipeRadius: 2.45, pipeLift: -0.35, pipeGlass: 0, pipeRim: 0.75, pipeGlow: 0.5, dataCount: 0.56, dataSize: 1.6, dataSpeed: 5, dataBright: 0.1, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   quote: 0, quoteOn: 1, quoteFont: 3, quoteSize: 1, quoteWeight: 300, quoteSpacing: 0, quoteCaps: 0, quoteAlign: 0, quoteWidth: 30, quoteLift: 0,
+  qbOn: 1, qbDark: 0.6, qbBlur: 14, qbTint: 0, qbPadX: 70, qbPadY: 34, qbRadius: 40, qbFade: 26,
+  shOn: 1, shArrow: 0, shAnim: 1, shSpeed: 2, shTravel: 8, shLayout: 0, shFont: 3, shSize: 1, shSpacing: 0.3, shCaps: 1, shBright: 0.7, shPlace: 11,
   brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: -2.5,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
+/** Settings that are words, not numbers. */
+export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll down' };
+export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
 const STORE = 'ddg-scene-tune-8'; // new name, so old saved slider positions don't override these defaults
 export function tuneOn(): boolean {
@@ -127,7 +155,8 @@ export function tuneOn(): boolean {
 /** Build the slider panel. Returns a function that removes it. */
 export function mountPanel(): () => void {
   try { Object.assign(T, JSON.parse(localStorage.getItem(STORE) || '{}')); } catch { /* storage may be blocked */ }
-  const save = () => { try { localStorage.setItem(STORE, JSON.stringify(T)); } catch { /* ignore */ } };
+  try { Object.assign(TX, JSON.parse(localStorage.getItem(STORE + '-text') || '{}')); } catch { /* ignore */ }
+  const save = () => { try { localStorage.setItem(STORE, JSON.stringify(T)); localStorage.setItem(STORE + '-text', JSON.stringify(TX)); } catch { /* ignore */ } };
   const root = document.createElement('div');
   root.className = 'tune';
   const css = document.createElement('style');
@@ -149,6 +178,7 @@ export function mountPanel(): () => void {
 .tune label span { display: flex; justify-content: space-between; color: #b9c6d4; }
 .tune label span i { font-style: normal; color: #fff; font-family: ui-monospace, monospace; }
 .tune input[type=range] { width: 100%; accent-color: #6cc7f0; }
+.tune .tune-text { width: 100%; box-sizing: border-box; margin-top: 4px; background: rgba(0,0,0,0.35); color: #fff; border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; padding: 5px 7px; font: inherit; }
 .tune-foot { padding: 10px 12px; border-top: 1px solid rgba(255,255,255,0.1); display: grid; gap: 8px; }
 .tune textarea { width: 100%; box-sizing: border-box; height: 90px; resize: vertical; background: rgba(0,0,0,0.35); color: #cfe; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; font: 11px ui-monospace, monospace; padding: 6px; }
 .tune-foot div { display: flex; gap: 8px; }
@@ -158,11 +188,15 @@ export function mountPanel(): () => void {
 <textarea readonly></textarea><p class="tune-note">Changes show straight away. When it looks right, press Copy settings and paste it to Claude (or send a screenshot of this box).</p></div>`;
   const body = root.querySelector('.tune-body')!, out = root.querySelector('textarea')!;
   const changed = () => {
-    const diff: Record<string, number> = {};
-    for (const s of SPECS) if (T[s.key] !== DEFAULTS[s.key]) diff[s.key] = T[s.key];
+    const diff: Record<string, number | string> = {};
+    for (const s of SPECS) {
+      if (s.text) { if (TX[s.key] !== TEXT_DEFAULTS[s.key]) diff[s.key] = TX[s.key]; }
+      else if (T[s.key] !== DEFAULTS[s.key]) diff[s.key] = T[s.key];
+    }
     out.value = 'DDG scene settings (changed from default):\n' + JSON.stringify(diff, null, 1);
   };
   const inputs: Record<string, [HTMLInputElement, HTMLElement]> = {};
+  const texts: Record<string, HTMLInputElement> = {};
   const input0 = (k: string) => inputs[k][0].dispatchEvent(new Event('input'));
   let group = '';
   let box: HTMLElement = body as HTMLElement;
@@ -178,6 +212,15 @@ export function mountPanel(): () => void {
       box = sec;
     }
     const l = document.createElement('label');
+    if (s.text) {
+      l.innerHTML = `<span>${s.label}</span><input type="text" class="tune-text">`;
+      const ti = l.querySelector('input')!;
+      ti.value = TX[s.key] ?? '';
+      ti.addEventListener('input', () => { TX[s.key] = ti.value; changed(); save(); });
+      texts[s.key] = ti;
+      box.appendChild(l);
+      continue;
+    }
     l.innerHTML = `<span>${s.label}<i></i></span><input type="range" min="${s.min}" max="${s.max}" step="${s.step}">`;
     const input = l.querySelector('input')!, val = l.querySelector('i')!;
     const show = (v: number) => (s.names ? `${v} · ${s.names[v] ?? ''}` : String(v));
@@ -195,7 +238,7 @@ export function mountPanel(): () => void {
       try { localStorage.setItem(STORE + '-folded', JSON.stringify(folded)); } catch { /* ignore */ }
     }
     if (act === 'min') { root.classList.toggle('min'); (e.target as HTMLElement).textContent = root.classList.contains('min') ? 'Show' : 'Hide'; }
-    if (act === 'reset') { Object.assign(T, DEFAULTS); for (const s of SPECS) { inputs[s.key][0].value = String(T[s.key]); inputs[s.key][1].textContent = String(T[s.key]); input0(s.key); } changed(); save(); }
+    if (act === 'reset') { Object.assign(T, DEFAULTS); Object.assign(TX, TEXT_DEFAULTS); for (const k in texts) texts[k].value = TX[k]; for (const s of SPECS) { if (s.text) continue; inputs[s.key][0].value = String(T[s.key]); inputs[s.key][1].textContent = String(T[s.key]); input0(s.key); } changed(); save(); }
     if (act === 'copy') {
       out.select();
       try { await navigator.clipboard.writeText(out.value); (e.target as HTMLElement).textContent = 'Copied'; } catch { (e.target as HTMLElement).textContent = 'Select the text below and copy it'; }
@@ -211,8 +254,25 @@ export function mountPanel(): () => void {
 
 /** Put the name-and-logo settings on the page (CSS variables), loading the chosen web font. */
 let lastBrand = '';
+let lastFade = '';
+const BG_KEYS = ['qbOn', 'qbDark', 'qbBlur', 'qbTint', 'qbPadX', 'qbPadY', 'qbRadius', 'qbFade'];
+const HINT_KEYS = ['shOn', 'shArrow', 'shAnim', 'shSpeed', 'shTravel', 'shLayout', 'shFont', 'shSize', 'shSpacing', 'shCaps', 'shBright', 'shPlace'];
+/** Arrow drawings for the scroll hint (24 wide, drawn in currentColor). */
+const ARROWS = [
+  '<svg viewBox="0 0 24 14" width="24" height="14"><path d="M3 3l9 8 9-8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  '<svg viewBox="0 0 24 22" width="24" height="22"><path d="M4 3l8 7 8-7M4 11l8 7 8-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  '<svg viewBox="0 0 24 26" width="24" height="26"><path d="M12 2v21M5 16l7 7 7-7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  '<svg viewBox="0 0 24 56" width="24" height="56"><path d="M12 2v51" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M7.5 48.5l4.5 4.5 4.5-4.5" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  '<svg viewBox="0 0 24 36" width="24" height="36"><rect x="3" y="1.5" width="18" height="30" rx="9" fill="none" stroke="currentColor" stroke-width="1.4"/><circle class="sh-dot" cx="12" cy="9" r="2" fill="currentColor"/></svg>',
+  '<svg viewBox="0 0 24 14" width="24" height="14"><path d="M5 3h14l-7 9z" fill="currentColor"/></svg>',
+  '<svg viewBox="0 0 30 30" width="30" height="30"><circle cx="15" cy="15" r="13.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M9.5 12.5l5.5 5 5.5-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  '',
+];
 export function applyBrand(): void {
-  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift'].map((k) => T[k]).join(',');
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText;
+  // The hint fades away as soon as the visitor starts scrolling.
+  const fade = String(Math.max(0, 1 - scrollY / (innerHeight * 0.2)).toFixed(3));
+  if (fade !== lastFade) { lastFade = fade; document.documentElement.style.setProperty('--hint-fade', fade); }
   if (key === lastBrand) return;
   lastBrand = key;
   const fontOf = (i: number) => {
@@ -240,6 +300,32 @@ export function applyBrand(): void {
   s.setProperty('--quote-align', ['left', 'center', 'right'][T.quoteAlign] ?? 'left');
   s.setProperty('--quote-left', T.quoteAlign === 2 ? 'auto' : T.quoteAlign === 1 ? '0' : 'var(--s-gutter)');
   s.setProperty('--quote-right', T.quoteAlign === 0 ? 'auto' : T.quoteAlign === 1 ? '0' : 'var(--s-gutter)');
+  // The frosted patch behind the quote.
+  const t = T.qbTint;
+  s.setProperty('--qb-show', T.qbOn ? 'block' : 'none');
+  s.setProperty('--qb-bg', `rgba(${Math.round(2 + 6 * t)},${Math.round(4 + 14 * t)},${Math.round(8 + 32 * t)},${T.qbDark})`);
+  s.setProperty('--qb-blur', `${T.qbBlur}px`);
+  s.setProperty('--qb-padx', `${T.qbPadX}px`);
+  s.setProperty('--qb-pady', `${T.qbPadY}px`);
+  s.setProperty('--qb-radius', `${T.qbRadius}px`);
+  s.setProperty('--qb-fade', `${T.qbFade}%`);
+  // The scroll hint.
+  const h = document.querySelector<HTMLElement>('.cn-scroll');
+  if (h) {
+    h.style.display = T.shOn ? '' : 'none';
+    h.className = `cn-scroll lay-${T.shLayout} anim-${T.shAnim}`;
+    const w = h.querySelector<HTMLElement>('.cn-scroll-words'), a = h.querySelector<HTMLElement>('.cn-scroll-arrow');
+    if (w) { w.textContent = TX.shText; w.style.display = TX.shText ? '' : 'none'; }
+    if (a) { a.innerHTML = ARROWS[T.shArrow] ?? ''; a.style.display = ARROWS[T.shArrow] ? '' : 'none'; }
+  }
+  s.setProperty('--sh-font', fontOf(T.shFont));
+  s.setProperty('--sh-speed', `${T.shSpeed}s`);
+  s.setProperty('--sh-travel', `${T.shTravel}px`);
+  s.setProperty('--sh-size', String(T.shSize));
+  s.setProperty('--sh-track', `${T.shSpacing}em`);
+  s.setProperty('--sh-case', T.shCaps ? 'uppercase' : 'none');
+  s.setProperty('--sh-bright', String(T.shBright));
+  s.setProperty('--sh-place', String(T.shPlace));
   s.setProperty('--brand-size', String(T.brandSize));
   s.setProperty('--brand-weight', String(T.brandWeight));
   s.setProperty('--brand-track', `${T.brandSpacing}em`);

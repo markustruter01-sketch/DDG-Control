@@ -360,7 +360,39 @@ p { margin: 0; }
 .cn-tag { position: absolute; left: calc(50% + var(--cn-or) + 14px); top: calc(var(--cn-oy) - var(--cn-or) - 4px); font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ng-ice); white-space: nowrap; }
 .cn-quote { position: absolute; left: var(--quote-left, var(--s-gutter)); right: var(--quote-right, auto); bottom: calc(6vh + var(--quote-lift, 0vh)); margin: 0 auto; max-width: min(var(--quote-width, 30ch), calc(100% - 2 * var(--s-gutter)));
   text-align: var(--quote-align, left); font-family: var(--quote-font, var(--brand-font, inherit)); font-size: calc(clamp(18px, 1.6vw, 28px) * var(--quote-size, 1));
-  font-weight: var(--quote-weight, 300); letter-spacing: var(--quote-track, 0); line-height: 1.25; color: var(--ng-text); text-transform: var(--quote-case, none); }
+  font-weight: var(--quote-weight, 300); letter-spacing: var(--quote-track, 0); line-height: 1.25; color: var(--ng-text); text-transform: var(--quote-case, none); isolation: isolate; }
+/* Dark frosted glass behind the quote. Its edges fade out on all sides, so it melts into the scene. */
+.cn-quote::before { content: ''; position: absolute; z-index: -1; display: var(--qb-show, block); pointer-events: none;
+  inset: calc(-1 * var(--qb-pady, 34px)) calc(-1 * var(--qb-padx, 70px)); border-radius: var(--qb-radius, 40px);
+  background: var(--qb-bg, rgba(2,4,8,0.45)); -webkit-backdrop-filter: blur(var(--qb-blur, 14px)); backdrop-filter: blur(var(--qb-blur, 14px));
+  --f: var(--qb-fade, 26%);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent), linear-gradient(to bottom, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent), linear-gradient(to bottom, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent);
+  mask-composite: intersect; }
+/* "Scroll down" with a moving arrow. Fades away once the visitor scrolls. */
+.cn-scroll { position: absolute; left: 0; right: 0; width: max-content; margin: 0 auto; top: calc(var(--sh-place, 11) * 1vh); transform: translateY(calc(var(--sh-place, 11) * -1%));
+  display: flex; flex-direction: column; align-items: center; gap: calc(8px * var(--sh-size, 1)); pointer-events: none;
+  color: var(--ng-text); opacity: calc(var(--sh-bright, 0.7) * var(--hint-fade, 1)); font-family: var(--sh-font, inherit);
+  font-size: calc(11px * var(--sh-size, 1)); letter-spacing: var(--sh-track, 0.3em); text-transform: var(--sh-case, uppercase); }
+.cn-scroll.lay-1 { flex-direction: column-reverse; }
+.cn-scroll.lay-2 { flex-direction: row; gap: calc(10px * var(--sh-size, 1)); }
+.cn-scroll-words { margin-right: calc(-1 * var(--sh-track, 0.3em)); }
+.cn-scroll-arrow { display: block; line-height: 0; }
+.cn-scroll-arrow svg { zoom: var(--sh-size, 1); overflow: visible; }
+.anim-1 .cn-scroll-arrow { animation: sh-bounce var(--sh-speed, 2s) cubic-bezier(.3,0,.3,1) infinite; }
+.anim-2 .cn-scroll-arrow { animation: sh-float var(--sh-speed, 2s) ease-in-out infinite; }
+.anim-3 .cn-scroll-arrow, .anim-3 .cn-scroll-words { animation: sh-pulse var(--sh-speed, 2s) ease-in-out infinite; }
+.anim-4 .cn-scroll-arrow { animation: sh-drop var(--sh-speed, 2s) ease-in infinite; }
+.anim-5 .cn-scroll-arrow svg { animation: sh-wipe var(--sh-speed, 2s) ease-in-out infinite; }
+.anim-1 .sh-dot, .anim-2 .sh-dot, .anim-4 .sh-dot, .anim-5 .sh-dot { animation: sh-dot var(--sh-speed, 2s) ease-in-out infinite; }
+@keyframes sh-bounce { 0%, 55%, 100% { transform: translateY(0); } 25% { transform: translateY(var(--sh-travel, 8px)); } 40% { transform: translateY(calc(var(--sh-travel, 8px) * 0.25)); } }
+@keyframes sh-float { 0%, 100% { transform: translateY(calc(var(--sh-travel, 8px) * -0.5)); } 50% { transform: translateY(calc(var(--sh-travel, 8px) * 0.5)); } }
+@keyframes sh-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@keyframes sh-drop { 0% { transform: translateY(calc(var(--sh-travel, 8px) * -0.6)); opacity: 0; } 25% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(var(--sh-travel, 8px)); opacity: 0; } }
+@keyframes sh-wipe { 0% { clip-path: inset(0 0 100% 0); } 50% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(100% 0 0 0); } }
+@keyframes sh-dot { 0% { transform: translateY(0); opacity: 1; } 70% { transform: translateY(10px); opacity: 0; } 100% { transform: translateY(0); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cn-scroll * { animation: none !important; } }
 /* What the core powers, bottom left; the company's line, bottom right. */
 .cn-readout { position: absolute; left: var(--s-gutter); bottom: 6vh; margin: 0; padding: 0; list-style: none; }
 .cn-readout li { display: grid; grid-template-columns: 30px 84px auto; align-items: baseline; padding: 5px 0; font-size: 13px; color: var(--ng-text-3); }
