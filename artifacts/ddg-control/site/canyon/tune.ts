@@ -181,7 +181,7 @@ export const DEFAULTS: Record<string, number> = {
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
   pageClouds: 0.8, pageCloudOpacity: 0.06, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
   shOn: 1, shArrow: 4, shAnim: 1, shSpeed: 2, shTravel: 5, shLayout: 0, shFont: 2, shSize: 0.75, shSpacing: 0.3, shCaps: 0, shBright: 0.9, shPlace: 37,
-  brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: 12,
+  brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 0.8, logoGap: 7, brandLift: 12,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
