@@ -8,6 +8,7 @@ import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWater } from './water';
 import { makeGrass } from './grass';
+import { T, tuneOn, mountPanel } from './tune';
 
 /**
  * Home background (fixed): a night sky with the Milky Way over a landscape of ice-blue lines (see landscapes.ts for its shape) with the DDG core, a fast-spinning
@@ -92,17 +93,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     scene.add(water.river, water.spray);
     disposables.push(...water.disposables);
 
-    // Preview switches (only read from the page address, e.g. #w2-grass): a water design 1-4 and grass.
-    const tag = location.hash;
-    const variant = Number(/w([0-4])/.exec(tag)?.[1] ?? 4), grassOn = !/nograss/.test(tag);
-    water.setVariant(variant);
-    const grass = grassOn ? makeGrass({ small, heightAt, W, D, Z0 }) : null;
-    if (grass) {
-      scene.add(grass.mesh);
-      disposables.push(...grass.disposables);
-      land.material = grass.ground; // the ground is painted as more grass
-      lineMat.visible = false;
-    }
+    // Grass over the hills (the ground under it is painted as more grass). Settings live in tune.ts;
+    // in the preview a panel of sliders changes them live.
+    const grass = makeGrass({ small, heightAt, W, D, Z0 });
+    scene.add(grass.mesh);
+    disposables.push(...grass.disposables);
+    const unmountPanel = tuneOn() ? mountPanel() : null;
+    let spinClock = 0;
 
     const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
     resize(); addEventListener('resize', resize);
@@ -129,9 +126,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         for (let i = 0; i < count; i++) pos[i * 3 + 1] = base[i] * flat;
         attr.needsUpdate = true; shownK = k;
       }
-      lineMat.opacity = lerp(0.34, 0.16, k);
+      const grassOn = T.grassOn > 0.5;
+      land.material = grassOn ? grass.ground : surfMat;
+      lineMat.visible = !grassOn;
+      lineMat.opacity = lerp(0.34, 0.16, k) * T.gridLines;
+      water.setLook(T); grass.setLook(T);
+      if (camera.fov !== T.fov) { camera.fov = T.fov; camera.updateProjectionMatrix(); }
       const fog = scene.fog as Fog;
-      fog.near = lerp(30, 200, k); fog.far = lerp(150, 420, k);
+      fog.near = lerp(30, 200, k) * T.fogNear; fog.far = Math.max(fog.near + 1, lerp(150, 420, k) * T.fogFar);
       const camZ = lerp(42, 0, ease(p * 1.2));
       camera.position.set(0, lerp(9, small ? 95 : 70, k), camZ);
       look.set(0, lerp(12, 0, k), lerp(camZ - 40, camZ - 0.01, k));
@@ -140,22 +142,25 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
 
       // The core drifts up and away as the canyon flattens.
       const away = ease((p - 0.1) / 0.5);
-      orbit.position.set(0, CORE.y + away * 26, CORE.z - away * 10);
-      orbit.scale.setScalar(small ? 1.44 : 2.19);
-      haloMat.opacity = HALO * (1 - away);
-      if (!reduced) clock += dt;
-      air.update(clock, 1 - away);
+      orbit.position.set(0, CORE.y + T.orbHeight + away * 26, CORE.z - away * 10);
+      orbit.scale.setScalar((small ? 1.44 : 2.19) * T.orbSize);
+      haloMat.opacity = HALO * T.orbGlow * (1 - away);
+      if (!reduced) { clock += dt; spinClock += dt * T.orbSpin; }
+      air.update(clock, 1 - away, spinClock, { bands: T.orbStreaks, zap: T.orbSparks, zapRate: T.orbSparkRate });
       // The water drains away as the canyon flattens; the churning stops as the orb leaves.
       water.update({
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1 - ease(k * 3), fogNear: fog.near, fogFar: fog.far,
       });
-      grass?.update(clock, 1 - k, orbit.position, fog.near, fog.far);
+      grass.mesh.visible = grassOn;
+      grass.update(clock, 1 - k, orbit.position, fog.near, fog.far);
+      if (!grassOn) grass.mesh.visible = false;
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
+      unmountPanel?.();
       removeEventListener('resize', resize);
       disposables.forEach((d) => d.dispose());
       renderer.dispose();

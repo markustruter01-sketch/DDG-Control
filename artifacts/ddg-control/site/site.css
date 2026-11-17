@@ -18,7 +18,11 @@ p { margin: 0; }
 /* Nav */
 /* Side margin of the first screen: grows with the screen, so wide monitors are used, not left empty. */
 :root { --s-gutter: clamp(16px, 4vw, 96px); }
-.s-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 auto; padding: 20px var(--s-gutter); width: 100%; box-sizing: border-box; }
+.s-nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; margin: 0 auto; padding: 20px var(--s-gutter); width: 100%; box-sizing: border-box; }
+/* Name and logo in the middle of the top bar; links on the right. */
+.s-nav .s-brand { grid-column: 2; justify-self: center; }
+.s-nav nav { grid-column: 3; justify-self: end; }
+@media (max-width: 760px) { .s-nav { grid-template-columns: auto 1fr; } .s-nav .s-brand { grid-column: 1; justify-self: start; } .s-nav nav { grid-column: 2; } }
 .s-brand { display: inline-flex; align-items: center; gap: 10px; font-size: clamp(16px, 1.15vw, 20px); letter-spacing: 0.01em; white-space: nowrap; }
 .s-brand b { font-weight: 500; }
 /* The glitch mark is on black; "screen" lets only its light parts show on the dark page. */
