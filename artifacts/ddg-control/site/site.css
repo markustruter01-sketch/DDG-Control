@@ -494,12 +494,14 @@ p { margin: 0; }
 .j-panel h2, .j-biz h2 { font-weight: 300; letter-spacing: -0.02em; line-height: 1.04; font-size: clamp(30px, 3.6vw, 54px); margin: 12px 0 16px; }
 .j-line { color: var(--ng-text-2); font-size: clamp(16px, 1.1vw, 19px); line-height: 1.6; max-width: 52ch; }
 .j-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
-.j-about, .j-run { display: grid; grid-template-columns: 1fr 1.25fr; gap: clamp(20px, 3vw, 48px); align-items: center; }
-.j-run { grid-template-columns: 1.25fr 1fr; }
-.j-art { border-radius: 18px; background: rgba(255,255,255,0.03); border: 1px solid var(--ng-edge); padding: 8px; }
-.j-ink { position: relative; width: 100%; }
-.j-ink canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.j-ink .j-goo { filter: url(#j-goo); }
+.j-about { text-align: center; }
+.j-about .j-line { margin: 0 auto; }
+.j-about .j-actions { justify-content: center; }
+.j-run { display: grid; grid-template-columns: 1.2fr 1fr; gap: clamp(20px, 3vw, 48px); align-items: center; }
+.j-shot { position: relative; align-self: center; aspect-ratio: 16 / 10; border-radius: 16px; overflow: hidden; border: 1px solid var(--ng-edge); background: rgba(255,255,255,0.03); }
+.j-shot img { width: 100%; height: 100%; object-fit: cover; object-position: left top; display: block; }
+.j-shot-secret img { object-fit: contain; object-position: center; filter: blur(14px) saturate(1.2) brightness(0.75); transform: scale(1.15); }
+.j-shot-secret .j-soon { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; background: rgba(20,21,24,0.6); backdrop-filter: blur(8px); }
 .j-list { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; color: var(--ng-text-2); }
 .j-list li::before { content: '—'; color: var(--ng-ice); margin-right: 10px; }
 
@@ -525,7 +527,6 @@ p { margin: 0; }
 .j-card[data-off='0'] { transform: none; opacity: 1; z-index: 2; }
 .j-card[data-off='1'] { transform: translateX(78%) translateZ(-260px) rotateY(-34deg); opacity: 0.55; filter: blur(0.5px); cursor: pointer; z-index: 1; }
 .j-card[data-off='-1'] { transform: translateX(-78%) translateZ(-260px) rotateY(34deg); opacity: 0.55; filter: blur(0.5px); cursor: pointer; z-index: 1; }
-.j-card-art { align-self: center; }
 .j-card-top { display: flex; align-items: center; gap: 14px; }
 .j-card-top b { display: block; font-size: 19px; font-weight: 500; }
 .j-kind { display: block; font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-ice); margin-top: 3px; }
@@ -538,19 +539,15 @@ p { margin: 0; }
 .j-card .s-btn { justify-self: start; }
 .j-card-text { display: flex; flex-direction: column; align-items: flex-start; }
 .j-soon { margin-top: 18px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(108,199,240,0.5); color: var(--ng-ice); font: 500 11px var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; }
-.j-mark { width: 46px; height: 46px; flex: none; }
-.j-mark .j-mark-bg { fill: rgba(255,255,255,0.05); stroke: rgba(159,220,255,0.35); stroke-width: 1; }
 .j-reel-wrap { position: relative; }
 .j-tabs { position: absolute; z-index: 5; top: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; border-radius: 18px;
   background: rgba(255,255,255,0.06); border: 1px solid var(--ng-edge); backdrop-filter: blur(16px); }
 .j-tab { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 16px 10px 8px; border: 0; border-radius: 13px; background: none; color: var(--ng-text-3); text-align: left; cursor: pointer; font: inherit; transition: background 0.3s, color 0.3s; }
-.j-tab .j-mark { width: 34px; height: 34px; opacity: 0.6; transition: opacity 0.3s; }
 .j-tab b { display: block; font-size: 14px; font-weight: 500; white-space: nowrap; }
 .j-tab { white-space: nowrap; }
 .j-tab em { display: block; font: 500 10px/1.4 var(--ng-mono); font-style: normal; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ng-text-3); }
 .j-tab:hover { color: var(--ng-text); background: rgba(255,255,255,0.04); }
 .j-tab[aria-selected='true'] { color: var(--ng-text); background: rgba(255,255,255,0.09); }
-.j-tab[aria-selected='true'] .j-mark { opacity: 1; }
 .j-tab[aria-selected='true'] em { color: var(--ng-ice); }
 .j-tab-bar { position: absolute; left: 12px; right: 12px; bottom: 3px; height: 2px; border-radius: 2px; background: rgba(255,255,255,0.08); overflow: hidden; }
 .j-tab-bar i { position: absolute; inset: 0; background: var(--ng-ice); box-shadow: 0 0 8px var(--ng-ice); transform-origin: left; }
@@ -573,41 +570,15 @@ p { margin: 0; }
 .j-start .s-form { background: none; border: 0; padding: 0; }
 .s-build.j-panel { gap: 18px; }
 
-/* The ink itself. */
-.ink-art .ink { fill: none; stroke: #fff; stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; }
-.ink-art .dim { stroke-opacity: 0.55; } .ink-art .faint { stroke-opacity: 0.22; } .ink-art .dash { stroke-dasharray: 2 4; }
-.ink-art .fill, .ink-art .dot { fill: #fff; }
-.ink-art .lab { font: 500 8px var(--ng-mono); letter-spacing: 0.14em; fill: rgba(255,255,255,0.5); }
-.ink-art .t { font: 600 9px var(--ng-mono); letter-spacing: 0.1em; fill: #fff; }
-.ink-art .t.big { font: 600 15px var(--ng-sans); letter-spacing: 0; }
-.ink-art .stop { stroke: var(--ng-ice); stroke-dasharray: 1; }
-.ink-art .draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: ink-draw 7s var(--d, 0s) ease-in-out infinite; }
-.ink-art .draw.fast { animation-duration: 4s; }
-@keyframes ink-draw { 0% { stroke-dashoffset: 1; opacity: 1; } 16% { stroke-dashoffset: 0; } 80% { stroke-dashoffset: 0; opacity: 1; } 92%, 100% { stroke-dashoffset: 0; opacity: 0; } }
-.ink-art .flow { stroke-dasharray: 0.06 0.08; stroke-opacity: 0.8; animation: ink-flow 1.6s linear infinite; }
-.ink-art .faint-flow { stroke-opacity: 0.35; }
-@keyframes ink-flow { to { stroke-dashoffset: -0.14; } }
-.ink-art .p { transform-box: fill-box; transform-origin: center; animation: ink-pop 3.5s var(--d, 0s) ease-in-out infinite; }
-@keyframes ink-pop { 0%, 100% { opacity: 0.25; transform: scale(0.7); } 30% { opacity: 1; transform: scale(1.35); } 60% { opacity: 0.6; transform: scale(1); } }
-.ink-art .hand { transform-box: fill-box; transform-origin: 50% 100%; animation: j-spin 4s linear infinite; }
-.ink-art .rise { opacity: 0; animation: ink-rise 7s 2.6s ease-out infinite; }
-@keyframes ink-rise { 0% { opacity: 0; transform: translateY(16px); } 15% { opacity: 1; } 55% { opacity: 1; transform: translateY(-14px); } 70%, 100% { opacity: 0; transform: translateY(-20px); } }
-.ink-art .bars path { transform-box: fill-box; transform-origin: 50% 100%; animation: ink-bars 2.4s ease-in-out infinite; }
-.ink-art .bars path:nth-child(2n) { animation-delay: -0.8s; } .ink-art .bars path:nth-child(3n) { animation-delay: -1.6s; }
-@keyframes ink-bars { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
-@media (prefers-reduced-motion: reduce) {
-  .ink-art * { animation: none !important; } .ink-art .draw { stroke-dashoffset: 0; } .ink-art .rise { opacity: 1; }
-  .j-card { transition: none; }
-}
+@media (prefers-reduced-motion: reduce) { .j-card { transition: none; } }
 @media (max-width: 900px) {
-  .j-about, .j-run, .j-start { grid-template-columns: 1fr; }
-  .j-run .j-art { order: 2; }
+  .j-run, .j-start { grid-template-columns: 1fr; }
   .j-biz-head, .j-biz-head h2 { grid-template-columns: 1fr; } .j-biz-head > *, .j-biz-head h2 span { grid-column: 1 !important; text-align: left !important; }
   .j-reel { height: auto; perspective: none; display: grid; }
   .j-card { position: relative; grid-template-columns: 1fr; transform: none !important; }
   .j-card:not([data-off='0']) { display: none; }
   .j-tabs { top: 10px; left: 10px; right: 10px; transform: none; gap: 2px; padding: 4px; }
-  .j-tab { flex: 1; min-width: 0; padding: 6px 6px 9px; gap: 6px; } .j-tab em { display: none; } .j-tab b { font-size: 12px; white-space: nowrap; } .j-tab .j-mark { width: 24px; height: 24px; }
+  .j-tab { flex: 1; min-width: 0; padding: 6px 6px 9px; gap: 6px; } .j-tab em { display: none; } .j-tab b { font-size: 12px; white-space: nowrap; }
   .j-reel .j-card { padding-top: 76px; }
   .j-arrow { display: none; }
   .j-biz:not(.j-stack) .j-card[data-off='0'] { box-shadow: 0 0 0 1px rgba(42,143,189,0.85), 0 0 22px rgba(42,143,189,0.28); }

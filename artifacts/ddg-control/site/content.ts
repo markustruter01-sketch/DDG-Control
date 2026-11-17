@@ -237,10 +237,11 @@ export const SHOWCASE: {
   key: ShowcaseKey; name: string; kind: string; tab: string; title: string; line: string; steps: string[];
   link: { label: string; href: string; external: boolean } | null; note?: string;
 }[] = [
-  { key: 'finance', name: 'DDG Finance', kind: 'Quantitative trading platform', tab: 'Quant trading', title: 'AI systems trading global markets.',
-    line: 'Our own trading platform. An AI research council tests every idea before it trades, and every position is checked against the broker every hour.',
-    steps: ['Reads stocks, indexes, bonds, gold, crypto and forex', 'Four strategies decide what to hold', 'Orders go to two brokers, with protective stops', 'Every hour, every position is checked against the broker'],
-    link: { label: 'See the platform', href: '/finance', external: false }, note: 'Paper trading. Not financial advice.' },
+  // The platform as it will be once the agreed fund roadmap (17 Nov 2026) is built, said as "being built".
+  { key: 'finance', name: 'DDG Finance', kind: 'Quantitative trading platform', tab: 'Quant trading', title: 'A trading platform that runs itself, tested in the open.',
+    line: 'We are building a system that reads what kind of market it is, picks from strategies that have proven themselves, decides how much each one gets, and trades, with hard limits that stop it when something is wrong.',
+    steps: ['A league of strategies runs on fake money every night', 'Every rule is written down and dated before it runs, then never changed', 'An allocator reads the market each day and shares out the money', 'Hard limits in the code stop it when something goes wrong'],
+    link: { label: 'See the platform', href: '/finance', external: false }, note: 'Paper trading. Not financial advice. We don\u2019t take outside money.' },
   { key: 'coffee', name: 'DDG Coffee', kind: 'E-commerce', tab: 'E-commerce', title: 'An online store for premium coffee beans.',
     line: 'Cattle Dog Coffee. Order in a few taps and we deliver to your door. $1 from every bag goes to animal charities.',
     steps: ['Pick your beans in the online store', 'Pay securely by card', 'The order lands in our command centre', 'Packed and delivered to your door'],
