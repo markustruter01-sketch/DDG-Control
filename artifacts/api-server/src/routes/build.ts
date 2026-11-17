@@ -2,7 +2,7 @@ import { CreateEnquiryBody, UpdateEnquiryBody, UpdateEnquiryParams } from '@work
 import { asksTable, db, enquiriesTable } from '@workspace/db';
 import { desc, eq } from 'drizzle-orm';
 import { Router, type IRouter } from 'express';
-import { emailOwner } from '../lib/email';
+import { emailEnquiryReceived, emailOwner } from '../lib/email';
 import { logger } from '../lib/logger';
 import { sendMessage } from '../lib/messages';
 import { getClientAddress, isOwnerRequest } from './auth';
@@ -73,6 +73,17 @@ buildPublicRouter.post('/public/enquiry', async (req, res) => {
   }).catch((err) => ({ status: 500, error: String(err) }));
   if ('error' in sent) logger.error({ error: sent.error }, 'enquiry message to Heimdall failed');
   await emailOwner(`${tag}DDG Build enquiry #${row!.id}: ${KIND[e.kind]} from ${row!.name}`, `${summary}\n\nReply to this email to answer them.`, row!.email);
+
+  // Tell the person we have it (not for owner tests). Their own answers only; best effort, like the rest.
+  if (!test) {
+    await emailEnquiryReceived(row!.email, row!.name, [
+      `What you want built: ${wants}`,
+      `What you have now: ${HAS[e.has_now]}`,
+      `Timing: ${TIMING[e.timing]}`,
+      `Budget: ${BUDGET[e.budget]}`,
+      ...(row!.about ? [`Your notes: ${row!.about}`] : []),
+    ]);
+  }
 
   res.status(201).json({ received: true, test });
 });

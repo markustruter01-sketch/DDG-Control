@@ -105,7 +105,7 @@ export const START = {
   line: 'Five quick questions. We read every one and reply by email.',
   aboutLabel: 'What should it do?',
   aboutHint: 'A sentence or two: who it is for and the main things it needs to do.',
-  done: 'Thanks, we have it. We will reply by email.',
+  done: 'Thanks, we have it. We have emailed you a confirmation and will reply to that address.',
 };
 
 export const BUILD_FORM = {
