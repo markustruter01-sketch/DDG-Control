@@ -479,3 +479,6 @@ p { margin: 0; }
   .cn-work .s-hire { order: 0; }
   .cn-work .s-work figcaption { font-size: 12px; }
 }
+
+/* The words and frame over the orb fade out early in the scroll (Stage sets --cn-fade). */
+.cn-brand, .cn-frame, .cn-quote { opacity: var(--cn-fade, 1); }

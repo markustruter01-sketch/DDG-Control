@@ -183,10 +183,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       restCam.position.set(0, 9, 42); restCam.lookAt(restLook); restCam.updateMatrixWorld();
       pv.set(0, CORE.y + T.orbHeight, CORE.z);
       const [oy0, or0] = onScreen(restCam, pv.clone(), R);
-      const align = `${(oy + scrollY).toFixed(1)}|${(orR * FRAME).toFixed(1)}|${(oy + orR * FRAME + scrollY - (oy0 + or0 * FRAME)).toFixed(1)}`;
+      // The name, frame, quote and hint fade out early, well before the orb has gone.
+      const fadeOut = 1 - ease((p - 0.06) / 0.22);
+      const align = `${fadeOut.toFixed(3)}|${(oy + scrollY).toFixed(1)}|${(orR * FRAME).toFixed(1)}|${(oy + orR * FRAME + scrollY - (oy0 + or0 * FRAME)).toFixed(1)}`;
       if (align !== lastAlign) {
         lastAlign = align;
-        const [a, b, c] = align.split('|');
+        const [f, a, b, c] = align.split('|');
+        topEl.style.setProperty('--cn-fade', f);
         topEl.style.setProperty('--cn-oy', `${a}px`); topEl.style.setProperty('--cn-or', `${b}px`); topEl.style.setProperty('--cn-dy', `${c}px`);
       }
       if (!reduced) { clock += dt; spinClock += dt * T.orbSpin; }
