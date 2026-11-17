@@ -9,7 +9,7 @@ import { FinancePage } from './Finance';
 import { QuotePage } from './Quote';
 import { drawPipes, fillPipes } from './canyon/wires';
 import { mountPageClouds } from './canyon/cloudPaint';
-import { CHARITY, COMPANY, HOME, START, QUOTES } from './content';
+import { CHARITY, COMPANY, HOME, PRIVACY, START, QUOTES } from './content';
 import { About, Run, Showcase } from './Journey';
 
 // The 3D first screen is loaded on its own, so the page's words never wait for it.
@@ -183,9 +183,26 @@ function Start() {
 function Footer() {
   return (
     <footer className="s-footer">
-      <div><b>{COMPANY.legalName}</b><span>ABN {COMPANY.abn} · {COMPANY.place}</span></div>
+      <div><b>{COMPANY.legalName}</b><span>ABN {COMPANY.abn} · {COMPANY.place} · <Link href="/privacy">Privacy</Link></span></div>
       <Socials />
     </footer>
+  );
+}
+
+/** /privacy: what the website collects and why. */
+function Privacy() {
+  return (
+    <div className="s-plain dusk">
+      <Nav />
+      <main className="s-main s-privacy">
+        <h1 className="s-page-title">{PRIVACY.title}</h1>
+        <p className="s-note">{PRIVACY.updated}</p>
+        {PRIVACY.sections.map((x) => (
+          <section key={x.h}><h2>{x.h}</h2>{x.p.map((line) => <p key={line}>{line}</p>)}</section>
+        ))}
+      </main>
+      <Footer />
+    </div>
   );
 }
 
@@ -218,6 +235,7 @@ export function Site() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/start" component={Start} />
+      <Route path="/privacy" component={Privacy} />
       <Route path="/finance">{() => <FinancePage Nav={Nav} Footer={Footer} />}</Route>
       <Route path="/quote/:token">{(params) => <QuotePage token={params.token} Nav={Nav} Footer={Footer} />}</Route>
       <Route component={NotFound} />

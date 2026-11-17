@@ -85,6 +85,11 @@ export function mountPageClouds(): () => void {
     if (top > innerHeight) { if (lastDraw) { g.clearRect(0, 0, canvas.width, canvas.height); lastDraw = 0; } return; }
     // About 30 frames a second is plenty for slow clouds; redraw sooner when the page scrolls.
     if (now - lastDraw < 33 && scrollY === lastY) return;
+    if (T.glowMove > 0 && !still) {
+      const m = ((now - t0) / 1000) * 0.05 * T.glowMove;
+      canvas.style.setProperty('--glow-ax', `${18 + 10 * Math.sin(m)}%`); canvas.style.setProperty('--glow-ay', `${30 + 12 * Math.cos(m * 0.8)}%`);
+      canvas.style.setProperty('--glow-bx', `${82 - 10 * Math.sin(m * 0.7)}%`); canvas.style.setProperty('--glow-by', `${72 - 12 * Math.cos(m * 0.9)}%`);
+    }
     lastDraw = now; lastY = scrollY;
     if (T.pageCloudBlur !== blurFor) { blurFor = T.pageCloudBlur; soft = soften(blurFor); }
     const W = canvas.width, H = canvas.height, t = still ? 0 : (now - t0) / 1000;

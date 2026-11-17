@@ -106,7 +106,7 @@ export function EnquiryForm() {
         <input name="fax" tabIndex={-1} autoComplete="off" className="s-hp" aria-hidden="true" />
       </fieldset>
       <div className="s-form-foot">
-        <p className="s-note">We only use your details to reply. No GST: DDG is not registered for GST.</p>
+        <p className="s-note">We only use your name and email to reply about your enquiry. We never sell them. See our <a href="/privacy">privacy page</a>. No GST: DDG is not registered for GST.</p>
         <button className="s-btn fill" type="submit" disabled={sent.state === 'sending'}>{sent.state === 'sending' ? 'Sending…' : 'Send'}</button>
       </div>
       {sent.state === 'error' && <p className="s-form-error" role="alert">{sent.message}</p>}

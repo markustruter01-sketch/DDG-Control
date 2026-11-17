@@ -104,6 +104,17 @@ export const SPECS: Spec[] = [
   { group: 'Quote background', key: 'qbPadY', label: 'Height around the text', min: 0, max: 120, step: 2 },
   { group: 'Quote background', key: 'qbRadius', label: 'Rounded corners', min: 0, max: 120, step: 2 },
   { group: 'Quote background', key: 'qbFade', label: 'Edge fall-off (soft ← → softer)', min: 0, max: 50, step: 1 },
+  // The page's colours: base, coloured light behind the glass, lit panel edges, one accent colour
+  { group: 'Page look', key: 'baseDark', label: 'Background (0 grey, 1 blue-black)', min: 0, max: 1, step: 0.02 },
+  { group: 'Page look', key: 'glowStrength', label: 'Coloured light behind the glass', min: 0, max: 1, step: 0.02 },
+  { group: 'Page look', key: 'glowHue1', label: 'Light 1 colour (hue)', min: 0, max: 360, step: 1 },
+  { group: 'Page look', key: 'glowHue2', label: 'Light 2 colour (hue)', min: 0, max: 360, step: 1 },
+  { group: 'Page look', key: 'glowSize', label: 'Light size', min: 0.3, max: 2, step: 0.05 },
+  { group: 'Page look', key: 'glowMove', label: 'Light slowly moving (0 still)', min: 0, max: 2, step: 0.05 },
+  { group: 'Page look', key: 'edgeLight', label: 'Lit glass edge', min: 0, max: 1, step: 0.02 },
+  { group: 'Page look', key: 'accentHue', label: 'Accent colour (hue)', min: 0, max: 360, step: 1 },
+  { group: 'Page look', key: 'accentSat', label: 'Accent colour: how much colour (0 white)', min: 0, max: 1, step: 0.02 },
+  { group: 'Page look', key: 'accentWords', label: 'Key words in the accent colour (0 off, 1 on)', min: 0, max: 1, step: 1 },
   // Low clouds over the wireframe land (3D)
   { group: 'Clouds over the land', key: 'cloudsOn', label: 'Show them (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Clouds over the land', key: 'cloudCount', label: 'How many', min: 0, max: 1, step: 0.02 },
@@ -165,6 +176,7 @@ export const DEFAULTS: Record<string, number> = {
   quote: 4, quoteOn: 1, quoteFont: 3, quoteSize: 0.7, quoteWeight: 500, quoteSpacing: -0.01, quoteCaps: 1, quoteAlign: 1, quoteWidth: 19, quoteLift: 2,
   qbOn: 1, qbDark: 0.52, qbBlur: 25, qbTint: 0, qbPadX: 182, qbPadY: 10, qbRadius: 40, qbFade: 26,
   bizLayout: 0,
+  baseDark: 1, glowStrength: 0.8, glowHue1: 205, glowHue2: 170, glowSize: 1, glowMove: 0.6, edgeLight: 0.6, accentHue: 195, accentSat: 0.75, accentWords: 1,
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
   pageClouds: 0.8, pageCloudOpacity: 0.06, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
   shOn: 1, shArrow: 4, shAnim: 1, shSpeed: 2, shTravel: 5, shLayout: 0, shFont: 2, shSize: 0.75, shSpacing: 0.3, shCaps: 0, shBright: 0.9, shPlace: 4,
@@ -293,7 +305,7 @@ export function mountPanel(): () => void {
 let lastBrand = '';
 let lastFade = '';
 const BG_KEYS = ['qbOn', 'qbDark', 'qbBlur', 'qbTint', 'qbPadX', 'qbPadY', 'qbRadius', 'qbFade'];
-const HINT_KEYS = ['pipeFluid', 'inkHue', 'inkSat', 'inkLight', 'bizLayout', 'shOn', 'shArrow', 'shAnim', 'shSpeed', 'shTravel', 'shLayout', 'shFont', 'shSize', 'shSpacing', 'shCaps', 'shBright', 'shPlace'];
+const HINT_KEYS = ['baseDark', 'glowStrength', 'glowHue1', 'glowHue2', 'glowSize', 'edgeLight', 'accentHue', 'accentSat', 'accentWords', 'pipeFluid', 'inkHue', 'inkSat', 'inkLight', 'bizLayout', 'shOn', 'shArrow', 'shAnim', 'shSpeed', 'shTravel', 'shLayout', 'shFont', 'shSize', 'shSpacing', 'shCaps', 'shBright', 'shPlace'];
 /** Arrow drawings for the scroll hint (24 wide, drawn in currentColor). */
 const ARROWS = [
   '<svg viewBox="0 0 24 14" width="24" height="14"><path d="M3 3l9 8 9-8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -346,6 +358,19 @@ export function applyBrand(): void {
   s.setProperty('--qb-pady', `${T.qbPadY}px`);
   s.setProperty('--qb-radius', `${T.qbRadius}px`);
   s.setProperty('--qb-fade', `${T.qbFade}%`);
+  // Page look: background tone, coloured light behind the glass, lit edges, the accent colour.
+  const mixHex = (a: number[], b: number[], k: number) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',')})`;
+  s.setProperty('--site-base', mixHex([20, 21, 24], [9, 11, 17], T.baseDark));
+  const hsl = (h: number, sat: number, l: number, a: number) => `hsla(${h}, ${Math.round(sat * 100)}%, ${l}%, ${a})`;
+  s.setProperty('--glow-a', hsl(T.glowHue1, 0.85, 45, 0.22 * T.glowStrength));
+  s.setProperty('--glow-b', hsl(T.glowHue2, 0.8, 42, 0.18 * T.glowStrength));
+  s.setProperty('--glow-c', hsl((T.glowHue1 + T.glowHue2) / 2 + 40, 0.7, 45, 0.1 * T.glowStrength));
+  s.setProperty('--glow-size', `${46 * T.glowSize}vmax`);
+  s.setProperty('--edge-top', String(0.14 * T.edgeLight));
+  s.setProperty('--edge-shine', String(0.55 * T.edgeLight));
+  const accent = hsl(T.accentHue, T.accentSat, 100 - 32 * T.accentSat, 1);
+  s.setProperty('--j-accent', accent);
+  s.setProperty('--j-word', T.accentWords ? accent : 'inherit');
   // Blue water or white ink in every pipe on the page (site.css, .pipe-ink).
   document.documentElement.classList.toggle('pipe-ink', T.pipeFluid === 1);
   s.setProperty('--pipe-fluid', `rgb(${fluidRGB().map((v) => Math.round(v * 255)).join(',')})`);

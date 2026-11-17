@@ -8,7 +8,7 @@
 @view-transition { navigation: auto; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 280ms; animation-timing-function: ease; }
 @media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none; } }
-body { margin: 0; background: var(--ng-graphite); color: var(--ng-text); font: 16px/1.55 var(--ng-sans); -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--site-base, var(--ng-graphite)); color: var(--ng-text); font: 16px/1.55 var(--ng-sans); -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: none; }
 img { display: block; }
 :focus-visible { outline: 2px solid var(--ng-ice); outline-offset: 3px; border-radius: 6px; }
@@ -420,12 +420,12 @@ p { margin: 0; }
 /* ── Home, below the first screen: the sections, joined by pipes of the same water ─────────────── */
 /* The page's colour carries on from the feathered edge above, then thins out over the first screen-height
    so the 3D scene underneath is gone before the clouds (.cn-clouds) show through, with no hard line. */
-.cn-page { position: relative; z-index: 1; background: linear-gradient(180deg, var(--ng-graphite) 0, var(--ng-graphite) 30vh, rgba(20, 21, 24, 0) 120vh) no-repeat; }
+.cn-page { position: relative; z-index: 1; background: linear-gradient(180deg, var(--site-base, var(--ng-graphite)) 0, var(--site-base, var(--ng-graphite)) 30vh, transparent 120vh) no-repeat; }
 .cn-clouds { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 /* The page below slides up over the first screen as one sheet with a long feathered top edge,
    so the night scene melts into the page colour instead of ending on a hard line. */
 .cn-page::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 55vh; pointer-events: none;
-  background: linear-gradient(180deg, rgba(20,21,24,0) 0%, rgba(20,21,24,0.35) 40%, rgba(20,21,24,0.8) 75%, var(--ng-graphite) 100%); }
+  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--site-base, var(--ng-graphite)) 35%, transparent) 40%, color-mix(in srgb, var(--site-base, var(--ng-graphite)) 80%, transparent) 75%, var(--site-base, var(--ng-graphite)) 100%); }
 .cn-page > section, .cn-page > main { position: relative; z-index: 1; }
 .cn-work { padding-top: clamp(110px, 16vh, 170px); }
 .cn-head { width: max-content; max-width: calc(100% - 2 * var(--s-gutter)); margin: 0 auto clamp(28px, 4vh, 48px); text-align: center; }
@@ -523,7 +523,7 @@ p { margin: 0; }
 .j-reel { position: relative; display: grid; min-height: clamp(520px, 40vw, 580px); perspective: 2000px; outline: none; touch-action: pan-y; }
 .j-slot { position: absolute; inset: 0; border-radius: 28px; pointer-events: none; }
 .j-card { grid-area: 1 / 1; position: relative; border-radius: 28px; display: grid; grid-template-columns: 1.55fr 1fr; gap: clamp(18px, 2.4vw, 40px); padding: clamp(18px, 2.4vw, 34px); align-items: center;
-  background: var(--j-glass), var(--ng-graphite); /* the same glass, on a solid base so cards behind don't show through */
+  background: var(--j-glass), var(--site-base, var(--ng-graphite)); /* the same glass, on a solid base so cards behind don't show through */
   transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.9s, filter 0.9s; transform-style: preserve-3d; backface-visibility: hidden; }
 .j-card[data-off='0'] { transform: none; opacity: 1; z-index: 2; }
 .j-card[data-off='1'] { transform: translateX(78%) translateZ(-260px) rotateY(-34deg); opacity: 0.55; filter: blur(0.5px); cursor: pointer; z-index: 1; }
@@ -588,3 +588,25 @@ p { margin: 0; }
 /* The words over the orb live in a layer fixed to the screen; Stage moves them with the orb. */
 .cn-follow { position: fixed; inset: 0; pointer-events: none; }
 .cn-page .s-charity { background: var(--j-glass); backdrop-filter: blur(16px); }
+
+/* ── Page look (tuner: "Page look"). Coloured light behind the glass, a lit edge on each panel,
+   and one accent colour on key words. All driven by CSS variables set in tune.ts. ───────────── */
+.cn-clouds { background:
+  radial-gradient(var(--glow-size, 46vmax) var(--glow-size, 46vmax) at var(--glow-ax, 18%) var(--glow-ay, 30%), var(--glow-a, transparent), transparent 70%),
+  radial-gradient(calc(var(--glow-size, 46vmax) * 0.9) calc(var(--glow-size, 46vmax) * 0.9) at var(--glow-bx, 82%) var(--glow-by, 72%), var(--glow-b, transparent), transparent 70%),
+  radial-gradient(calc(var(--glow-size, 46vmax) * 0.7) calc(var(--glow-size, 46vmax) * 0.7) at 55% 8%, var(--glow-c, transparent), transparent 70%); }
+.j-panel, .j-card, .j-core, .cn-page .s-charity, .j-tabs {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--edge-top, 0)), inset 1px 0 0 rgba(255, 255, 255, calc(var(--edge-top, 0) * 0.25)), inset -1px 0 0 rgba(255, 255, 255, calc(var(--edge-top, 0) * 0.25)); }
+.j-panel::before, .j-card::before { content: ''; position: absolute; left: 8%; right: 8%; top: 0; height: 1px; pointer-events: none; z-index: 1;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, var(--edge-shine, 0)), transparent); }
+.j-hi { color: var(--j-word, inherit); }
+
+/* Phones: the scroll hint sits below the menu, never on it; menu links are easy to tap (about 44 px). */
+@media (max-width: 900px) { .cn-scroll { top: max(calc(var(--sh-place, 11) * 1vh), 84px); } }
+.s-nav nav a { display: inline-flex; align-items: center; min-height: 44px; }
+.s-footer a { color: var(--ng-text-2); text-decoration: underline; text-underline-offset: 3px; }
+.s-form-foot .s-note a { color: var(--ng-text); text-decoration: underline; text-underline-offset: 3px; }
+.s-privacy { max-width: 760px; }
+.s-privacy section { margin-top: 28px; }
+.s-privacy h2 { font-size: 20px; margin: 0 0 8px; }
+.s-privacy p { color: var(--ng-text-2); line-height: 1.65; margin: 0 0 10px; }

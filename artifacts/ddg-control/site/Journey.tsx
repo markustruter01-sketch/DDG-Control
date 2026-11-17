@@ -28,7 +28,7 @@ export function About({ onSee }: { onSee: () => void }) {
     <section id="about" className="j-panel j-about" data-pipe aria-labelledby="about-title">
       <div className="j-text">
         <p className="s-eyebrow">{ABOUT.eyebrow}</p>
-        <h2 id="about-title">{ABOUT.title}</h2>
+        <h2 id="about-title">{ABOUT.title.split('AI-powered').flatMap((part, i) => (i ? [<span key={i} className="j-hi">AI-powered</span>, part] : [part]))}</h2>
         <p className="j-line">{ABOUT.line}</p>
         <div className="j-actions">
           <a className="s-btn" href="#businesses" onClick={(e) => { e.preventDefault(); onSee(); }}>{ABOUT.see} ↓</a>
@@ -69,7 +69,7 @@ export function Showcase() {
     <section id="businesses" className="j-biz" aria-labelledby="b-title">
       <div className="j-biz-head">
         <p className="s-eyebrow">{BUILT.eyebrow}</p>
-        <h2 id="b-title"><span>{BUILT.left}</span> <span>{BUILT.right}</span></h2>
+        <h2 id="b-title"><span>{BUILT.left}</span> <span className="j-hi">{BUILT.right}</span></h2>
         <p className="j-line">{BUILT.line}</p>
       </div>
       <div className="j-core" data-pipe aria-hidden="true"><img src="/ddg-logo-white-512.png" alt="" /></div>
