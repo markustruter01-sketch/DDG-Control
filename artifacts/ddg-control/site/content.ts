@@ -254,11 +254,18 @@ export const ABOUT = {
 };
 
 /** The carousel under "Complex platforms. Built in-house.": one screenshot per live product (public/work). */
-export const SHOTS: { key: string; name: string; kind: string; img: string; alt: string; href: string; external: boolean }[] = [
-  { key: 'globe', name: 'God\u2019s Eye View', kind: 'Live 3D globe', img: '/work/globe.webp', alt: 'God\u2019s Eye View: the Earth from orbit with live satellites', href: 'https://gods-eye-view.replit.app/', external: true },
-  { key: 'finance', name: 'DDG Finance', kind: 'Trading platform', img: '/work/finance.webp', alt: 'The DDG Finance public page', href: '/finance', external: false },
-  { key: 'coffee', name: 'Cattle Dog Coffee', kind: 'Online store', img: '/work/coffee.webp', alt: 'The Cattle Dog Coffee online store', href: PUBLIC_SITES.coffee, external: true },
-  { key: 'greenlight', name: 'DDG Greenlight', kind: 'Compliance engine', img: '/work/greenlight.webp', alt: 'DDG Greenlight: check my code', href: 'https://ddg-greenlight.replit.app/', external: true },
+export const SHOTS: { key: string; name: string; kind: string; imgs: { src: string; alt: string }[]; href: string; external: boolean }[] = [
+  { key: 'globe', name: 'God\u2019s Eye View', kind: 'Live 3D globe', href: 'https://gods-eye-view.replit.app/', external: true, imgs: [
+    { src: '/work/globe-1.webp', alt: 'A GPS satellite tracked above the Earth, with its orbit and coverage' },
+    { src: '/work/globe-2.webp', alt: 'The International Space Station over Europe, with live ships and aircraft' },
+    { src: '/work/globe-3.webp', alt: 'A ship followed live in a harbour, with its voyage details' },
+    { src: '/work/globe-4.webp', alt: 'Street level: four live traffic cameras beside a motorway' },
+    { src: '/work/globe-5.webp', alt: 'Trafalgar Square at night in night-vision view, with a live camera' },
+    { src: '/work/globe-6.webp', alt: 'An airfield in thermal view, with live traffic and weather' },
+  ] },
+  { key: 'finance', name: 'DDG Finance', kind: 'Trading platform', href: '/finance', external: false, imgs: [{ src: '/work/finance.webp', alt: 'The DDG Finance public page' }] },
+  { key: 'coffee', name: 'Cattle Dog Coffee', kind: 'Online store', href: PUBLIC_SITES.coffee, external: true, imgs: [{ src: '/work/coffee.webp', alt: 'The Cattle Dog Coffee online store' }] },
+  { key: 'greenlight', name: 'DDG Greenlight', kind: 'Compliance engine', href: 'https://ddg-greenlight.replit.app/', external: true, imgs: [{ src: '/work/greenlight.webp', alt: 'DDG Greenlight: check my code' }] },
 ];
 export const CONTACT = { eyebrow: 'Contact', title: 'Talk to us in writing.', line: 'Email us, or send the short form above for a fixed quote. We work in writing, so there is no call to book.', emailLabel: 'Email', postLabel: 'Post' };
 

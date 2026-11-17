@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { ABOUT, BUILT, RUN, SHOTS } from './content';
 
@@ -44,8 +44,45 @@ export function About({ onSee, onQuote }: { onSee: () => void; onQuote: () => vo
   );
 }
 
-/** A plain sideways carousel of product screenshots. The slides on each side peek in, so it is clear there
- *  is more to see. Swipe, scroll, the arrows or the dots all move it; the browser does the snapping. */
+/** One product's screenshots: a small carousel inside the big one. Arrows step through the pictures, and
+ *  the enlarge button opens the same pictures in a larger box (not full screen). */
+function Gallery({ imgs, name }: { imgs: { src: string; alt: string }[]; name: string }) {
+  const [at, setAt] = useState(0);
+  const [big, setBig] = useState(false);
+  const n = imgs.length;
+  const step = (d: number) => setAt((at + d + n) % n);
+  useEffect(() => {
+    if (!big) return;
+    const key = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') setBig(false);
+      if (e.key === 'ArrowRight') setAt((v) => (v + 1) % n);
+      if (e.key === 'ArrowLeft') setAt((v) => (v - 1 + n) % n);
+    };
+    addEventListener('keydown', key);
+    return () => removeEventListener('keydown', key);
+  }, [big, n]);
+  const view = (inBox: boolean) => (
+    <div className={inBox ? 'j-gal j-gal-big' : 'j-gal'}>
+      {imgs.map((im, i) => <img key={im.src} className={i === at ? 'on' : ''} src={im.src} alt={i === at ? im.alt : ''} loading="lazy" decoding="async" />)}
+      {n > 1 && <>
+        <button type="button" className="j-gal-arrow prev" aria-label={`Previous ${name} screenshot`} onClick={(e) => { e.stopPropagation(); step(-1); }}>‹</button>
+        <button type="button" className="j-gal-arrow next" aria-label={`Next ${name} screenshot`} onClick={(e) => { e.stopPropagation(); step(1); }}>›</button>
+        <span className="j-gal-count">{at + 1} / {n}</span>
+      </>}
+      <button type="button" className="j-gal-zoom" aria-label={inBox ? 'Close the larger view' : 'Make this screenshot bigger'} onClick={(e) => { e.stopPropagation(); setBig(!inBox); }}>{inBox ? '✕' : '⤢'}</button>
+    </div>
+  );
+  return (
+    <>
+      {view(false)}
+      {big && <div className="j-gal-back" role="dialog" aria-modal="true" aria-label={`${name} screenshots`} onClick={() => setBig(false)}><div onClick={(e) => e.stopPropagation()}>{view(true)}</div></div>}
+    </>
+  );
+}
+
+/** A plain sideways carousel of our products. The slides on each side peek in, so it is clear there is more
+ *  to see. Swipe, scroll, the arrows or the dots all move it; the browser does the snapping. The light pipe
+ *  runs round .j-car-slot, a still frame exactly where the slide in front sits, so it never crosses a picture. */
 function Carousel() {
   const track = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState(0);
@@ -64,11 +101,11 @@ function Carousel() {
   };
   return (
     <div className="j-car" role="region" aria-roledescription="carousel" aria-label="Screenshots of what we have built">
-      <div className="j-car-track" ref={track} onScroll={onScroll} tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'ArrowRight') { e.preventDefault(); go(at + 1); } if (e.key === 'ArrowLeft') { e.preventDefault(); go(at - 1); } }}>
+      <div className="j-car-slot" data-pipe aria-hidden="true" />
+      <div className="j-car-track" ref={track} onScroll={onScroll}>
         {SHOTS.map((x, i) => (
           <figure key={x.key} className={`j-slide${i === at ? ' on' : ''}`} aria-label={`${i + 1} of ${n}: ${x.name}`} onClick={i === at ? undefined : () => go(i)}>
-            <div className="j-slide-shot"><img src={x.img} alt={x.alt} loading="lazy" decoding="async" width="1600" height="1000" /></div>
+            <Gallery imgs={x.imgs} name={x.name} />
             <figcaption>
               <span><b>{x.name}</b><em>{x.kind}</em></span>
               {x.external
@@ -78,8 +115,8 @@ function Carousel() {
           </figure>
         ))}
       </div>
-      <button type="button" className="j-car-arrow prev" aria-label="Previous screenshot" onClick={() => go(at - 1)}>←</button>
-      <button type="button" className="j-car-arrow next" aria-label="Next screenshot" onClick={() => go(at + 1)}>→</button>
+      <button type="button" className="j-car-arrow prev" aria-label="Previous product" onClick={() => go(at - 1)}>←</button>
+      <button type="button" className="j-car-arrow next" aria-label="Next product" onClick={() => go(at + 1)}>→</button>
       <div className="j-car-dots">{SHOTS.map((x, i) => <button key={x.key} type="button" aria-label={`Show ${x.name}`} aria-current={i === at} onClick={() => go(i)} />)}</div>
     </div>
   );
