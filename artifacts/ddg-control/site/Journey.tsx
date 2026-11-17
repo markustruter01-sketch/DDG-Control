@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'wouter';
 import { ABOUT, BUILT, RUN, SHOTS } from './content';
 
@@ -75,7 +76,8 @@ function Gallery({ imgs, name }: { imgs: { src: string; alt: string }[]; name: s
   return (
     <>
       {view(false)}
-      {big && <div className="j-gal-back" role="dialog" aria-modal="true" aria-label={`${name} screenshots`} onClick={() => setBig(false)}><div onClick={(e) => e.stopPropagation()}>{view(true)}</div></div>}
+      {/* In the page body, not the slide: the slide's glass would otherwise trap a fixed box inside itself. */}
+      {big && createPortal(<div className="j-gal-back" role="dialog" aria-modal="true" aria-label={`${name} screenshots`} onClick={() => setBig(false)}><div onClick={(e) => e.stopPropagation()}>{view(true)}</div></div>, document.body)}
     </>
   );
 }
