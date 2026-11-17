@@ -174,14 +174,14 @@ export const DEFAULTS: Record<string, number> = {
   wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.96, waterClear: 0.66,
   starsEvery: 4.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
   pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
-  quote: 10, quoteOn: 1, quoteFont: 0, quoteSize: 0.8, quoteWeight: 400, quoteSpacing: -0.01, quoteCaps: 0, quoteAlign: 1, quoteWidth: 34, quoteLift: 9,
+  quote: 10, quoteOn: 1, quoteFont: 9, quoteSize: 0.7, quoteWeight: 400, quoteSpacing: -0.01, quoteCaps: 0, quoteAlign: 1, quoteWidth: 34, quoteLift: 11,
   qbOn: 1, qbDark: 0.52, qbBlur: 25, qbTint: 0, qbPadX: 182, qbPadY: 10, qbRadius: 40, qbFade: 26,
   bizLayout: 0,
   baseDark: 1, glowStrength: 0.8, glowHue1: 205, glowHue2: 170, glowSize: 1, glowMove: 0.6, edgeLight: 0.6, accentHue: 195, accentSat: 0.75, accentWords: 1,
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
   pageClouds: 0.8, pageCloudOpacity: 0.06, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
-  shOn: 1, shArrow: 4, shAnim: 1, shSpeed: 2, shTravel: 5, shLayout: 0, shFont: 2, shSize: 0.75, shSpacing: 0.3, shCaps: 0, shBright: 0.9, shPlace: 4,
-  brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: 6.5,
+  shOn: 1, shArrow: 4, shAnim: 1, shSpeed: 2, shTravel: 5, shLayout: 0, shFont: 2, shSize: 0.75, shSpacing: 0.3, shCaps: 0, shBright: 0.9, shPlace: 37,
+  brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: 12,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
