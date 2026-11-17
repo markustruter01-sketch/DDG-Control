@@ -84,7 +84,7 @@ export type Service = {
 };
 export const SERVICES: Service[] = [
   { key: 'website', name: 'Business website', line: 'Fast, good-looking, on your own domain and easy to update.', from: 1500, to: 4500,
-    proof: 'Like this website', features: ['Contact form', 'Bookings', 'Blog or news', 'Logo and brand help', 'Copywriting', 'Two languages'] },
+    proof: '', features: ['Contact form', 'Bookings', 'Blog or news', 'Logo and brand help', 'Copywriting', 'Two languages'] },
   { key: 'store', name: 'Online store', line: 'Sell online with card payments, stock and shipping.', from: 7500, to: 22500,
     proof: 'Like Cattle Dog Coffee', features: ['Card payments (Stripe)', 'Subscriptions', 'Stock tracking', 'Shipping rates', 'Customer accounts', 'Discount codes', 'Admin dashboard'] },
   { key: 'platform', name: 'Web platform', line: 'Logins, payments, dashboards and tools your team or customers use every day.', from: 11250, to: 45000,
@@ -92,8 +92,9 @@ export const SERVICES: Service[] = [
   { key: 'app', name: 'Phone app', line: 'A first version of your app for iPhone and Android.', from: 11250, to: 30000,
     proof: 'Like Hypest (in development)', features: ['iPhone and Android', 'User logins', 'In-app payments', 'Reminders and notifications', 'AI features'] },
   { key: 'ai', name: 'AI assistant or automation', line: 'An AI that answers, books, reads documents or runs a task for you.', from: 3750, to: 26250,
-    proof: 'Like our nine AI employees', features: ['Answers customers', 'Books appointments', 'Reads documents', 'Connects to your apps (Xero, CRM…)', 'Writes reports', 'Runs on a schedule'] },
+    proof: 'Like the bots that run DDG every day', features: ['Answers customers', 'Books appointments', 'Reads documents', 'Connects to your apps (Xero, CRM…)', 'Writes reports', 'Runs on a schedule'] },
 ];
+export const PRICE_BASIS = 'How we compared: our ranges are about 25% below the 2026 Australian price ranges published by What\u2019s The Damage, WP Creative, Expeed and Flowtivity.';
 export const CARE = 'Care plans from $40 a month for a website and $225 a month for an app. Extra work $110–$185 an hour.';
 
 export const BUILD_STEPS = [
@@ -232,7 +233,7 @@ export const BUILT = {
   eyebrow: 'Projects we have built',
   left: 'Complex platforms.',
   right: 'Built in-house.',
-  line: 'Examples of what we can build: our own trading platform, online store and fitness app.',
+  line: 'Our own businesses, built and run by us. Open them and look around.',
 };
 
 export type ShowcaseKey = 'finance' | 'coffee' | 'fitness';
@@ -240,17 +241,17 @@ export const SHOWCASE: {
   key: ShowcaseKey; name: string; kind: string; tab: string; title: string; line: string; steps: string[];
   link: { label: string; href: string; external: boolean } | null; note?: string;
 }[] = [
-  // The platform as it will be once the agreed fund roadmap (17 Nov 2026) is built, said as "being built".
-  { key: 'finance', name: 'DDG Finance', kind: 'Quantitative trading platform', tab: 'Quant trading', title: 'A trading platform that runs itself, tested in the open.',
-    line: 'We are building a system that reads what kind of market it is, picks from strategies that have proven themselves, decides how much each one gets, and trades, with hard limits that stop it when something is wrong.',
-    steps: ['A league of strategies runs on fake money every night', 'Every rule is written down and dated before it runs, then never changed', 'An allocator reads the market each day and shares out the money', 'Hard limits in the code stop it when something goes wrong'],
+  // Coffee first: the live product a stranger can open and buy from (audit 17 Nov 2026). Short lines only.
+  { key: 'coffee', name: 'DDG Coffee', kind: 'Online store', tab: 'Online store', title: 'A live online store for premium coffee beans.',
+    line: 'Cattle Dog Coffee: order in a few taps, delivered to your door.',
+    steps: ['Live and taking orders', 'Card payments and subscriptions (Stripe)', '$1 from every bag to animal charities', 'Every order runs through our command centre'],
+    link: { label: 'Visit the store', href: PUBLIC_SITES.coffee, external: true } },
+  { key: 'finance', name: 'DDG Finance', kind: 'Trading platform', tab: 'Trading platform', title: 'A trading platform that runs itself, tested in the open.',
+    line: 'Our own system. It trades by fixed rules, checks itself every hour, and publishes every result.',
+    steps: ['4 live bots on broker practice accounts', '16 more strategies tested side by side', 'Goal: beat the S&P 500 through 2027', 'Hard limits in the code stop it when something is wrong'],
     link: { label: 'See the platform', href: '/finance', external: false }, note: 'Paper trading. Not financial advice. We don\u2019t take outside money.' },
-  { key: 'coffee', name: 'DDG Coffee', kind: 'E-commerce', tab: 'E-commerce', title: 'An online store for premium coffee beans.',
-    line: 'Cattle Dog Coffee. Order in a few taps and we deliver to your door. $1 from every bag goes to animal charities.',
-    steps: ['Pick your beans in the online store', 'Pay securely by card', 'The order lands in our command centre', 'Packed and delivered to your door'],
-    link: { label: 'Shop coffee', href: PUBLIC_SITES.coffee, external: true } },
-  { key: 'fitness', name: 'DDG Fitness', kind: 'Coming soon', tab: 'Coming soon', title: 'A global health and fitness app.',
-    line: 'Democratising health and fitness for everyone on planet Earth.',
+  { key: 'fitness', name: 'DDG Fitness', kind: 'In development', tab: 'In development', title: 'A fitness app with AI coaches.',
+    line: 'Plans and coaching from specialist AI coaches, on your phone.',
     steps: [], link: null },
 ];
 

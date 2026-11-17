@@ -59,10 +59,10 @@ function Record({ data }: { data: PublicFinance | null }) {
     <section className="f-record s-card f-glass" aria-labelledby="f-record-title">
       <h2 id="f-record-title" className="f-sr">Performance since {longDate(start)}</h2>
       <div className="f-numbers">
-        <p className="s-stat"><b>{signed(data.fleet_return_pct)}</b><span>DDG Finance since {longDate(start)}</span></p>
+        <p className="s-stat"><b>{signed(data.fleet_return_pct)}</b><span>DDG Finance (paper trading) since {longDate(start)}</span></p>
         <p className="s-stat"><b>{signed(data.sp500_return_pct)}</b><span>S&amp;P 500 over the same dates</span></p>
         <p className="s-stat"><b>{ahead === null ? '—' : `${ahead > 0 ? '+' : ''}${ahead.toFixed(2)} pts`}</b><span>{ahead === null ? 'Ahead or behind' : ahead >= 0 ? 'Ahead of the S&P 500' : 'Behind the S&P 500'}</span></p>
-        <p className="s-stat"><b>{usd(data.fleet_equity_usd)}</b><span>Combined accounts (US$)</span></p>
+        <p className="s-stat"><b>{usd(data.fleet_equity_usd)}</b><span>Combined paper accounts (US$, practice money)</span></p>
       </div>
       {data.series.length > 1 && <PerformanceChart series={data.series} />}
     </section>
