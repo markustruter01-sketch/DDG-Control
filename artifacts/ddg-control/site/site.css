@@ -611,3 +611,7 @@ p { margin: 0; }
 .s-privacy section { margin-top: 28px; }
 .s-privacy h2 { font-size: 20px; margin: 0 0 8px; }
 .s-privacy p { color: var(--ng-text-2); line-height: 1.65; margin: 0 0 10px; }
+
+/* Three things each service includes (audit: buyers never saw "Bookings" etc.). */
+.s-feats { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.s-feats li { padding: 4px 10px; border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; font-size: 13px; color: var(--ng-text-2); }
