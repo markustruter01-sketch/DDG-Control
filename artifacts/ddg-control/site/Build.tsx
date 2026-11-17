@@ -119,8 +119,8 @@ export function Build({ summary }: { summary: PublicSummary | null }) {
   const open = Boolean(summary?.services_open);
   const opensOn = summary?.services_open_on ?? '2026-11-08';
   return (
-    <section id="build" className="s-build" aria-labelledby="build-title">
-      <p className="s-eyebrow">DDG Build{open ? '' : ` · opens ${openDate(opensOn)}`}</p>
+    <section id="build" className="s-build j-panel" data-pipe aria-labelledby="build-title">
+      <p className="s-eyebrow">What we can build for you{open ? '' : ` · opens ${openDate(opensOn)}`}</p>
       <h2 id="build-title">We build platforms like these, for you.</h2>
       <p className="s-lead">Websites, online stores, platforms, phone apps and AI, built the way we build our own businesses, at about 25% below typical Australian prices.</p>
       {!open && !preview ? (

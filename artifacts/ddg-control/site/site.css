@@ -429,7 +429,6 @@ p { margin: 0; }
 .cn-head { width: max-content; max-width: calc(100% - 2 * var(--s-gutter)); margin: 0 auto clamp(28px, 4vh, 48px); text-align: center; }
 .cn-head h2 { margin-top: 12px; font-size: clamp(26px, 3vw, 44px); }
 .cn-page .s-main { gap: clamp(96px, 13vh, 130px); padding-top: clamp(96px, 13vh, 130px); }
-.cn-page #businesses h2 { margin-bottom: clamp(72px, 10vh, 96px); }
 /* A pipe: thin dark glass with blue water inside. */
 .cn-pipes { position: absolute; left: 0; top: 0; width: 100%; z-index: 2; pointer-events: none; overflow: visible; }
 .cn-pipes path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -482,3 +481,106 @@ p { margin: 0; }
 
 /* The words and frame over the orb fade out early in the scroll (Stage sets --cn-fade). */
 .cn-brand, .cn-frame, .cn-quote { opacity: var(--cn-fade, 1); }
+
+/* ── The home page journey (Journey.tsx). Night glass panels, white-ink drawings. ─────────── */
+.j-main { max-width: 1240px; gap: clamp(72px, 9vw, 130px); padding-top: clamp(80px, 10vw, 140px); }
+.j-panel { position: relative; border-radius: 28px; padding: clamp(24px, 3.4vw, 52px);
+  background: linear-gradient(160deg, rgba(255,255,255,0.065), rgba(255,255,255,0.015) 42%, rgba(255,255,255,0.03)); backdrop-filter: blur(14px); }
+.j-panel h2, .j-biz h2 { font-weight: 300; letter-spacing: -0.02em; line-height: 1.04; font-size: clamp(30px, 3.6vw, 54px); margin: 12px 0 16px; }
+.j-line { color: var(--ng-text-2); font-size: clamp(16px, 1.1vw, 19px); line-height: 1.6; max-width: 52ch; }
+.j-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.j-about, .j-run { display: grid; grid-template-columns: 1fr 1.25fr; gap: clamp(20px, 3vw, 48px); align-items: center; }
+.j-run { grid-template-columns: 1.25fr 1fr; }
+.j-art { border-radius: 18px; background: radial-gradient(100% 90% at 50% 40%, rgba(42,143,189,0.12), rgba(0,0,0,0.25) 75%); border: 1px solid rgba(255,255,255,0.06); padding: 8px; }
+.j-art svg { display: block; width: 100%; height: auto; }
+.j-list { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; color: var(--ng-text-2); }
+.j-list li::before { content: '—'; color: var(--ng-ice); margin-right: 10px; }
+
+/* What we have built: heading split either side of the pipe, the DDG core, then the 3D reel. */
+.j-biz { position: relative; overflow-x: clip; padding-bottom: 8px; }
+.j-biz-head { display: grid; grid-template-columns: 1fr 96px 1fr; margin-bottom: 36px; }
+.j-biz-head .s-eyebrow { grid-column: 1; text-align: right; }
+.j-biz-head h2 { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 96px 1fr; margin: 12px 0 10px; }
+.j-biz-head h2 span:first-child { grid-column: 1; text-align: right; }
+.j-biz-head h2 span:last-child { grid-column: 3; }
+.j-biz-head .j-line { grid-column: 3; margin: 0; }
+.j-core { width: 132px; height: 132px; border-radius: 50%; margin: 0 auto 56px; display: grid; place-items: center; position: relative;
+  background: radial-gradient(circle at 50% 35%, rgba(108,199,240,0.16), rgba(255,255,255,0.03) 60%); backdrop-filter: blur(12px); }
+.j-core img { width: 56px; }
+.j-core::after { content: ''; position: absolute; inset: -14px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.18); animation: j-spin 40s linear infinite; }
+@keyframes j-spin { to { transform: rotate(360deg); } }
+.j-reel { position: relative; height: clamp(460px, 36vw, 520px); perspective: 2000px; outline: none; touch-action: pan-y; }
+.j-slot { position: absolute; inset: 0; border-radius: 28px; pointer-events: none; }
+.j-card { position: absolute; inset: 0; border-radius: 28px; display: grid; grid-template-columns: 1.55fr 1fr; gap: clamp(18px, 2.4vw, 40px); padding: clamp(18px, 2.4vw, 34px); align-items: center;
+  background: radial-gradient(120% 100% at 30% 30%, #0f1d29, #090b10 70%); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+  transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.9s, filter 0.9s; transform-style: preserve-3d; backface-visibility: hidden; }
+.j-card[data-off='0'] { transform: none; opacity: 1; z-index: 2; }
+.j-card[data-off='1'] { transform: translateX(72%) translateZ(-420px) rotateY(-42deg); opacity: 0.32; filter: blur(1px); cursor: pointer; z-index: 1; }
+.j-card[data-off='-1'] { transform: translateX(-72%) translateZ(-420px) rotateY(42deg); opacity: 0.32; filter: blur(1px); cursor: pointer; z-index: 1; }
+.j-card-art { align-self: center; }
+.j-card-top { display: flex; align-items: center; gap: 14px; }
+.j-card-top b { display: block; font-size: 19px; font-weight: 500; }
+.j-kind { display: block; font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-ice); margin-top: 3px; }
+.j-card h3 { font-size: clamp(22px, 2vw, 32px); font-weight: 300; letter-spacing: -0.01em; line-height: 1.12; margin: 20px 0 10px; }
+.j-card p { color: var(--ng-text-2); font-size: 15px; line-height: 1.55; }
+.j-steps { list-style: none; counter-reset: s; padding: 0; margin: 16px 0 18px; display: grid; gap: 9px; font-size: 14px; color: #d4dce6; }
+.j-steps li { counter-increment: s; display: grid; grid-template-columns: 30px 1fr; }
+.j-steps li::before { content: counter(s, decimal-leading-zero); font: 500 11px/1.9 var(--ng-mono); color: var(--ng-ice); }
+.j-card .s-note { margin: 0 0 14px; font-size: 12px; }
+.j-card .s-btn { justify-self: start; }
+.j-card-text { display: flex; flex-direction: column; align-items: flex-start; }
+.j-soon { margin-top: 18px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(108,199,240,0.5); color: var(--ng-ice); font: 500 11px var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; }
+.j-mark { width: 46px; height: 46px; flex: none; }
+.j-mark .j-mark-bg { fill: rgba(255,255,255,0.05); stroke: rgba(159,220,255,0.35); stroke-width: 1; }
+.j-reel-nav { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: 22px; }
+.j-count { font: 500 12px var(--ng-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ng-text-3); margin-right: auto; }
+.j-dots { display: flex; gap: 8px; }
+.j-dots button { width: 8px; height: 8px; padding: 0; border-radius: 50%; border: 0; background: rgba(255,255,255,0.25); cursor: pointer; }
+.j-dots button[aria-current='true'] { background: var(--ng-ice); box-shadow: 0 0 10px var(--ng-ice); width: 24px; border-radius: 4px; }
+.j-arrow { width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); color: var(--ng-text); font-size: 18px; cursor: pointer; backdrop-filter: blur(10px); }
+.j-arrow:hover { background: rgba(108,199,240,0.14); border-color: var(--ng-ice); }
+/* Stacked (tuner option): three wide cards one under the other. */
+.j-biz.j-stack .j-reel { height: auto; perspective: none; display: grid; gap: 56px; }
+.j-biz.j-stack .j-slot, .j-biz.j-stack .j-reel-nav { display: none; }
+.j-biz.j-stack .j-card { position: relative; transform: none !important; opacity: 1 !important; filter: none !important; cursor: default; min-height: 480px; }
+
+.j-start { display: grid; grid-template-columns: 1fr 1.4fr; gap: clamp(20px, 3vw, 48px); align-items: start; }
+.j-start .s-form { background: none; border: 0; padding: 0; }
+.s-build.j-panel { gap: 18px; }
+
+/* The ink itself. */
+.ink-art .ink { fill: none; stroke: #fff; stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; }
+.ink-art .dim { stroke-opacity: 0.55; } .ink-art .faint { stroke-opacity: 0.22; } .ink-art .dash { stroke-dasharray: 2 4; }
+.ink-art .fill, .ink-art .dot { fill: #fff; }
+.ink-art .lab { font: 500 8px var(--ng-mono); letter-spacing: 0.14em; fill: rgba(255,255,255,0.5); }
+.ink-art .t { font: 600 9px var(--ng-mono); letter-spacing: 0.1em; fill: #fff; }
+.ink-art .t.big { font: 600 15px var(--ng-sans); letter-spacing: 0; }
+.ink-art .stop { stroke: var(--ng-ice); stroke-dasharray: 1; }
+.ink-art .draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: ink-draw 7s var(--d, 0s) ease-in-out infinite; }
+.ink-art .draw.fast { animation-duration: 4s; }
+@keyframes ink-draw { 0% { stroke-dashoffset: 1; opacity: 1; } 16% { stroke-dashoffset: 0; } 80% { stroke-dashoffset: 0; opacity: 1; } 92%, 100% { stroke-dashoffset: 0; opacity: 0; } }
+.ink-art .flow { stroke-dasharray: 0.06 0.08; stroke-opacity: 0.8; animation: ink-flow 1.6s linear infinite; }
+.ink-art .faint-flow { stroke-opacity: 0.35; }
+@keyframes ink-flow { to { stroke-dashoffset: -0.14; } }
+.ink-art .p { transform-box: fill-box; transform-origin: center; animation: ink-pop 3.5s var(--d, 0s) ease-in-out infinite; }
+@keyframes ink-pop { 0%, 100% { opacity: 0.25; transform: scale(0.7); } 30% { opacity: 1; transform: scale(1.35); } 60% { opacity: 0.6; transform: scale(1); } }
+.ink-art .hand { transform-box: fill-box; transform-origin: 50% 100%; animation: j-spin 4s linear infinite; }
+.ink-art .rise { opacity: 0; animation: ink-rise 7s 2.6s ease-out infinite; }
+@keyframes ink-rise { 0% { opacity: 0; transform: translateY(16px); } 15% { opacity: 1; } 55% { opacity: 1; transform: translateY(-14px); } 70%, 100% { opacity: 0; transform: translateY(-20px); } }
+.ink-art .bars path { transform-box: fill-box; transform-origin: 50% 100%; animation: ink-bars 2.4s ease-in-out infinite; }
+.ink-art .bars path:nth-child(2n) { animation-delay: -0.8s; } .ink-art .bars path:nth-child(3n) { animation-delay: -1.6s; }
+@keyframes ink-bars { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .ink-art * { animation: none !important; } .ink-art .draw { stroke-dashoffset: 0; } .ink-art .rise { opacity: 1; }
+  .j-card { transition: none; }
+}
+@media (max-width: 900px) {
+  .j-about, .j-run, .j-start { grid-template-columns: 1fr; }
+  .j-run .j-art { order: 2; }
+  .j-biz-head, .j-biz-head h2 { grid-template-columns: 1fr; } .j-biz-head > *, .j-biz-head h2 span { grid-column: 1 !important; text-align: left !important; }
+  .j-reel { height: auto; perspective: none; display: grid; }
+  .j-card { position: relative; grid-template-columns: 1fr; transform: none !important; }
+  .j-card:not([data-off='0']) { display: none; }
+  .j-slot { display: none; }
+  .j-biz:not(.j-stack) .j-card[data-off='0'] { box-shadow: 0 0 0 1px rgba(42,143,189,0.85), 0 0 22px rgba(42,143,189,0.28); }
+}

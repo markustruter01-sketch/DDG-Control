@@ -1,0 +1,116 @@
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { Link } from 'wouter';
+import { ABOUT, BUILT, RUN, SHOWCASE, type ShowcaseKey } from './content';
+import { ABOUT_ART, COFFEE_ART, CONTROL_ART, FINANCE_ART, FITNESS_ART } from './ink';
+
+// The home page journey after the 3D first screen. Every panel marked data-pipe gets a water pipe
+// round its edge (canyon/wires.ts), in page order.
+
+const ART: Record<ShowcaseKey, string> = { finance: FINANCE_ART, coffee: COFFEE_ART, fitness: FITNESS_ART };
+
+/** A white-ink drawing (fixed SVG text from ink.ts, never visitor input). */
+const Art = ({ svg, className = '' }: { svg: string; className?: string }) => (
+  <div className={`j-art ${className}`} aria-hidden="true" dangerouslySetInnerHTML={{ __html: svg }} />
+);
+
+/** Small glass logos for each business, in the same white ink. */
+const MARKS: Record<ShowcaseKey, string> = {
+  finance: '<path d="M11 31l8-8 6 5 12-13" class="ink"/><circle cx="37" cy="15" r="2.4" class="fill"/><path d="M8 24a16 16 0 0 1 30-9" class="ink faint"/>',
+  coffee: '<g transform="rotate(-25 24 24)"><ellipse cx="24" cy="24" rx="10" ry="14" class="ink"/><path d="M24 10c-6 7 6 14 0 28" class="ink"/></g>',
+  fitness: '<circle cx="24" cy="24" r="14" class="ink faint"/><path d="M6 25h10l3-6 4 12 4-14 3 8h12" class="ink"/>',
+};
+const Mark = ({ k }: { k: ShowcaseKey }) => (
+  <svg className="j-mark ink-art" viewBox="0 0 48 48" aria-hidden="true" dangerouslySetInnerHTML={{ __html: `<rect x="1" y="1" width="46" height="46" rx="13" class="j-mark-bg"/>${MARKS[k]}` }} />
+);
+
+/** 1. What we are. */
+export function About({ onSee }: { onSee: () => void }) {
+  return (
+    <section id="about" className="j-panel j-about" data-pipe aria-labelledby="about-title">
+      <div className="j-text">
+        <p className="s-eyebrow">{ABOUT.eyebrow}</p>
+        <h2 id="about-title">{ABOUT.title}</h2>
+        <p className="j-line">{ABOUT.line}</p>
+        <div className="j-actions">
+          <a className="s-btn" href="#businesses" onClick={(e) => { e.preventDefault(); onSee(); }}>{ABOUT.see} ↓</a>
+          <Link className="s-btn fill" href="/start">{ABOUT.start} →</Link>
+        </div>
+      </div>
+      <Art svg={ABOUT_ART} />
+    </section>
+  );
+}
+
+/** 2. What we have built: one wide card at a time, on a 3D reel. Finance first. */
+export function Showcase() {
+  const [at, setAt] = useState(0);
+  const n = SHOWCASE.length;
+  const go = (i: number) => setAt(((i % n) + n) % n);
+  const off = (i: number) => { let d = i - at; if (d > n / 2) d -= n; if (d < -n / 2) d += n; return d; };
+  // Swipe on phones and trackpads.
+  const start = useRef<number | null>(null);
+  const down = (e: PointerEvent) => { start.current = e.clientX; };
+  const up = (e: PointerEvent) => {
+    if (start.current === null) return;
+    const dx = e.clientX - start.current; start.current = null;
+    if (Math.abs(dx) > 50) go(at + (dx < 0 ? 1 : -1));
+  };
+  const keys = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); go(at + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); go(at - 1); }
+  };
+  return (
+    <section id="businesses" className="j-biz" aria-labelledby="b-title">
+      <div className="j-biz-head">
+        <p className="s-eyebrow">{BUILT.eyebrow}</p>
+        <h2 id="b-title"><span>{BUILT.left}</span> <span>{BUILT.right}</span></h2>
+        <p className="j-line">{BUILT.line}</p>
+      </div>
+      <div className="j-core" data-pipe aria-hidden="true"><img src="/ddg-logo-white-512.png" alt="" /></div>
+      <div className="j-reel" role="region" aria-roledescription="carousel" aria-label="Our businesses" tabIndex={0} onKeyDown={keys} onPointerDown={down} onPointerUp={up}>
+        <div className="j-slot" data-pipe aria-hidden="true" />
+        {SHOWCASE.map((b, i) => {
+          const o = off(i);
+          return (
+            <article key={b.key} className="j-card" data-pipe data-off={o} aria-roledescription="slide" aria-label={`${i + 1} of ${n}: ${b.name}`}
+              aria-hidden={o !== 0} inert={o !== 0} onClick={o !== 0 ? () => go(i) : undefined}>
+              <Art svg={ART[b.key]} className="j-card-art" />
+              <div className="j-card-text">
+                <div className="j-card-top"><Mark k={b.key} /><div><b>{b.name}</b><span className="j-kind">{b.kind}</span></div></div>
+                <h3>{b.title}</h3>
+                <p>{b.line}</p>
+                {b.steps.length > 0 && <ol className="j-steps">{b.steps.map((s) => <li key={s}>{s}</li>)}</ol>}
+                {b.note && <p className="s-note">{b.note}</p>}
+                {b.link ? (b.link.external
+                  ? <a className="s-btn" href={b.link.href} target="_blank" rel="noopener noreferrer">{b.link.label} ↗</a>
+                  : <Link className="s-btn" href={b.link.href}>{b.link.label} →</Link>)
+                  : <span className="j-soon">Coming soon</span>}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+      <div className="j-reel-nav">
+        <span className="j-count" aria-live="polite">{String(at + 1).padStart(2, '0')} / {String(n).padStart(2, '0')} · {SHOWCASE[at].name}</span>
+        <div className="j-dots">{SHOWCASE.map((b, i) => <button key={b.key} type="button" aria-label={`Show ${b.name}`} aria-current={i === at} onClick={() => go(i)} />)}</div>
+        <button type="button" className="j-arrow" aria-label="Previous business" onClick={() => go(at - 1)}>←</button>
+        <button type="button" className="j-arrow" aria-label="Next business" onClick={() => go(at + 1)}>→</button>
+      </div>
+    </section>
+  );
+}
+
+/** 3. How we run it: DDG Control. */
+export function Run() {
+  return (
+    <section id="control" className="j-panel j-run" data-pipe aria-labelledby="run-title">
+      <Art svg={CONTROL_ART} />
+      <div className="j-text">
+        <p className="s-eyebrow">{RUN.eyebrow}</p>
+        <h2 id="run-title">{RUN.title}</h2>
+        <p className="j-line">{RUN.line}</p>
+        <ul className="j-list">{RUN.built.map((x) => <li key={x}>{x}</li>)}</ul>
+      </div>
+    </section>
+  );
+}

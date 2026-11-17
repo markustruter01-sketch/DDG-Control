@@ -2,16 +2,14 @@ import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent } from 're
 import { flushSync } from 'react-dom';
 import type { PublicSummary } from '@workspace/api-client-react';
 import { Link, Route, Router, Switch, useLocation } from 'wouter';
-import { BusinessIcon } from '@/components/BusinessIcon';
 import { PlatformIcon } from '@/components/PlatformIcon';
-import { LAUNCH_DATE } from '@/lib/company';
-import { daysUntil } from '@/lib/money';
 import { SOCIALS, type Platform } from '@/lib/public-info';
 import { Build, EnquiryForm } from './Build';
 import { FinancePage } from './Finance';
 import { QuotePage } from './Quote';
 import { drawPipes, fillPipes } from './canyon/wires';
-import { CHARITY, COMPANY, CONTROL_CASE, HIRE, HOME, SITE_BUSINESSES, START, WORK, type SiteBusiness, QUOTES } from './content';
+import { CHARITY, COMPANY, HOME, START, QUOTES } from './content';
+import { About, Run, Showcase } from './Journey';
 
 // The 3D first screen is loaded on its own, so the page's words never wait for it.
 const Stage = lazy(() => import('./canyon/Stage'));
@@ -81,39 +79,6 @@ function Socials() {
   );
 }
 
-/** The headline number on each business card. Live numbers show "—" until loaded, never a guess. */
-function cardStat(key: SiteBusiness['key'], s: PublicSummary | null): { value: string; label: string } {
-  switch (key) {
-    case 'coffee': return { value: count(s?.coffee_bags_sold), label: 'Bags sold' };
-    case 'finance': {
-      const days = daysUntil(LAUNCH_DATE);
-      return days > 0 ? { value: String(days), label: 'Days to the public record' } : { value: 'Live', label: 'Public track record' };
-    }
-    case 'fitness': return { value: 'Soon', label: 'AI coaches on your phone' };
-  }
-}
-
-function BusinessCard({ b, summary }: { b: SiteBusiness; summary: PublicSummary | null }) {
-  const stat = cardStat(b.key, summary);
-  return (
-    <article className="s-card" style={{ ['--accent' as string]: b.accent }}>
-      <div className="s-card-top">
-        <span className="s-ico"><BusinessIcon icon={b.key} size={22} strokeWidth={1.6} /></span>
-        <span className="s-status"><span className="s-dot" />{b.status}</span>
-      </div>
-      <p className="s-stat"><b>{stat.value}</b><span>{stat.label}</span></p>
-      <h3>{b.name}</h3>
-      <p className="s-product">{b.product}</p>
-      <p>{b.line}</p>
-      <ul className="s-built s-chips-built" aria-label="What we built">{b.built.map((x) => <li key={x}>{x}</li>)}</ul>
-      {b.note && <p className="s-note">{b.note}</p>}
-      {b.link && (b.link.external
-        ? <a className="s-btn" href={b.link.href} target="_blank" rel="noopener noreferrer">{b.link.label} ↗</a>
-        : <Link className="s-btn" href={b.link.href}>{b.link.label} →</Link>)}
-    </article>
-  );
-}
-
 /** Keeps the pipes drawn to the page's current layout, and filled to where the visitor has scrolled. */
 function usePipes() {
   const page = useRef<HTMLDivElement>(null), svg = useRef<SVGSVGElement>(null);
@@ -148,7 +113,7 @@ function Home() {
     <>
       {/* First screen: the 3D stage (night sky, canyon, river and the AI core) with a few quiet words over it. */}
       <div className="cn-top">
-        <Suspense fallback={null}><Stage fadeAt="work" /></Suspense>
+        <Suspense fallback={null}><Stage fadeAt="about" /></Suspense>
         <section className="cn-hero">
           <Nav home />
           {/* The company's name and mark, above the orb. "We build it all." stands in the 3D scene. */}
@@ -162,48 +127,20 @@ function Home() {
       </div>
       <div className="cn-page" ref={pipes.page}>
         <svg className="cn-pipes" ref={pipes.svg} aria-hidden="true" />
-        {/* Our work and a card to hire us. */}
-        <section id="work" className="cn-work" aria-labelledby="w-title">
-          <div className="cn-head">
-            <p className="s-eyebrow">{HOME.work.eyebrow}</p>
-            <h2 id="w-title">{HOME.work.title}</h2>
-          </div>
-          <div className="s-work">
-            {WORK.map((w) => (
-              <figure key={w.key} className={`s-work-${w.shape}`}>
-                <div className="s-work-frame"><img src={w.img} alt={w.alt} loading="lazy" /></div>
-                <figcaption><b>{w.name}</b> · {w.line}</figcaption>
-              </figure>
-            ))}
-            {/* Hire us: sits at the end of the work row, the whole card links to /start. */}
-            <Link className="s-hire" href="/start">
-              <span className="s-hire-in">
-                <span className="s-hire-status"><i aria-hidden="true" />{HIRE.status}</span>
-                <b>{HIRE.title}</b>
-                <span className="s-hire-price">{HIRE.priceFrom} <strong>{HIRE.price}</strong></span>
-                <ul className="s-hire-done" aria-label="What we have built">
-                  {HIRE.done.map((d) => <li key={d}><span aria-hidden="true">→</span>{d}<em>done</em></li>)}
-                </ul>
-                <span className="s-hire-go">{HIRE.cta}<span className="s-hire-arrow" aria-hidden="true">→</span></span>
-              </span>
-            </Link>
-          </div>
-        </section>
-        <main className="s-main">
-          <section id="businesses" aria-labelledby="b-title">
-            <h2 id="b-title">{HOME.businesses}</h2>
-            <div className="s-grid">{SITE_BUSINESSES.map((b) => <BusinessCard key={b.key} b={b} summary={summary} />)}</div>
-          </section>
+        <main className="s-main j-main">
+          <About onSee={() => toSection('businesses', true)} />
+          <Showcase />
+          <Run />
           <Build summary={summary} />
-          <section className="s-case glass-plain" aria-labelledby="case-title">
-            <div>
-              <p className="s-eyebrow">How it all connects</p>
-              <h2 id="case-title">{CONTROL_CASE.title}</h2>
-              <p>{CONTROL_CASE.line}</p>
+          <section id="start" className="j-panel j-start" data-pipe aria-labelledby="start-title">
+            <div className="j-text">
+              <p className="s-eyebrow">{START.eyebrow}</p>
+              <h2 id="start-title">{START.title}</h2>
+              <p className="j-line">{START.line}</p>
             </div>
-            <ul className="s-built">{CONTROL_CASE.built.map((x) => <li key={x}>{x}</li>)}</ul>
+            <EnquiryForm />
           </section>
-          <section id="charity" className="s-charity" aria-labelledby="c-title">
+          <section id="charity" className="s-charity" data-pipe aria-labelledby="c-title">
             <div>
               <h2 id="c-title">{CHARITY.title}</h2>
               <p>{CHARITY.body}</p>

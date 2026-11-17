@@ -98,6 +98,8 @@ export const SPECS: Spec[] = [
   { group: 'Quote background', key: 'qbPadY', label: 'Height around the text', min: 0, max: 120, step: 2 },
   { group: 'Quote background', key: 'qbRadius', label: 'Rounded corners', min: 0, max: 120, step: 2 },
   { group: 'Quote background', key: 'qbFade', label: 'Edge fall-off (soft ← → softer)', min: 0, max: 50, step: 1 },
+  // The business reel
+  { group: 'Businesses', key: 'bizLayout', label: 'Layout (0 3D reel, 1 stacked)', min: 0, max: 1, step: 1 },
   // "Scroll down" hint
   { group: 'Scroll hint', key: 'shOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Scroll hint', key: 'shText', label: 'Words (leave empty for arrow only)', min: 0, max: 0, step: 0, text: true },
@@ -138,6 +140,7 @@ export const DEFAULTS: Record<string, number> = {
   pipeOn: 1, pipeRadius: 2.45, pipeLift: -0.35, pipeGlass: 0, pipeRim: 0.75, pipeGlow: 0.5, dataCount: 0.56, dataSize: 1.6, dataSpeed: 5, dataBright: 0.1, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   quote: 0, quoteOn: 1, quoteFont: 3, quoteSize: 1, quoteWeight: 300, quoteSpacing: 0, quoteCaps: 0, quoteAlign: 0, quoteWidth: 30, quoteLift: 0,
   qbOn: 1, qbDark: 0.6, qbBlur: 14, qbTint: 0, qbPadX: 70, qbPadY: 34, qbRadius: 40, qbFade: 26,
+  bizLayout: 0,
   shOn: 1, shArrow: 0, shAnim: 1, shSpeed: 2, shTravel: 8, shLayout: 0, shFont: 3, shSize: 1, shSpacing: 0.3, shCaps: 1, shBright: 0.7, shPlace: 11,
   brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: -2.5,
 };
@@ -256,7 +259,7 @@ export function mountPanel(): () => void {
 let lastBrand = '';
 let lastFade = '';
 const BG_KEYS = ['qbOn', 'qbDark', 'qbBlur', 'qbTint', 'qbPadX', 'qbPadY', 'qbRadius', 'qbFade'];
-const HINT_KEYS = ['shOn', 'shArrow', 'shAnim', 'shSpeed', 'shTravel', 'shLayout', 'shFont', 'shSize', 'shSpacing', 'shCaps', 'shBright', 'shPlace'];
+const HINT_KEYS = ['bizLayout', 'shOn', 'shArrow', 'shAnim', 'shSpeed', 'shTravel', 'shLayout', 'shFont', 'shSize', 'shSpacing', 'shCaps', 'shBright', 'shPlace'];
 /** Arrow drawings for the scroll hint (24 wide, drawn in currentColor). */
 const ARROWS = [
   '<svg viewBox="0 0 24 14" width="24" height="14"><path d="M3 3l9 8 9-8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -309,6 +312,12 @@ export function applyBrand(): void {
   s.setProperty('--qb-pady', `${T.qbPadY}px`);
   s.setProperty('--qb-radius', `${T.qbRadius}px`);
   s.setProperty('--qb-fade', `${T.qbFade}%`);
+  // The business reel: 3D reel or three stacked cards.
+  const biz = document.querySelector('.j-biz');
+  if (biz) {
+    biz.classList.toggle('j-stack', T.bizLayout === 1);
+    if (T.bizLayout === 1) biz.querySelectorAll('.j-card').forEach((c) => { c.removeAttribute('inert'); c.removeAttribute('aria-hidden'); });
+  }
   // The scroll hint.
   const h = document.querySelector<HTMLElement>('.cn-scroll');
   if (h) {

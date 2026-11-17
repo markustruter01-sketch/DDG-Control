@@ -50,7 +50,11 @@ function layout(page: HTMLElement, svg: SVGSVGElement): void {
   };
   const q = (sel: string) => box(page.querySelector(sel));
   const W = page.clientWidth, H = page.scrollHeight;
-  const radius = (el: Element | null) => (el ? parseFloat(getComputedStyle(el).borderTopLeftRadius) || 16 : 16);
+  const radius = (el: Element | null) => {
+    if (!el) return 16;
+    const v = getComputedStyle(el).borderTopLeftRadius;
+    return v.endsWith('%') ? (el.getBoundingClientRect().width * parseFloat(v)) / 100 : parseFloat(v) || 16;
+  };
 
   // Each pipe: [path, the pipe it follows on from (index) or -1]. Timing is worked out after drawing.
   // `from` starts a pipe part-way along another one (where it branches off), instead of at its end.
@@ -60,6 +64,13 @@ function layout(page: HTMLElement, svg: SVGSVGElement): void {
   /** A pipe around a panel's edge: in at the top middle, both sides down, out at the bottom middle. Returns both halves. */
   const ring = (bx: Box, rr: number, after: number[], ex = bx.cx): number[] => {
     const { x, y, r, b, cx } = bx, k = Math.min(rr, bx.w / 2, bx.h / 2);
+    // A round panel: two half circles.
+    if (k >= bx.w / 2 - 0.5 && Math.abs(bx.w - bx.h) < 1) {
+      const c = cx, rad = bx.w / 2;
+      const left = plan.push({ d: `M${c} ${y} A${rad} ${rad} 0 0 0 ${c} ${b}`, after }) - 1;
+      const right = plan.push({ d: `M${c} ${y} A${rad} ${rad} 0 0 1 ${c} ${b}`, after }) - 1;
+      return [left, right];
+    }
     const e = Math.min(r - k - 2, Math.max(x + k + 2, ex));
     // Corners use the panel's own radius.
     const left = plan.push({ d: `M${e} ${y} H${x + k} Q${x} ${y} ${x} ${y + k} V${b - k} Q${x} ${b} ${x + k} ${b} H${cx}`, after }) - 1;
@@ -67,15 +78,15 @@ function layout(page: HTMLElement, svg: SVGSVGElement): void {
     return [left, right];
   };
 
-  const workHead = q('#work .cn-head'), reel = q('#work .s-work'), bizHead = q('#businesses h2');
-  const cardEls = [...page.querySelectorAll('#businesses .s-card')];
-  const cards = cardEls.map((c) => box(c)).filter((c): c is Box => !!c);
-  const buildEl = page.querySelector('#build .glass-plain'), build = box(buildEl);
-  const kaseEl = page.querySelector('.s-case'), kase = box(kaseEl);
-  const charEl = page.querySelector('#charity'), charity = box(charEl);
-
+  // Every panel that wants a pipe round it says so with data-pipe, in page order. On the business
+  // reel only the middle slot gets one (the cards turn through it); stacked, each card does.
+  const panels = [...page.querySelectorAll<HTMLElement>('[data-pipe]')]
+    .filter((el) => !el.matches('.j-biz:not(.j-stack) .j-card'))
+    .map((el) => ({ el, bx: box(el) }))
+    .filter((x): x is { el: HTMLElement; bx: Box } => !!x.bx);
   // Words on the page, so joining pipes can run down a clear column instead of through text.
-  const words = [...page.querySelectorAll('h1, h2, h3, p, .s-eyebrow, .cn-head *')].map((el) => {
+  // A heading split either side of the pipe counts as its two halves, so the pipe can pass between them.
+  const words = [...page.querySelectorAll('h1, h2, h3, p, .s-eyebrow, .cn-head *')].flatMap((el) => (el.matches('.j-biz-head h2') ? [...el.children] : [el])).map((el) => {
     const rg = document.createRange();
     rg.selectNodeContents(el);
     const r = rg.getBoundingClientRect();
@@ -95,68 +106,9 @@ function layout(page: HTMLElement, svg: SVGSVGElement): void {
   let tail: number[] = [];
   let at: [number, number] = [W / 2, 6];
 
-  // 1. From the river, down and around "Our work" (heading and screenshots together).
-  if (workHead && reel) {
-    const g = 12;
-    const wb: Box = { x: reel.x - g, y: workHead.y - g, w: reel.w + 2 * g, h: reel.b - workHead.y + 2 * g, r: reel.r + g, b: reel.b + g, cx: reel.cx };
-    const mid = (at[1] + wb.y) / 2;
-    tail = [add([at, [at[0], mid], [wb.cx, mid], [wb.cx, wb.y]], tail)];
-    tail = ring(wb, 22, tail);
-    at = [wb.cx, wb.b];
-  }
-
-  // 2. Into the top of the first row of business cards. Their top edges join into one rail, so the
-  //    water runs along it from card to card, then down both sides of each card.
-  if (bizHead && cards.length) {
-    const top = Math.min(...cards.map((c) => c.y));
-    const row = cards.map((c, i) => ({ c, i })).filter(({ c }) => c.y - top < 4).sort((a, b) => a.c.x - b.c.x);
-    const rk = Math.min(radius(cardEls[0]), 24);
-    const ends: number[][] = cards.map(() => []);
-    const rings: (number[] | null)[] = cards.map(() => null);
-    // Straight down if the heading's words are clear of the pipe; otherwise down a column left of them.
-    const straight = clearAt(at[0], at[1], top) && row.some(({ c }) => at[0] > c.x + rk && at[0] < c.r - rk);
-    let first = 0, feed: number, ex: number;
-    if (straight) {
-      first = row.findIndex(({ c }) => at[0] > c.x + rk && at[0] < c.r - rk);
-      feed = add([at, [at[0], top]], tail);
-      ex = at[0];
-    } else {
-      const c = row[0].c, col = Math.max(6, Math.min(bizHead.x, c.x) - 10), turn = at[1] + Math.min(28, (top - at[1]) / 3);
-      feed = add([at, [at[0], turn], [col, turn], [col, c.y + rk], [c.x, c.y + rk]], tail);
-      ex = c.x + rk + 2;
-    }
-    rings[row[first].i] = ring(row[first].c, rk, [feed], ex);
-    // Spread out along the rail from the fed card: to the right, then to the left.
-    const along = (k: number, dir: 1 | -1) => {
-      const prev = row[k - dir], cur = row[k];
-      const pr = rings[prev.i]!, half = dir > 0 ? pr[1] : pr[0];
-      const e = Math.min(prev.c.r - rk - 2, Math.max(prev.c.x + rk + 2, prev.k ?? prev.c.cx));
-      const startX = dir > 0 ? prev.c.r - rk : prev.c.x + rk, endX = dir > 0 ? cur.c.x + rk + 2 : cur.c.r - rk - 2;
-      const link = plan.push({ d: `M${startX} ${cur.c.y} H${endX}`, after: [], from: [half, Math.abs(startX - e)] }) - 1;
-      rings[cur.i] = ring(cur.c, rk, [link], endX);
-      (cur as { k?: number }).k = endX;
-    };
-    (row[first] as { k?: number }).k = ex;
-    for (let k = first + 1; k < row.length; k++) along(k, 1);
-    for (let k = first - 1; k >= 0; k--) along(k, -1);
-    // Lower rows (phones): each card is fed from the bottom of the card above it.
-    cards.forEach((c, i) => {
-      if (rings[i]) { ends[i] = rings[i]!; return; }
-      const above = cards.map((o, j) => ({ o, j })).filter(({ o, j }) => rings[j] && o.b <= c.y + 2 && Math.abs(o.cx - c.cx) < c.w / 2).sort((a, b) => b.o.b - a.o.b)[0];
-      if (!above) return;
-      const f = add([[above.o.cx, above.o.b], [c.cx, c.y]], ends[above.j]);
-      ends[i] = rings[i] = ring(c, rk, [f]);
-    });
-    // Carry on from the bottom card nearest the middle.
-    const lowest = Math.max(...cards.map((c, i) => (rings[i] ? c.b : 0)));
-    const pick = cards.map((c, i) => ({ c, i })).filter(({ c, i }) => rings[i] && lowest - c.b < 4).sort((a, b) => Math.abs(a.c.cx - W / 2) - Math.abs(b.c.cx - W / 2))[0];
-    at = [pick.c.cx, pick.c.b];
-    tail = ends[pick.i];
-  }
-
-  // 3. Then on down the page, around each panel in turn.
-  for (const [bx, el] of [[build, buildEl], [kase, kaseEl], [charity, charEl]] as const) {
-    if (!bx || bx.y - at[1] < 24) continue;
+  // From the river down the page, around each panel in turn.
+  for (const { el, bx } of panels) {
+    if (bx.y - at[1] < 12) continue;
     const j = join(bx, tail);
     tail = ring(bx, radius(el), [j.seg], j.ex);
     at = [bx.cx, bx.b];
