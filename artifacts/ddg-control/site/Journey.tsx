@@ -18,12 +18,18 @@ export function About({ onSee }: { onSee: () => void }) {
         <ul className="j-ticks">
           {ABOUT.built.map((x) => (
             <li key={x.text}>
-              <span>{x.text}</span>
+              <span><b>{x.lead}</b> {x.text}</span>
               {x.href
                 ? (x.external
                   ? <a className="j-tick-link" href={x.href} target="_blank" rel="noopener noreferrer">{x.name} <i aria-hidden="true">↗</i></a>
                   : <Link className="j-tick-link" href={x.href}>{x.name} <i aria-hidden="true">→</i></Link>)
                 : <span className="j-tick-soon">{x.name ? `${x.name} \u00b7 ` : ''}{x.soon}</span>}
+              {x.standards && (
+                <details className="j-std">
+                  <summary>{ABOUT.standardsLabel}</summary>
+                  <ul>{ABOUT.standards.map((n) => <li key={n}>{n}</li>)}</ul>
+                </details>
+              )}
             </li>
           ))}
         </ul>

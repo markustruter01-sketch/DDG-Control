@@ -229,12 +229,23 @@ export const ABOUT = {
   // Every claim is checked against the product: the Greenlight standards are its seven catalogues
   // (ddg-greenlight/lib/greenlight-engine/catalogues); it checks and fixes, it does not certify.
   built: [
-    { text: 'A real-time 3D view of the planet, tracking aircraft, ships, satellites, earthquakes and fires as they happen', name: 'God\u2019s Eye View', href: 'https://gods-eye-view.replit.app/', external: true },
-    { text: 'An automated trading platform: algorithmic bots, Python strategies and a council of three AI models, with hard risk limits built in', name: 'DDG Finance', href: '/finance', external: false },
-    { text: 'A live online store taking real orders: card payments, subscriptions, shipping and a full back office', name: 'Cattle Dog Coffee', href: PUBLIC_SITES.coffee, external: true },
-    { text: 'A health and fitness app with specialist AI coaches (in development)', name: '', href: null, soon: 'Coming soon' },
-    { text: 'A compliance engine that audits any codebase against published standards (ISO/IEC 27001, ISO/IEC 42001, OWASP ASVS, NIST SSDF, the Australian ISM and Essential Eight, MIL-STD-882E and more), then fixes the gaps it finds', name: 'DDG Greenlight', href: 'https://ddg-greenlight.replit.app/', external: true },
-  ] as { text: string; name: string; href: string | null; external?: boolean; soon?: string }[],
+    { lead: 'The whole planet, live in 3D.', text: 'Aircraft, ships, satellites, earthquakes and fires, tracked as they happen on one screen.', name: 'God\u2019s Eye View', href: 'https://gods-eye-view.replit.app/', external: true },
+    { lead: 'A trading platform that runs itself.', text: 'Algorithmic bots, Python strategies and a council of three AI models, with hard risk limits that stop it the moment something is wrong.', name: 'DDG Finance', href: '/finance', external: false },
+    { lead: 'An online store that sells around the clock.', text: 'Real orders, card payments, subscriptions and shipping, all run from one back office.', name: 'Cattle Dog Coffee', href: PUBLIC_SITES.coffee, external: true },
+    { lead: 'A personal coach in your pocket.', text: 'A health and fitness app with specialist AI coaches (in development).', name: '', href: null, soon: 'Coming soon' },
+    { lead: 'A compliance engine for your code.', text: 'It audits any codebase against published standards (ISO/IEC 27001, OWASP ASVS, NIST SSDF, the Australian Essential Eight and more), fixes the gaps it finds, and hands back a stronger product, ready for your team\u2019s final sign-off.', name: 'DDG Greenlight', href: 'https://ddg-greenlight.replit.app/', external: true, standards: true },
+  ] as { lead: string; text: string; name: string; href: string | null; external?: boolean; soon?: string; standards?: boolean }[],
+  // Every standard Greenlight checks against (its catalogues, 18 Nov 2026). Names only.
+  standardsLabel: 'See all standards',
+  standards: [
+    'ISO/IEC 27001: information security',
+    'ISO/IEC 42001: AI management',
+    'OWASP ASVS 5.0: application security',
+    'NIST SSDF (SP 800-218): secure development',
+    'Australian ISM and Essential Eight: government security',
+    'MIL-STD-882E: system safety',
+    'EUROCAE ED-153: software safety for air navigation',
+  ],
   line: 'Tell us what you want, and we build it.',
   see: 'See prices',
   start: 'Start your build',

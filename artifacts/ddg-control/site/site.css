@@ -668,3 +668,16 @@ p { margin: 0; }
 .j-give-sum span { font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-text-2); }
 .j-give-line { margin: 0; color: var(--ng-text-2); font-size: clamp(15px, 1.05vw, 18px); line-height: 1.6; max-width: 56ch; }
 @media (max-width: 760px) { .j-give { grid-template-columns: 1fr; gap: 14px; } }
+
+/* Portfolio lines: a bold lead, then the detail. The Greenlight standards open in a small pop-up box. */
+.j-ticks li b { font-weight: 500; color: var(--ng-text); }
+.j-ticks li > span:first-child { color: var(--ng-text-2); }
+.j-std { display: inline-block; position: relative; margin: 6px 0 0 10px; vertical-align: top; }
+.j-std summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18);
+  font: 500 12px/1 var(--ng-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ng-text-2); }
+.j-std summary::-webkit-details-marker { display: none; }
+.j-std summary:hover, .j-std[open] summary { border-color: rgba(255,255,255,0.5); color: var(--ng-text); }
+.j-std ul { position: absolute; z-index: 6; left: 0; top: calc(100% + 8px); width: min(380px, 78vw); margin: 0; padding: 16px 18px; list-style: none; display: grid; gap: 10px;
+  border-radius: 16px; background: rgba(12,16,24,0.96); border: 1px solid rgba(255,255,255,0.16); box-shadow: 0 18px 50px rgba(0,0,0,0.5); font-size: 14px; line-height: 1.4; color: var(--ng-text-2); }
+.j-std li { padding: 0; } .j-std li::before, .j-std li::after { content: none; }
+@media (max-width: 760px) { .j-std { margin-left: 0; display: block; } }
