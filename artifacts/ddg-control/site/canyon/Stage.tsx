@@ -171,7 +171,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const top = fadeEl ? fadeEl.getBoundingClientRect().top : vh;
       const show = Math.min(1, Math.max(0, (top - vh * 0.3) / (vh * 0.55)));
       stage.style.opacity = String(show);
-      if (show <= 0) { document.documentElement.style.setProperty('--pipe-join', '1'); topEl.style.setProperty('--cn-fade', '0'); lastAlign = ''; return; }
+      if (show <= 0) { document.documentElement.style.setProperty('--pipe-join', '1'); topEl.style.setProperty('--cn-fade', '0'); topEl.style.setProperty('--cn-pe', 'none'); lastAlign = ''; return; }
 
       // 0 → 1 over the hero and the room after it: the canyon settles into a flat grid seen from above.
       const p = Math.min(1, Math.max(0, smoothY / (vh * 1.35)));
@@ -218,6 +218,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         lastAlign = align;
         const [f, a, b, c] = align.split('|');
         topEl.style.setProperty('--cn-fade', f);
+        topEl.style.setProperty('--cn-pe', Number(f) > 0.3 ? 'auto' : 'none'); // the quote button only takes taps while it can be seen
         topEl.style.setProperty('--cn-oy', `${a}px`); topEl.style.setProperty('--cn-or', `${b}px`); topEl.style.setProperty('--cn-dy', `${c}px`);
       }
       if (!reduced) { clock += dt; spinClock += dt * T.orbSpin; }
