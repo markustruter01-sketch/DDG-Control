@@ -56,7 +56,7 @@ function Nav({ home = false }: { home?: boolean }) {
     <header className={home ? 's-nav s-nav-home' : 's-nav'}>
       <Link href="/" className="s-brand" aria-label="Digital Dynamics Group home"><img src={LOGO} alt="" loading="lazy" /><b><span className="s-brand-full">Digital Dynamics Group</span><span className="s-brand-short">DDG</span></b></Link>
       <nav aria-label="Site">
-        <a href="/#businesses" onClick={section('businesses')}>Projects</a>
+        <a href="/#about" onClick={section('about')}>Portfolio</a>
         <Link href="/finance">Finance</Link>
         <a href="/#build" onClick={section('build')}>Prices</a>
         <a href="/#charity" onClick={section('charity')}>Charity</a>
@@ -135,7 +135,7 @@ function Home() {
       <div className="cn-page" ref={pipes.page}>
         <svg className="cn-pipes" ref={pipes.svg} aria-hidden="true" />
         <main className="s-main j-main">
-          <About onSee={() => toSection('businesses', true)} />
+          <About onSee={() => toSection('build', true)} />
           <Showcase />
           <Build summary={summary} />
           <section id="start" className="j-panel j-start" data-pipe aria-labelledby="start-title">

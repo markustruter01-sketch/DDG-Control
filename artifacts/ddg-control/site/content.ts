@@ -229,19 +229,20 @@ export const QUOTES = [
 // ── The home page journey (17 Nov 2026): what we are → what we've built → how we run it →
 // what we can build for you → start your build → charity. Fitness stays a secret: no features named.
 export const ABOUT = {
-  eyebrow: 'Digital Dynamics Group',
+  eyebrow: 'Our portfolio \u00b7 Digital Dynamics Group',
   title: 'An AI-powered software development company.',
   builtLabel: 'Complex systems we have built',
-  // Each line is something DDG has really built (Markus, 18 Nov 2026). Fitness says "in development" because it is.
+  // The portfolio in one list (Markus, 18 Nov 2026): what we built, and a link to the live thing.
+  // No link yet = shown grey. Fitness says "in development" because it is.
   built: [
-    'A live 3D globe that tracks aircraft, ships and satellites around the world',
-    'A trading platform with automated bots, Python strategies and an AI council',
-    'An online store with card payments and subscriptions',
-    'A health and fitness app with AI coaches (in development)',
-    'A tool that checks software against safety and security standards, then fixes it',
-  ],
+    { text: 'A live 3D globe that tracks aircraft, ships and satellites around the world', name: 'God\u2019s Eye View', href: null, soon: 'Link coming soon' },
+    { text: 'A trading platform with automated bots, Python strategies and an AI council', name: 'DDG Finance', href: '/finance', external: false },
+    { text: 'An online store with card payments and subscriptions', name: 'Cattle Dog Coffee', href: PUBLIC_SITES.coffee, external: true },
+    { text: 'A health and fitness app with AI coaches (in development)', name: '', href: null, soon: 'Coming soon' },
+    { text: 'A tool that checks software against safety and security standards, then fixes it', name: 'DDG Greenlight', href: null, soon: 'Link coming soon' },
+  ] as { text: string; name: string; href: string | null; external?: boolean; soon?: string }[],
   line: 'Tell us what you want, and we build it.',
-  see: 'See what we have built',
+  see: 'See prices',
   start: 'Start your build',
 };
 
@@ -249,27 +250,8 @@ export const BUILT = {
   eyebrow: 'Projects we have built',
   left: 'Complex platforms.',
   right: 'Built in-house.',
-  line: 'Our own businesses, built and run by us. Open them and look around.',
+  line: 'Every system in our portfolio was designed, built and is run by us.',
 };
-
-export type ShowcaseKey = 'finance' | 'coffee' | 'fitness';
-export const SHOWCASE: {
-  key: ShowcaseKey; name: string; kind: string; tab: string; title: string; line: string; steps: string[];
-  link: { label: string; href: string; external: boolean } | null; note?: string;
-}[] = [
-  // Coffee first: the live product a stranger can open and buy from (audit 17 Nov 2026). Short lines only.
-  { key: 'coffee', name: 'DDG Coffee', kind: 'Online store', tab: 'Online store', title: 'A live online store for premium coffee beans.',
-    line: 'Cattle Dog Coffee: order in a few taps, delivered to your door.',
-    steps: ['Live and taking orders', 'Card payments and subscriptions (Stripe)', '$1 from every bag to animal charities', 'Every order runs through our command centre'],
-    link: { label: 'Visit the store', href: PUBLIC_SITES.coffee, external: true } },
-  { key: 'finance', name: 'DDG Finance', kind: 'Trading platform', tab: 'Trading platform', title: 'A trading platform that runs itself, tested in the open.',
-    line: 'Our own system. It trades by fixed rules, checks itself every hour, and publishes every result.',
-    steps: ['4 live bots on broker practice accounts', '16 more strategies tested side by side', 'Goal: beat the S&P 500 through 2027', 'Hard limits in the code stop it when something is wrong'],
-    link: { label: 'See the platform', href: '/finance', external: false }, note: 'Paper trading. Not financial advice. We don\u2019t take outside money.' },
-  { key: 'fitness', name: 'DDG Fitness', kind: 'In development', tab: 'In development', title: 'A fitness app with AI coaches.',
-    line: 'Plans and coaching from specialist AI coaches, on your phone.',
-    steps: [], link: null },
-];
 
 export const RUN = {
   eyebrow: 'How we run it',
