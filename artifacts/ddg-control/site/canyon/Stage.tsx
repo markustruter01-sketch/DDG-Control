@@ -147,32 +147,5 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     };
   }, [fadeAt]);
 
-  return <div className="cn-stage" ref={stageRef} aria-hidden="true"><canvas ref={canvasRef} /><LensDrops /></div>;
-}
-
-/**
- * Now and then a drop of the orb's spray lands on the "camera": it hits, sits for a moment, then
- * runs down the glass over three seconds. First drop after 3.5 seconds, then one every 10 seconds.
- */
-let lastDrop = 0;
-function LensDrops() {
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = box.current;
-    if (!el || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    const drop = () => {
-      // Never two at once, even if the scene is set up twice.
-      if (document.hidden || window.scrollY > window.innerHeight * 0.8 || Date.now() - lastDrop < 5000) return;
-      lastDrop = Date.now();
-      const d = document.createElement('i');
-      const size = 18 + Math.random() * 16;
-      d.className = 'cn-drop';
-      d.style.cssText = `left:${12 + Math.random() * 76}%;top:${8 + Math.random() * 38}%;width:${size}px;height:${size * 1.08}px`;
-      el.appendChild(d);
-      setTimeout(() => d.remove(), 4000);
-    };
-    const first = setTimeout(drop, 3500), every = setInterval(drop, 10000);
-    return () => { clearTimeout(first); clearInterval(every); };
-  }, []);
-  return <div className="cn-lens" ref={box} />;
+  return <div className="cn-stage" ref={stageRef} aria-hidden="true"><canvas ref={canvasRef} /></div>;
 }

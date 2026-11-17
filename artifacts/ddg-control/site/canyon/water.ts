@@ -24,17 +24,9 @@ const STIR = /* glsl */ `
 uniform float uTime;
 uniform float uStir;
 uniform vec2 uOrb;
-float stirAt(float d) { return uStir * exp(-d * d / 20.0); }
+float stirAt(float d) { return uStir * exp(-d * d / 220.0); }
 float swirl(vec2 q, float d, float arms, float wind, float speed) {
-  return sin(arms * atan(q.y, q.x + 0.0001) + d * wind - uTime * speed) * smoothstep(1.0, 2.6, d);
-}
-// The orb's air hits the water straight down: a round dent under it, a raised lip around the dent,
-// and a few small rings running out that die away quickly.
-float impact(float d) {
-  float dent = -0.75 * exp(-d * d / 4.5);
-  float lip = 0.32 * exp(-(d - 2.7) * (d - 2.7) / 0.7);
-  float rings = 0.05 * sin(d * 5.5 - uTime * 7.0) * exp(-d * d / 30.0) * smoothstep(2.4, 3.4, d);
-  return uStir * (dent + lip + rings);
+  return sin(arms * atan(q.y, q.x + 0.0001) + d * wind - uTime * speed) * smoothstep(1.5, 6.5, d);
 }`;
 
 export const WATER_VERT = /* glsl */ `
@@ -49,9 +41,10 @@ void main() {
   vec3 p = position;
   vec2 q = p.xz - uOrb;
   float d = length(q);
-  float arms = 0.12 * swirl(q, d, 3.0, 0.9, 5.0);
+  float dish = -0.9 * uStir * exp(-d * d / 40.0);
+  float arms = 0.55 * swirl(q, d, 3.0, 0.9, 5.0) + 0.3 * swirl(q, d, 2.0, 0.35, 2.6);
   float swell = 0.05 * sin(p.z * 0.3 + p.x * 0.2 + uTime * 1.6);
-  float lift = impact(d) + stirAt(d) * arms + swell;
+  float lift = dish + stirAt(d) * arms + swell;
   p.y += lift;
   vP = p.xz;
   vBed = (aBed + lift) * uFlat;
@@ -110,7 +103,7 @@ float surface(vec2 p, float detail) {
   float h = 0.22 * snoise(f * vec2(0.13, 0.065));
   h += 0.07 * snoise(f * vec2(0.3, 0.16) + vec2(3.1, -uTime * 0.3));
   h += 0.012 * detail * snoise(f * vec2(0.8, 0.45) + vec2(-uTime * 0.25, 5.2));
-  h += stir * 0.12 * swirl(q, d, 3.0, 0.9, 5.0) + 0.6 * impact(d);
+  h += stir * (0.5 * swirl(q, d, 3.0, 0.9, 5.0) + 0.14 * swirl(q, d, 7.0, 2.2, 9.0));
   return h;
 }
 void main() {
@@ -142,8 +135,7 @@ void main() {
   float d = length(q), stir = stirAt(d);
   float lace = (0.5 + 0.5 * snoise(vP * 0.55 + vec2(0.0, -uTime * 1.3))) * (0.5 + 0.5 * snoise(vP * 1.5 + vec2(1.3, -uTime * 2.0)));
   float shore = (1.0 - smoothstep(0.0, 0.5, depth)) * smoothstep(0.14, 0.36, lace) * (0.3 + 1.8 * stir);
-  // White water where the air hits: on the lip of the dent, broken up by the lace.
-  float churn = uStir * exp(-(d - 2.5) * (d - 2.5) / 0.9) * (0.25 + 1.4 * lace) + stir * 0.25 * smoothstep(0.6, 1.0, swirl(q, d, 3.0, 0.9, 5.0)) * lace;
+  float churn = stir * 1.3 * (smoothstep(0.2, 1.0, swirl(q, d, 3.0, 0.9, 5.0)) * (0.35 + 1.7 * lace) + smoothstep(0.5, 1.0, swirl(q, d, 7.0, 2.2, 9.0)) * (0.1 + 1.3 * lace));
   float foam = clamp(shore + churn, 0.0, 1.0);
   col = mix(col, vec3(0.8, 0.93, 1.0), foam * 0.85);
 
@@ -221,7 +213,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   // ── Splashes ───────────────────────────────────────────────────────────────────────────
   // Real droplets, not glowing dots: small beads of water, each stretched along the way it is
   // flying, with a bright rim like a drop catching the light.
-  const N = small ? 22 : 40;
+  const N = small ? 44 : 80;
   const seed = new Float32Array(N * 3);
   for (let i = 0; i < N * 3; i++) seed[i] = Math.random();
   const dropGeo = new SphereGeometry(1, 10, 8);
@@ -251,8 +243,8 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
       // wind, and falls back under gravity. One in four is thrown hard enough to reach the banks.
       const a = seed[i * 3], b = seed[i * 3 + 1], c = seed[i * 3 + 2], far = i % 4 === 0;
       const u = (b + (f.t / LIFE) * (0.8 + c * 0.4)) % 1, s = u * LIFE;
-      const out = far ? 7 + c * 4 : 3 + c * 3, up = far ? 9 + a * 3 : 6 + a * 3.5, wind = 0.5;
-      const rad = 2.2 + a * 1.2 + out * s, ang = (a * 37 + c * 11) % 6.283 + wind * s, cos = Math.cos(ang), sin = Math.sin(ang);
+      const out = far ? 10 + c * 6 : 3.5 + c * 4, up = far ? 10 + a * 3 : 6.5 + a * 4, wind = 0.5;
+      const rad = 2.5 + a * 3.5 + out * s, ang = (a * 37 + c * 11) % 6.283 + wind * s, cos = Math.cos(ang), sin = Math.sin(ang);
       const x = f.orbX + rad * cos, z = f.orbZ + rad * sin, y = waterY + up * s - 0.5 * G * s * s;
       const flying = power > 0.02 && y > waterY && y > heightAt(x, z) * f.flat;
       const size = flying ? (0.05 + 0.08 * c * c) * Math.min(1, s * 14) * Math.min(1, power * 2) : 0;
