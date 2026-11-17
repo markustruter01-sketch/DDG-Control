@@ -93,3 +93,28 @@ Bake the settings in, then:
 4. add automatic quality (1.1).
 
 Then go live and measure on Markus's phone and laptop.
+
+---
+
+# Final audit before go-live (17 Nov, 15:40)
+
+Roles: web designer, UX and conversion, copywriter, SEO, accessibility, front-end performance, trust and compliance. **Fix before live** = small and visible to every visitor.
+
+## Fix before live
+1. **Phones: the "Scroll" hint sits on top of the menu** (VERIFIED, 390 px screenshot). On phones, move it below the menu or hide it.
+2. **Search and share text is out of date** (VERIFIED, `index.html`). The description still says "four businesses … DDG Creative". New text: "AI-powered development company in Brisbane. We build websites, online stores, trading platforms, apps and AI."
+3. **Share picture.** `og:image` is a relative `.webp` path. Many apps (Facebook, LinkedIn, iMessage) need a full `https://ddg.limited/...` address and prefer a 1200×630 JPG or PNG. Make one share image (orb + name).
+4. **No privacy note on the enquiry form** (VERIFIED). The form collects name and email. Australian Privacy Principle 5 expects people to be told why and how their details are used. Add one line plus a short `/privacy` page. (Not legal advice; the lawyer can confirm.)
+5. **Menu tap targets are 20 px tall on phones** (VERIFIED). Apple and Google ask for about 44 px. Add padding.
+
+## Do soon
+6. **No way to reach DDG except the form.** Add a contact email in the footer. It is written-only, which fits the plan.
+7. **No proof from clients yet.** When Build client 1 is done, add one quote and one before/after. Until then, the "Projects we have built" reel is the proof, which is fine.
+8. **Prices.** The founding price (about 13% off for the first five clients) is agreed but not shown. One line in the Build panel would help people decide.
+9. **No sitemap and no canonical address** (VERIFIED, only `robots.txt`). Add `sitemap.xml` (/, /finance, /start) and a canonical link. Search engines find the pages faster.
+10. **No page analytics.** You can't see how many people reach the form. A privacy-friendly, cookie-free counter would do (free tier only; ask before adding anything paid).
+11. **Heavy first screen on old phones.** The automatic quality step-down helps. Test on your phone; if it still stutters, show a still image of the scene on small screens.
+12. **"How we run it"** is text only. A blurred Control screenshot (nothing readable) would balance it.
+
+## Fine as it is
+- Clear journey; Finance disclaimer present; Fitness kept secret; no pipes through text; reduced motion respected; carousel works with keyboard; links all point to real pages.

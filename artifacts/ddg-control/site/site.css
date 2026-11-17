@@ -600,3 +600,13 @@ p { margin: 0; }
 .j-panel::before, .j-card::before { content: ''; position: absolute; left: 8%; right: 8%; top: 0; height: 1px; pointer-events: none; z-index: 1;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, var(--edge-shine, 0)), transparent); }
 .j-hi { color: var(--j-word, inherit); }
+
+/* Phones: the scroll hint sits below the menu, never on it; menu links are easy to tap (about 44 px). */
+@media (max-width: 900px) { .cn-scroll { top: max(calc(var(--sh-place, 11) * 1vh), 84px); } }
+.s-nav nav a { display: inline-flex; align-items: center; min-height: 44px; }
+.s-footer a { color: var(--ng-text-2); text-decoration: underline; text-underline-offset: 3px; }
+.s-form-foot .s-note a { color: var(--ng-text); text-decoration: underline; text-underline-offset: 3px; }
+.s-privacy { max-width: 760px; }
+.s-privacy section { margin-top: 28px; }
+.s-privacy h2 { font-size: 20px; margin: 0 0 8px; }
+.s-privacy p { color: var(--ng-text-2); line-height: 1.65; margin: 0 0 10px; }
