@@ -58,8 +58,9 @@ function Nav({ home = false }: { home?: boolean }) {
       <nav aria-label="Site">
         <a href="/#businesses" onClick={section('businesses')}>Projects</a>
         <Link href="/finance">Finance</Link>
-        <a href="/#build" onClick={section('build')}>Build</a>
+        <a href="/#build" onClick={section('build')}>Prices</a>
         <a href="/#charity" onClick={section('charity')}>Charity</a>
+        <a className="s-nav-cta" href="/#start" onClick={section('start')}>Get a quote</a>
       </nav>
     </header>
   );
@@ -99,7 +100,7 @@ function usePipes() {
 }
 
 /** Which quote shows under the orb (index into QUOTES); the tuner can switch it live. */
-const QUOTE = 0;
+const QUOTE = 10;
 
 function Home() {
   const summary = usePublicSummary();
@@ -125,6 +126,7 @@ function Home() {
             <h1 className="cn-brand"><img className="cn-logo-white" src="/ddg-logo-white-512.png" alt="" width="512" height="512" /><span>Digital Dynamics<br /><span className="cn-group">Group</span></span><span className="sr-only"> · {HOME.title}</span></h1>
             <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
             <p className="cn-quote">{QUOTES[QUOTE]}</p>
+            <a className="cn-cta" href="/#start" onClick={(e) => { e.preventDefault(); history.replaceState(null, '', '/#start'); toSection('start', true); }}>{HOME.cta} →</a>
             <div className="cn-scroll lay-0 anim-1" aria-hidden="true"><span className="cn-scroll-words">Scroll</span><span className="cn-scroll-arrow" /></div>
           </div>
         </section>

@@ -352,7 +352,7 @@ p { margin: 0; }
 .cn-hero::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: linear-gradient(180deg, rgba(7,8,11,0.6) 0%, rgba(7,8,11,0.25) 26%, rgba(7,8,11,0) 46%), radial-gradient(120% 90% at 50% 55%, rgba(7,8,11,0) 55%, rgba(7,8,11,0.55) 100%); }
 /* Four fine corner brackets frame the orb like a readout, with one label. */
-.cn-frame { position: absolute; left: 50%; top: var(--cn-oy); width: calc(2 * var(--cn-or)); height: calc(2 * var(--cn-or)); transform: translate(-50%, -50%); }
+.cn-frame { display: none; position: absolute; left: 50%; top: var(--cn-oy); width: calc(2 * var(--cn-or)); height: calc(2 * var(--cn-or)); transform: translate(-50%, -50%); }
 .cn-frame i { position: absolute; width: 16px; height: 16px; border: 1px solid rgba(108, 199, 240, 0.7); }
 .cn-frame i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; }
 .cn-frame i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; }
@@ -411,7 +411,7 @@ p { margin: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* On the home page the name sits over the orb, so the top bar shows only the links. */
 .s-nav-home .s-brand { visibility: hidden; }
-.cn-room { height: 90vh; }
+.cn-room { height: 35vh; } /* was 90vh: the audit found two screens with nothing to read */
 @media (max-width: 760px) {
   .cn-top { --cn-or: 11vh; }
   .cn-tag { left: 50%; transform: translateX(-50%); top: calc(var(--cn-oy) - var(--cn-or) - 26px); }
@@ -611,3 +611,13 @@ p { margin: 0; }
 .s-privacy section { margin-top: 28px; }
 .s-privacy h2 { font-size: 20px; margin: 0 0 8px; }
 .s-privacy p { color: var(--ng-text-2); line-height: 1.65; margin: 0 0 10px; }
+
+/* The offer's button under the quote on the first screen (audit 17 Nov 2026). */
+.cn-cta { position: absolute; left: 0; right: 0; bottom: 6vh; width: max-content; margin: 0 auto; display: inline-flex; align-items: center; min-height: 48px; padding: 0 26px;
+  border-radius: 999px; background: var(--ng-text); color: var(--ng-night); font: 500 15px/1 var(--ng-sans); text-decoration: none;
+  opacity: var(--cn-fade, 1); pointer-events: var(--cn-pe, auto); transform: translateY(var(--cn-dy, 0px)); box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+.cn-cta:hover { background: #fff; }
+/* "Get a quote" in the menu: the one filled button. */
+.s-nav nav a.s-nav-cta { padding: 0 16px; border-radius: 999px; background: var(--ng-text); color: var(--ng-night); font-weight: 500; }
+.s-nav nav a.s-nav-cta:hover { background: #fff; color: var(--ng-night); }
+@media (max-width: 760px) { .s-nav nav a.s-nav-cta { padding: 0 12px; } }
