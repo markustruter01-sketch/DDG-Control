@@ -46,6 +46,223 @@ export const SITE_BUSINESSES: SiteBusiness[] = [
     line: 'Coffee beans delivered to your door. $1 from every bag goes to animal charities.',
     built: ['Online shop with Stripe checkout', 'Orders and charity tracked live', 'Sales feed into our command centre'],
     link: { label: 'Shop coffee', href: site('coffee'), external: true } },
+  { key: 'finance', name: 'DDG Finance', product: 'Trading platform', accent: BUSINESS_ACCENT.finance, status: 'From 1 Jan 2027',
+    line: 'Our own algorithmic trading platform. Its public track record starts on 1 January 2027.',
+    built: ['4 trading bots on 2 brokers, checked every hour', 'Protective stops and an hourly check against the broker', 'Pre-registered research tests and an AI council'],
+    link: { label: 'See the platform', href: '/finance', external: false }, note: 'Paper trading. Not financial advice.' },
+  { key: 'fitness', name: 'DDG Fitness', product: 'Hypest', accent: BUSINESS_ACCENT.fitness, status: 'In development',
+    line: 'Fitness plans and coaching from specialist AI coaches, on your phone.',
+    built: ['AI coaches for 6 training styles', 'Plans built from 86 exercises', 'Subscriptions and a health check'],
+    link: null },
+];
+
+export const CHARITY = {
+  label: 'Raised for animal charities so far',
+  body: 'Every bag of Cattle Dog Coffee raises $1 for animal charities. From 1 January 2027, 1% of DDG\'s other revenue goes to them too.',
+};
+
+
+// ── DDG Build: we build platforms for other businesses (open from 8 Nov 2026) ─────────
+// The opening date comes from the server (/api/public/summary), not from here.
+// Prices: about 25% below 2026 Australian guide ranges (Markus 31 Oct). No GST: DDG is not GST-registered.
+
+export const CONTROL_CASE = {
+  title: 'Behind the scenes: DDG Control',
+  line: 'Our private command centre. Every business, every number and every AI employee on one screen.',
+  built: ['Two-step login, owner only', 'Nine AI employees report through a checked, undoable API', 'Live numbers from the shop, the trading platform and socials'],
+};
+
+export type ServiceKey = 'website' | 'store' | 'platform' | 'app' | 'ai';
+export type Service = {
+  key: ServiceKey; name: string; line: string; from: number; to: number; proof: string; features: string[];
+};
+export const SERVICES: Service[] = [
+  { key: 'website', name: 'Business website', line: 'Fast, good-looking, on your own domain and easy to update.', from: 1500, to: 4500,
+    proof: '', features: ['Contact form', 'Bookings', 'Blog or news', 'Logo and brand help', 'Copywriting', 'Two languages'] },
+  { key: 'store', name: 'Online store', line: 'Sell online with card payments, stock and shipping.', from: 7500, to: 22500,
+    proof: 'Like Cattle Dog Coffee', features: ['Card payments (Stripe)', 'Subscriptions', 'Stock tracking', 'Shipping rates', 'Customer accounts', 'Discount codes', 'Admin dashboard'] },
+  { key: 'platform', name: 'Web platform', line: 'Logins, payments, dashboards and tools your team or customers use every day.', from: 11250, to: 45000,
+    proof: 'Like DDG Control and DDG Finance', features: ['User logins', 'Payments or subscriptions', 'Admin dashboard', 'Reports and charts', 'Connect to other apps', 'Roles and permissions', 'AI features'] },
+  { key: 'app', name: 'Phone app', line: 'A first version of your app for iPhone and Android.', from: 11250, to: 30000,
+    proof: 'Like Hypest (in development)', features: ['iPhone and Android', 'User logins', 'In-app payments', 'Reminders and notifications', 'AI features'] },
+  { key: 'ai', name: 'AI assistant or automation', line: 'An AI that answers, books, reads documents or runs a task for you.', from: 3750, to: 26250,
+    proof: 'Like the bots that run DDG every day', features: ['Answers customers', 'Books appointments', 'Reads documents', 'Connects to your apps (Xero, CRM…)', 'Writes reports', 'Runs on a schedule'] },
+];
+export const PRICE_BASIS = 'How we compared: our ranges are about 25% below the 2026 Australian price ranges published by What\u2019s The Damage, WP Creative, Expeed and Flowtivity.';
+export const CARE = 'Care plans from $40 a month for a website and $225 a month for an app. Extra work $110–$185 an hour.';
+
+export const BUILD_STEPS = [
+  { title: 'Tell us', line: 'Five quick questions on one page.' },
+  { title: 'Scope in writing', line: 'We agree by email exactly what gets built.' },
+  { title: 'Fixed quote', line: 'One price for the agreed work, paid in stages.' },
+  { title: 'Build and launch', line: 'You see progress every week, then we launch and look after it.' },
+];
+
+/** The one-page enquiry form (/start, and the Build section). Five questions, nothing more. */
+export const START = {
+  eyebrow: 'DDG Build',
+  title: 'Tell us what you want built.',
+  line: 'Five quick questions. We read every one and reply by email.',
+  aboutLabel: 'What should it do?',
+  aboutHint: 'A sentence or two: who it is for and the main things it needs to do.',
+  done: 'Thanks, we have it. We will reply by email.',
+};
+
+export const BUILD_FORM = {
+  kinds: [...SERVICES.map((s) => ({ key: s.key as ServiceKey | 'unsure', label: s.name })), { key: 'unsure' as const, label: 'Not sure yet' }],
+  hasNow: [{ key: 'nothing', label: 'Nothing yet' }, { key: 'brand', label: 'A brand or design' }, { key: 'existing', label: 'An old site or app to replace' }],
+  timing: [{ key: 'asap', label: 'As soon as possible' }, { key: 'soon', label: 'In 1–3 months' }, { key: 'later', label: 'Later' }, { key: 'exploring', label: 'Just exploring' }],
+  budget: [{ key: 'under-5k', label: 'Under $5k' }, { key: '5-15k', label: '$5k–$15k' }, { key: '15-40k', label: '$15k–$40k' }, { key: 'over-40k', label: 'Over $40k' }, { key: 'unsure', label: 'Not sure' }],
+} as const;
+
+// ── DDG Finance public page (/finance). Numbers come from /api/public/finance (the trading
+// platform's hourly push); only the words live here. Strategies lock 21–22 Nov 2026: update
+// FINANCE_BOTS then. Keys match the server's public keys (never internal account ids).
+export const FINANCE_PAGE = {
+  eyebrow: 'DDG Finance',
+  title: 'Our trading platform, in the open.',
+  lead: 'Four trading bots run our own strategies, checked every hour. From 1 January 2027 every result goes up here, good or bad, next to the S&P 500.',
+  note: 'Paper trading on broker practice accounts. Not financial advice. We don’t take outside money.',
+};
+
+export type FinanceBotKey = 'atlas' | 'atlas-v2' | 'momentum' | 'forex';
+export const FINANCE_BOTS: { key: FinanceBotKey; name: string; broker: string; line: string }[] = [
+  { key: 'atlas', name: 'Atlas', broker: 'Alpaca · paper',
+    line: 'Follows the trend of the S&P 500 and Nasdaq, up to 1.5x, with part of the account in bonds, gold, commodities and the US dollar when they trend.' },
+  { key: 'atlas-v2', name: 'Atlas V2', broker: 'Alpaca · paper',
+    line: 'The bolder Atlas: S&P 500 and Nasdaq trend only, up to 1.5x. We don’t trade crypto; one leftover Bitcoin holding is never added to.' },
+  { key: 'momentum', name: 'Momentum', broker: 'Alpaca · paper',
+    line: 'Holds the 50 S&P 500 stocks with the strongest 12-month momentum, rebalanced monthly, and moves to cash when the market trend turns down.' },
+  { key: 'forex', name: 'Forex', broker: 'OANDA · practice',
+    line: 'Trades major currency pairs. Three AI models vote on each trade; fixed rules size it (0.5% risk a trade, at most 4 open) and set its stop.' },
+];
+export const FINANCE_LINEUP_NOTE = 'Strategies are final from 22 November 2026. This page is updated then.';
+export const FINANCE_HOLDINGS_NOTE = 'Holdings are each bot’s share of its own account. Vault is profit set aside in short-term US Treasury bills. Forex positions are leveraged, so they can add up to more than 100%.';
+
+export const FINANCE_HOW = [
+  { title: 'Rules written down first', line: 'Each strategy is tested on past data and registered before it trades: its rules, the test period and the bar it had to clear.' },
+  { title: 'Bots trade on their own', line: 'Every hour the platform runs each bot and places the orders its rules call for. Nobody picks trades by hand.' },
+  { title: 'Checked against the broker', line: 'The platform’s records are checked against the broker. If something looks wrong, an automatic safety switch can halt trading until it is checked.' },
+  { title: 'Compared with the research', line: 'Every day the live results are compared with what the research said should happen, and a health report goes out each morning.' },
+  { title: 'Shown here, as it happens', line: 'This page reads the same numbers we see, pushed from the platform every hour.' },
+];
+
+export const FINANCE_PAPER = {
+  title: 'The research paper',
+  line: 'Which strategies we chose and why, how they were tested, and the tests that failed. Written by Claude, the AI that builds the platform.',
+  status: 'Published after the strategies lock in late November 2026.',
+};
+
+export const FINANCE_FINE_PRINT = [
+  'Paper money: the bots trade on broker practice accounts, not real money.',
+  'Past results don’t predict future ones. Any of these strategies can lose money.',
+  'Some bots borrow to hold up to 1.5x, which makes losses bigger as well as gains.',
+  'The S&P 500 line is SPY with dividends included, over the same dates.',
+  'Not financial advice. DDG does not manage money for anyone else.',
+];
+// ── DDG Build quote page (/quote/<token>): the words; the quote itself comes from the API.
+// The terms are a plain summary until the lawyer-reviewed contract exists (ddg-build-plan.md).
+export const QUOTE_PAGE = {
+  eyebrow: 'DDG Build · Your quote',
+  notFound: 'We couldn’t find this quote. Please check the link we sent you.',
+  loadError: 'Something went wrong. Please try again, or reply to our email.',
+  gst: 'Prices in Australian dollars. DDG is not registered for GST, so no GST is added.',
+  termsTitle: 'How it works from here',
+  terms: [
+    'The price is fixed for everything listed above. Anything extra is quoted separately before we do it.',
+    'Paying the deposit books your build and we start. The rest is paid in stages as each part is delivered.',
+    'You see progress every week and can ask questions any time.',
+    'We send the full written contract before work starts.',
+  ],
+  agree: 'I accept this quote and how it works from here.',
+  accepted: (name: string) => `Accepted${name ? ` by ${name}` : ''}. Thank you!`,
+  invoice: 'We’ll email you the deposit invoice shortly.',
+  paid: 'Deposit received. Thank you! We’ll be in touch to start your build.',
+  closed: (status: 'withdrawn' | 'expired') => `This quote is ${status}. Reply to our email and we’ll send you a new one.`,
+};
+
+// ── Home: the first screen (the Canyon stage, Markus 17 Nov 2026) ─────────────────────
+// The orb on screen stands for the AI at the centre of DDG. The list names what it powers.
+export const HOME = {
+  eyebrow: 'Digital Dynamics Group',
+  title: 'We build it all.',
+  powers: [
+    { n: '01', name: 'Coffee', line: 'Beans to your door' },
+    { n: '02', name: 'Finance', line: 'Our own trading platform' },
+    { n: '03', name: 'Fitness', line: 'A coach in your pocket' },
+    { n: '04', name: 'Creative', line: 'Stories, music and a novel' },
+  ],
+  work: { eyebrow: 'Our work', title: 'Built in Brisbane. Running live.' },
+  businesses: 'Our businesses',
+  cta: 'Get a fixed quote',
+};
+
+/** One line under the orb in place of the list of businesses. Markus picks one in the tuner. */
+export const QUOTES = [
+  'We use AI to unlock the digital world. Then we build whatever we want in it.',
+  'One founder. An AI workforce. No ceiling on what gets built.',
+  'If it can live on a screen, we can build it.',
+  'AI is the engine. Imagination is the only spec.',
+  "We don't wait for the future. We ship it.",
+  'Ideas in. Working platforms out.',
+  'Powered by AI. Built by obsession.',
+  'The digital frontier has no fences. We build past the edge.',
+  "Give us a problem. We'll give it a platform.",
+  'Small team. Unreasonable output.',
+  // The offer, in plain words (audit 17 Nov 2026: the first screen must say what we sell and what it costs).
+  'Websites, online stores, apps and AI, built for you. About 25% below typical Australian prices.',
+  // Other ways to say the offer, for Markus to compare on the tuner.
+  'We build websites, online stores, apps and AI. Fixed quotes, about 25% below typical Australian prices.',
+  'Your website, store, app or AI, built for less. About 25% below typical Australian prices.',
+  'Complex platforms, built for you, for about 25% less.',
+  'Websites from $1,500. Stores, apps and AI too. About 25% below typical Australian prices.',
+  // Markus's own line (18 Nov 2026), now the one shown.
+  'COMPLEX SOFTWARE - WEBSITES - ONLINE STORES - APPS AND AI - BUILT FOR YOU. ~25% CHEAPER THAN STANDARD INDUSTRY PRICING.',
+];
+
+// ── The home page journey (17 Nov 2026): what we are → what we've built → how we run it →
+// what we can build for you → start your build → charity. Fitness stays a secret: no features named.
+export const ABOUT = {
+  brand: 'Digital Dynamics Group',
+  portfolio: 'Our portfolio',
+  title: 'An AI-powered software development company.',
+  builtLabel: 'Complex systems we have built',
+  // The portfolio in one list (Markus, 18 Nov 2026): what we built, and a link to the live thing.
+  // Every claim is checked against the product: the Greenlight standards are its seven catalogues
+  // (ddg-greenlight/lib/greenlight-engine/catalogues); it checks and fixes, it does not certify.
+  built: [
+    { lead: 'The whole planet, live in 3D.', text: 'Aircraft, ships, satellites, earthquakes and fires, tracked as they happen on one screen.', name: 'God\u2019s Eye View', href: 'https://gods-eye-view.replit.app/', external: true },
+    { lead: 'A trading platform that runs itself.', text: 'Algorithmic bots, Python strategies and a council of three AI models, with hard risk limits that stop it the moment something is wrong.', name: 'DDG Finance', href: '/finance', external: false },
+    { lead: 'An online store that sells around the clock.', text: 'Real orders, card payments, subscriptions and shipping, all run from one back office.', name: 'Cattle Dog Coffee', href: PUBLIC_SITES.coffee, external: true },
+    { lead: 'A personal coach in your pocket.', text: 'A health and fitness app with specialist AI coaches (in development).', name: '', href: null, soon: 'Coming soon' },
+    { lead: 'A compliance engine for your code.', text: 'It audits any codebase against published standards (ISO/IEC 27001, OWASP ASVS, NIST SSDF, the Australian Essential Eight and more), fixes the gaps it finds, and hands back a stronger product, ready for your team\u2019s final sign-off.', name: 'DDG Greenlight', href: 'https://ddg-greenlight.replit.app/', external: true, standards: true },
+  ] as { lead: string; text: string; name: string; href: string | null; external?: boolean; soon?: string; standards?: boolean }[],
+  // Every standard Greenlight checks against (its catalogues, 18 Nov 2026). Names only.
+  standardsLabel: 'See all standards',
+  standards: [
+    'ISO/IEC 27001: information security',
+    'ISO/IEC 42001: AI management',
+    'OWASP ASVS 5.0: application security',
+    'NIST SSDF (SP 800-218): secure development',
+    'Australian ISM and Essential Eight: government security',
+    'MIL-STD-882E: system safety',
+    'EUROCAE ED-153: software safety for air navigation',
+  ],
+  line: 'Tell us what you want, and we build it.',
+  see: 'See prices',
+  start: 'Get a fixed quote',
+};
+
+/** The carousel under "Complex platforms. Built in-house.": one screenshot per live product (public/work). */
+export const SHOTS: { key: string; name: string; kind: string; imgs: { src: string; cap: string; alt: string }[]; href: string; external: boolean }[] = [
+  { key: 'globe', name: 'God\u2019s Eye View', kind: 'Live 3D globe', href: 'https://gods-eye-view.replit.app/', external: true, imgs: [
+    { src: '/work/globe-1.webp', cap: 'A GPS satellite 20,300 km up, tracked live with its orbit, speed and the part of the Earth it covers.', alt: 'A GPS satellite tracked above the Earth, with its orbit and coverage' },
+    { src: '/work/globe-2.webp', cap: 'The International Space Station passing over Europe, above thousands of ships and aircraft, all tracked live.', alt: 'The International Space Station over Europe, with live ships and aircraft' },
+    { src: '/work/globe-3.webp', cap: 'One ship followed in its harbour: live speed and course, with its voyage and risk details beside it.', alt: 'A ship followed live in a harbour, with its voyage details' },
+    { src: '/work/globe-4.webp', cap: 'Down at street level: four live traffic cameras playing at once, placed on the 3D city where they stand.', alt: 'Street level: four live traffic cameras beside a motorway' },
+    { src: '/work/globe-5.webp', cap: 'Night-vision mode over London: the view switches itself after dark, with a live camera from Trafalgar Square.', alt: 'Trafalgar Square at night in night-vision view, with a live camera' },
+    { src: '/work/globe-6.webp', cap: 'Thermal view of an airfield, with live aircraft, weather and nearby ships read straight from public feeds.', alt: 'An airfield in thermal view, with live traffic and weather' },
+  ] },
   { key: 'finance', name: 'DDG Finance', kind: 'Trading platform', href: '/finance', external: false, imgs: [
     { src: '/work/finance-1.webp', cap: 'The control room: every account, its return against the S&P 500, and what each bot holds, on one screen.', alt: 'DDG Finance home: fleet value, return by account and the four bots' },
     { src: '/work/finance-2.webp', cap: 'Under the hood: daily returns, each strategy\u2019s live signals, and the limits that cut its size when it falls.', alt: 'DDG Finance detail view with daily returns and strategy panels' },
@@ -56,6 +273,7 @@ export const SITE_BUSINESSES: SiteBusiness[] = [
   { key: 'coffee', name: 'Cattle Dog Coffee', kind: 'Online store', href: PUBLIC_SITES.coffee, external: true, imgs: [
     { src: '/work/coffee-1.webp', cap: 'The store your customers see: pick a blend and size, pay by card or subscribe, with the charity total counted live.', alt: 'The Cattle Dog Coffee store on a phone: home page and a product page' },
     { src: '/work/coffee-2.webp', cap: 'The back office we built behind it: sales, margin, stock and every order\u2019s status, updated as orders come in.', alt: 'The Cattle Dog Coffee admin dashboard with sales charts' },
+    { src: '/work/coffee-3.webp', cap: 'Orders and dispatch: every order from paid to delivered, with one-click customer emails. Customer details are blurred here.', alt: 'The Cattle Dog Coffee orders and dispatch screen, customer details blurred' },
   ] },
   { key: 'greenlight', name: 'DDG Greenlight', kind: 'Compliance engine', href: 'https://ddg-greenlight.replit.app/', external: true, imgs: [{ src: '/work/greenlight.webp', cap: 'Seven steps from your code to proof: check it, see what is wrong, fix it, then check it again.', alt: 'DDG Greenlight: check my code' }] },
 ];
