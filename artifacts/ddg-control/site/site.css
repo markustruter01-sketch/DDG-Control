@@ -339,7 +339,7 @@ p { margin: 0; }
 .cn-stage canvas { width: 100%; height: 100%; display: block; }
 /* A shooting star: a bright head with a fading tail, flying along its angle and burning out. */
 .cn-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.cn-star { position: absolute; display: block; width: 210px; height: 2px; border-radius: 2px; transform-origin: 100% 50%;
+.cn-star { position: absolute; display: block; width: calc(210px * var(--sl, 1)); height: calc(2px * var(--sw, 1)); filter: brightness(var(--sb, 1)); border-radius: 2px; transform-origin: 100% 50%;
   background: linear-gradient(90deg, rgba(180, 220, 255, 0), rgba(210, 235, 255, 0.7) 75%, #fff);
   box-shadow: 0 0 6px rgba(170, 220, 255, 0.8); opacity: 0;
   transform: rotate(var(--a)) translateX(0); animation: cn-star var(--t, 0.9s) cubic-bezier(0.3, 0, 0.7, 1) forwards; }
@@ -368,7 +368,10 @@ p { margin: 0; }
   display: flex; flex-direction: column; align-items: center; gap: var(--logo-gap, 10px); text-align: center;
   font-family: var(--brand-font, inherit); font-size: calc(clamp(22px, 2.3vw, 38px) * var(--brand-size, 1)); font-weight: var(--brand-weight, 400);
   letter-spacing: var(--brand-track, 0.01em); text-transform: var(--brand-case, none); line-height: var(--brand-line, 1.08); }
-.cn-brand img { display: var(--logo-show, block); width: calc(clamp(46px, 4vw, 66px) * var(--logo-size, 1)); height: auto; } /* a see-through copy of the logo, so no blend is needed here */
+.cn-brand .cn-logo-white { display: var(--logo-white-show, none); }
+.cn-brand .cn-group { font-size: calc(1em * var(--group-size, 1)); }
+.cn-brand img.cn-logo-glitch { display: var(--logo-show, block); }
+.cn-brand img {  width: calc(clamp(46px, 4vw, 66px) * var(--logo-size, 1)); height: auto; } /* a see-through copy of the logo, so no blend is needed here */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* On the home page the name sits over the orb, so the top bar shows only the links. */
 .s-nav-home .s-brand { visibility: hidden; }

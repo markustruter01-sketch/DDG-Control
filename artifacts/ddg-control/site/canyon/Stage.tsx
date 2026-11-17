@@ -9,6 +9,7 @@ import { heightAt } from './landscapes';
 import { makeWater } from './water';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeWords } from './words3d';
+import { makeRiverPipe } from './riverPipe';
 
 /**
  * Home background (fixed): a night sky with the Milky Way over a landscape of ice-blue lines (see landscapes.ts for its shape) with the DDG core, a fast-spinning
@@ -102,6 +103,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     disposables.push(...words.disposables);
     let spinClock = 0;
 
+    // A glass pipe along the bottom of the riverbed, with data flowing through it.
+    const riverPipe = makeRiverPipe({ heightAt, zFar: -150, zNear: Z0, small });
+    scene.add(riverPipe.group);
+    disposables.push(...riverPipe.disposables);
+    let pipeR = -1;
+
     const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
     resize(); addEventListener('resize', resize);
 
@@ -128,7 +135,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         attr.needsUpdate = true; shownK = k;
       }
       lineMat.opacity = lerp(0.34, 0.16, k) * T.gridLines;
-      water.setLook(T);
+      water.setLook(T); riverPipe.setLook(T);
+      if (T.pipeRadius !== pipeR) { pipeR = T.pipeRadius; riverPipe.rebuild(0.6 * pipeR); }
       applyBrand();
       if (camera.fov !== T.fov) { camera.fov = T.fov; camera.updateProjectionMatrix(); }
       const fog = scene.fog as Fog;
@@ -152,6 +160,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far,
       });
+      riverPipe.update(clock, 1 - k, orbit.position, 1);
       // The words face the screen, then sink into the river and fade as the visitor scrolls.
       const wordsOut = ease(p / T.wordsFade);
       if (T.wordsOn > 0.5) words.setFont(T.wordsFont);
@@ -185,17 +194,17 @@ function ShootingStars() {
     const el = box.current;
     if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     let timer = 0;
-    const next = () => { timer = window.setTimeout(fire, 5000 + Math.random() * 3000); };
+    const next = () => { timer = window.setTimeout(fire, T.starsEvery * 1000 * (0.77 + Math.random() * 0.46)); };
     const fire = () => {
       if (T.starsOn > 0.5 && !document.hidden && scrollY < innerHeight * 0.6) {
         const s = document.createElement('i');
-        const right = Math.random() < 0.5, ang = (right ? 1 : -1) * (14 + Math.random() * 22); // degrees below level
-        const len = 260 + Math.random() * 260;
+        const right = Math.random() < 0.5, ang = (right ? 1 : -1) * (14 + Math.random() * 22) * T.starsSteep; // degrees below level
+        const len = (260 + Math.random() * 260) * T.starsLength;
         s.className = 'cn-star';
         s.style.cssText = `left:${right ? 5 + Math.random() * 50 : 45 + Math.random() * 50}%;top:${4 + Math.random() * 26}%;` +
-          `--a:${right ? ang : 180 + ang}deg;--d:${len}px;--t:${0.7 + Math.random() * 0.5}s`;
+          `--a:${right ? ang : 180 + ang}deg;--d:${len}px;--t:${(0.7 + Math.random() * 0.5) / T.starsSpeed}s;--sl:${T.starsLength};--sw:${T.starsWidth};--sb:${T.starsBright}`;
         el.appendChild(s);
-        setTimeout(() => s.remove(), 1600);
+        setTimeout(() => s.remove(), 1600 / T.starsSpeed + 200);
       }
       next();
     };

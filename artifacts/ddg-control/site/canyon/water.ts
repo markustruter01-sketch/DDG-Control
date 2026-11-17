@@ -78,7 +78,7 @@ void main() {
 
 export const WATER_FRAG = /* glsl */ `
 ${STIR}
-uniform float uRough, uDetailK, uFoamK, uGlintK, uReflect, uBody, uSilk, uSwirlLines, uSwirlSoft;
+uniform float uRough, uDetailK, uFoamK, uGlintK, uReflect, uBody, uSilk, uSwirlLines, uSwirlSoft, uClear;
 ${SKY_GLSL}
 uniform float uGlow;
 uniform float uOpacity;
@@ -205,7 +205,7 @@ void main() {
 
   // The water thins out to nothing exactly where it meets the land, so the edge is soft.
   float edge = smoothstep(0.0, 0.4, depth);
-  float alpha = edge * max(mix(0.8, 0.97, 1.0 - exp(-depth * 1.2)), foam * 0.85);
+  float alpha = edge * max(mix(0.8, 0.97, 1.0 - exp(-depth * 1.2)) * (1.0 - 0.75 * uClear), max(foam * 0.85, fresnel * 0.9));
   float fog = smoothstep(uFogNear, uFogFar, vView);
   gl_FragColor = vec4(mix(col, uFog, fog), alpha * uOpacity);
 }`;
@@ -263,7 +263,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   riverGeo.setIndex(idx);
   const uniforms = {
     uTime: { value: 0 }, uVar: { value: 0 }, uSwirlR: { value: 1 }, uSwirlDepth: { value: 1 }, uSwirlSpeed: { value: 1 },
-    uRough: { value: 1 }, uSwirlLines: { value: 1 }, uSwirlSoft: { value: 1 }, uDetailK: { value: 1 }, uFoamK: { value: 1 }, uGlintK: { value: 1 }, uReflect: { value: 1 }, uBody: { value: 1 }, uSilk: { value: 1 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
+    uRough: { value: 1 }, uClear: { value: 0 }, uSwirlLines: { value: 1 }, uSwirlSoft: { value: 1 }, uDetailK: { value: 1 }, uFoamK: { value: 1 }, uGlintK: { value: 1 }, uReflect: { value: 1 }, uBody: { value: 1 }, uSilk: { value: 1 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
     uOrb: { value: new Vector2() }, uOrbPos: { value: new Vector3() },
     // The shader writes screen colours directly, so the fog colour is passed as plain 0-1 values.
     uFog: { value: new Vector3(((fogColor >> 16) & 255) / 255, ((fogColor >> 8) & 255) / 255, (fogColor & 255) / 255) },
@@ -329,7 +329,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   /** Live look settings (from the preview sliders). */
   const setLook = (k: Record<string, number>) => {
     uniforms.uVar.value = k.waterDesign; uniforms.uRough.value = k.waterTexture; uniforms.uDetailK.value = k.waterRipples;
-    uniforms.uSwirlR.value = k.swirlSize; uniforms.uSwirlDepth.value = k.swirlDepth; uniforms.uSwirlSpeed.value = k.swirlSpeed; uniforms.uSwirlLines.value = k.swirlLines; uniforms.uSwirlSoft.value = k.swirlSoft;
+    uniforms.uSwirlR.value = k.swirlSize; uniforms.uSwirlDepth.value = k.swirlDepth; uniforms.uSwirlSpeed.value = k.swirlSpeed; uniforms.uSwirlLines.value = k.swirlLines; uniforms.uClear.value = k.waterClear; uniforms.uSwirlSoft.value = k.swirlSoft;
     uniforms.uFoamK.value = k.waterFoam; uniforms.uGlintK.value = k.waterGlint; uniforms.uReflect.value = k.waterReflect;
     uniforms.uBody.value = k.waterColour; uniforms.uSilk.value = k.waterSheen; sprayAmount = k.sprayAmount; spraySize = k.spraySize;
   };

@@ -37,7 +37,7 @@ function rounded(pts: [number, number][]): string {
 export function drawPipes(page: HTMLElement, svg: SVGSVGElement): void {
   // Measure panels where they will end up, not part-way through their slide-in animation.
   page.classList.add('cn-measuring');
-  try { layout(page, svg); } finally { page.classList.remove('cn-measuring'); }
+  try { layout(page, svg); } catch { /* a half-drawn layout: the next resize draws it again */ } finally { page.classList.remove('cn-measuring'); }
 }
 
 function layout(page: HTMLElement, svg: SVGSVGElement): void {

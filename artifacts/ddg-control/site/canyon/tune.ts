@@ -39,13 +39,31 @@ export const SPECS: Spec[] = [
   { group: 'Water', key: 'waterReflect', label: 'Reflection strength', min: 0, max: 3, step: 0.05 },
   { group: 'Water', key: 'waterColour', label: 'Colour brightness', min: 0, max: 3, step: 0.05 },
   { group: 'Water', key: 'waterSheen', label: 'Silk sheen', min: 0, max: 3, step: 0.05 },
+  { group: 'Water', key: 'waterClear', label: 'Clearness (see into the water)', min: 0, max: 1, step: 0.02 },
   { group: 'Water', key: 'sprayAmount', label: 'Spray amount', min: 0, max: 1, step: 0.05 },
   { group: 'Water', key: 'spraySize', label: 'Spray drop size', min: 0, max: 3, step: 0.05 },
   // Scene
   { group: 'Scene', key: 'fogNear', label: 'Fog starts', min: 0.2, max: 3, step: 0.05 },
   { group: 'Scene', key: 'fogFar', label: 'Fog full', min: 0.3, max: 3, step: 0.05 },
   { group: 'Scene', key: 'fov', label: 'Camera zoom (field of view)', min: 30, max: 90, step: 1 },
-  { group: 'Scene', key: 'starsOn', label: 'Shooting stars (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Shooting stars', key: 'starsOn', label: 'On (1) or off (0)', min: 0, max: 1, step: 1 },
+  { group: 'Shooting stars', key: 'starsEvery', label: 'About every … seconds', min: 1, max: 30, step: 0.5 },
+  { group: 'Shooting stars', key: 'starsLength', label: 'Tail length', min: 0.2, max: 3, step: 0.05 },
+  { group: 'Shooting stars', key: 'starsSpeed', label: 'Speed', min: 0.2, max: 3, step: 0.05 },
+  { group: 'Shooting stars', key: 'starsBright', label: 'Brightness', min: 0.1, max: 2, step: 0.05 },
+  { group: 'Shooting stars', key: 'starsWidth', label: 'Thickness', min: 0.3, max: 4, step: 0.05 },
+  { group: 'Shooting stars', key: 'starsSteep', label: 'How steeply they fall', min: 0, max: 2, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'pipeOn', label: 'On (1) or off (0)', min: 0, max: 1, step: 1 },
+  { group: 'Riverbed pipe', key: 'pipeRadius', label: 'Pipe thickness', min: 0.2, max: 4, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'pipeLift', label: 'Raise above the bed', min: -1, max: 4, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'pipeGlass', label: 'Glass cloudiness', min: 0, max: 6, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'pipeRim', label: 'Glass edge shine', min: 0, max: 3, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'pipeGlow', label: 'Glow in the water (volumetric)', min: 0, max: 4, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'dataCount', label: 'Data particles: how many', min: 0, max: 1, step: 0.02 },
+  { group: 'Riverbed pipe', key: 'dataSize', label: 'Data particles: size', min: 0.2, max: 4, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'dataSpeed', label: 'Data particles: speed', min: 0, max: 5, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'dataBright', label: 'Data particles: brightness', min: 0, max: 3, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'dataColour', label: 'Data particles: colour (0 blue, 1 mint, 2 white)', min: 0, max: 2, step: 0.05 },
   { group: 'Scene', key: 'gridLines', label: 'Line grid brightness', min: 0, max: 3, step: 0.05 },
   // "We build it all." in 3D
   { group: 'Words (We build it all.)', key: 'wordsOn', label: 'Show the words (0 off, 1 on)', min: 0, max: 1, step: 1 },
@@ -64,8 +82,10 @@ export const SPECS: Spec[] = [
   { group: 'Name and logo', key: 'brandWeight', label: 'Weight (thin ← → heavy)', min: 100, max: 900, step: 100 },
   { group: 'Name and logo', key: 'brandSpacing', label: 'Letter spacing', min: -0.08, max: 0.6, step: 0.01 },
   { group: 'Name and logo', key: 'brandCaps', label: 'Capitals (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Name and logo', key: 'groupSize', label: '"GROUP" size (vs the line above)', min: 0.3, max: 1.5, step: 0.02 },
   { group: 'Name and logo', key: 'brandLine', label: 'Gap between the two lines', min: 0.8, max: 2, step: 0.02 },
   { group: 'Name and logo', key: 'logoOn', label: 'Show the logo (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Name and logo', key: 'logoStyle', label: 'Logo (0 glitch, 1 plain white)', min: 0, max: 1, step: 1 },
   { group: 'Name and logo', key: 'logoSize', label: 'Logo size', min: 0.3, max: 3, step: 0.05 },
   { group: 'Name and logo', key: 'logoGap', label: 'Gap between logo and name', min: 0, max: 60, step: 1 },
   { group: 'Name and logo', key: 'brandLift', label: 'Move up / down', min: -20, max: 30, step: 0.5 },
@@ -77,13 +97,15 @@ export const DEFAULTS: Record<string, number> = {
   waterDesign: 4, waterTexture: 4, waterRipples: 0, swirlSize: 1.5, swirlDepth: 3, swirlSpeed: 3, swirlLines: 0.75, swirlSoft: 1.95, waterFoam: 0,
   waterGlint: 3, waterReflect: 0.65, waterColour: 0.8, waterSheen: 0.95, sprayAmount: 0, spraySize: 1,
   fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.45,
-  wordsOn: 0, starsOn: 1, logoOn: 1, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
+  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 0, groupSize: 1, waterClear: 0.45,
+  starsEvery: 6.5, starsLength: 1, starsSpeed: 1, starsBright: 1, starsWidth: 1, starsSteep: 1,
+  pipeOn: 1, pipeRadius: 1, pipeLift: 0, pipeGlass: 1, pipeRim: 1, pipeGlow: 1.6, dataCount: 0.6, dataSize: 1, dataSpeed: 1, dataBright: 1.5, dataColour: 0, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   brandFont: 3, brandSize: 0.6, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.14, logoSize: 1.85, logoGap: 5, brandLift: 10,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
 
-const STORE = 'ddg-scene-tune-5'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-6'; // new name, so old saved slider positions don't override these defaults
 export function tuneOn(): boolean {
   return !!(window as unknown as { __DDG_TUNE__?: unknown }).__DDG_TUNE__ || /tune/.test(location.hash);
 }
@@ -176,7 +198,7 @@ export function mountPanel(): () => void {
 /** Put the name-and-logo settings on the page (CSS variables), loading the chosen web font. */
 let lastBrand = '';
 export function applyBrand(): void {
-  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn'].map((k) => T[k]).join(',');
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize'].map((k) => T[k]).join(',');
   if (key === lastBrand) return;
   lastBrand = key;
   const [, family] = BRAND_FONTS[T.brandFont] ?? BRAND_FONTS[0];
@@ -194,7 +216,9 @@ export function applyBrand(): void {
   s.setProperty('--brand-case', T.brandCaps ? 'uppercase' : 'none');
   s.setProperty('--brand-line', String(T.brandLine));
   s.setProperty('--logo-size', String(T.logoSize));
-  s.setProperty('--logo-show', T.logoOn ? 'block' : 'none');
+  s.setProperty('--logo-show', T.logoOn && !T.logoStyle ? 'block' : 'none');
+  s.setProperty('--logo-white-show', T.logoOn && T.logoStyle ? 'block' : 'none');
+  s.setProperty('--group-size', String(T.groupSize));
   s.setProperty('--logo-gap', `${T.logoGap}px`);
   s.setProperty('--brand-lift', `${T.brandLift}vh`);
 }

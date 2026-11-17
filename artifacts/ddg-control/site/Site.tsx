@@ -149,7 +149,7 @@ function Home() {
         <section className="cn-hero">
           <Nav home />
           {/* The company's name and mark, above the orb. "We build it all." stands in the 3D scene. */}
-          <h1 className="cn-brand"><img src="/ddg-core-logo.png" alt="" /><span>Digital Dynamics<br />Group</span><span className="sr-only"> · {HOME.title}</span></h1>
+          <h1 className="cn-brand"><img className="cn-logo-glitch" src="/ddg-core-logo.png" alt="" /><img className="cn-logo-white" src="/ddg-logo-white-512.png" alt="" /><span>Digital Dynamics<br /><span className="cn-group">Group</span></span><span className="sr-only"> · {HOME.title}</span></h1>
           <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
           <ul className="cn-readout" aria-label="Our four businesses">
             {HOME.powers.map((b) => <li key={b.n}><em>{b.n}</em><b>{b.name}</b><span>{b.line}</span></li>)}
