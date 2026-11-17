@@ -7,6 +7,8 @@ export const COMPANY = {
   legalName: 'Digital Dynamics Group Pty Ltd',
   abn: '66 687 743 193',
   place: 'Brisbane, Queensland',
+  email: 'info@digitaldynamics-group.com',
+  post: 'PO Box 2070, Brighton Eventide QLD 4017',
 };
 
 export const HERO = {
@@ -248,8 +250,17 @@ export const ABOUT = {
   ],
   line: 'Tell us what you want, and we build it.',
   see: 'See prices',
-  start: 'Start your build',
+  start: 'Get a fixed quote',
 };
+
+/** The carousel under "Complex platforms. Built in-house.": one screenshot per live product (public/work). */
+export const SHOTS: { key: string; name: string; kind: string; img: string; alt: string; href: string; external: boolean }[] = [
+  { key: 'globe', name: 'God\u2019s Eye View', kind: 'Live 3D globe', img: '/work/globe.webp', alt: 'God\u2019s Eye View: the Earth from orbit with live satellites', href: 'https://gods-eye-view.replit.app/', external: true },
+  { key: 'finance', name: 'DDG Finance', kind: 'Trading platform', img: '/work/finance.webp', alt: 'The DDG Finance public page', href: '/finance', external: false },
+  { key: 'coffee', name: 'Cattle Dog Coffee', kind: 'Online store', img: '/work/coffee.webp', alt: 'The Cattle Dog Coffee online store', href: PUBLIC_SITES.coffee, external: true },
+  { key: 'greenlight', name: 'DDG Greenlight', kind: 'Compliance engine', img: '/work/greenlight.webp', alt: 'DDG Greenlight: check my code', href: 'https://ddg-greenlight.replit.app/', external: true },
+];
+export const CONTACT = { eyebrow: 'Contact', title: 'Talk to us in writing.', line: 'Email us, or send the short form above for a fixed quote. We work in writing, so there is no call to book.', emailLabel: 'Email', postLabel: 'Post' };
 
 export const BUILT = {
   eyebrow: 'Projects we have built',
@@ -268,9 +279,9 @@ export const RUN = {
 // ── /privacy: a plain summary of what the website collects. Written 17 Nov 2026; to be checked by DDG's lawyer.
 export const PRIVACY = {
   title: 'Privacy',
-  updated: 'Updated 17 November 2026',
+  updated: 'Updated 18 November 2026',
   sections: [
-    { h: 'Who we are', p: ['Digital Dynamics Group Pty Ltd (ABN 66 687 743 193), Brisbane, Queensland. This page covers ddg.limited. Cattle Dog Coffee has its own privacy page on its own site.'] },
+    { h: 'Who we are', p: ['Digital Dynamics Group Pty Ltd (ABN 66 687 743 193), Brisbane, Queensland. This page covers ddg.limited. Cattle Dog Coffee has its own privacy page on its own site. Contact: info@digitaldynamics-group.com, or PO Box 2070, Brighton Eventide QLD 4017.'] },
     { h: 'What we collect', p: [
       'When you send the enquiry form: your name, your email address and your answers (what you want built, what you have now, timing and budget).',
       'We do not use advertising trackers or cookies on this website. Our web host keeps standard technical logs (such as IP address and browser type) to run and protect the site. The page\u2019s fonts load from Google Fonts, so Google receives your IP address and browser type when the page opens.',

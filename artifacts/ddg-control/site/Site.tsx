@@ -9,7 +9,7 @@ import { FinancePage } from './Finance';
 import { QuotePage } from './Quote';
 import { drawPipes, fillPipes } from './canyon/wires';
 import { mountPageClouds } from './canyon/cloudPaint';
-import { CHARITY, COMPANY, HOME, PRIVACY, START, QUOTES } from './content';
+import { CHARITY, COMPANY, CONTACT, HOME, PRIVACY, START, QUOTES } from './content';
 import { About, Showcase } from './Journey';
 
 // The 3D first screen is loaded on its own, so the page's words never wait for it.
@@ -59,6 +59,7 @@ function Nav({ home = false }: { home?: boolean }) {
         <Link href="/finance">Finance</Link>
         <a href="/#build" onClick={section('build')}>Prices</a>
         <a href="/#charity" onClick={section('charity')}>Charity</a>
+        <a href="/#contact" onClick={section('contact')}>Contact</a>
       </nav>
     </header>
   );
@@ -136,7 +137,7 @@ function Home() {
       <div className="cn-page" ref={pipes.page}>
         <svg className="cn-pipes" ref={pipes.svg} aria-hidden="true" />
         <main className="s-main j-main">
-          <About onSee={() => toSection('build', true)} />
+          <About onSee={() => toSection('build', true)} onQuote={() => toSection('start', true)} />
           <Showcase />
           <section id="charity" className="j-give" data-pipe aria-label={CHARITY.label}>
             <p className="j-give-sum"><b>{dollars(raised)}</b><span>{CHARITY.label}</span></p>
@@ -151,8 +152,20 @@ function Home() {
             </div>
             <EnquiryForm />
           </section>
+          <section id="contact" className="j-panel j-contact" data-pipe aria-labelledby="contact-title">
+            <div className="j-text">
+              <p className="s-eyebrow">{CONTACT.eyebrow}</p>
+              <h2 id="contact-title">{CONTACT.title}</h2>
+              <p className="j-line">{CONTACT.line}</p>
+            </div>
+            <dl className="j-contact-list">
+              <div><dt>{CONTACT.emailLabel}</dt><dd><a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a></dd></div>
+              <div><dt>{CONTACT.postLabel}</dt><dd>{COMPANY.legalName}<br />{COMPANY.post}</dd></div>
+            </dl>
+          </section>
         </main>
       </div>
+      <QuoteDock />
       <Footer />
     </>
   );
@@ -174,10 +187,30 @@ function Start() {
   );
 }
 
+/** A "Get a fixed quote" button that stays in the corner once the first screen has scrolled away, so the
+ *  form is always one tap off. It hides while the form itself is on screen. */
+function QuoteDock() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const form = document.getElementById('start')?.getBoundingClientRect();
+      const formOnScreen = !!form && form.top < innerHeight * 0.8 && form.bottom > innerHeight * 0.2;
+      setShow(scrollY > innerHeight * 0.9 && !formOnScreen);
+    };
+    check();
+    addEventListener('scroll', check, { passive: true });
+    return () => removeEventListener('scroll', check);
+  }, []);
+  return (
+    <a className={`s-dock${show ? ' on' : ''}`} href="/#start" tabIndex={show ? 0 : -1} aria-hidden={!show}
+      onClick={(e) => { e.preventDefault(); history.replaceState(null, '', '/#start'); toSection('start', true); }}>{HOME.cta} →</a>
+  );
+}
+
 function Footer() {
   return (
     <footer className="s-footer">
-      <div><b>{COMPANY.legalName}</b><span>ABN {COMPANY.abn} · {COMPANY.place} · <Link href="/privacy">Privacy</Link></span></div>
+      <div><b>{COMPANY.legalName}</b><span>ABN {COMPANY.abn} · {COMPANY.place} · <Link href="/privacy">Privacy</Link></span><span><a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> · {COMPANY.post}</span></div>
       <Socials />
     </footer>
   );
