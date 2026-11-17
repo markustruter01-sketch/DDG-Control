@@ -200,6 +200,7 @@ export const HOME = {
   ],
   work: { eyebrow: 'Our work', title: 'Built in Brisbane. Running live.' },
   businesses: 'Our businesses',
+  cta: 'Get a fixed quote',
 };
 
 /** One line under the orb in place of the list of businesses. Markus picks one in the tuner. */
@@ -214,6 +215,13 @@ export const QUOTES = [
   'The digital frontier has no fences. We build past the edge.',
   "Give us a problem. We'll give it a platform.",
   'Small team. Unreasonable output.',
+  // The offer, in plain words (audit 17 Nov 2026: the first screen must say what we sell and what it costs).
+  'Websites, online stores, apps and AI, built for you. About 25% below typical Australian prices.',
+  // Other ways to say the offer, for Markus to compare on the tuner.
+  'We build websites, online stores, apps and AI. Fixed quotes, about 25% below typical Australian prices.',
+  'Your website, store, app or AI, built for less. About 25% below typical Australian prices.',
+  'Complex platforms, built for you, for about 25% less.',
+  'Websites from $1,500. Stores, apps and AI too. About 25% below typical Australian prices.',
 ];
 
 // ── The home page journey (17 Nov 2026): what we are → what we've built → how we run it →

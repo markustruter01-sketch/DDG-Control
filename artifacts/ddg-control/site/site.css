@@ -20,9 +20,10 @@ p { margin: 0; }
 :root { --s-gutter: clamp(16px, 4vw, 96px); }
 .s-nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; margin: 0 auto; padding: 20px var(--s-gutter); width: 100%; box-sizing: border-box; }
 /* Name and logo in the middle of the top bar; links on the right. */
-.s-nav .s-brand { grid-column: 2; justify-self: center; }
-.s-nav nav { grid-column: 3; justify-self: end; }
-@media (max-width: 760px) { .s-nav { grid-template-columns: auto 1fr; } .s-nav .s-brand { grid-column: 1; justify-self: start; } .s-nav nav { grid-column: 2; } }
+.s-nav .s-brand { grid-column: 1; justify-self: start; }
+/* The menu sits in the middle of the screen (Markus, 17 Nov). */
+.s-nav nav { grid-column: 2; justify-self: center; }
+@media (max-width: 760px) { .s-nav { gap: 8px; } }
 .s-brand { display: inline-flex; align-items: center; gap: 10px; font-size: clamp(16px, 1.15vw, 20px); letter-spacing: 0.01em; white-space: nowrap; }
 .s-brand b { font-weight: 500; }
 /* The glitch mark is on black; "screen" lets only its light parts show on the dark page. */
@@ -355,7 +356,7 @@ p { margin: 0; }
 .cn-hero::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: linear-gradient(180deg, rgba(7,8,11,0.6) 0%, rgba(7,8,11,0.25) 26%, rgba(7,8,11,0) 46%), radial-gradient(120% 90% at 50% 55%, rgba(7,8,11,0) 55%, rgba(7,8,11,0.55) 100%); }
 /* Four fine corner brackets frame the orb like a readout, with one label. */
-.cn-frame { position: absolute; left: 50%; top: var(--cn-oy); width: calc(2 * var(--cn-or)); height: calc(2 * var(--cn-or)); transform: translate(-50%, -50%); }
+.cn-frame { display: none; position: absolute; left: 50%; top: var(--cn-oy); width: calc(2 * var(--cn-or)); height: calc(2 * var(--cn-or)); transform: translate(-50%, -50%); }
 .cn-frame i { position: absolute; width: 16px; height: 16px; border: 1px solid rgba(108, 199, 240, 0.7); }
 .cn-frame i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; }
 .cn-frame i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; }
@@ -414,7 +415,7 @@ p { margin: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* On the home page the name sits over the orb, so the top bar shows only the links. */
 .s-nav-home .s-brand { visibility: hidden; }
-.cn-room { height: 90vh; }
+.cn-room { height: 35vh; } /* was 90vh: the audit found two screens with nothing to read */
 @media (max-width: 760px) {
   .cn-top { --cn-or: 11vh; }
   .cn-tag { left: 50%; transform: translateX(-50%); top: calc(var(--cn-oy) - var(--cn-or) - 26px); }
@@ -606,7 +607,8 @@ p { margin: 0; }
 .j-hi { color: var(--j-word, inherit); }
 
 /* Phones: the scroll hint sits below the menu, never on it; menu links are easy to tap (about 44 px). */
-@media (max-width: 900px) { .cn-scroll { top: max(calc(var(--sh-place, 11) * 1vh), 84px); } }
+/* Always below the menu: the menu now sits in the middle of the screen, where the hint is (Markus, 17 Nov). */
+.cn-scroll { top: max(calc(var(--sh-place, 11) * 1vh), 92px); }
 .s-nav nav a { display: inline-flex; align-items: center; min-height: 44px; }
 .s-footer a { color: var(--ng-text-2); text-decoration: underline; text-underline-offset: 3px; }
 .s-form-foot .s-note a { color: var(--ng-text); text-decoration: underline; text-underline-offset: 3px; }
@@ -615,3 +617,8 @@ p { margin: 0; }
 .s-privacy h2 { font-size: 20px; margin: 0 0 8px; }
 .s-privacy p { color: var(--ng-text-2); line-height: 1.65; margin: 0 0 10px; }
 
+/* The offer's button under the quote on the first screen (audit 17 Nov 2026). */
+.cn-cta { position: absolute; left: 0; right: 0; bottom: 6vh; width: max-content; margin: 0 auto; display: inline-flex; align-items: center; min-height: 48px; padding: 0 26px;
+  border-radius: 999px; background: var(--ng-text); color: var(--ng-night); font: 500 15px/1 var(--ng-sans); text-decoration: none;
+  opacity: var(--cn-fade, 1); pointer-events: var(--cn-pe, auto); transform: translateY(var(--cn-dy, 0px)); box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+.cn-cta:hover { background: #fff; }

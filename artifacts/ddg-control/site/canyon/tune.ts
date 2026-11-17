@@ -85,7 +85,8 @@ export const SPECS: Spec[] = [
   { group: 'Words (We build it all.)', key: 'wordsReflect', label: 'Reflection in water', min: 0, max: 1, step: 0.02 },
   { group: 'Words (We build it all.)', key: 'wordsFade', label: 'How long they stay when scrolling', min: 0.1, max: 1.5, step: 0.05 },
   // The quote under the orb
-  { group: 'Quote', key: 'quote', label: 'Which quote', min: 0, max: 9, step: 1, names: QUOTES },
+  { group: 'Quote', key: 'quote', label: 'Which quote', min: 0, max: QUOTES.length - 1, step: 1, names: QUOTES },
+  { group: 'Quote', key: 'quoteText', label: 'Your own words (empty = use the slider)', min: 0, max: 0, step: 0, text: true },
   { group: 'Quote', key: 'quoteOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Quote', key: 'quoteFont', label: 'Font', min: 0, max: 13, step: 1, names: BRAND_FONTS.map((f) => f[0]) },
   { group: 'Quote', key: 'quoteSize', label: 'Text size', min: 0.4, max: 3, step: 0.05 },
@@ -173,19 +174,19 @@ export const DEFAULTS: Record<string, number> = {
   wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.96, waterClear: 0.66,
   starsEvery: 4.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
   pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
-  quote: 4, quoteOn: 1, quoteFont: 3, quoteSize: 0.7, quoteWeight: 500, quoteSpacing: -0.01, quoteCaps: 1, quoteAlign: 1, quoteWidth: 19, quoteLift: 2,
+  quote: 10, quoteOn: 1, quoteFont: 9, quoteSize: 0.7, quoteWeight: 400, quoteSpacing: -0.01, quoteCaps: 0, quoteAlign: 1, quoteWidth: 34, quoteLift: 11,
   qbOn: 1, qbDark: 0.52, qbBlur: 25, qbTint: 0, qbPadX: 182, qbPadY: 10, qbRadius: 40, qbFade: 26,
   bizLayout: 0,
   baseDark: 1, glowStrength: 0.8, glowHue1: 205, glowHue2: 170, glowSize: 1, glowMove: 0.6, edgeLight: 0.6, accentHue: 195, accentSat: 0.75, accentWords: 1,
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
   pageClouds: 0.8, pageCloudOpacity: 0.06, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
-  shOn: 1, shArrow: 4, shAnim: 1, shSpeed: 2, shTravel: 5, shLayout: 0, shFont: 2, shSize: 0.75, shSpacing: 0.3, shCaps: 0, shBright: 0.9, shPlace: 4,
-  brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: 6.5,
+  shOn: 1, shArrow: 4, shAnim: 1, shSpeed: 2, shTravel: 5, shLayout: 0, shFont: 2, shSize: 0.75, shSpacing: 0.3, shCaps: 0, shBright: 0.9, shPlace: 37,
+  brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: 12,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
 /** Settings that are words, not numbers. */
-export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll' };
+export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll', quoteText: '' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
 const STORE = 'ddg-scene-tune-9'; // new name, so old saved slider positions don't override these defaults
@@ -318,7 +319,7 @@ const ARROWS = [
   '',
 ];
 export function applyBrand(): void {
-  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText;
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText;
   // The hint fades away as soon as the visitor starts scrolling.
   const fade = String(Math.max(0, 1 - scrollY / (innerHeight * 0.2)).toFixed(3));
   if (fade !== lastFade) { lastFade = fade; document.documentElement.style.setProperty('--hint-fade', fade); }
@@ -338,7 +339,7 @@ export function applyBrand(): void {
   s.setProperty('--brand-font', fontOf(T.brandFont));
   // The quote under the orb.
   const q = document.querySelector<HTMLElement>('.cn-quote');
-  if (q) { q.textContent = QUOTES[T.quote] ?? QUOTES[0]; q.style.display = T.quoteOn ? '' : 'none'; }
+  if (q) { q.textContent = TX.quoteText || QUOTES[T.quote] || QUOTES[0]; q.style.display = T.quoteOn ? '' : 'none'; }
   s.setProperty('--quote-font', fontOf(T.quoteFont));
   s.setProperty('--quote-size', String(T.quoteSize));
   s.setProperty('--quote-weight', String(T.quoteWeight));
