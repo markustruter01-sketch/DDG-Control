@@ -8,6 +8,7 @@ import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWater } from './water';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
+import { makeClouds3D } from './clouds';
 import { makeWords } from './words3d';
 import { makeRiverPipe } from './riverPipe';
 import { makeStars } from './stars3d';
@@ -118,6 +119,10 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     scene.add(riverPipe.group);
     disposables.push(...riverPipe.disposables);
     let pipeR = -1;
+    // Soft low clouds lying over the land.
+    const clouds = makeClouds3D(heightAt, small);
+    scene.add(clouds.group);
+    disposables.push(...clouds.disposables);
     const stars = makeStars(scene);
     disposables.push(...stars.disposables);
 
@@ -220,6 +225,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       words.mat.uniforms.uOpacity.value = 1 - wordsOut;
       words.mat.uniforms.uBright.value = T.wordsBright; words.refl.uniforms.uBright.value = T.wordsBright;
       words.refl.uniforms.uOpacity.value = T.wordsReflect * (1 - wordsOut);
+      clouds.update(clock, camera, 1 - k, show);
       stars.update(now, camera, T, k < 0.3);
       renderer.render(scene, camera);
     };

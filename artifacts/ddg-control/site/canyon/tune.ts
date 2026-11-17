@@ -104,6 +104,23 @@ export const SPECS: Spec[] = [
   { group: 'Quote background', key: 'qbPadY', label: 'Height around the text', min: 0, max: 120, step: 2 },
   { group: 'Quote background', key: 'qbRadius', label: 'Rounded corners', min: 0, max: 120, step: 2 },
   { group: 'Quote background', key: 'qbFade', label: 'Edge fall-off (soft ← → softer)', min: 0, max: 50, step: 1 },
+  // Low clouds over the wireframe land (3D)
+  { group: 'Clouds over the land', key: 'cloudsOn', label: 'Show them (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Clouds over the land', key: 'cloudCount', label: 'How many', min: 0, max: 1, step: 0.02 },
+  { group: 'Clouds over the land', key: 'cloudOpacity', label: 'How see-through (0 invisible)', min: 0, max: 1, step: 0.01 },
+  { group: 'Clouds over the land', key: 'cloudSize', label: 'Size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Clouds over the land', key: 'cloudFlat', label: 'Shape (flat ← → puffy)', min: 0.3, max: 2, step: 0.05 },
+  { group: 'Clouds over the land', key: 'cloudHeight', label: 'Height above the ground', min: 0, max: 6, step: 0.1 },
+  { group: 'Clouds over the land', key: 'cloudSpread', label: 'Over the river too (0 sides only, 1 everywhere)', min: 0, max: 1, step: 0.05 },
+  { group: 'Clouds over the land', key: 'cloudDrift', label: 'Drift speed', min: 0, max: 4, step: 0.05 },
+  { group: 'Clouds over the land', key: 'cloudTint', label: 'Colour (0 white, 1 moonlit blue)', min: 0, max: 1, step: 0.05 },
+  // Clouds behind the rest of the page
+  { group: 'Clouds behind the page', key: 'pageClouds', label: 'How many (0 none)', min: 0, max: 1, step: 0.02 },
+  { group: 'Clouds behind the page', key: 'pageCloudOpacity', label: 'How see-through', min: 0, max: 1, step: 0.01 },
+  { group: 'Clouds behind the page', key: 'pageCloudSize', label: 'Size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Clouds behind the page', key: 'pageCloudDepth', label: 'Depth (0 still ← → moves with the page)', min: 0, max: 1, step: 0.02 },
+  { group: 'Clouds behind the page', key: 'pageCloudDrift', label: 'Drift speed', min: 0, max: 4, step: 0.05 },
+  { group: 'Clouds behind the page', key: 'pageCloudBlur', label: 'Extra softness (blur)', min: 0, max: 20, step: 0.5 },
   // The business reel
   { group: 'Businesses', key: 'bizLayout', label: 'Layout (0 3D reel, 1 stacked)', min: 0, max: 1, step: 1 },
   // "Scroll down" hint
@@ -147,6 +164,8 @@ export const DEFAULTS: Record<string, number> = {
   quote: 0, quoteOn: 1, quoteFont: 3, quoteSize: 1, quoteWeight: 300, quoteSpacing: 0, quoteCaps: 0, quoteAlign: 0, quoteWidth: 30, quoteLift: 0,
   qbOn: 1, qbDark: 0.6, qbBlur: 14, qbTint: 0, qbPadX: 70, qbPadY: 34, qbRadius: 40, qbFade: 26,
   bizLayout: 0,
+  cloudsOn: 1, cloudCount: 0.35, cloudOpacity: 0.3, cloudSize: 1, cloudFlat: 1, cloudHeight: 1.5, cloudSpread: 0.2, cloudDrift: 0.6, cloudTint: 0.5,
+  pageClouds: 0.4, pageCloudOpacity: 0.16, pageCloudSize: 1, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
   shOn: 1, shArrow: 0, shAnim: 1, shSpeed: 2, shTravel: 8, shLayout: 0, shFont: 3, shSize: 1, shSpacing: 0.3, shCaps: 1, shBright: 0.7, shPlace: 11,
   brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: -2.5,
 };

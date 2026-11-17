@@ -8,6 +8,7 @@ import { Build, EnquiryForm } from './Build';
 import { FinancePage } from './Finance';
 import { QuotePage } from './Quote';
 import { drawPipes, fillPipes } from './canyon/wires';
+import { mountPageClouds } from './canyon/cloudPaint';
 import { CHARITY, COMPANY, HOME, START, QUOTES } from './content';
 import { About, Run, Showcase } from './Journey';
 
@@ -103,6 +104,8 @@ const QUOTE = 0;
 function Home() {
   const summary = usePublicSummary();
   const pipes = usePipes();
+  // Soft clouds behind the page, seen blurred through the glass panels.
+  useEffect(() => mountPageClouds(), []);
   // Opened at a section (/#build from another page): go there once the page is drawn.
   useEffect(() => {
     const id = window.location.hash.slice(1);
