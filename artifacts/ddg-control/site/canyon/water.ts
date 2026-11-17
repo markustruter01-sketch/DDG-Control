@@ -121,8 +121,8 @@ float surface(vec2 p, float detail) {
   // gentle wave trains crossing it, and two faint layers of fine ripples drifting in different
   // directions (blended, they never repeat and never look like a pattern).
   // Preview styles: how much surface texture each one keeps (1 = today's water).
-  float rough = uVar < 0.5 ? 1.0 : uVar < 1.5 ? 0.18 : uVar < 2.5 ? 0.45 : uVar < 3.5 ? 0.08 : 0.3;
-  detail *= uVar > 0.5 ? 0.0 : 1.0;
+  float rough = uVar < 0.5 ? 1.0 : uVar < 1.5 ? 0.18 : uVar < 2.5 ? 0.45 : uVar < 3.5 ? 0.08 : 0.345;
+  detail *= uVar > 0.5 ? (uVar > 3.5 ? 0.15 : 0.0) : 1.0;
   float h = 0.16 * rough * snoise(f * vec2(0.11, 0.055));
   h += 0.045 * rough * snoise(f * vec2(0.26, 0.14) + vec2(3.1, -uTime * 0.25));
   h += rough * (0.035 * sin(dot(p, vec2(0.21, 0.43)) - uTime * 1.1) + 0.022 * sin(dot(p, vec2(-0.37, 0.29)) - uTime * 1.45) + 0.014 * sin(dot(p, vec2(0.52, -0.18)) - uTime * 1.9));
@@ -288,7 +288,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
       const rad = 2.5 + a * 3.5 + out * s, ang = (a * 37 + c * 11) % 6.283 + wind * s, cos = Math.cos(ang), sin = Math.sin(ang);
       const x = f.orbX + rad * cos, z = f.orbZ + rad * sin, y = waterY + up * s - 0.5 * G * s * s;
       const flying = power > 0.02 && y > waterY && y > heightAt(x, z) * f.flat;
-      const size = flying ? (0.05 + 0.08 * c * c) * Math.min(1, s * 14) * Math.min(1, power * 2) : 0;
+      const size = flying ? (0.032 + 0.05 * c * c) * Math.min(1, s * 14) * Math.min(1, power * 2) : 0;
       vel.set(out * cos - rad * wind * sin, up - G * s, out * sin + rad * wind * cos);
       const speed = vel.length();
       drop.position.set(x, y, z);

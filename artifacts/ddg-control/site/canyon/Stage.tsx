@@ -67,7 +67,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     // Both sides: the grid's triangles face downwards, so one-sided the surface was never drawn from above.
     const surfMat = new MeshBasicMaterial({ color: 0x07090f, side: DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
     const lineMat = new LineBasicMaterial({ color: 0x6cc7f0, transparent: true, opacity: 0.34 });
-    scene.add(new Mesh(surfGeo, surfMat), new LineSegments(lineGeo, lineMat));
+    const land = new Mesh(surfGeo, surfMat);
+    scene.add(land, new LineSegments(lineGeo, lineMat));
     disposables.push(surfGeo, lineGeo, surfMat, lineMat);
 
     // The night sky: stars and the Milky Way. The river mirrors the same sky.
@@ -93,13 +94,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
 
     // Preview switches (only read from the page address, e.g. #w2-grass): a water design 1-4 and grass.
     const tag = location.hash;
-    const variant = Number(/w([1-4])/.exec(tag)?.[1] ?? 0), grassOn = /grass/.test(tag);
+    const variant = Number(/w([0-4])/.exec(tag)?.[1] ?? 4), grassOn = !/nograss/.test(tag);
     water.setVariant(variant);
     const grass = grassOn ? makeGrass({ small, heightAt, W, D, Z0 }) : null;
     if (grass) {
       scene.add(grass.mesh);
       disposables.push(...grass.disposables);
-      surfMat.color.set(0x0c1f10); // dark green ground under the blades
+      land.material = grass.ground; // the ground is painted as more grass
       lineMat.visible = false;
     }
 
@@ -149,7 +150,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1 - ease(k * 3), fogNear: fog.near, fogFar: fog.far,
       });
-      if (grass) { grass.update(clock, 1 - k); const gu = (grass.mesh.material as import('three').ShaderMaterial).uniforms; gu.uFogNear.value = fog.near; gu.uFogFar.value = fog.far; }
+      grass?.update(clock, 1 - k, orbit.position, fog.near, fog.far);
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(frame);
