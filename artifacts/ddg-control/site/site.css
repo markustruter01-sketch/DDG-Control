@@ -373,23 +373,27 @@ p { margin: 0; }
 .cn-head h2 { margin-top: 12px; font-size: clamp(26px, 3vw, 44px); }
 .cn-page .s-main { gap: clamp(96px, 13vh, 130px); padding-top: clamp(96px, 13vh, 130px); }
 .cn-page #businesses h2 { margin-bottom: clamp(72px, 10vh, 96px); }
-/* A pipe: dark glass, then the water inside it, then glints of light moving along the water. */
-.cn-pipes { position: absolute; left: 0; top: 0; width: 100%; z-index: 0; pointer-events: none; overflow: visible; }
+/* A pipe: thin dark glass with blue water inside. */
+.cn-pipes { position: absolute; left: 0; top: 0; width: 100%; z-index: 2; pointer-events: none; overflow: visible; }
 .cn-pipes path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.cn-pipes .wall { stroke: rgba(255, 255, 255, 0.13); stroke-width: 15; }
-.cn-pipes .hollow { stroke: #0b0e14; stroke-width: 12.5; }
-/* --full (0 to 1) is how far the water has run down this pipe; wires.ts sets it as you scroll. */
-.cn-pipes .fill { stroke-dasharray: 1 1; stroke-dashoffset: calc(1 - var(--full, 0)); }
-.cn-pipes .water { stroke: #1d6f93; stroke-width: 8.5; filter: drop-shadow(0 0 5px rgba(108, 199, 240, 0.45)); }
-.cn-pipes .glint { stroke: rgba(205, 238, 255, 0.75); stroke-width: 2.4; stroke-dasharray: 9 38; animation: cn-flow 1.3s linear infinite; }
-.cn-pipes .glint.slow { stroke: rgba(108, 199, 240, 0.8); stroke-width: 5; stroke-dasharray: 22 61; animation: cn-flow-slow 2.9s linear infinite; }
-.cn-pipes .shine { stroke: rgba(255, 255, 255, 0.16); stroke-width: 1.2; transform: translate(-3.2px, 0); }
-.cn-pipes .dry .water, .cn-pipes .dry g { opacity: 0; }
-.cn-pipes .port { fill: #0b0e14; stroke: rgba(108, 199, 240, 0.55); stroke-width: 1.5; }
-/* Each glint moves by a whole number of its own dash pattern, so the loop has no jump. */
-@keyframes cn-flow { to { stroke-dashoffset: -141; } }
-@keyframes cn-flow-slow { to { stroke-dashoffset: -166; } }
-@media (prefers-reduced-motion: reduce) { .cn-pipes .glint { animation: none; } }
+.cn-pipes .wall path { stroke: rgba(255, 255, 255, 0.10); stroke-width: 3.5; }
+.cn-pipes .hollow path { stroke: #0b0e14; stroke-width: 2.5; }
+.cn-pipes .water path { stroke: #2a8fbd; stroke-width: 1.8; filter: drop-shadow(0 0 3px rgba(108, 199, 240, 0.45)); }
+.cn-pipes .water .dry { opacity: 0; }
+/* The spark at the front of the water: a faint hot point with a few tiny bits flicking off it. */
+.cn-pipes .spark .halo { fill: rgba(150, 215, 255, 0.22); filter: blur(2px); animation: cn-spark 0.9s ease-in-out infinite alternate; }
+.cn-pipes .spark .core { fill: #eaf8ff; filter: drop-shadow(0 0 3px rgba(150, 215, 255, 0.9)); animation: cn-spark 0.23s steps(2) infinite; }
+.cn-pipes .spark .bit { fill: #cfeeff; opacity: 0; animation: cn-bit 1.1s ease-out infinite; }
+.cn-pipes .spark .b1 { --bx: 6px; --by: -5px; }
+.cn-pipes .spark .b2 { --bx: -5px; --by: -6px; animation-delay: 0.37s; }
+.cn-pipes .spark .b3 { --bx: 3px; --by: 6px; animation-delay: 0.71s; }
+@keyframes cn-spark { from { opacity: 0.55; } to { opacity: 1; } }
+@keyframes cn-bit { 0% { opacity: 0.9; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(var(--bx), var(--by)); } }
+@media (prefers-reduced-motion: reduce) { .cn-pipes .spark * { animation: none; } }
+.cn-measuring * { animation: none !important; }
+/* Panels with a pipe round their edge stay put, so the pipe always sits exactly on the edge. */
+.cn-page .s-card, .cn-page .s-case, .cn-page .s-charity, .cn-page #build .glass-plain { animation: none !important; }
+
 
 /* Our work, compact: small tiles on one line on a PC, a two-by-two block on a phone, so the whole
    row fits on one screen with the heading. (The base .s-work rules above were sized for the old
