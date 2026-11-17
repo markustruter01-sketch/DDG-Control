@@ -86,6 +86,7 @@ export const SPECS: Spec[] = [
   { group: 'Words (We build it all.)', key: 'wordsFade', label: 'How long they stay when scrolling', min: 0.1, max: 1.5, step: 0.05 },
   // The quote under the orb
   { group: 'Quote', key: 'quote', label: 'Which quote', min: 0, max: QUOTES.length - 1, step: 1, names: QUOTES },
+  { group: 'Quote', key: 'quoteText', label: 'Your own words (empty = use the slider)', min: 0, max: 0, step: 0, text: true },
   { group: 'Quote', key: 'quoteOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Quote', key: 'quoteFont', label: 'Font', min: 0, max: 13, step: 1, names: BRAND_FONTS.map((f) => f[0]) },
   { group: 'Quote', key: 'quoteSize', label: 'Text size', min: 0.4, max: 3, step: 0.05 },
@@ -185,7 +186,7 @@ export const DEFAULTS: Record<string, number> = {
 
 export const T: Record<string, number> = { ...DEFAULTS };
 /** Settings that are words, not numbers. */
-export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll' };
+export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll', quoteText: '' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
 const STORE = 'ddg-scene-tune-9'; // new name, so old saved slider positions don't override these defaults
@@ -318,7 +319,7 @@ const ARROWS = [
   '',
 ];
 export function applyBrand(): void {
-  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText;
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText;
   // The hint fades away as soon as the visitor starts scrolling.
   const fade = String(Math.max(0, 1 - scrollY / (innerHeight * 0.2)).toFixed(3));
   if (fade !== lastFade) { lastFade = fade; document.documentElement.style.setProperty('--hint-fade', fade); }
@@ -338,7 +339,7 @@ export function applyBrand(): void {
   s.setProperty('--brand-font', fontOf(T.brandFont));
   // The quote under the orb.
   const q = document.querySelector<HTMLElement>('.cn-quote');
-  if (q) { q.textContent = QUOTES[T.quote] ?? QUOTES[0]; q.style.display = T.quoteOn ? '' : 'none'; }
+  if (q) { q.textContent = TX.quoteText || QUOTES[T.quote] || QUOTES[0]; q.style.display = T.quoteOn ? '' : 'none'; }
   s.setProperty('--quote-font', fontOf(T.quoteFont));
   s.setProperty('--quote-size', String(T.quoteSize));
   s.setProperty('--quote-weight', String(T.quoteWeight));
