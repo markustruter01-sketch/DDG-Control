@@ -738,3 +738,7 @@ p { margin: 0; }
 .j-gal-cap { margin: 4px 6px 12px; min-height: 2.8em; font-size: clamp(14px, 1.05vw, 17px); line-height: 1.4; font-weight: 500; color: #fff; font-family: var(--ng-sans, system-ui, sans-serif); }
 .j-gal-wrap.big .j-gal-cap { margin: 0 4px 14px; min-height: 0; font-size: clamp(15px, 1.2vw, 19px); }
 @media (max-width: 760px) { .j-gal-cap { min-height: 4.2em; } }
+/* Tall phone screens: the logo and name never ride up into the menu, whatever the tuner's lift is. */
+@media (max-aspect-ratio: 4/5) {
+  .cn-brand { bottom: min(calc(100% - var(--cn-oy) + var(--cn-or) + 2.5vh + var(--brand-lift, 0vh)), calc(100% - 190px)); }
+}
