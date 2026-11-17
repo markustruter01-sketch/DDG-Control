@@ -37,6 +37,31 @@ float noise3(vec3 p) {
 vec3 rotY(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(c * p.x + s * p.z, p.y, -s * p.x + c * p.z); }
 vec3 rotX(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(p.x, c * p.y - s * p.z, s * p.y + c * p.z); }
 vec3 rotZ(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(c * p.x - s * p.y, s * p.x + c * p.y, p.z); }
+// Lightning that walks across the surface: now and then a thin, jagged arc flickers on for a
+// split second at a random spot. Two independent streams, so the timing never looks regular.
+float arc(float lane, float rate, float chance) {
+  float slot = floor(uTime * rate + lane * 13.7), lt = fract(uTime * rate + lane * 13.7);
+  float r = hash3(vec3(slot, lane, 1.3));
+  if (r > chance) return 0.0;
+  vec3 c = normalize(vec3(hash3(vec3(slot, 2.1, lane)), hash3(vec3(slot, 5.7, lane)), hash3(vec3(slot, 9.2, lane))) * 2.0 - 1.0);
+  c.z = abs(c.z) * 0.8 + 0.2; // keep most flashes on the side facing the camera
+  c = normalize(c);
+  vec3 t = normalize(cross(c, abs(c.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
+  float a = hash3(vec3(slot, 3.3, lane)) * 6.283;
+  t = t * cos(a) + cross(c, t) * sin(a);
+  vec3 b = cross(c, t);
+  if (dot(vObj, c) < 0.6) return 0.0;
+  float u = dot(vObj, t), v = dot(vObj, b), L = 0.22 + 0.18 * hash3(vec3(slot, 7.7, lane));
+  // Jagged path: two layers of noise bend the line; a short fork leaves it part-way along.
+  float j = (noise3(vec3(u * 9.0, slot, lane)) - 0.5) * 0.09 + (noise3(vec3(u * 31.0, slot + 4.0, lane)) - 0.5) * 0.03;
+  float along = 1.0 - smoothstep(L * 0.6, L, abs(u));
+  float line = exp(-abs(v - j) / 0.0035) * along;
+  float fu = u - L * 0.2, fork = exp(-abs(v - j - fu * 0.8 - (noise3(vec3(u * 27.0, slot, 8.0)) - 0.5) * 0.03) / 0.003) * step(0.0, fu) * (1.0 - smoothstep(0.0, L * 0.45, fu));
+  float glow = exp(-abs(v - j) / 0.03) * along * 0.25;
+  // A quick double flicker, then gone.
+  float flick = exp(-lt * 9.0) * (0.6 + 0.4 * step(0.5, fract(lt * 14.0)));
+  return (line + fork * 0.7 + glow) * flick;
+}
 void main() {
   // Wind bands: noise stretched along the direction of spin, on two tilted axes at two speeds.
   vec3 a = rotY(rotX(vObj, 0.28), uTime * 18.0);
@@ -56,7 +81,9 @@ void main() {
   vec3 col = mix(vec3(0.14, 0.46, 0.92), vec3(0.86, 0.97, 1.0), clamp(bands + centre * 0.5, 0.0, 1.0));
   col *= 0.8 + 0.2 * normalize(vN).y; // a little darker underneath, so it reads as a round ball
   col += rim * vec3(0.45, 0.8, 1.0) * 0.9;
-  gl_FragColor = vec4(col, clamp(0.58 + bands * 0.4 + rim * 0.45 + centre * 0.2, 0.0, 1.0) * uOpacity);
+  float zap = clamp(arc(0.0, 2.6, 0.16) + arc(1.0, 3.7, 0.11), 0.0, 1.5);
+  col += vec3(0.85, 0.95, 1.0) * zap * 1.3;
+  gl_FragColor = vec4(col, clamp(0.58 + bands * 0.4 + rim * 0.45 + centre * 0.2 + zap * 0.4, 0.0, 1.0) * uOpacity);
 }`;
 
 export function makeAirOrb(R: number) {

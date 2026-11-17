@@ -7,6 +7,7 @@ import { makeAirOrb } from './airOrb';
 import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWater } from './water';
+import { makeShacks } from './shacks';
 
 /**
  * Home background (fixed): a night sky with the Milky Way over a landscape of ice-blue lines (see landscapes.ts for its shape) with the DDG core, a fast-spinning
@@ -90,6 +91,11 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     scene.add(water.river, water.spray);
     disposables.push(...water.disposables);
 
+    // The four businesses: a shack each on the banks, each piping water into the river.
+    const shacks = makeShacks(heightAt);
+    scene.add(shacks.group);
+    disposables.push(...shacks.disposables);
+
     const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
     resize(); addEventListener('resize', resize);
 
@@ -136,6 +142,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1 - ease(k * 3), fogNear: fog.near, fogFar: fog.far,
       });
+      shacks.update(clock, 1 - ease(k * 3));
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(frame);

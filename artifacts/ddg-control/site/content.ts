@@ -191,7 +191,6 @@ export const QUOTE_PAGE = {
 export const HOME = {
   eyebrow: 'Digital Dynamics Group',
   title: 'We build it all.',
-  core: 'AI core · powering 4 businesses',
   powers: [
     { n: '01', name: 'Coffee', line: 'Beans to your door' },
     { n: '02', name: 'Finance', line: 'Our own trading platform' },

@@ -99,11 +99,14 @@ float surface(vec2 p, float detail) {
   float d = length(q), stir = stirAt(d);
   vec2 f = uOrb + turn(q, -1.1 * stir);
   f.y -= uTime * 4.0;
-  // Away from the orb the water is close to glass: two long, low swells and a faint finer one.
-  float h = 0.22 * snoise(f * vec2(0.13, 0.065));
-  h += 0.07 * snoise(f * vec2(0.3, 0.16) + vec2(3.1, -uTime * 0.3));
-  h += 0.012 * detail * snoise(f * vec2(0.8, 0.45) + vec2(-uTime * 0.25, 5.2));
-  h += stir * (0.5 * swirl(q, d, 3.0, 0.9, 5.0) + 0.14 * swirl(q, d, 7.0, 2.2, 9.0));
+  // Away from the orb the water is close to glass: long, low swells moving with the current, a few
+  // gentle wave trains crossing it, and two faint layers of fine ripples drifting in different
+  // directions (blended, they never repeat and never look like a pattern).
+  float h = 0.16 * snoise(f * vec2(0.11, 0.055));
+  h += 0.045 * snoise(f * vec2(0.26, 0.14) + vec2(3.1, -uTime * 0.25));
+  h += 0.035 * sin(dot(p, vec2(0.21, 0.43)) - uTime * 1.1) + 0.022 * sin(dot(p, vec2(-0.37, 0.29)) - uTime * 1.45) + 0.014 * sin(dot(p, vec2(0.52, -0.18)) - uTime * 1.9);
+  h += detail * (0.009 * snoise(p * 0.9 + vec2(uTime * 0.21, -uTime * 0.33)) + 0.007 * snoise(p * 1.6 + vec2(-uTime * 0.29, -uTime * 0.17) + 7.3));
+  h += stir * (0.42 * swirl(q, d, 3.0, 0.9, 5.0) + 0.05 * swirl(q, d, 7.0, 2.2, 9.0));
   return h;
 }
 void main() {
@@ -128,14 +131,22 @@ void main() {
   vec3 body = mix(vec3(0.05, 0.3, 0.36), vec3(0.004, 0.03, 0.07), 1.0 - exp(-depth * 0.6));
   float reach = uGlow * exp(-length(uOrbPos.xz - vWorld.xz) / 16.0);
   body *= 0.75 + 1.3 * max(dot(n, toOrb), 0.0) * reach;
+  // Light passing through: shallows glow faintly, with soft moving light-lines on the bed.
+  float shallow = exp(-depth * 1.1);
+  float caust = pow(0.5 + 0.5 * snoise(vP * 0.7 + vec2(uTime * 0.18, -uTime * 0.4)), 6.0) + pow(0.5 + 0.5 * snoise(vP * 1.1 - vec2(uTime * 0.23, uTime * 0.31) + 4.0), 6.0);
+  body += vec3(0.1, 0.32, 0.34) * caust * shallow * 0.35 * (0.4 + reach);
   vec3 col = mix(body, sky, fresnel);
+  // The orb as a light: a tight, bright glint on the water under it and a softer sheen round that.
+  vec3 hv = normalize(toOrb + v);
+  float nh = max(dot(n, hv), 0.0);
+  col += vec3(0.8, 0.93, 1.0) * uGlow * (pow(nh, 420.0) * 2.2 + pow(nh, 64.0) * 0.18) * exp(-length(uOrbPos.xz - vWorld.xz) / 30.0);
 
   // Foam: along the banks (more where the orb throws water at them), and on the spiral arms.
   vec2 q = vP - uOrb;
   float d = length(q), stir = stirAt(d);
   float lace = (0.5 + 0.5 * snoise(vP * 0.55 + vec2(0.0, -uTime * 1.3))) * (0.5 + 0.5 * snoise(vP * 1.5 + vec2(1.3, -uTime * 2.0)));
   float shore = (1.0 - smoothstep(0.0, 0.5, depth)) * smoothstep(0.14, 0.36, lace) * (0.3 + 1.8 * stir);
-  float churn = stir * 1.3 * (smoothstep(0.2, 1.0, swirl(q, d, 3.0, 0.9, 5.0)) * (0.35 + 1.7 * lace) + smoothstep(0.5, 1.0, swirl(q, d, 7.0, 2.2, 9.0)) * (0.1 + 1.3 * lace));
+  float churn = stir * 1.15 * smoothstep(0.25, 1.0, swirl(q, d, 3.0, 0.9, 5.0)) * (0.3 + 1.5 * lace);
   float foam = clamp(shore + churn, 0.0, 1.0);
   col = mix(col, vec3(0.8, 0.93, 1.0), foam * 0.85);
 

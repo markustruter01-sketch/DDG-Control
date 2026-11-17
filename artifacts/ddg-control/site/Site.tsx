@@ -149,8 +149,7 @@ function Home() {
         <section className="cn-hero">
           <Nav />
           <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
-          <p className="cn-tag">{HOME.core}</p>
-          <ul className="cn-readout" aria-label="What the AI core powers">
+          <ul className="cn-readout" aria-label="Our four businesses">
             {HOME.powers.map((b) => <li key={b.n}><em>{b.n}</em><b>{b.name}</b><span>{b.line}</span></li>)}
           </ul>
           <div className="cn-sign">
