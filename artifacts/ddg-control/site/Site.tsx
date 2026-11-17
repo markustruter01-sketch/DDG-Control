@@ -60,7 +60,6 @@ function Nav({ home = false }: { home?: boolean }) {
         <Link href="/finance">Finance</Link>
         <a href="/#build" onClick={section('build')}>Prices</a>
         <a href="/#charity" onClick={section('charity')}>Charity</a>
-        <a className="s-nav-cta" href="/#start" onClick={section('start')}>Get a quote</a>
       </nav>
     </header>
   );

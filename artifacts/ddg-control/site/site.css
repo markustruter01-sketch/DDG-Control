@@ -20,9 +20,10 @@ p { margin: 0; }
 :root { --s-gutter: clamp(16px, 4vw, 96px); }
 .s-nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; margin: 0 auto; padding: 20px var(--s-gutter); width: 100%; box-sizing: border-box; }
 /* Name and logo in the middle of the top bar; links on the right. */
-.s-nav .s-brand { grid-column: 2; justify-self: center; }
-.s-nav nav { grid-column: 3; justify-self: end; }
-@media (max-width: 760px) { .s-nav { grid-template-columns: auto 1fr; } .s-nav .s-brand { grid-column: 1; justify-self: start; } .s-nav nav { grid-column: 2; } }
+.s-nav .s-brand { grid-column: 1; justify-self: start; }
+/* The menu sits in the middle of the screen (Markus, 17 Nov). */
+.s-nav nav { grid-column: 2; justify-self: center; }
+@media (max-width: 760px) { .s-nav { gap: 8px; } }
 .s-brand { display: inline-flex; align-items: center; gap: 10px; font-size: clamp(16px, 1.15vw, 20px); letter-spacing: 0.01em; white-space: nowrap; }
 .s-brand b { font-weight: 500; }
 /* The glitch mark is on black; "screen" lets only its light parts show on the dark page. */
@@ -617,7 +618,3 @@ p { margin: 0; }
   border-radius: 999px; background: var(--ng-text); color: var(--ng-night); font: 500 15px/1 var(--ng-sans); text-decoration: none;
   opacity: var(--cn-fade, 1); pointer-events: var(--cn-pe, auto); transform: translateY(var(--cn-dy, 0px)); box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
 .cn-cta:hover { background: #fff; }
-/* "Get a quote" in the menu: the one filled button. */
-.s-nav nav a.s-nav-cta { padding: 0 16px; border-radius: 999px; background: var(--ng-text); color: var(--ng-night); font-weight: 500; }
-.s-nav nav a.s-nav-cta:hover { background: #fff; color: var(--ng-night); }
-@media (max-width: 760px) { .s-nav nav a.s-nav-cta { padding: 0 12px; } }
