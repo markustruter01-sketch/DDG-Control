@@ -145,7 +145,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const top = fadeEl ? fadeEl.getBoundingClientRect().top : vh;
       const show = Math.min(1, Math.max(0, (top - vh * 0.3) / (vh * 0.55)));
       stage.style.opacity = String(show);
-      if (show <= 0) { document.documentElement.style.setProperty('--pipe-join', '1'); return; }
+      if (show <= 0) { document.documentElement.style.setProperty('--pipe-join', '1'); topEl.style.setProperty('--cn-fade', '0'); lastAlign = ''; return; }
 
       // 0 → 1 over the hero and the room after it: the canyon settles into a flat grid seen from above.
       const p = Math.min(1, Math.max(0, smoothY / (vh * 1.35)));
@@ -185,7 +185,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const [oy0, or0] = onScreen(restCam, pv.clone(), R);
       // The name, frame, quote and hint fade out early, well before the orb has gone.
       const fadeOut = 1 - ease((p - 0.06) / 0.22);
-      const align = `${fadeOut.toFixed(3)}|${(oy + scrollY).toFixed(1)}|${(orR * FRAME).toFixed(1)}|${(oy + orR * FRAME + scrollY - (oy0 + or0 * FRAME)).toFixed(1)}`;
+      // These words sit in a fixed layer (.cn-follow), so they use screen positions straight from the
+      // orb: nothing here waits on the page's own scrolling, so they move exactly with it.
+      const align = `${fadeOut.toFixed(3)}|${oy.toFixed(2)}|${(orR * FRAME).toFixed(2)}|${(oy + orR * FRAME - (oy0 + or0 * FRAME)).toFixed(2)}`;
       if (align !== lastAlign) {
         lastAlign = align;
         const [f, a, b, c] = align.split('|');

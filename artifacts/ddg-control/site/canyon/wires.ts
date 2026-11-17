@@ -97,7 +97,14 @@ function layout(page: HTMLElement, svg: SVGSVGElement): void {
   const join = (bx: Box, after: number[]): { seg: number; ex: number } => {
     const k = 40, y0 = at[1] + 2, y1 = bx.y - 2;
     const tries = [at[0], bx.cx, bx.r - k, bx.x + k, bx.r - 2 * k, bx.x + 2 * k];
-    const xc = tries.find((x) => clearAt(x, y0, y1)) ?? bx.r - k;
+    const xc = tries.find((x) => clearAt(x, y0, y1));
+    if (xc === undefined) {
+      // No clear column straight down (narrow screens): run down the page's edge instead, past the words.
+      const gx = [6, W - 6].find((x) => clearAt(x, y0, y1)) ?? 6;
+      const t1 = at[1] + Math.min(18, (bx.y - at[1]) / 4), t2 = bx.y - Math.min(18, (bx.y - at[1]) / 4);
+      const seg = add([at, [at[0], t1], [gx, t1], [gx, t2], [bx.cx, t2], [bx.cx, bx.y]], after);
+      return { seg, ex: bx.cx };
+    }
     const turn = at[1] + Math.min(28, (bx.y - at[1]) / 3);
     const seg = Math.abs(xc - at[0]) < 1 ? add([at, [xc, bx.y]], after) : add([at, [at[0], turn], [xc, turn], [xc, bx.y]], after);
     return { seg, ex: xc };

@@ -117,10 +117,13 @@ function Home() {
         <section className="cn-hero">
           <Nav home />
           {/* The company's name and mark, above the orb. "We build it all." stands in the 3D scene. */}
-          <h1 className="cn-brand"><img className="cn-logo-glitch" src="/ddg-core-logo.png" alt="" /><img className="cn-logo-white" src="/ddg-logo-white-512.png" alt="" /><span>Digital Dynamics<br /><span className="cn-group">Group</span></span><span className="sr-only"> · {HOME.title}</span></h1>
-          <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
-          <p className="cn-quote">{QUOTES[QUOTE]}</p>
-          <div className="cn-scroll lay-0 anim-1" aria-hidden="true"><span className="cn-scroll-words">Scroll down</span><span className="cn-scroll-arrow" /></div>
+          {/* Fixed to the screen and moved by the 3D stage, so the name, frame and quote stay on the orb. */}
+          <div className="cn-follow">
+            <h1 className="cn-brand"><img className="cn-logo-glitch" src="/ddg-core-logo.png" alt="" /><img className="cn-logo-white" src="/ddg-logo-white-512.png" alt="" /><span>Digital Dynamics<br /><span className="cn-group">Group</span></span><span className="sr-only"> · {HOME.title}</span></h1>
+            <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
+            <p className="cn-quote">{QUOTES[QUOTE]}</p>
+            <div className="cn-scroll lay-0 anim-1" aria-hidden="true"><span className="cn-scroll-words">Scroll down</span><span className="cn-scroll-arrow" /></div>
+          </div>
         </section>
         {/* Room to scroll while the canyon settles flat and the core lifts away. */}
         <div className="cn-room" aria-hidden="true" />

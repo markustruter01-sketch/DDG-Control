@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { Link } from 'wouter';
 import { ABOUT, BUILT, RUN, SHOWCASE, type ShowcaseKey } from './content';
 import { ABOUT_ART, COFFEE_ART, CONTROL_ART, FINANCE_ART, FITNESS_ART } from './ink';
@@ -6,6 +6,7 @@ import { ABOUT_ART, COFFEE_ART, CONTROL_ART, FINANCE_ART, FITNESS_ART } from './
 // The home page journey after the 3D first screen. Every panel marked data-pipe gets a water pipe
 // round its edge (canyon/wires.ts), in page order.
 
+const TURN_MS = 9000; // how long each business shows before the reel turns by itself
 const ART: Record<ShowcaseKey, string> = { finance: FINANCE_ART, coffee: COFFEE_ART, fitness: FITNESS_ART };
 
 /** A white-ink drawing (fixed SVG text from ink.ts, never visitor input). */
@@ -44,9 +45,17 @@ export function About({ onSee }: { onSee: () => void }) {
 /** 2. What we have built: one wide card at a time, on a 3D reel. Finance first. */
 export function Showcase() {
   const [at, setAt] = useState(0);
+  const [auto, setAuto] = useState(true); // turns itself every few seconds until the visitor takes over
+  const [held, setHeld] = useState(false); // paused while the pointer or keyboard focus is on the reel
   const n = SHOWCASE.length;
-  const go = (i: number) => setAt(((i % n) + n) % n);
+  const go = (i: number, byHand = true) => { setAt(((i % n) + n) % n); if (byHand) setAuto(false); };
   const off = (i: number) => { let d = i - at; if (d > n / 2) d -= n; if (d < -n / 2) d += n; return d; };
+  const turning = auto && !held && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  useEffect(() => {
+    if (!turning) return;
+    const t = window.setTimeout(() => go(at + 1, false), TURN_MS);
+    return () => window.clearTimeout(t);
+  }, [at, turning]); // eslint-disable-line react-hooks/exhaustive-deps
   // Swipe on phones and trackpads.
   const start = useRef<number | null>(null);
   const down = (e: PointerEvent) => { start.current = e.clientX; };
@@ -67,34 +76,42 @@ export function Showcase() {
         <p className="j-line">{BUILT.line}</p>
       </div>
       <div className="j-core" data-pipe aria-hidden="true"><img src="/ddg-logo-white-512.png" alt="" /></div>
-      <div className="j-reel" role="region" aria-roledescription="carousel" aria-label="Our businesses" tabIndex={0} onKeyDown={keys} onPointerDown={down} onPointerUp={up}>
-        <div className="j-slot" data-pipe aria-hidden="true" />
-        {SHOWCASE.map((b, i) => {
-          const o = off(i);
-          return (
-            <article key={b.key} className="j-card" data-pipe data-off={o} aria-roledescription="slide" aria-label={`${i + 1} of ${n}: ${b.name}`}
-              aria-hidden={o !== 0} inert={o !== 0} onClick={o !== 0 ? () => go(i) : undefined}>
-              <Art svg={ART[b.key]} className="j-card-art" />
-              <div className="j-card-text">
-                <div className="j-card-top"><Mark k={b.key} /><div><b>{b.name}</b><span className="j-kind">{b.kind}</span></div></div>
-                <h3>{b.title}</h3>
-                <p>{b.line}</p>
-                {b.steps.length > 0 && <ol className="j-steps">{b.steps.map((s) => <li key={s}>{s}</li>)}</ol>}
-                {b.note && <p className="s-note">{b.note}</p>}
-                {b.link ? (b.link.external
-                  ? <a className="s-btn" href={b.link.href} target="_blank" rel="noopener noreferrer">{b.link.label} ↗</a>
-                  : <Link className="s-btn" href={b.link.href}>{b.link.label} →</Link>)
-                  : <span className="j-soon">Coming soon</span>}
-              </div>
-            </article>
-          );
-        })}
-      </div>
-      <div className="j-reel-nav">
-        <span className="j-count" aria-live="polite">{String(at + 1).padStart(2, '0')} / {String(n).padStart(2, '0')} · {SHOWCASE[at].name}</span>
-        <div className="j-dots">{SHOWCASE.map((b, i) => <button key={b.key} type="button" aria-label={`Show ${b.name}`} aria-current={i === at} onClick={() => go(i)} />)}</div>
-        <button type="button" className="j-arrow" aria-label="Previous business" onClick={() => go(at - 1)}>←</button>
-        <button type="button" className="j-arrow" aria-label="Next business" onClick={() => go(at + 1)}>→</button>
+      <div className="j-reel-wrap" onPointerEnter={() => setHeld(true)} onPointerLeave={() => setHeld(false)} onFocus={() => setHeld(true)} onBlur={() => setHeld(false)}>
+        {/* The three businesses as tabs along the top of the reel: always shows there are three. */}
+        <div className="j-tabs" role="tablist" aria-label="Our businesses">
+          {SHOWCASE.map((b, i) => (
+            <button key={b.key} type="button" role="tab" aria-selected={i === at} className="j-tab" onClick={() => go(i)}>
+              <Mark k={b.key} /><span><b>{b.name}</b><em>{b.tab}</em></span>
+              <i className="j-tab-bar" aria-hidden="true">{i === at && <i key={`${at}-${turning}`} className={turning ? 'run' : 'full'} style={{ animationDuration: `${TURN_MS}ms` }} />}</i>
+            </button>
+          ))}
+        </div>
+        <div className="j-reel" role="region" aria-roledescription="carousel" aria-label="Our businesses" tabIndex={0} onKeyDown={keys} onPointerDown={down} onPointerUp={up}>
+          <div className="j-slot" data-pipe aria-hidden="true" />
+          {SHOWCASE.map((b, i) => {
+            const o = off(i);
+            return (
+              <article key={b.key} className="j-card" data-pipe data-off={o} role="tabpanel" aria-label={`${i + 1} of ${n}: ${b.name}`}
+                aria-hidden={o !== 0} inert={o !== 0} onClick={o !== 0 ? () => go(i) : undefined}>
+                <Art svg={ART[b.key]} className="j-card-art" />
+                <div className="j-card-text">
+                  <p className="j-count">{String(i + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</p>
+                  <div className="j-card-top"><Mark k={b.key} /><div><b>{b.name}</b><span className="j-kind">{b.kind}</span></div></div>
+                  <h3>{b.title}</h3>
+                  <p>{b.line}</p>
+                  {b.steps.length > 0 && <ol className="j-steps">{b.steps.map((s) => <li key={s}>{s}</li>)}</ol>}
+                  {b.note && <p className="s-note">{b.note}</p>}
+                  {b.link ? (b.link.external
+                    ? <a className="s-btn" href={b.link.href} target="_blank" rel="noopener noreferrer">{b.link.label} ↗</a>
+                    : <Link className="s-btn" href={b.link.href}>{b.link.label} →</Link>)
+                    : <span className="j-soon">Coming soon</span>}
+                </div>
+              </article>
+            );
+          })}
+          <button type="button" className="j-arrow prev" aria-label="Previous business" onClick={() => go(at - 1)}>←</button>
+          <button type="button" className="j-arrow next" aria-label="Next business" onClick={() => go(at + 1)}>→</button>
+        </div>
       </div>
     </section>
   );

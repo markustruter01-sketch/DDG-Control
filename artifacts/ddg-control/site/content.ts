@@ -234,18 +234,18 @@ export const BUILT = {
 
 export type ShowcaseKey = 'finance' | 'coffee' | 'fitness';
 export const SHOWCASE: {
-  key: ShowcaseKey; name: string; kind: string; title: string; line: string; steps: string[];
+  key: ShowcaseKey; name: string; kind: string; tab: string; title: string; line: string; steps: string[];
   link: { label: string; href: string; external: boolean } | null; note?: string;
 }[] = [
-  { key: 'finance', name: 'DDG Finance', kind: 'Quantitative trading platform', title: 'AI systems trading global markets.',
+  { key: 'finance', name: 'DDG Finance', kind: 'Quantitative trading platform', tab: 'Quant trading', title: 'AI systems trading global markets.',
     line: 'Our own trading platform. An AI research council tests every idea before it trades, and every position is checked against the broker every hour.',
     steps: ['Reads stocks, indexes, bonds, gold, crypto and forex', 'Four strategies decide what to hold', 'Orders go to two brokers, with protective stops', 'Every hour, every position is checked against the broker'],
     link: { label: 'See the platform', href: '/finance', external: false }, note: 'Paper trading. Not financial advice.' },
-  { key: 'coffee', name: 'DDG Coffee', kind: 'E-commerce', title: 'An online store for premium coffee beans.',
+  { key: 'coffee', name: 'DDG Coffee', kind: 'E-commerce', tab: 'E-commerce', title: 'An online store for premium coffee beans.',
     line: 'Cattle Dog Coffee. Order in a few taps and we deliver to your door. $1 from every bag goes to animal charities.',
     steps: ['Pick your beans in the online store', 'Pay securely by card', 'The order lands in our command centre', 'Packed and delivered to your door'],
     link: { label: 'Shop coffee', href: PUBLIC_SITES.coffee, external: true } },
-  { key: 'fitness', name: 'DDG Fitness', kind: 'Coming soon', title: 'A global health and fitness app.',
+  { key: 'fitness', name: 'DDG Fitness', kind: 'Coming soon', tab: 'Coming soon', title: 'A global health and fitness app.',
     line: 'Democratising health and fitness for everyone on planet Earth.',
     steps: [], link: null },
 ];
