@@ -39,8 +39,8 @@ vec3 rotX(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(p.x, c * 
 vec3 rotZ(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(c * p.x - s * p.y, s * p.x + c * p.y, p.z); }
 void main() {
   // Wind bands: noise stretched along the direction of spin, on two tilted axes at two speeds.
-  vec3 a = rotY(rotX(vObj, 0.28), uTime * 12.0);
-  vec3 b = rotY(rotZ(vObj, -0.55), uTime * 19.0 + 2.0);
+  vec3 a = rotY(rotX(vObj, 0.28), uTime * 18.0);
+  vec3 b = rotY(rotZ(vObj, -0.55), uTime * 28.5 + 2.0);
   float n1 = noise3(a * vec3(1.5, 8.0, 1.5)) * 0.65 + noise3(a * vec3(3.2, 17.0, 3.2) + 4.0) * 0.35;
   float n2 = noise3(b * vec3(2.2, 12.0, 2.2) + 9.0);
   // Kept light: the white streaks are an accent on the ball, not its main surface.
