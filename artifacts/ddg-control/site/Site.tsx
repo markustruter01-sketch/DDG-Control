@@ -9,14 +9,13 @@ import { FinancePage } from './Finance';
 import { QuotePage } from './Quote';
 import { drawPipes, fillPipes } from './canyon/wires';
 import { mountPageClouds } from './canyon/cloudPaint';
-import { CHARITY, COMPANY, HOME, PRIVACY, START, QUOTES } from './content';
+import { CHARITY, COMPANY, CONTACT, HOME, PRIVACY, START, QUOTES } from './content';
 import { About, Showcase } from './Journey';
 
 // The 3D first screen is loaded on its own, so the page's words never wait for it.
 const Stage = lazy(() => import('./canyon/Stage'));
 
 const LOGO = '/ddg-core-logo.jpg'; // the DDG glitch mark, on black; site.css blends the black away
-const count = (n: number | null | undefined) => (n === null || n === undefined ? '—' : n.toLocaleString('en-AU'));
 const dollars = (cents: number | null | undefined) =>
   cents === null || cents === undefined ? '—' : `$${(cents / 100).toLocaleString('en-AU', { maximumFractionDigits: 0 })}`;
 
@@ -56,10 +55,11 @@ function Nav({ home = false }: { home?: boolean }) {
     <header className={home ? 's-nav s-nav-home' : 's-nav'}>
       <Link href="/" className="s-brand" aria-label="Digital Dynamics Group home"><img src={LOGO} alt="" loading="lazy" /><b><span className="s-brand-full">Digital Dynamics Group</span><span className="s-brand-short">DDG</span></b></Link>
       <nav aria-label="Site">
-        <a href="/#businesses" onClick={section('businesses')}>Projects</a>
+        <a href="/#about" onClick={section('about')}>Portfolio</a>
         <Link href="/finance">Finance</Link>
         <a href="/#build" onClick={section('build')}>Prices</a>
         <a href="/#charity" onClick={section('charity')}>Charity</a>
+        <a href="/#contact" onClick={section('contact')}>Contact</a>
       </nav>
     </header>
   );
@@ -99,10 +99,12 @@ function usePipes() {
 }
 
 /** Which quote shows under the orb (index into QUOTES); the tuner can switch it live. */
-const QUOTE = 10;
+const QUOTE = 15;
 
 function Home() {
   const summary = usePublicSummary();
+  // Raised for charity so far: coffee's $1 a bag, plus the revenue share once it starts. A dash until the number loads.
+  const raised = summary?.coffee_charity_cents == null ? null : summary.coffee_charity_cents + (summary.charity_revenue_share_cents ?? 0);
   const pipes = usePipes();
   // Soft clouds behind the page, seen blurred through the glass panels.
   useEffect(() => mountPageClouds(), []);
@@ -135,9 +137,13 @@ function Home() {
       <div className="cn-page" ref={pipes.page}>
         <svg className="cn-pipes" ref={pipes.svg} aria-hidden="true" />
         <main className="s-main j-main">
-          <About onSee={() => toSection('businesses', true)} />
-          <Build summary={summary} />
+          <About onSee={() => toSection('build', true)} onQuote={() => toSection('start', true)} />
           <Showcase />
+          <section id="charity" className="j-give" data-pipe aria-label={CHARITY.label}>
+            <p className="j-give-sum"><b>{dollars(raised)}</b><span>{CHARITY.label}</span></p>
+            <p className="j-give-line">{CHARITY.body}</p>
+          </section>
+          <Build summary={summary} />
           <section id="start" className="j-panel j-start" data-pipe aria-labelledby="start-title">
             <div className="j-text">
               <p className="s-eyebrow">{START.eyebrow}</p>
@@ -146,19 +152,20 @@ function Home() {
             </div>
             <EnquiryForm />
           </section>
-          <section id="charity" className="s-charity" data-pipe aria-labelledby="c-title">
-            <div>
-              <h2 id="c-title">{CHARITY.title}</h2>
-              <p>{CHARITY.body}</p>
+          <section id="contact" className="j-panel j-contact" data-pipe aria-labelledby="contact-title">
+            <div className="j-text">
+              <p className="s-eyebrow">{CONTACT.eyebrow}</p>
+              <h2 id="contact-title">{CONTACT.title}</h2>
+              <p className="j-line">{CONTACT.line}</p>
             </div>
-            <dl className="s-stats">
-              <div><dt>Raised from coffee sales</dt><dd>{dollars(summary?.coffee_charity_cents)}</dd></div>
-              <div><dt>1% of other revenue · from 1 Jan 2027</dt><dd>{dollars(summary?.charity_revenue_share_cents)}</dd></div>
-              <div><dt>Bags sold</dt><dd>{count(summary?.coffee_bags_sold)}</dd></div>
+            <dl className="j-contact-list">
+              <div><dt>{CONTACT.emailLabel}</dt><dd><a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a></dd></div>
+              <div><dt>{CONTACT.postLabel}</dt><dd>{COMPANY.legalName}<br />{COMPANY.post}</dd></div>
             </dl>
           </section>
         </main>
       </div>
+      <QuoteDock />
       <Footer />
     </>
   );
@@ -180,10 +187,30 @@ function Start() {
   );
 }
 
+/** A "Get a fixed quote" button that stays in the corner once the first screen has scrolled away, so the
+ *  form is always one tap off. It hides while the form itself is on screen. */
+function QuoteDock() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const form = document.getElementById('start')?.getBoundingClientRect();
+      const formOnScreen = !!form && form.top < innerHeight * 0.8 && form.bottom > innerHeight * 0.2;
+      setShow(scrollY > innerHeight * 0.9 && !formOnScreen);
+    };
+    check();
+    addEventListener('scroll', check, { passive: true });
+    return () => removeEventListener('scroll', check);
+  }, []);
+  return (
+    <a className={`s-dock${show ? ' on' : ''}`} href="/#start" tabIndex={show ? 0 : -1} aria-hidden={!show}
+      onClick={(e) => { e.preventDefault(); history.replaceState(null, '', '/#start'); toSection('start', true); }}>{HOME.cta} →</a>
+  );
+}
+
 function Footer() {
   return (
     <footer className="s-footer">
-      <div><b>{COMPANY.legalName}</b><span>ABN {COMPANY.abn} · {COMPANY.place} · <Link href="/privacy">Privacy</Link></span></div>
+      <div><b>{COMPANY.legalName}</b><span>ABN {COMPANY.abn} · {COMPANY.place} · <Link href="/privacy">Privacy</Link></span><span><a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> · {COMPANY.post}</span></div>
       <Socials />
     </footer>
   );

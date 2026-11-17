@@ -1,70 +1,134 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'wouter';
-import { ABOUT, BUILT, RUN, SHOWCASE, type ShowcaseKey } from './content';
+import { ABOUT, BUILT, RUN, SHOTS } from './content';
 
 // The home page journey after the 3D first screen. Every panel marked data-pipe gets a water pipe
 // round its edge (canyon/wires.ts), in page order.
 
-const TURN_MS = 9000; // how long each business shows before the reel turns by itself
-/** Screenshots of the live platforms. Fitness is kept secret until launch, so its picture is blurred. */
-const SHOTS: Record<ShowcaseKey, { src: string; alt: string; secret?: boolean }> = {
-  finance: { src: '/work/finance.webp?v=3', alt: 'The DDG Finance trading dashboard' },
-  coffee: { src: '/work/coffee.webp?v=3', alt: 'The Cattle Dog Coffee admin dashboard' },
-  fitness: { src: '/work/hypest.webp', alt: '', secret: true },
-};
-function Shot({ k }: { k: ShowcaseKey }) {
-  const s = SHOTS[k];
-  return (
-    <div className={`j-shot${s.secret ? ' j-shot-secret' : ''}`}>
-      <img src={s.src} alt={s.alt} loading="lazy" decoding="async" width="1400" height="875" />
-      {s.secret && <span className="j-soon">Coming soon</span>}
-    </div>
-  );
-}
-
 /** 1. What we are. */
-export function About({ onSee }: { onSee: () => void }) {
+export function About({ onSee, onQuote }: { onSee: () => void; onQuote: () => void }) {
   return (
     <section id="about" className="j-panel j-about" data-pipe aria-labelledby="about-title">
       <div className="j-text">
-        <p className="s-eyebrow">{ABOUT.eyebrow}</p>
+        <div className="j-about-top">
+          <p className="s-eyebrow j-brandline"><img src="/ddg-logo-white-512.png" alt="" width="22" height="22" />{ABOUT.brand}</p>
+          <p className="j-portfolio">{ABOUT.portfolio}</p>
+        </div>
         <h2 id="about-title">{ABOUT.title.split('AI-powered').flatMap((part, i) => (i ? [<span key={i} className="j-hi">AI-powered</span>, part] : [part]))}</h2>
+        <p className="j-ticks-label">{ABOUT.builtLabel}</p>
+        <ul className="j-ticks">
+          {ABOUT.built.map((x) => (
+            <li key={x.text}>
+              <span><b>{x.lead}</b> {x.text}</span>
+              {x.href
+                ? (x.external
+                  ? <a className="j-tick-link" href={x.href} target="_blank" rel="noopener noreferrer">{x.name} <i aria-hidden="true">↗</i></a>
+                  : <Link className="j-tick-link" href={x.href}>{x.name} <i aria-hidden="true">→</i></Link>)
+                : <span className="j-tick-soon">{x.name ? `${x.name} \u00b7 ` : ''}{x.soon}</span>}
+              {x.standards && (
+                <details className="j-std">
+                  <summary>{ABOUT.standardsLabel}</summary>
+                  <ul>{ABOUT.standards.map((n) => <li key={n}>{n}</li>)}</ul>
+                </details>
+              )}
+            </li>
+          ))}
+        </ul>
         <p className="j-line">{ABOUT.line}</p>
         <div className="j-actions">
-          <a className="s-btn" href="#businesses" onClick={(e) => { e.preventDefault(); onSee(); }}>{ABOUT.see} ↓</a>
-          <Link className="s-btn fill" href="/start">{ABOUT.start} →</Link>
+          <a className="s-btn" href="#build" onClick={(e) => { e.preventDefault(); onSee(); }}>{ABOUT.see} ↓</a>
+          <a className="s-btn fill" href="/#start" onClick={(e) => { e.preventDefault(); onQuote(); }}>{ABOUT.start} →</a>
         </div>
       </div>
     </section>
   );
 }
 
-/** 2. What we have built: one wide card at a time, on a 3D reel. Finance first. */
-export function Showcase() {
+/** One product's screenshots: a small carousel inside the big one. Arrows step through the pictures, and
+ *  the enlarge button opens the same pictures in a larger box (not full screen). */
+function Gallery({ imgs, name }: { imgs: { src: string; cap: string; alt: string }[]; name: string }) {
   const [at, setAt] = useState(0);
-  const [auto, setAuto] = useState(true); // turns itself every few seconds until the visitor takes over
-  const [held, setHeld] = useState(false); // paused while the pointer or keyboard focus is on the reel
-  const n = SHOWCASE.length;
-  const go = (i: number, byHand = true) => { setAt(((i % n) + n) % n); if (byHand) setAuto(false); };
-  const off = (i: number) => { let d = i - at; if (d > n / 2) d -= n; if (d < -n / 2) d += n; return d; };
-  const turning = auto && !held && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [big, setBig] = useState(false);
+  const n = imgs.length;
+  const step = (d: number) => setAt((at + d + n) % n);
   useEffect(() => {
-    if (!turning) return;
-    const t = window.setTimeout(() => go(at + 1, false), TURN_MS);
-    return () => window.clearTimeout(t);
-  }, [at, turning]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Swipe on phones and trackpads.
-  const start = useRef<number | null>(null);
-  const down = (e: PointerEvent) => { start.current = e.clientX; };
-  const up = (e: PointerEvent) => {
-    if (start.current === null) return;
-    const dx = e.clientX - start.current; start.current = null;
-    if (Math.abs(dx) > 50) go(at + (dx < 0 ? 1 : -1));
+    if (!big) return;
+    const key = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') setBig(false);
+      if (e.key === 'ArrowRight') setAt((v) => (v + 1) % n);
+      if (e.key === 'ArrowLeft') setAt((v) => (v - 1 + n) % n);
+    };
+    addEventListener('keydown', key);
+    return () => removeEventListener('keydown', key);
+  }, [big, n]);
+  const view = (inBox: boolean) => (
+    <div className={inBox ? 'j-gal-wrap big' : 'j-gal-wrap'}>
+    <p className="j-gal-cap" aria-live="polite">{imgs[at].cap}</p>
+    <div className={inBox ? 'j-gal j-gal-big' : 'j-gal'}>
+      {imgs.map((im, i) => <img key={im.src} className={i === at ? 'on' : ''} src={im.src} alt={i === at ? im.alt : ''} loading="lazy" decoding="async" />)}
+      {n > 1 && <>
+        <button type="button" className="j-gal-arrow prev" aria-label={`Previous ${name} screenshot`} onClick={(e) => { e.stopPropagation(); step(-1); }}>‹</button>
+        <button type="button" className="j-gal-arrow next" aria-label={`Next ${name} screenshot`} onClick={(e) => { e.stopPropagation(); step(1); }}>›</button>
+        <span className="j-gal-count">{at + 1} / {n}</span>
+      </>}
+      <button type="button" className="j-gal-zoom" aria-label={inBox ? 'Close the larger view' : 'Make this screenshot bigger'} onClick={(e) => { e.stopPropagation(); setBig(!inBox); }}>{inBox ? '✕' : '⤢'}</button>
+    </div>
+    </div>
+  );
+  return (
+    <>
+      {view(false)}
+      {/* In the page body, not the slide: the slide's glass would otherwise trap a fixed box inside itself. */}
+      {big && createPortal(<div className="j-gal-back" role="dialog" aria-modal="true" aria-label={`${name} screenshots`} onClick={() => setBig(false)}><div onClick={(e) => e.stopPropagation()}>{view(true)}</div></div>, document.body)}
+    </>
+  );
+}
+
+/** A plain sideways carousel of our products. The slides on each side peek in, so it is clear there is more
+ *  to see. Swipe, scroll, the arrows or the dots all move it; the browser does the snapping. The light pipe
+ *  runs round .j-car-slot, a still frame exactly where the slide in front sits, so it never crosses a picture. */
+function Carousel() {
+  const track = useRef<HTMLDivElement>(null);
+  const [at, setAt] = useState(0);
+  const n = SHOTS.length;
+  const go = (i: number) => {
+    const el = track.current; if (!el) return;
+    const slide = el.children[((i % n) + n) % n] as HTMLElement;
+    el.scrollTo({ left: slide.offsetLeft - (el.clientWidth - slide.clientWidth) / 2, behavior: 'smooth' });
   };
-  const keys = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowRight') { e.preventDefault(); go(at + 1); }
-    if (e.key === 'ArrowLeft') { e.preventDefault(); go(at - 1); }
+  const onScroll = () => {
+    const el = track.current; if (!el) return;
+    const mid = el.scrollLeft + el.clientWidth / 2;
+    let best = 0, gap = Infinity;
+    [...el.children].forEach((c, i) => { const s = c as HTMLElement; const d = Math.abs(s.offsetLeft + s.clientWidth / 2 - mid); if (d < gap) { gap = d; best = i; } });
+    if (best !== at) setAt(best);
   };
+  return (
+    <div className="j-car" role="region" aria-roledescription="carousel" aria-label="Screenshots of what we have built">
+      <div className="j-car-slot" data-pipe aria-hidden="true" />
+      <div className="j-car-track" ref={track} onScroll={onScroll}>
+        {SHOTS.map((x, i) => (
+          <figure key={x.key} className={`j-slide${i === at ? ' on' : ''}`} aria-label={`${i + 1} of ${n}: ${x.name}`} onClick={i === at ? undefined : () => go(i)}>
+            <Gallery imgs={x.imgs} name={x.name} />
+            <figcaption>
+              <span><b>{x.name}</b><em>{x.kind}</em></span>
+              {x.external
+                ? <a className="j-tick-link" href={x.href} target="_blank" rel="noopener noreferrer">Open <i aria-hidden="true">↗</i></a>
+                : <Link className="j-tick-link" href={x.href}>Open <i aria-hidden="true">→</i></Link>}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+      <button type="button" className="j-car-arrow prev" aria-label="Previous product" onClick={() => go(at - 1)}>←</button>
+      <button type="button" className="j-car-arrow next" aria-label="Next product" onClick={() => go(at + 1)}>→</button>
+      <div className="j-car-dots">{SHOTS.map((x, i) => <button key={x.key} type="button" aria-label={`Show ${x.name}`} aria-current={i === at} onClick={() => go(i)} />)}</div>
+    </div>
+  );
+}
+
+/** 2. "Complex platforms. Built in-house." and the DDG core. The portfolio itself is the tick list above. */
+export function Showcase() {
   return (
     <section id="businesses" className="j-biz" aria-labelledby="b-title">
       <div className="j-biz-head">
@@ -73,43 +137,7 @@ export function Showcase() {
         <p className="j-line">{BUILT.line}</p>
       </div>
       <div className="j-core" data-pipe aria-hidden="true"><img src="/ddg-logo-white-512.png" alt="" /></div>
-      <div className="j-reel-wrap" onPointerEnter={() => setHeld(true)} onPointerLeave={() => setHeld(false)} onFocus={() => setHeld(true)} onBlur={() => setHeld(false)}>
-        {/* The three businesses as tabs along the top of the reel: always shows there are three. */}
-        <div className="j-tabs" role="tablist" aria-label="Our projects">
-          {SHOWCASE.map((b, i) => (
-            <button key={b.key} type="button" role="tab" aria-selected={i === at} className="j-tab" onClick={() => go(i)}>
-              <span><b>{b.name}</b><em>{b.tab}</em></span>
-              <i className="j-tab-bar" aria-hidden="true">{i === at && <i key={`${at}-${turning}`} className={turning ? 'run' : 'full'} style={{ animationDuration: `${TURN_MS}ms` }} />}</i>
-            </button>
-          ))}
-        </div>
-        <div className="j-reel" role="region" aria-roledescription="carousel" aria-label="Our projects" tabIndex={0} onKeyDown={keys} onPointerDown={down} onPointerUp={up}>
-          <div className="j-slot" data-pipe aria-hidden="true" />
-          {SHOWCASE.map((b, i) => {
-            const o = off(i);
-            return (
-              <article key={b.key} className="j-card" data-pipe data-off={o} role="tabpanel" aria-label={`${i + 1} of ${n}: ${b.name}`}
-                aria-hidden={o !== 0} inert={o !== 0} onClick={o !== 0 ? () => go(i) : undefined}>
-                <Shot k={b.key} />
-                <div className="j-card-text">
-                  <p className="j-count">{String(i + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</p>
-                  <div className="j-card-top"><div><b>{b.name}</b><span className="j-kind">{b.kind}</span></div></div>
-                  <h3>{b.title}</h3>
-                  <p>{b.line}</p>
-                  {b.steps.length > 0 && <ol className="j-steps">{b.steps.map((s) => <li key={s}>{s}</li>)}</ol>}
-                  {b.note && <p className="s-note">{b.note}</p>}
-                  {b.link ? (b.link.external
-                    ? <a className="s-btn" href={b.link.href} target="_blank" rel="noopener noreferrer">{b.link.label} ↗</a>
-                    : <Link className="s-btn" href={b.link.href}>{b.link.label} →</Link>)
-                    : <span className="j-soon">Coming soon</span>}
-                </div>
-              </article>
-            );
-          })}
-          <button type="button" className="j-arrow prev" aria-label="Previous business" onClick={() => go(at - 1)}>←</button>
-          <button type="button" className="j-arrow next" aria-label="Next business" onClick={() => go(at + 1)}>→</button>
-        </div>
-      </div>
+      <Carousel />
     </section>
   );
 }

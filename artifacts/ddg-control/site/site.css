@@ -637,3 +637,104 @@ p { margin: 0; }
 @media (max-aspect-ratio: 4/5) {
   .cn-scroll { top: calc(var(--cn-oy) - var(--cn-or) - 9vh); transform: none; }
 }
+
+/* About: green ticks beside the complex systems we have built (Markus, 18 Nov 2026). */
+.j-ticks-label { margin: 22px 0 0; font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-text-3); }
+.j-ticks { list-style: none; padding: 0; margin: 14px 0 22px; display: grid; gap: 12px; max-width: 62ch; }
+.j-ticks li { position: relative; padding-left: 34px; color: var(--ng-text); font-size: clamp(16px, 1.15vw, 20px); line-height: 1.45; }
+.j-ticks li::before { content: ''; position: absolute; left: 0; top: 0.12em; width: 22px; height: 22px; border-radius: 50%; background: rgba(61,220,151,0.14); box-shadow: inset 0 0 0 1px rgba(61,220,151,0.55); }
+.j-ticks li::after { content: ''; position: absolute; left: 8px; top: calc(0.12em + 5px); width: 5px; height: 9px; border: solid #3ddc97; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+/* The logo beside our name, and a link to the live thing under each portfolio line (Markus, 18 Nov 2026). */
+.j-brandline { display: flex; align-items: center; gap: 10px; }
+.j-brandline img { width: 22px; height: 22px; object-fit: contain; }
+.j-ticks li > span:first-child { display: block; }
+.j-tick-link, .j-tick-soon { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font: 500 12px/1 var(--ng-mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.j-tick-link { min-height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(108,199,240,0.45); color: var(--ng-ice, #6cc7f0); text-decoration: none; transition: background 0.2s, border-color 0.2s; }
+.j-tick-link:hover { background: rgba(108,199,240,0.12); border-color: rgba(108,199,240,0.9); }
+.j-tick-link i { font-style: normal; }
+.j-tick-soon { color: var(--ng-text-3); opacity: 0.75; }
+
+/* About header: our logo and name top-left, "Our portfolio" top-middle (Markus, 18 Nov 2026). */
+.j-about-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin-bottom: clamp(18px, 2.4vw, 34px); }
+.j-about-top .j-brandline { margin: 0; justify-self: start; }
+.j-portfolio { margin: 0; font: 500 clamp(17px, 1.5vw, 24px)/1 var(--ng-mono); letter-spacing: 0.22em; text-transform: uppercase; color: var(--ng-text); text-align: center; }
+@media (max-width: 760px) { .j-about-top { grid-template-columns: 1fr; justify-items: center; gap: 14px; } .j-about-top .j-brandline { justify-self: start; } }
+/* Charity strip between the DDG core and the prices. */
+.j-give { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: clamp(18px, 3vw, 48px); margin: 0 auto 56px; max-width: 980px;
+  padding: clamp(18px, 2vw, 28px) clamp(20px, 2.6vw, 40px); border-radius: 22px; background: var(--j-glass); backdrop-filter: blur(16px); }
+.j-give-sum { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.j-give-sum b { font-size: clamp(34px, 3.4vw, 54px); font-weight: 300; letter-spacing: -0.02em; line-height: 1; color: #3ddc97; }
+.j-give-sum span { font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-text-2); }
+.j-give-line { margin: 0; color: var(--ng-text-2); font-size: clamp(15px, 1.05vw, 18px); line-height: 1.6; max-width: 56ch; }
+@media (max-width: 760px) { .j-give { grid-template-columns: 1fr; gap: 14px; } }
+
+/* Portfolio lines: a bold lead, then the detail. The Greenlight standards open in a small pop-up box. */
+.j-ticks li b { font-weight: 500; color: var(--ng-text); }
+.j-ticks li > span:first-child { color: var(--ng-text-2); }
+.j-std { display: inline-block; position: relative; margin: 6px 0 0 10px; vertical-align: top; }
+.j-std summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18);
+  font: 500 12px/1 var(--ng-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ng-text-2); }
+.j-std summary::-webkit-details-marker { display: none; }
+.j-std summary:hover, .j-std[open] summary { border-color: rgba(255,255,255,0.5); color: var(--ng-text); }
+.j-std ul { position: absolute; z-index: 6; left: 0; top: calc(100% + 8px); width: min(380px, 78vw); margin: 0; padding: 16px 18px; list-style: none; display: grid; gap: 10px;
+  border-radius: 16px; background: rgba(12,16,24,0.96); border: 1px solid rgba(255,255,255,0.16); box-shadow: 0 18px 50px rgba(0,0,0,0.5); font-size: 14px; line-height: 1.4; color: var(--ng-text-2); }
+.j-std li { padding: 0; } .j-std li::before, .j-std li::after { content: none; }
+@media (max-width: 760px) { .j-std { margin-left: 0; display: block; } }
+
+/* Product carousel (Markus, 18 Nov 2026): a plain sideways carousel. Glass frames with rounded corners; the
+   slides either side peek in so it is clear there is more. --sw is one slide's width. */
+.j-car { position: relative; margin: 0 calc(-1 * var(--s-gutter)) 56px; --sw: min(940px, 62vw); }
+.j-car-track { display: flex; gap: clamp(14px, 2vw, 28px); overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 10px calc(50% - var(--sw) / 2) 18px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.j-car-track::-webkit-scrollbar { display: none; }
+/* The still frame the light pipe runs round: exactly where the slide in front sits. */
+.j-car-slot { position: absolute; left: calc(50% - var(--sw) / 2); width: var(--sw); top: 10px; bottom: 52px; border-radius: 28px; pointer-events: none; }
+.j-slide { flex: 0 0 var(--sw); width: var(--sw); box-sizing: border-box; margin: 0; scroll-snap-align: center; border-radius: 28px; padding: clamp(10px, 1.2vw, 18px); background: var(--j-glass); backdrop-filter: blur(16px);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10), 0 18px 50px rgba(0,0,0,0.35); opacity: 0.45; transform: scale(0.94); transition: opacity 0.5s, transform 0.5s; cursor: pointer; }
+.j-slide.on { opacity: 1; transform: none; cursor: default; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18), 0 24px 70px rgba(0,0,0,0.45); }
+.j-slide:not(.on) .j-gal button, .j-slide:not(.on) .j-gal-count { visibility: hidden; }
+.j-slide figcaption { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 6px 4px; }
+.j-slide figcaption b { display: block; font-size: clamp(16px, 1.2vw, 20px); font-weight: 500; }
+.j-slide figcaption em { display: block; margin-top: 4px; font: 500 11px/1.3 var(--ng-mono); font-style: normal; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ng-text-2); }
+.j-slide figcaption .j-tick-link { margin-top: 0; min-height: 44px; padding: 0 18px; }
+/* The pictures inside a slide: a small carousel of its own, with a button to make them bigger. */
+.j-gal { position: relative; aspect-ratio: 16 / 10; border-radius: 18px; overflow: hidden; background: #05080d; }
+.j-gal img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; opacity: 0; transition: opacity 0.45s; }
+.j-gal img.on { opacity: 1; }
+.j-gal button { position: absolute; z-index: 2; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.28); background: rgba(8,12,18,0.62); backdrop-filter: blur(8px); color: #fff; font-size: 22px; line-height: 1; cursor: pointer; }
+.j-gal button:hover { background: rgba(255,255,255,0.2); }
+.j-gal-arrow { top: 50%; transform: translateY(-50%); } .j-gal-arrow.prev { left: 12px; } .j-gal-arrow.next { right: 12px; }
+.j-gal-zoom { top: 12px; right: 12px; font-size: 18px !important; }
+.j-gal-count { position: absolute; z-index: 2; left: 12px; bottom: 12px; padding: 6px 10px; border-radius: 999px; background: rgba(8,12,18,0.62); backdrop-filter: blur(8px); font: 500 11px/1 var(--ng-mono); letter-spacing: 0.1em; color: #fff; }
+/* The larger view: a box over the page, bigger than the slide but not the whole screen. */
+.j-gal-back { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 4vh 3vw; background: rgba(3,5,9,0.72); backdrop-filter: blur(6px); }
+.j-gal-back > div { width: min(1320px, 92vw, 135vh); }
+.j-gal-big { border-radius: 22px; box-shadow: 0 0 0 1px rgba(255,255,255,0.2), 0 30px 90px rgba(0,0,0,0.6); }
+.j-gal-big img { object-fit: contain; }
+.j-car-arrow { position: absolute; top: 42%; transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.22); background: rgba(12,16,24,0.7); backdrop-filter: blur(10px); color: var(--ng-text); font-size: 18px; cursor: pointer; z-index: 3; }
+.j-car-arrow:hover { background: rgba(255,255,255,0.14); }
+.j-car-arrow.prev { left: calc(50% - var(--sw) / 2 - 72px); } .j-car-arrow.next { right: calc(50% - var(--sw) / 2 - 72px); }
+.j-car-dots { display: flex; justify-content: center; gap: 4px; }
+.j-car-dots button { width: 34px; height: 34px; padding: 0; border: 0; background: none; cursor: pointer; position: relative; }
+.j-car-dots button::after { content: ''; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: rgba(255,255,255,0.28); transition: width 0.3s, margin 0.3s, background 0.3s; }
+.j-car-dots button[aria-current='true']::after { width: 24px; margin: -4px -12px; border-radius: 4px; background: var(--ng-text); }
+@media (max-width: 760px) { .j-car { --sw: 86vw; } .j-slide, .j-car-slot { border-radius: 22px; } .j-gal { border-radius: 14px; } .j-car-arrow { display: none; } .j-gal button { width: 40px; height: 40px; } }
+@media (prefers-reduced-motion: reduce) { .j-car-track { scroll-behavior: auto; } .j-slide, .j-gal img { transition: none; } }
+/* Contact panel, last on the page. */
+.j-contact { display: grid; grid-template-columns: 1.2fr 1fr; gap: clamp(20px, 3vw, 48px); align-items: center; margin-top: 56px; }
+.j-contact-list { margin: 0; display: grid; gap: 22px; }
+.j-contact-list dt { font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-text-3); margin-bottom: 6px; }
+.j-contact-list dd { margin: 0; font-size: clamp(16px, 1.2vw, 20px); line-height: 1.5; color: var(--ng-text); }
+.j-contact-list a { color: var(--ng-ice, #6cc7f0); text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 760px) { .j-contact { grid-template-columns: 1fr; } }
+/* The quote button that waits in the corner after the first screen. */
+.s-dock { position: fixed; z-index: 40; right: max(18px, env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px;
+  border-radius: 999px; background: var(--ng-text); color: var(--ng-night); font: 500 15px/1 var(--ng-sans); text-decoration: none; box-shadow: 0 10px 34px rgba(0,0,0,0.45);
+  opacity: 0; transform: translateY(12px); pointer-events: none; transition: opacity 0.3s, transform 0.3s; }
+.s-dock.on { opacity: 1; transform: none; pointer-events: auto; }
+.s-dock:hover { background: #fff; }
+
+/* A short white line above each screenshot saying what it shows. Two lines of room, so the slide never jumps. */
+.j-gal-cap { margin: 4px 6px 12px; min-height: 2.8em; font-size: clamp(14px, 1.05vw, 17px); line-height: 1.4; font-weight: 500; color: #fff; font-family: var(--ng-sans, system-ui, sans-serif); }
+.j-gal-wrap.big .j-gal-cap { margin: 0 4px 14px; min-height: 0; font-size: clamp(15px, 1.2vw, 19px); }
+@media (max-width: 760px) { .j-gal-cap { min-height: 4.2em; } }
