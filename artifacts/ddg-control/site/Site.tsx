@@ -99,7 +99,7 @@ function usePipes() {
 }
 
 /** Which quote shows under the orb (index into QUOTES); the tuner can switch it live. */
-const QUOTE = 10;
+const QUOTE = 15;
 
 function Home() {
   const summary = usePublicSummary();
@@ -136,8 +136,8 @@ function Home() {
         <svg className="cn-pipes" ref={pipes.svg} aria-hidden="true" />
         <main className="s-main j-main">
           <About onSee={() => toSection('businesses', true)} />
-          <Build summary={summary} />
           <Showcase />
+          <Build summary={summary} />
           <section id="start" className="j-panel j-start" data-pipe aria-labelledby="start-title">
             <div className="j-text">
               <p className="s-eyebrow">{START.eyebrow}</p>

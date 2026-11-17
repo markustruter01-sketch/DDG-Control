@@ -29,6 +29,8 @@ export function About({ onSee }: { onSee: () => void }) {
       <div className="j-text">
         <p className="s-eyebrow">{ABOUT.eyebrow}</p>
         <h2 id="about-title">{ABOUT.title.split('AI-powered').flatMap((part, i) => (i ? [<span key={i} className="j-hi">AI-powered</span>, part] : [part]))}</h2>
+        <p className="j-ticks-label">{ABOUT.builtLabel}</p>
+        <ul className="j-ticks">{ABOUT.built.map((x) => <li key={x}>{x}</li>)}</ul>
         <p className="j-line">{ABOUT.line}</p>
         <div className="j-actions">
           <a className="s-btn" href="#businesses" onClick={(e) => { e.preventDefault(); onSee(); }}>{ABOUT.see} ↓</a>

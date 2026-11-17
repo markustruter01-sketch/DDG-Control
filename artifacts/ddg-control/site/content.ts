@@ -222,14 +222,25 @@ export const QUOTES = [
   'Your website, store, app or AI, built for less. About 25% below typical Australian prices.',
   'Complex platforms, built for you, for about 25% less.',
   'Websites from $1,500. Stores, apps and AI too. About 25% below typical Australian prices.',
+  // Markus's own line (18 Nov 2026), now the one shown.
+  'COMPLEX SOFTWARE - WEBSITES - ONLINE STORES - APPS AND AI - BUILT FOR YOU. ~25% CHEAPER THAN STANDARD INDUSTRY PRICING.',
 ];
 
 // ── The home page journey (17 Nov 2026): what we are → what we've built → how we run it →
 // what we can build for you → start your build → charity. Fitness stays a secret: no features named.
 export const ABOUT = {
   eyebrow: 'Digital Dynamics Group',
-  title: 'An AI-powered development company.',
-  line: 'We design, build and run platforms of any size: websites, online stores, trading systems, phone apps and AI. Tell us what you want, and we build it.',
+  title: 'An AI-powered software development company.',
+  builtLabel: 'Complex systems we have built',
+  // Each line is something DDG has really built (Markus, 18 Nov 2026). Fitness says "in development" because it is.
+  built: [
+    'A live 3D globe that tracks aircraft, ships and satellites around the world',
+    'A trading platform with automated bots, Python strategies and an AI council',
+    'An online store with card payments and subscriptions',
+    'A health and fitness app with AI coaches (in development)',
+    'A tool that checks software against safety and security standards, then fixes it',
+  ],
+  line: 'Tell us what you want, and we build it.',
   see: 'See what we have built',
   start: 'Start your build',
 };
