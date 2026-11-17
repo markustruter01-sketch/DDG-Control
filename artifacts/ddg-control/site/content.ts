@@ -55,8 +55,8 @@ export const SITE_BUSINESSES: SiteBusiness[] = [
 ];
 
 export const CHARITY = {
-  title: 'Helping animal charities',
-  body: 'Every bag of Cattle Dog Coffee raises $1 for animal charities. We pay it over in $100 lots. From 1 January 2027, 1% of DDG\'s other revenue, from Finance and Fitness, goes to them too.',
+  label: 'Raised for animal charities so far',
+  body: 'Every bag of Cattle Dog Coffee raises $1 for animal charities. From 1 January 2027, 1% of DDG\'s other revenue goes to them too.',
 };
 
 
@@ -221,17 +221,19 @@ export const QUOTES = [
 // ── The home page journey (17 Nov 2026): what we are → what we've built → how we run it →
 // what we can build for you → start your build → charity. Fitness stays a secret: no features named.
 export const ABOUT = {
-  eyebrow: 'Our portfolio \u00b7 Digital Dynamics Group',
+  brand: 'Digital Dynamics Group',
+  portfolio: 'Our portfolio',
   title: 'An AI-powered software development company.',
   builtLabel: 'Complex systems we have built',
   // The portfolio in one list (Markus, 18 Nov 2026): what we built, and a link to the live thing.
-  // No link yet = shown grey. Fitness says "in development" because it is.
+  // Every claim is checked against the product: the Greenlight standards are its seven catalogues
+  // (ddg-greenlight/lib/greenlight-engine/catalogues); it checks and fixes, it does not certify.
   built: [
-    { text: 'A live 3D globe that tracks aircraft, ships and satellites around the world', name: 'God\u2019s Eye View', href: null, soon: 'Link coming soon' },
-    { text: 'A trading platform with automated bots, Python strategies and an AI council', name: 'DDG Finance', href: '/finance', external: false },
-    { text: 'An online store with card payments and subscriptions', name: 'Cattle Dog Coffee', href: PUBLIC_SITES.coffee, external: true },
-    { text: 'A health and fitness app with AI coaches (in development)', name: '', href: null, soon: 'Coming soon' },
-    { text: 'A tool that checks software against safety and security standards, then fixes it', name: 'DDG Greenlight', href: null, soon: 'Link coming soon' },
+    { text: 'A real-time 3D view of the planet, tracking aircraft, ships, satellites, earthquakes and fires as they happen', name: 'God\u2019s Eye View', href: 'https://gods-eye-view.replit.app/', external: true },
+    { text: 'An automated trading platform: algorithmic bots, Python strategies and a council of three AI models, with hard risk limits built in', name: 'DDG Finance', href: '/finance', external: false },
+    { text: 'A live online store taking real orders: card payments, subscriptions, shipping and a full back office', name: 'Cattle Dog Coffee', href: PUBLIC_SITES.coffee, external: true },
+    { text: 'A health and fitness app with specialist AI coaches (in development)', name: '', href: null, soon: 'Coming soon' },
+    { text: 'A compliance engine that audits any codebase against published standards (ISO/IEC 27001, ISO/IEC 42001, OWASP ASVS, NIST SSDF, the Australian ISM and Essential Eight, MIL-STD-882E and more), then fixes the gaps it finds', name: 'DDG Greenlight', href: 'https://ddg-greenlight.replit.app/', external: true },
   ] as { text: string; name: string; href: string | null; external?: boolean; soon?: string }[],
   line: 'Tell us what you want, and we build it.',
   see: 'See prices',

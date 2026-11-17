@@ -9,7 +9,10 @@ export function About({ onSee }: { onSee: () => void }) {
   return (
     <section id="about" className="j-panel j-about" data-pipe aria-labelledby="about-title">
       <div className="j-text">
-        <p className="s-eyebrow j-brandline"><img src="/ddg-logo-white-512.png" alt="" width="22" height="22" />{ABOUT.eyebrow}</p>
+        <div className="j-about-top">
+          <p className="s-eyebrow j-brandline"><img src="/ddg-logo-white-512.png" alt="" width="22" height="22" />{ABOUT.brand}</p>
+          <p className="j-portfolio">{ABOUT.portfolio}</p>
+        </div>
         <h2 id="about-title">{ABOUT.title.split('AI-powered').flatMap((part, i) => (i ? [<span key={i} className="j-hi">AI-powered</span>, part] : [part]))}</h2>
         <p className="j-ticks-label">{ABOUT.builtLabel}</p>
         <ul className="j-ticks">

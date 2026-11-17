@@ -16,7 +16,6 @@ import { About, Showcase } from './Journey';
 const Stage = lazy(() => import('./canyon/Stage'));
 
 const LOGO = '/ddg-core-logo.jpg'; // the DDG glitch mark, on black; site.css blends the black away
-const count = (n: number | null | undefined) => (n === null || n === undefined ? '—' : n.toLocaleString('en-AU'));
 const dollars = (cents: number | null | undefined) =>
   cents === null || cents === undefined ? '—' : `$${(cents / 100).toLocaleString('en-AU', { maximumFractionDigits: 0 })}`;
 
@@ -103,6 +102,8 @@ const QUOTE = 15;
 
 function Home() {
   const summary = usePublicSummary();
+  // Raised for charity so far: coffee's $1 a bag, plus the revenue share once it starts. A dash until the number loads.
+  const raised = summary?.coffee_charity_cents == null ? null : summary.coffee_charity_cents + (summary.charity_revenue_share_cents ?? 0);
   const pipes = usePipes();
   // Soft clouds behind the page, seen blurred through the glass panels.
   useEffect(() => mountPageClouds(), []);
@@ -137,6 +138,10 @@ function Home() {
         <main className="s-main j-main">
           <About onSee={() => toSection('build', true)} />
           <Showcase />
+          <section id="charity" className="j-give" data-pipe aria-label={CHARITY.label}>
+            <p className="j-give-sum"><b>{dollars(raised)}</b><span>{CHARITY.label}</span></p>
+            <p className="j-give-line">{CHARITY.body}</p>
+          </section>
           <Build summary={summary} />
           <section id="start" className="j-panel j-start" data-pipe aria-labelledby="start-title">
             <div className="j-text">
@@ -145,17 +150,6 @@ function Home() {
               <p className="j-line">{START.line}</p>
             </div>
             <EnquiryForm />
-          </section>
-          <section id="charity" className="s-charity" data-pipe aria-labelledby="c-title">
-            <div>
-              <h2 id="c-title">{CHARITY.title}</h2>
-              <p>{CHARITY.body}</p>
-            </div>
-            <dl className="s-stats">
-              <div><dt>Raised from coffee sales</dt><dd>{dollars(summary?.coffee_charity_cents)}</dd></div>
-              <div><dt>1% of other revenue · from 1 Jan 2027</dt><dd>{dollars(summary?.charity_revenue_share_cents)}</dd></div>
-              <div><dt>Bags sold</dt><dd>{count(summary?.coffee_bags_sold)}</dd></div>
-            </dl>
           </section>
         </main>
       </div>

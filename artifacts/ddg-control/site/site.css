@@ -654,3 +654,17 @@ p { margin: 0; }
 .j-tick-link:hover { background: rgba(108,199,240,0.12); border-color: rgba(108,199,240,0.9); }
 .j-tick-link i { font-style: normal; }
 .j-tick-soon { color: var(--ng-text-3); opacity: 0.75; }
+
+/* About header: our logo and name top-left, "Our portfolio" top-middle (Markus, 18 Nov 2026). */
+.j-about-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin-bottom: clamp(18px, 2.4vw, 34px); }
+.j-about-top .j-brandline { margin: 0; justify-self: start; }
+.j-portfolio { margin: 0; font: 500 clamp(17px, 1.5vw, 24px)/1 var(--ng-mono); letter-spacing: 0.22em; text-transform: uppercase; color: var(--ng-text); text-align: center; }
+@media (max-width: 760px) { .j-about-top { grid-template-columns: 1fr; justify-items: center; gap: 14px; } .j-about-top .j-brandline { justify-self: start; } }
+/* Charity strip between the DDG core and the prices. */
+.j-give { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: clamp(18px, 3vw, 48px); margin: 0 auto 56px; max-width: 980px;
+  padding: clamp(18px, 2vw, 28px) clamp(20px, 2.6vw, 40px); border-radius: 22px; background: var(--j-glass); backdrop-filter: blur(16px); }
+.j-give-sum { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.j-give-sum b { font-size: clamp(34px, 3.4vw, 54px); font-weight: 300; letter-spacing: -0.02em; line-height: 1; color: #3ddc97; }
+.j-give-sum span { font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-text-2); }
+.j-give-line { margin: 0; color: var(--ng-text-2); font-size: clamp(15px, 1.05vw, 18px); line-height: 1.6; max-width: 56ch; }
+@media (max-width: 760px) { .j-give { grid-template-columns: 1fr; gap: 14px; } }
