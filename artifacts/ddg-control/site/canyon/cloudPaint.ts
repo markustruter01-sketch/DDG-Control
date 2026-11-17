@@ -1,4 +1,5 @@
 import { T } from './tune';
+import { onStableResize, stableHeight } from './viewport';
 
 /**
  * Soft clouds, painted once in code (no image files): many soft round puffs in a cluster, roughened
@@ -67,8 +68,8 @@ export function mountPageClouds(): () => void {
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let raf = 0, lastDraw = 0, blurFor = -1, soft: HTMLCanvasElement[] = pics;
   const t0 = performance.now();
-  const size = () => { canvas.width = innerWidth; canvas.height = innerHeight; lastDraw = 0; };
-  size(); addEventListener('resize', size);
+  const size = () => { canvas.width = innerWidth; canvas.height = stableHeight(); lastDraw = 0; };
+  size(); const stopSize = onStableResize(size);
   // Softened copies of the pictures, made once per blur setting (blurring every frame is costly).
   const soften = (b: number) => pics.map((p) => {
     if (b <= 0) return p;
@@ -82,7 +83,7 @@ export function mountPageClouds(): () => void {
     // Nothing to draw while the first screen still covers the layer, or the tab is hidden.
     if (document.hidden) return;
     const top = page ? page.getBoundingClientRect().top : 0;
-    if (top > innerHeight) { if (lastDraw) { g.clearRect(0, 0, canvas.width, canvas.height); lastDraw = 0; } return; }
+    if (top > stableHeight()) { if (lastDraw) { g.clearRect(0, 0, canvas.width, canvas.height); lastDraw = 0; } return; }
     // About 30 frames a second is plenty for slow clouds; redraw sooner when the page scrolls.
     if (now - lastDraw < 33 && scrollY === lastY) return;
     if (T.glowMove > 0 && !still) {
@@ -107,5 +108,5 @@ export function mountPageClouds(): () => void {
     g.globalAlpha = 1;
   };
   raf = requestAnimationFrame(frame);
-  return () => { cancelAnimationFrame(raf); removeEventListener('resize', size); canvas.remove(); };
+  return () => { cancelAnimationFrame(raf); stopSize(); canvas.remove(); };
 }

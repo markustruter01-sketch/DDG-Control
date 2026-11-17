@@ -335,7 +335,8 @@ p { margin: 0; }
 /* ── Home, first screen: the Canyon stage (site/canyon) with a few quiet words over it ──────────── */
 /* --cn-oy is where the orb's centre sits on screen; --cn-or is half the size of the frame round it. */
 .cn-top { background: var(--ng-night); --cn-oy: 60vh; --cn-or: 15vh; } /* orb centre on screen; matches the orb height setting */
-.cn-stage { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+/* Fixed layers use the tallest screen height (bars hidden), so a phone's sliding address bar never resizes them. */
+.cn-stage { position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh; z-index: 0; pointer-events: none; }
 .cn-stage canvas { width: 100%; height: 100%; display: block; }
 /* A shooting star: a bright head with a fading tail, flying along its angle and burning out. */
 .cn-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
@@ -421,7 +422,7 @@ p { margin: 0; }
 /* The page's colour carries on from the feathered edge above, then thins out over the first screen-height
    so the 3D scene underneath is gone before the clouds (.cn-clouds) show through, with no hard line. */
 .cn-page { position: relative; z-index: 1; background: linear-gradient(180deg, var(--site-base, var(--ng-graphite)) 0, var(--site-base, var(--ng-graphite)) 30vh, transparent 120vh) no-repeat; }
-.cn-clouds { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.cn-clouds { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100lvh; z-index: 0; pointer-events: none; }
 /* The page below slides up over the first screen as one sheet with a long feathered top edge,
    so the night scene melts into the page colour instead of ending on a hard line. */
 .cn-page::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 55vh; pointer-events: none;
@@ -586,7 +587,7 @@ p { margin: 0; }
 }
 
 /* The words over the orb live in a layer fixed to the screen; Stage moves them with the orb. */
-.cn-follow { position: fixed; inset: 0; pointer-events: none; }
+.cn-follow { position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh; pointer-events: none; }
 .cn-page .s-charity { background: var(--j-glass); backdrop-filter: blur(16px); }
 
 /* ── Page look (tuner: "Page look"). Coloured light behind the glass, a lit edge on each panel,

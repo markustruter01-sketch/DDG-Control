@@ -1,4 +1,5 @@
 import { AdditiveBlending, BufferAttribute, BufferGeometry, Camera, Mesh, PerspectiveCamera, ShaderMaterial, Vector3 } from 'three';
+import { stableHeight } from './viewport';
 
 /**
  * Shooting stars drawn in the 3D scene, far behind the land: hills, the orb and the water all pass in
@@ -31,7 +32,7 @@ export function makeStars(scene: { add: (m: Mesh) => void; remove: (m: Mesh) => 
     const x0 = right ? -0.9 + Math.random() * 1.1 : -0.2 + Math.random() * 1.1, y0 = 0.25 + Math.random() * 0.7;
     const ang = ((14 + Math.random() * 22) * k.starsSteep * Math.PI) / 180;
     const len = (0.35 + Math.random() * 0.3) * k.starsLength;
-    const x1 = x0 + (right ? 1 : -1) * Math.cos(ang) * len * (innerHeight / innerWidth) * 1.6, y1 = y0 - Math.sin(ang) * len;
+    const x1 = x0 + (right ? 1 : -1) * Math.cos(ang) * len * (stableHeight() / innerWidth) * 1.6, y1 = y0 - Math.sin(ang) * len;
     const toWorld = (x: number, y: number) => {
       v.set(x, y, 0.5).unproject(cam).sub(cam.position).normalize();
       return cam.position.clone().addScaledVector(v, DIST);
@@ -54,7 +55,7 @@ export function makeStars(scene: { add: (m: Mesh) => void; remove: (m: Mesh) => 
       if (on && k.starsOn > 0.5) spawn(now, cam, k);
       next = now + k.starsEvery * 1000 * (0.77 + Math.random() * 0.46);
     }
-    const pxWorld = (2 * DIST * Math.tan((cam.fov * Math.PI) / 360)) / innerHeight;
+    const pxWorld = (2 * DIST * Math.tan((cam.fov * Math.PI) / 360)) / stableHeight();
     const w = 1.1 * k.starsWidth * pxWorld;
     for (let i = live.length - 1; i >= 0; i--) {
       const s = live[i], u = (now - s.start) / s.dur;
