@@ -135,7 +135,7 @@ export const FINANCE_BOTS: { key: FinanceBotKey; name: string; broker: string; l
   { key: 'atlas', name: 'Atlas', broker: 'Alpaca · paper',
     line: 'Follows the trend of the S&P 500 and Nasdaq, up to 1.5x, with part of the account in bonds, gold, commodities and the US dollar when they trend.' },
   { key: 'atlas-v2', name: 'Atlas V2', broker: 'Alpaca · paper',
-    line: 'The bolder Atlas: S&P 500 and Nasdaq trend only, up to 1.5x, plus a Bitcoin and Ethereum holding.' },
+    line: 'The bolder Atlas: S&P 500 and Nasdaq trend only, up to 1.5x. We don’t trade crypto; one leftover Bitcoin holding is never added to.' },
   { key: 'momentum', name: 'Momentum', broker: 'Alpaca · paper',
     line: 'Holds the 50 S&P 500 stocks with the strongest 12-month momentum, rebalanced monthly, and moves to cash when the market trend turns down.' },
   { key: 'forex', name: 'Forex', broker: 'OANDA · practice',
