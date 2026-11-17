@@ -1,5 +1,7 @@
 # DDG — company map and plans (start here)
 
+**New agent? Read `docs/handover/README.md` first.** It says where the last agent stopped and how to hand over.
+
 Last updated: Tue 17 Nov 2026 Brisbane (UTC+10) by Claude. For any Claude (any account) picking up DDG work. No secret values in these files; secrets are named only.
 
 ## The company
