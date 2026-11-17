@@ -7,7 +7,7 @@ import { makeAirOrb } from './airOrb';
 import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWater } from './water';
-import { makeShacks } from './shacks';
+import { makeGrass } from './grass';
 
 /**
  * Home background (fixed): a night sky with the Milky Way over a landscape of ice-blue lines (see landscapes.ts for its shape) with the DDG core, a fast-spinning
@@ -91,10 +91,17 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     scene.add(water.river, water.spray);
     disposables.push(...water.disposables);
 
-    // The four businesses: a shack each on the banks, each piping water into the river.
-    const shacks = makeShacks(heightAt);
-    scene.add(shacks.group);
-    disposables.push(...shacks.disposables);
+    // Preview switches (only read from the page address, e.g. #w2-grass): a water design 1-4 and grass.
+    const tag = location.hash;
+    const variant = Number(/w([1-4])/.exec(tag)?.[1] ?? 0), grassOn = /grass/.test(tag);
+    water.setVariant(variant);
+    const grass = grassOn ? makeGrass({ small, heightAt, W, D, Z0 }) : null;
+    if (grass) {
+      scene.add(grass.mesh);
+      disposables.push(...grass.disposables);
+      surfMat.color.set(0x0c1f10); // dark green ground under the blades
+      lineMat.visible = false;
+    }
 
     const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
     resize(); addEventListener('resize', resize);
@@ -142,7 +149,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1 - ease(k * 3), fogNear: fog.near, fogFar: fog.far,
       });
-      shacks.update(clock, 1 - ease(k * 3));
+      if (grass) { grass.update(clock, 1 - k); const gu = (grass.mesh.material as import('three').ShaderMaterial).uniforms; gu.uFogNear.value = fog.near; gu.uFogFar.value = fog.far; }
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(frame);

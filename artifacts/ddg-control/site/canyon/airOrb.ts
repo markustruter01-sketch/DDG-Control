@@ -82,8 +82,8 @@ void main() {
   col *= 0.8 + 0.2 * normalize(vN).y; // a little darker underneath, so it reads as a round ball
   col += rim * vec3(0.45, 0.8, 1.0) * 0.9;
   float zap = clamp(arc(0.0, 2.6, 0.16) + arc(1.0, 3.7, 0.11), 0.0, 1.5);
-  col += vec3(0.85, 0.95, 1.0) * zap * 1.3;
-  gl_FragColor = vec4(col, clamp(0.58 + bands * 0.4 + rim * 0.45 + centre * 0.2 + zap * 0.4, 0.0, 1.0) * uOpacity);
+  col += vec3(0.85, 0.95, 1.0) * zap * 1.95;
+  gl_FragColor = vec4(col, clamp(0.58 + bands * 0.4 + rim * 0.45 + centre * 0.2 + zap * 0.6, 0.0, 1.0) * uOpacity);
 }`;
 
 export function makeAirOrb(R: number) {

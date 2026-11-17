@@ -25,6 +25,24 @@ uniform float uTime;
 uniform float uStir;
 uniform vec2 uOrb;
 float stirAt(float d) { return uStir * exp(-d * d / 220.0); }
+uniform float uVar;
+// Preview water designs 1-4 (0 = the current swirl). Each is a round dent pushed into the water by
+// the orb's air, with a different kind of spin inside it.
+float bowl(float d, float r, float depth) { return -depth * exp(-d * d / (r * r)); }
+float shapeH(vec2 q, float d) {
+  float a = atan(q.y, q.x + 0.0001);
+  if (uVar < 1.5) return bowl(d, 3.2, 1.1) + 0.07 * sin(a * 4.0 + d * 1.6 - uTime * 6.0) * exp(-d * d / 16.0);
+  if (uVar < 2.5) return bowl(d, 4.0, 1.7) + 0.13 * sin(a * 3.0 + d * 2.6 - uTime * 7.0) * exp(-d * d / 22.0) * smoothstep(0.4, 2.0, d);
+  if (uVar < 3.5) return bowl(d, 2.7, 1.0) + 0.32 * exp(-(d - 3.7) * (d - 3.7) / 0.9) + 0.035 * sin(d * 4.0 - uTime * 5.0) * exp(-d * d / 45.0) * smoothstep(4.2, 5.2, d);
+  return bowl(d, 3.6, 0.65) + 0.028 * sin(a * 10.0 + d * 3.0 - uTime * 9.0) * exp(-d * d / 18.0);
+}
+float shapeFoam(vec2 q, float d, float lace) {
+  float a = atan(q.y, q.x + 0.0001);
+  if (uVar < 1.5) return smoothstep(0.55, 1.0, sin(a * 4.0 + d * 1.6 - uTime * 6.0)) * exp(-d * d / 14.0) * (0.4 + lace);
+  if (uVar < 2.5) return smoothstep(0.4, 1.0, sin(a * 3.0 + d * 2.6 - uTime * 7.0)) * exp(-d * d / 18.0) * smoothstep(0.4, 1.6, d) * (0.5 + lace);
+  if (uVar < 3.5) return exp(-(d - 3.6) * (d - 3.6) / 0.6) * (0.25 + 1.3 * lace) + 0.3 * smoothstep(0.7, 1.0, sin(a * 5.0 + d * 1.2 - uTime * 6.0)) * exp(-d * d / 6.0) * lace;
+  return smoothstep(0.75, 1.0, sin(a * 10.0 + d * 3.0 - uTime * 9.0)) * exp(-d * d / 16.0) * 0.8 + 0.25 * exp(-d * d / 10.0) * lace;
+}
 float swirl(vec2 q, float d, float arms, float wind, float speed) {
   return sin(arms * atan(q.y, q.x + 0.0001) + d * wind - uTime * speed) * smoothstep(1.5, 6.5, d);
 }`;
@@ -44,7 +62,7 @@ void main() {
   float dish = -0.9 * uStir * exp(-d * d / 40.0);
   float arms = 0.55 * swirl(q, d, 3.0, 0.9, 5.0) + 0.3 * swirl(q, d, 2.0, 0.35, 2.6);
   float swell = 0.05 * sin(p.z * 0.3 + p.x * 0.2 + uTime * 1.6);
-  float lift = dish + stirAt(d) * arms + swell;
+  float lift = uVar > 0.5 ? uStir * shapeH(q, d) + swell : dish + stirAt(d) * arms + swell;
   p.y += lift;
   vP = p.xz;
   vBed = (aBed + lift) * uFlat;
@@ -102,11 +120,14 @@ float surface(vec2 p, float detail) {
   // Away from the orb the water is close to glass: long, low swells moving with the current, a few
   // gentle wave trains crossing it, and two faint layers of fine ripples drifting in different
   // directions (blended, they never repeat and never look like a pattern).
-  float h = 0.16 * snoise(f * vec2(0.11, 0.055));
-  h += 0.045 * snoise(f * vec2(0.26, 0.14) + vec2(3.1, -uTime * 0.25));
-  h += 0.035 * sin(dot(p, vec2(0.21, 0.43)) - uTime * 1.1) + 0.022 * sin(dot(p, vec2(-0.37, 0.29)) - uTime * 1.45) + 0.014 * sin(dot(p, vec2(0.52, -0.18)) - uTime * 1.9);
+  // Preview styles: how much surface texture each one keeps (1 = today's water).
+  float rough = uVar < 0.5 ? 1.0 : uVar < 1.5 ? 0.18 : uVar < 2.5 ? 0.45 : uVar < 3.5 ? 0.08 : 0.3;
+  detail *= uVar > 0.5 ? 0.0 : 1.0;
+  float h = 0.16 * rough * snoise(f * vec2(0.11, 0.055));
+  h += 0.045 * rough * snoise(f * vec2(0.26, 0.14) + vec2(3.1, -uTime * 0.25));
+  h += rough * (0.035 * sin(dot(p, vec2(0.21, 0.43)) - uTime * 1.1) + 0.022 * sin(dot(p, vec2(-0.37, 0.29)) - uTime * 1.45) + 0.014 * sin(dot(p, vec2(0.52, -0.18)) - uTime * 1.9));
   h += detail * (0.009 * snoise(p * 0.9 + vec2(uTime * 0.21, -uTime * 0.33)) + 0.007 * snoise(p * 1.6 + vec2(-uTime * 0.29, -uTime * 0.17) + 7.3));
-  h += stir * (0.42 * swirl(q, d, 3.0, 0.9, 5.0) + 0.05 * swirl(q, d, 7.0, 2.2, 9.0));
+  h += uVar > 0.5 ? 0.6 * uStir * shapeH(q, d) : stir * (0.42 * swirl(q, d, 3.0, 0.9, 5.0) + 0.05 * swirl(q, d, 7.0, 2.2, 9.0));
   return h;
 }
 void main() {
@@ -134,7 +155,7 @@ void main() {
   // Light passing through: shallows glow faintly, with soft moving light-lines on the bed.
   float shallow = exp(-depth * 1.1);
   float caust = pow(0.5 + 0.5 * snoise(vP * 0.7 + vec2(uTime * 0.18, -uTime * 0.4)), 6.0) + pow(0.5 + 0.5 * snoise(vP * 1.1 - vec2(uTime * 0.23, uTime * 0.31) + 4.0), 6.0);
-  body += vec3(0.1, 0.32, 0.34) * caust * shallow * 0.35 * (0.4 + reach);
+  body += vec3(0.1, 0.32, 0.34) * caust * shallow * 0.35 * (0.4 + reach) * (uVar > 0.5 && uVar < 1.5 ? 0.0 : 1.0);
   vec3 col = mix(body, sky, fresnel);
   // The orb as a light: a tight, bright glint on the water under it and a softer sheen round that.
   vec3 hv = normalize(toOrb + v);
@@ -146,9 +167,18 @@ void main() {
   float d = length(q), stir = stirAt(d);
   float lace = (0.5 + 0.5 * snoise(vP * 0.55 + vec2(0.0, -uTime * 1.3))) * (0.5 + 0.5 * snoise(vP * 1.5 + vec2(1.3, -uTime * 2.0)));
   float shore = (1.0 - smoothstep(0.0, 0.5, depth)) * smoothstep(0.14, 0.36, lace) * (0.3 + 1.8 * stir);
-  float churn = stir * 1.15 * smoothstep(0.25, 1.0, swirl(q, d, 3.0, 0.9, 5.0)) * (0.3 + 1.5 * lace);
+  float churn = uVar > 0.5 ? uStir * shapeFoam(q, d, lace) : stir * 1.15 * smoothstep(0.25, 1.0, swirl(q, d, 3.0, 0.9, 5.0)) * (0.3 + 1.5 * lace);
   float foam = clamp(shore + churn, 0.0, 1.0);
   col = mix(col, vec3(0.8, 0.93, 1.0), foam * 0.85);
+  // Style 2: cartoon (cel) water. Colours snap to a few bands and foam gets a crisp edge.
+  if (uVar > 1.5 && uVar < 2.5) {
+    float lum = dot(col, vec3(0.3, 0.55, 0.15));
+    float band = floor(lum * 6.0 + 0.5) / 6.0;
+    col = mix(vec3(0.02, 0.07, 0.14), vec3(0.55, 0.85, 1.0), band) ;
+    col = mix(col, vec3(0.92, 0.98, 1.0), step(0.45, foam));
+  }
+  // Style 4: silk. Broad, soft highlights and a faint colour shift at grazing angles.
+  if (uVar > 3.5) col += vec3(0.05, 0.08, 0.16) * fresnel + vec3(0.12, 0.16, 0.2) * pow(max(dot(n, normalize(toOrb + v)), 0.0), 12.0) * uGlow * 0.6;
 
   // The water thins out to nothing exactly where it meets the land, so the edge is soft.
   float edge = smoothstep(0.0, 0.4, depth);
@@ -209,7 +239,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   riverGeo.setAttribute('position', new BufferAttribute(pos, 3)); riverGeo.setAttribute('aBed', new BufferAttribute(bed, 1));
   riverGeo.setIndex(idx);
   const uniforms = {
-    uTime: { value: 0 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
+    uTime: { value: 0 }, uVar: { value: 0 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
     uOrb: { value: new Vector2() }, uOrbPos: { value: new Vector3() },
     // The shader writes screen colours directly, so the fog colour is passed as plain 0-1 values.
     uFog: { value: new Vector3(((fogColor >> 16) & 255) / 255, ((fogColor >> 8) & 255) / 255, (fogColor & 255) / 255) },
@@ -269,5 +299,6 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     spray.instanceMatrix.needsUpdate = true;
   };
 
-  return { river, spray, update, disposables: [riverGeo, riverMat, dropGeo, dropMat] as { dispose: () => void }[] };
+  const setVariant = (v: number) => { uniforms.uVar.value = v; };
+  return { river, spray, update, setVariant, disposables: [riverGeo, riverMat, dropGeo, dropMat] as { dispose: () => void }[] };
 }
