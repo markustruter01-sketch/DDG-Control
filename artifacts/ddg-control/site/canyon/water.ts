@@ -35,7 +35,7 @@ float shapeH0(vec2 q, float d, float tt) {
   if (uVar < 1.5) return bowl(d, 3.2, 1.1) + 0.07 * sin(a * 4.0 + d * 1.6 - tt * 6.0) * exp(-d * d / 16.0);
   if (uVar < 2.5) return bowl(d, 4.0, 1.7) + 0.13 * sin(a * 3.0 + d * 2.6 - tt * 7.0) * exp(-d * d / 22.0) * smoothstep(0.4, 2.0, d);
   if (uVar < 3.5) return bowl(d, 2.7, 1.0) + 0.32 * exp(-(d - 3.7) * (d - 3.7) / 0.9) + 0.035 * sin(d * 4.0 - tt * 5.0) * exp(-d * d / 45.0) * smoothstep(4.2, 5.2, d);
-  return bowl(d, 3.6, 0.65) + 0.028 * sin(a * 10.0 + d * 3.0 - tt * 9.0) * exp(-d * d / 18.0);
+  return bowl(d, 3.6, 0.65) + 0.02 * sin(a * 2.0 + d * 0.9 - tt * 2.5) * exp(-d * d / 18.0); // only a soft, broad lean; the swirl detail is in vortex()
 }
 float shapeH(vec2 q, float d) { return uSwirlDepth * shapeH0(q, d / uSwirlR, uTime * uSwirlSpeed); }
 float shapeFoam0(vec2 q, float d, float lace, float tt) {
@@ -43,7 +43,7 @@ float shapeFoam0(vec2 q, float d, float lace, float tt) {
   if (uVar < 1.5) return smoothstep(0.55, 1.0, sin(a * 4.0 + d * 1.6 - tt * 6.0)) * exp(-d * d / 14.0) * (0.4 + lace);
   if (uVar < 2.5) return smoothstep(0.4, 1.0, sin(a * 3.0 + d * 2.6 - tt * 7.0)) * exp(-d * d / 18.0) * smoothstep(0.4, 1.6, d) * (0.5 + lace);
   if (uVar < 3.5) return exp(-(d - 3.6) * (d - 3.6) / 0.6) * (0.25 + 1.3 * lace) + 0.3 * smoothstep(0.7, 1.0, sin(a * 5.0 + d * 1.2 - tt * 6.0)) * exp(-d * d / 6.0) * lace;
-  return smoothstep(0.75, 1.0, sin(a * 10.0 + d * 3.0 - tt * 9.0)) * exp(-d * d / 16.0) * 0.8 + 0.25 * exp(-d * d / 10.0) * lace;
+  return 0.0; // silk: soft foam comes from vortex() instead of lines
 }
 float shapeFoam(vec2 q, float d, float lace) { return shapeFoam0(q, d / uSwirlR, lace, uTime * uSwirlSpeed); }
 float swirl(vec2 q, float d, float arms, float wind, float speed) {
@@ -114,6 +114,18 @@ float snoise(vec2 v) {
   return 130.0 * dot(m, g);
 }
 vec2 turn(vec2 p, float a) { float c = cos(a), s = sin(a); return vec2(c * p.x - s * p.y, s * p.x + c * p.y); }
+// Silk swirl: the water's own pattern is turned round the dent, faster near the middle, like a
+// real whirl. No lines; just soft, blurred streaks of lighter and darker water being dragged round.
+vec2 vortexUV(vec2 q, float d) {
+  float dn = d / uSwirlR, spin = uTime * uSwirlSpeed * 1.4 * exp(-dn * dn / 14.0) + 2.2 * exp(-dn * dn / 9.0);
+  float c = cos(spin), s = sin(spin);
+  return vec2(c * q.x - s * q.y, s * q.x + c * q.y) / uSwirlR;
+}
+float vortex(vec2 q, float d) {
+  vec2 r = vortexUV(q, d);
+  float dn = d / uSwirlR;
+  return (0.6 * snoise(r * vec2(0.45, 0.25)) + 0.4 * snoise(r * 0.9 + 3.7)) * exp(-dn * dn / 12.0);
+}
 // Height of the surface detail. Slow swells ride the current, which runs towards +z
 // (the camera); near the orb they are bent round it and the spiral arms are added.
 float surface(vec2 p, float detail) {
@@ -132,6 +144,7 @@ float surface(vec2 p, float detail) {
   h += 0.045 * rough * snoise(f * vec2(0.26, 0.14) + vec2(3.1, -uTime * 0.25));
   h += rough * (0.035 * sin(dot(p, vec2(0.21, 0.43)) - uTime * 1.1) + 0.022 * sin(dot(p, vec2(-0.37, 0.29)) - uTime * 1.45) + 0.014 * sin(dot(p, vec2(0.52, -0.18)) - uTime * 1.9));
   h += detail * (0.009 * snoise(p * 0.9 + vec2(uTime * 0.21, -uTime * 0.33)) + 0.007 * snoise(p * 1.6 + vec2(-uTime * 0.29, -uTime * 0.17) + 7.3));
+  if (uVar > 3.5) h += 0.07 * uStir * uSwirlDepth * vortex(q, d);
   h += uVar > 0.5 ? 0.6 * uStir * shapeH(q, d) : stir * (0.42 * swirl(q, d, 3.0, 0.9, 5.0) + 0.05 * swirl(q, d, 7.0, 2.2, 9.0));
   return h;
 }
@@ -173,6 +186,10 @@ void main() {
   float lace = (0.5 + 0.5 * snoise(vP * 0.55 + vec2(0.0, -uTime * 1.3))) * (0.5 + 0.5 * snoise(vP * 1.5 + vec2(1.3, -uTime * 2.0)));
   float shore = (1.0 - smoothstep(0.0, 0.5, depth)) * smoothstep(0.14, 0.36, lace) * (0.3 + 1.8 * stir);
   float churn = uVar > 0.5 ? uStir * shapeFoam(q, d, lace) : stir * 1.15 * smoothstep(0.25, 1.0, swirl(q, d, 3.0, 0.9, 5.0)) * (0.3 + 1.5 * lace);
+  if (uVar > 3.5) {
+    float dn = d / uSwirlR, vn = 0.5 + 0.5 * vortex(q, d) / max(exp(-dn * dn / 12.0), 0.001);
+    churn += uStir * 0.32 * smoothstep(0.45, 0.95, vn) * exp(-dn * dn / 11.0) * (0.5 + lace);
+  }
   float foam = clamp((shore + churn) * uFoamK, 0.0, 1.0);
   col = mix(col, vec3(0.8, 0.93, 1.0), foam * 0.85);
   // Style 2: cartoon (cel) water. Colours snap to a few bands and foam gets a crisp edge.
