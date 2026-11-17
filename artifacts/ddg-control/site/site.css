@@ -363,7 +363,7 @@ p { margin: 0; }
 .cn-frame i:nth-child(3) { left: 0; bottom: 0; border-right: 0; border-top: 0; }
 .cn-frame i:nth-child(4) { right: 0; bottom: 0; border-left: 0; border-top: 0; }
 .cn-tag { position: absolute; left: calc(50% + var(--cn-or) + 14px); top: calc(var(--cn-oy) - var(--cn-or) - 4px); font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ng-ice); white-space: nowrap; }
-.cn-quote { position: absolute; left: var(--quote-left, var(--s-gutter)); right: var(--quote-right, auto); bottom: calc(6vh + var(--quote-lift, 0vh)); margin: 0 auto; max-width: min(var(--quote-width, 30ch), calc(100% - 2 * var(--s-gutter)));
+.cn-quote { position: absolute; left: var(--quote-left, var(--s-gutter)); right: var(--quote-right, auto); bottom: calc(max(6vh + var(--quote-lift, 0vh), var(--cta-room)) + var(--cn-bar) + var(--cn-safe)); margin: 0 auto; max-width: min(var(--quote-width, 30ch), calc(100% - 2 * var(--s-gutter)));
   text-align: var(--quote-align, left); font-family: var(--quote-font, var(--brand-font, inherit)); font-size: calc(clamp(18px, 1.6vw, 28px) * var(--quote-size, 1));
   font-weight: var(--quote-weight, 300); letter-spacing: var(--quote-track, 0); line-height: 1.25; color: var(--ng-text); text-transform: var(--quote-case, none); isolation: isolate;
   transform: translateY(var(--cn-dy, 0px)); }
@@ -591,7 +591,13 @@ p { margin: 0; }
 }
 
 /* The words over the orb live in a layer fixed to the screen; Stage moves them with the orb. */
-.cn-follow { position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh; pointer-events: none; }
+.cn-follow { position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh; pointer-events: none;
+  /* The layer is as tall as the screen with the browser bars hidden (so it never jumps). Anything pinned to its
+     bottom must also clear the bars while they show: --cn-bar is that difference, --cn-safe the phone's home-bar
+     area. --cta-gap is the space under the quote button; --cta-room keeps the quote above the button. */
+  --cn-bar: 0px; --cn-safe: env(safe-area-inset-bottom, 0px);
+  --cta-gap: clamp(14px, 3.2vh, 40px); --cta-h: clamp(44px, 6vh, 52px); --cta-room: calc(var(--cta-gap) + var(--cta-h) + clamp(12px, 2.4vh, 28px)); }
+@supports (height: 100svh) { .cn-follow { --cn-bar: calc(100lvh - 100svh); } }
 .cn-page .s-charity { background: var(--j-glass); backdrop-filter: blur(16px); }
 
 /* ── Page look (tuner: "Page look"). Coloured light behind the glass, a lit edge on each panel,
@@ -618,7 +624,10 @@ p { margin: 0; }
 .s-privacy p { color: var(--ng-text-2); line-height: 1.65; margin: 0 0 10px; }
 
 /* The offer's button under the quote on the first screen (audit 17 Nov 2026). */
-.cn-cta { position: absolute; left: 0; right: 0; bottom: 6vh; width: max-content; margin: 0 auto; display: inline-flex; align-items: center; min-height: 48px; padding: 0 26px;
-  border-radius: 999px; background: var(--ng-text); color: var(--ng-night); font: 500 15px/1 var(--ng-sans); text-decoration: none;
+.cn-cta { position: absolute; left: 0; right: 0; bottom: calc(var(--cta-gap) + var(--cn-bar) + var(--cn-safe)); width: max-content; max-width: calc(100vw - 2 * var(--s-gutter)); box-sizing: border-box;
+  margin: 0 auto; display: inline-flex; align-items: center; justify-content: center; min-height: var(--cta-h); padding: 0 clamp(18px, 4vw, 28px); white-space: nowrap;
+  border-radius: 999px; background: var(--ng-text); color: var(--ng-night); font: 500 clamp(14px, 0.4vw + 12.5px, 17px)/1 var(--ng-sans); text-decoration: none;
   opacity: var(--cn-fade, 1); pointer-events: var(--cn-pe, auto); transform: translateY(var(--cn-dy, 0px)); box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+/* Short screens (phones turned sideways, small laptops): smaller quote so it stays between the orb and the button. */
+@media (max-height: 560px) { .cn-quote { font-size: calc(clamp(14px, 1.6vw, 20px) * var(--quote-size, 1)); } .cn-follow { --cta-gap: 10px; --cta-h: 44px; } }
 .cn-cta:hover { background: #fff; }
