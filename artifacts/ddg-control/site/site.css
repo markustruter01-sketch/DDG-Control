@@ -355,9 +355,11 @@ p { margin: 0; }
 .cn-readout em { font: 500 11px var(--ng-mono); font-style: normal; color: var(--ng-ice); }
 .cn-readout b { font-size: 14.5px; font-weight: 500; color: var(--ng-text); }
 /* No transform here: it would cut the logo's screen blend off from the scene behind it. */
-.cn-brand { position: absolute; left: 0; right: 0; width: max-content; margin: 0 auto; bottom: calc(100% - var(--cn-oy) + var(--cn-or) + 2.5vh);
-  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; font-size: clamp(22px, 2.3vw, 38px); font-weight: 400; letter-spacing: 0.01em; line-height: 1.08; }
-.cn-brand img { width: clamp(46px, 4vw, 66px); height: auto; } /* a see-through copy of the logo, so no blend is needed here */
+.cn-brand { position: absolute; left: 0; right: 0; width: max-content; margin: 0 auto; bottom: calc(100% - var(--cn-oy) + var(--cn-or) + 2.5vh + var(--brand-lift, 0vh));
+  display: flex; flex-direction: column; align-items: center; gap: var(--logo-gap, 10px); text-align: center;
+  font-family: var(--brand-font, inherit); font-size: calc(clamp(22px, 2.3vw, 38px) * var(--brand-size, 1)); font-weight: var(--brand-weight, 400);
+  letter-spacing: var(--brand-track, 0.01em); text-transform: var(--brand-case, none); line-height: var(--brand-line, 1.08); }
+.cn-brand img { width: calc(clamp(46px, 4vw, 66px) * var(--logo-size, 1)); height: auto; } /* a see-through copy of the logo, so no blend is needed here */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* On the home page the name sits over the orb, so the top bar shows only the links. */
 .s-nav-home .s-brand { visibility: hidden; }

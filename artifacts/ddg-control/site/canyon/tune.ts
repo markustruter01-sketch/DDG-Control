@@ -4,7 +4,17 @@
  * block of text that can be pasted back to Claude, who then makes those the real defaults.
  */
 
-type Spec = { key: string; label: string; min: number; max: number; step: number; group: string };
+type Spec = { key: string; label: string; min: number; max: number; step: number; group: string; names?: string[] };
+
+/** 3D fonts for "We build it all." (they come with three.js). */
+export const WORD_FONTS = ['Helvetiker', 'Helvetiker Bold', 'Optimer', 'Optimer Bold', 'Gentilis', 'Gentilis Bold', 'Droid Sans', 'Droid Sans Bold', 'Droid Serif', 'Droid Serif Bold', 'Droid Sans Mono'];
+/** Web fonts for the name. [name shown, Google Fonts family or '' for the site's own font]. */
+export const BRAND_FONTS: [string, string][] = [
+  ['Site font (now)', ''], ['Orbitron', 'Orbitron:wght@400..900'], ['Michroma', 'Michroma'], ['Syncopate', 'Syncopate:wght@400;700'],
+  ['Audiowide', 'Audiowide'], ['Unbounded', 'Unbounded:wght@200..900'], ['Space Grotesk', 'Space+Grotesk:wght@300..700'], ['Oxanium', 'Oxanium:wght@200..800'],
+  ['Chakra Petch', 'Chakra+Petch:wght@300;400;500;600;700'], ['Major Mono Display', 'Major+Mono+Display'], ['Sora', 'Sora:wght@100..800'],
+  ['Exo 2', 'Exo+2:wght@100..900'], ['Tektur', 'Tektur:wght@400..900'], ['Bruno Ace SC', 'Bruno+Ace+SC'],
+];
 
 export const SPECS: Spec[] = [
   // Orb
@@ -22,6 +32,8 @@ export const SPECS: Spec[] = [
   { group: 'Water', key: 'swirlSize', label: 'Swirl size', min: 0.3, max: 3, step: 0.05 },
   { group: 'Water', key: 'swirlDepth', label: 'Swirl depth', min: 0, max: 3, step: 0.05 },
   { group: 'Water', key: 'swirlSpeed', label: 'Swirl speed', min: 0, max: 3, step: 0.05 },
+  { group: 'Water', key: 'swirlLines', label: 'Swirl lines (how wound up)', min: 0, max: 3, step: 0.05 },
+  { group: 'Water', key: 'swirlSoft', label: 'Swirl softness (bigger = blurrier)', min: 0.3, max: 3, step: 0.05 },
   { group: 'Water', key: 'waterFoam', label: 'White water', min: 0, max: 3, step: 0.05 },
   { group: 'Water', key: 'waterGlint', label: 'Orb glint on water', min: 0, max: 3, step: 0.05 },
   { group: 'Water', key: 'waterReflect', label: 'Reflection strength', min: 0, max: 3, step: 0.05 },
@@ -29,52 +41,46 @@ export const SPECS: Spec[] = [
   { group: 'Water', key: 'waterSheen', label: 'Silk sheen', min: 0, max: 3, step: 0.05 },
   { group: 'Water', key: 'sprayAmount', label: 'Spray amount', min: 0, max: 1, step: 0.05 },
   { group: 'Water', key: 'spraySize', label: 'Spray drop size', min: 0, max: 3, step: 0.05 },
-  // Grass
-  { group: 'Grass', key: 'grassOn', label: 'Grass on (1) or line grid (0)', min: 0, max: 1, step: 1 },
-  { group: 'Grass', key: 'grassDensity', label: 'Density', min: 0.05, max: 1, step: 0.05 },
-  { group: 'Grass', key: 'grassHeight', label: 'Blade length', min: 0.2, max: 4, step: 0.05 },
-  { group: 'Grass', key: 'grassWidth', label: 'Blade thickness', min: 0.2, max: 4, step: 0.05 },
-  { group: 'Grass', key: 'grassTaper', label: 'Blade point (0 square, 1 sharp)', min: 0, max: 1, step: 0.05 },
-  { group: 'Grass', key: 'grassLean', label: 'Lean', min: 0, max: 3, step: 0.05 },
-  { group: 'Grass', key: 'windStrength', label: 'Wind strength', min: 0, max: 4, step: 0.05 },
-  { group: 'Grass', key: 'windSpeed', label: 'Wind speed', min: 0, max: 4, step: 0.05 },
-  { group: 'Grass', key: 'windWaves', label: 'Wind wave size (small = big waves)', min: 0.2, max: 4, step: 0.05 },
-  { group: 'Grass', key: 'windFlutter', label: 'Blade flutter', min: 0, max: 4, step: 0.05 },
-  { group: 'Grass', key: 'grassTip', label: 'Tip brightness', min: 0, max: 3, step: 0.05 },
-  { group: 'Grass', key: 'grassRoot', label: 'Root brightness', min: 0, max: 4, step: 0.05 },
-  { group: 'Grass', key: 'grassSat', label: 'Colour strength', min: 0, max: 2, step: 0.05 },
-  { group: 'Grass', key: 'grassHue', label: 'Colour (yellow ← → blue-green)', min: -1, max: 1, step: 0.05 },
-  { group: 'Grass', key: 'grassPatches', label: 'Colour patches', min: 0, max: 3, step: 0.05 },
-  { group: 'Grass', key: 'groundBright', label: 'Ground between blades', min: 0, max: 3, step: 0.05 },
-  // Lighting
-  { group: 'Lighting', key: 'exposure', label: 'Exposure (overall)', min: 0.2, max: 3, step: 0.05 },
-  { group: 'Lighting', key: 'moon', label: 'Moonlight', min: 0, max: 3, step: 0.05 },
-  { group: 'Lighting', key: 'moonAngle', label: 'Moon direction', min: -3.14, max: 3.14, step: 0.05 },
-  { group: 'Lighting', key: 'backlight', label: 'Light through blades', min: 0, max: 3, step: 0.05 },
-  { group: 'Lighting', key: 'orbLight', label: 'Orb light on grass', min: 0, max: 4, step: 0.05 },
-  { group: 'Lighting', key: 'ambient', label: 'Sky light (shadows)', min: 0, max: 3, step: 0.05 },
-  { group: 'Lighting', key: 'sheen', label: 'Shine on tips', min: 0, max: 4, step: 0.05 },
   // Scene
   { group: 'Scene', key: 'fogNear', label: 'Fog starts', min: 0.2, max: 3, step: 0.05 },
   { group: 'Scene', key: 'fogFar', label: 'Fog full', min: 0.3, max: 3, step: 0.05 },
   { group: 'Scene', key: 'fov', label: 'Camera zoom (field of view)', min: 30, max: 90, step: 1 },
-  { group: 'Scene', key: 'gridLines', label: 'Line grid brightness (grass off)', min: 0, max: 3, step: 0.05 },
+  { group: 'Scene', key: 'gridLines', label: 'Line grid brightness', min: 0, max: 3, step: 0.05 },
+  // "We build it all." in 3D
+  { group: 'Words (We build it all.)', key: 'wordsFont', label: 'Font', min: 0, max: 10, step: 1, names: WORD_FONTS },
+  { group: 'Words (We build it all.)', key: 'wordsSize', label: 'Size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Words (We build it all.)', key: 'wordsDepth', label: 'Thickness', min: 0, max: 5, step: 0.05 },
+  { group: 'Words (We build it all.)', key: 'wordsZ', label: 'Distance (bigger = closer to you)', min: 0, max: 34, step: 0.25 },
+  { group: 'Words (We build it all.)', key: 'wordsX', label: 'Left / right', min: -20, max: 20, step: 0.25 },
+  { group: 'Words (We build it all.)', key: 'wordsY', label: 'Height above water', min: -2, max: 12, step: 0.1 },
+  { group: 'Words (We build it all.)', key: 'wordsBright', label: 'Brightness', min: 0, max: 2, step: 0.05 },
+  { group: 'Words (We build it all.)', key: 'wordsReflect', label: 'Reflection in water', min: 0, max: 1, step: 0.02 },
+  { group: 'Words (We build it all.)', key: 'wordsFade', label: 'How long they stay when scrolling', min: 0.1, max: 1.5, step: 0.05 },
+  // The name and logo above the orb
+  { group: 'Name and logo', key: 'brandFont', label: 'Font', min: 0, max: 13, step: 1, names: BRAND_FONTS.map((f) => f[0]) },
+  { group: 'Name and logo', key: 'brandSize', label: 'Text size', min: 0.5, max: 2.5, step: 0.05 },
+  { group: 'Name and logo', key: 'brandWeight', label: 'Weight (thin ← → heavy)', min: 100, max: 900, step: 100 },
+  { group: 'Name and logo', key: 'brandSpacing', label: 'Letter spacing', min: -0.08, max: 0.6, step: 0.01 },
+  { group: 'Name and logo', key: 'brandCaps', label: 'Capitals (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Name and logo', key: 'brandLine', label: 'Gap between the two lines', min: 0.8, max: 2, step: 0.02 },
+  { group: 'Name and logo', key: 'logoSize', label: 'Logo size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Name and logo', key: 'logoGap', label: 'Gap between logo and name', min: 0, max: 60, step: 1 },
+  { group: 'Name and logo', key: 'brandLift', label: 'Move up / down', min: -20, max: 30, step: 0.5 },
 ];
 
 // Markus's settings from the tuner, 17 Nov 2026 (two rounds).
 export const DEFAULTS: Record<string, number> = {
   orbSpin: 0.35, orbStreaks: 0.15, orbSparks: 0, orbSparkRate: 3.55, orbSize: 1.24, orbHeight: -2, orbGlow: 1.4,
-  waterDesign: 4, waterTexture: 2.9, waterRipples: 1.1, swirlSize: 1.5, swirlDepth: 3, swirlSpeed: 1, waterFoam: 2.1,
+  waterDesign: 4, waterTexture: 2.9, waterRipples: 1.1, swirlSize: 1.5, swirlDepth: 3, swirlSpeed: 1, swirlLines: 1, swirlSoft: 1, waterFoam: 2.1,
   waterGlint: 0.3, waterReflect: 0.65, waterColour: 0.8, waterSheen: 0.95, sprayAmount: 0, spraySize: 1,
-  grassOn: 0, grassDensity: 1, grassHeight: 1.9, grassWidth: 1.55, grassTaper: 0.9, grassLean: 0.25, windStrength: 0.7, windSpeed: 1,
-  windWaves: 0.2, windFlutter: 0.4, grassTip: 0.35, grassRoot: 3.3, grassSat: 1, grassHue: 0, grassPatches: 1.1, groundBright: 0,
-  exposure: 0.9, moon: 1.1, moonAngle: 0, backlight: 1.3, orbLight: 4, ambient: 1, sheen: 1.15,
   fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.45,
+  wordsFont: 0, wordsSize: 1, wordsDepth: 1, wordsZ: 26, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.12, wordsFade: 0.4,
+  brandFont: 0, brandSize: 1, brandWeight: 400, brandSpacing: 0.01, brandCaps: 0, brandLine: 1.08, logoSize: 1, logoGap: 10, brandLift: 0,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
 
-const STORE = 'ddg-scene-tune-3'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-4'; // new name, so old saved slider positions don't override these defaults
 export function tuneOn(): boolean {
   return !!(window as unknown as { __DDG_TUNE__?: unknown }).__DDG_TUNE__ || /tune/.test(location.hash);
 }
@@ -117,21 +123,23 @@ export function mountPanel(): () => void {
     out.value = 'DDG scene settings (changed from default):\n' + JSON.stringify(diff, null, 1);
   };
   const inputs: Record<string, [HTMLInputElement, HTMLElement]> = {};
+  const input0 = (k: string) => inputs[k][0].dispatchEvent(new Event('input'));
   let group = '';
   for (const s of SPECS) {
     if (s.group !== group) { group = s.group; body.insertAdjacentHTML('beforeend', `<h4>${group}</h4>`); }
     const l = document.createElement('label');
     l.innerHTML = `<span>${s.label}<i></i></span><input type="range" min="${s.min}" max="${s.max}" step="${s.step}">`;
     const input = l.querySelector('input')!, val = l.querySelector('i')!;
-    input.value = String(T[s.key]); val.textContent = String(T[s.key]);
-    input.addEventListener('input', () => { T[s.key] = Number(input.value); val.textContent = input.value; changed(); save(); });
+    const show = (v: number) => (s.names ? `${v} · ${s.names[v] ?? ''}` : String(v));
+    input.value = String(T[s.key]); val.textContent = show(T[s.key]);
+    input.addEventListener('input', () => { T[s.key] = Number(input.value); val.textContent = show(T[s.key]); changed(); save(); });
     inputs[s.key] = [input, val];
     body.appendChild(l);
   }
   root.addEventListener('click', async (e) => {
     const act = (e.target as HTMLElement).dataset?.act;
     if (act === 'min') { root.classList.toggle('min'); (e.target as HTMLElement).textContent = root.classList.contains('min') ? 'Show' : 'Hide'; }
-    if (act === 'reset') { Object.assign(T, DEFAULTS); for (const s of SPECS) { inputs[s.key][0].value = String(T[s.key]); inputs[s.key][1].textContent = String(T[s.key]); } changed(); save(); }
+    if (act === 'reset') { Object.assign(T, DEFAULTS); for (const s of SPECS) { inputs[s.key][0].value = String(T[s.key]); inputs[s.key][1].textContent = String(T[s.key]); input0(s.key); } changed(); save(); }
     if (act === 'copy') {
       out.select();
       try { await navigator.clipboard.writeText(out.value); (e.target as HTMLElement).textContent = 'Copied'; } catch { (e.target as HTMLElement).textContent = 'Select the text below and copy it'; }
@@ -143,4 +151,29 @@ export function mountPanel(): () => void {
   document.head.appendChild(css); document.body.appendChild(root);
   changed();
   return () => { root.remove(); css.remove(); };
+}
+
+/** Put the name-and-logo settings on the page (CSS variables), loading the chosen web font. */
+let lastBrand = '';
+export function applyBrand(): void {
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift'].map((k) => T[k]).join(',');
+  if (key === lastBrand) return;
+  lastBrand = key;
+  const [, family] = BRAND_FONTS[T.brandFont] ?? BRAND_FONTS[0];
+  if (family && !document.getElementById(`bf-${T.brandFont}`)) {
+    const l = document.createElement('link');
+    l.id = `bf-${T.brandFont}`; l.rel = 'stylesheet';
+    l.href = `https://fonts.googleapis.com/css2?family=${family}&display=swap`;
+    document.head.appendChild(l);
+  }
+  const s = document.documentElement.style;
+  s.setProperty('--brand-font', family ? `'${family.split(':')[0].replace(/\+/g, ' ')}', var(--ng-font, system-ui), sans-serif` : 'inherit');
+  s.setProperty('--brand-size', String(T.brandSize));
+  s.setProperty('--brand-weight', String(T.brandWeight));
+  s.setProperty('--brand-track', `${T.brandSpacing}em`);
+  s.setProperty('--brand-case', T.brandCaps ? 'uppercase' : 'none');
+  s.setProperty('--brand-line', String(T.brandLine));
+  s.setProperty('--logo-size', String(T.logoSize));
+  s.setProperty('--logo-gap', `${T.logoGap}px`);
+  s.setProperty('--brand-lift', `${T.brandLift}vh`);
 }

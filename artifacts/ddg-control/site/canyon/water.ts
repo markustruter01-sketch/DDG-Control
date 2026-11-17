@@ -68,7 +68,7 @@ void main() {
   float lift = uVar > 0.5 ? uStir * shapeH(q, d) + swell : dish + stirAt(d) * arms + swell;
   p.y += lift;
   vP = p.xz;
-  vBed = (aBed + lift) * uFlat;
+  vBed = (aBed + lift) * max(uFlat, 0.45); // the river keeps some depth when the land lies flat, so it stays visible
   vec4 world = modelMatrix * vec4(p, 1.0);
   vWorld = world.xyz;
   vec4 mv = viewMatrix * world;
@@ -78,7 +78,7 @@ void main() {
 
 export const WATER_FRAG = /* glsl */ `
 ${STIR}
-uniform float uRough, uDetailK, uFoamK, uGlintK, uReflect, uBody, uSilk;
+uniform float uRough, uDetailK, uFoamK, uGlintK, uReflect, uBody, uSilk, uSwirlLines, uSwirlSoft;
 ${SKY_GLSL}
 uniform float uGlow;
 uniform float uOpacity;
@@ -114,17 +114,18 @@ float snoise(vec2 v) {
   return 130.0 * dot(m, g);
 }
 vec2 turn(vec2 p, float a) { float c = cos(a), s = sin(a); return vec2(c * p.x - s * p.y, s * p.x + c * p.y); }
-// Silk swirl: the water's own pattern is turned round the dent, faster near the middle, like a
-// real whirl. No lines; just soft, blurred streaks of lighter and darker water being dragged round.
+// Silk swirl: the water's own pattern is twisted round the dent (more twist near the middle) and the
+// whole twist turns slowly. The twist is a fixed amount, so the streaks never wind up tighter and
+// tighter over time (that was what filled it with fine rings).
 vec2 vortexUV(vec2 q, float d) {
-  float dn = d / uSwirlR, spin = uTime * uSwirlSpeed * 1.4 * exp(-dn * dn / 14.0) + 2.2 * exp(-dn * dn / 9.0);
+  float dn = d / uSwirlR, spin = uTime * uSwirlSpeed * 0.9 + 2.2 * uSwirlLines * exp(-dn * dn / 9.0);
   float c = cos(spin), s = sin(spin);
   return vec2(c * q.x - s * q.y, s * q.x + c * q.y) / uSwirlR;
 }
 float vortex(vec2 q, float d) {
   vec2 r = vortexUV(q, d);
   float dn = d / uSwirlR;
-  return (0.6 * snoise(r * vec2(0.45, 0.25)) + 0.4 * snoise(r * 0.9 + 3.7)) * exp(-dn * dn / 12.0);
+  return (0.6 * snoise(r * vec2(0.45, 0.25) / uSwirlSoft) + 0.4 * snoise(r * 0.9 / uSwirlSoft + 3.7)) * exp(-dn * dn / 12.0);
 }
 // Height of the surface detail. Slow swells ride the current, which runs towards +z
 // (the camera); near the orb they are bent round it and the spiral arms are added.
@@ -262,7 +263,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   riverGeo.setIndex(idx);
   const uniforms = {
     uTime: { value: 0 }, uVar: { value: 0 }, uSwirlR: { value: 1 }, uSwirlDepth: { value: 1 }, uSwirlSpeed: { value: 1 },
-    uRough: { value: 1 }, uDetailK: { value: 1 }, uFoamK: { value: 1 }, uGlintK: { value: 1 }, uReflect: { value: 1 }, uBody: { value: 1 }, uSilk: { value: 1 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
+    uRough: { value: 1 }, uSwirlLines: { value: 1 }, uSwirlSoft: { value: 1 }, uDetailK: { value: 1 }, uFoamK: { value: 1 }, uGlintK: { value: 1 }, uReflect: { value: 1 }, uBody: { value: 1 }, uSilk: { value: 1 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
     uOrb: { value: new Vector2() }, uOrbPos: { value: new Vector3() },
     // The shader writes screen colours directly, so the fog colour is passed as plain 0-1 values.
     uFog: { value: new Vector3(((fogColor >> 16) & 255) / 255, ((fogColor >> 8) & 255) / 255, (fogColor & 255) / 255) },
@@ -294,7 +295,8 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     /** 1 = water fully shown. */ show: number; fogNear: number; fogFar: number;
   };
   const update = (f: Frame) => {
-    river.scale.y = f.flat;
+    river.scale.y = Math.max(f.flat, 0.02);
+    river.position.y = (1 - f.flat) * 0.3; // just above the flat grid, so they never flicker through each other
     uniforms.uTime.value = f.t; uniforms.uStir.value = f.stir; uniforms.uGlow.value = f.stir; uniforms.uOpacity.value = f.show; uniforms.uFlat.value = f.flat;
     uniforms.uOrb.value.set(f.orbX, f.orbZ); uniforms.uOrbPos.value.set(f.orbX, f.orbY, f.orbZ);
     uniforms.uFogNear.value = f.fogNear; uniforms.uFogFar.value = f.fogFar;
@@ -327,7 +329,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   /** Live look settings (from the preview sliders). */
   const setLook = (k: Record<string, number>) => {
     uniforms.uVar.value = k.waterDesign; uniforms.uRough.value = k.waterTexture; uniforms.uDetailK.value = k.waterRipples;
-    uniforms.uSwirlR.value = k.swirlSize; uniforms.uSwirlDepth.value = k.swirlDepth; uniforms.uSwirlSpeed.value = k.swirlSpeed;
+    uniforms.uSwirlR.value = k.swirlSize; uniforms.uSwirlDepth.value = k.swirlDepth; uniforms.uSwirlSpeed.value = k.swirlSpeed; uniforms.uSwirlLines.value = k.swirlLines; uniforms.uSwirlSoft.value = k.swirlSoft;
     uniforms.uFoamK.value = k.waterFoam; uniforms.uGlintK.value = k.waterGlint; uniforms.uReflect.value = k.waterReflect;
     uniforms.uBody.value = k.waterColour; uniforms.uSilk.value = k.waterSheen; sprayAmount = k.sprayAmount; spraySize = k.spraySize;
   };

@@ -7,8 +7,7 @@ import { makeAirOrb } from './airOrb';
 import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWater } from './water';
-import { makeGrass } from './grass';
-import { T, tuneOn, mountPanel } from './tune';
+import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeWords } from './words3d';
 
 /**
@@ -94,11 +93,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     scene.add(water.river, water.spray);
     disposables.push(...water.disposables);
 
-    // Grass over the hills (the ground under it is painted as more grass). Settings live in tune.ts;
-    // in the preview a panel of sliders changes them live.
-    const grass = makeGrass({ small, heightAt, W, D, Z0 });
-    scene.add(grass.mesh);
-    disposables.push(...grass.disposables);
+    // Settings live in tune.ts; in the preview a panel of sliders changes them live.
     const unmountPanel = tuneOn() ? mountPanel() : null;
 
     // "We build it all." standing on the water in front of the orb.
@@ -132,11 +127,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         for (let i = 0; i < count; i++) pos[i * 3 + 1] = base[i] * flat;
         attr.needsUpdate = true; shownK = k;
       }
-      const grassOn = T.grassOn > 0.5;
-      land.material = grassOn ? grass.ground : surfMat;
-      lineMat.visible = !grassOn;
       lineMat.opacity = lerp(0.34, 0.16, k) * T.gridLines;
-      water.setLook(T); grass.setLook(T);
+      water.setLook(T);
+      applyBrand();
       if (camera.fov !== T.fov) { camera.fov = T.fov; camera.updateProjectionMatrix(); }
       const fog = scene.fog as Fog;
       fog.near = lerp(30, 200, k) * T.fogNear; fog.far = Math.max(fog.near + 1, lerp(150, 420, k) * T.fogFar);
@@ -153,22 +146,23 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       haloMat.opacity = HALO * T.orbGlow * (1 - away);
       if (!reduced) { clock += dt; spinClock += dt * T.orbSpin; }
       air.update(clock, 1 - away, spinClock, { bands: T.orbStreaks, zap: T.orbSparks, zapRate: T.orbSparkRate });
-      // The water drains away as the canyon flattens; the churning stops as the orb leaves.
+      // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
+      // into the first pipe on the page. The churning stops as the orb leaves.
       water.update({
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
-        flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1 - ease(k * 3), fogNear: fog.near, fogFar: fog.far,
+        flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far,
       });
       // The words face the screen, then sink into the river and fade as the visitor scrolls.
-      const wordsOut = ease(p / 0.4);
-      words.group.visible = wordsOut < 0.99;
-      words.group.position.set(0, (4.25 - 0.01 * 18) * (1 - k) - wordsOut * 2.2, 18);
+      const wordsOut = ease(p / T.wordsFade);
+      words.setFont(T.wordsFont);
+      words.group.visible = words.ready() && wordsOut < 0.99;
+      const wz = T.wordsZ;
+      words.group.position.set(T.wordsX, ((4.25 - 0.01 * wz) + T.wordsY) * (1 - k) - wordsOut * 2.2, wz);
       words.group.quaternion.copy(camera.quaternion);
-      words.group.scale.setScalar(small ? 0.72 : 1);
+      words.group.scale.set(T.wordsSize * (small ? 0.72 : 1), T.wordsSize * (small ? 0.72 : 1), T.wordsSize * T.wordsDepth);
       words.mat.uniforms.uOpacity.value = 1 - wordsOut;
-      words.refl.uniforms.uOpacity.value = 0.12 * (1 - wordsOut);
-      grass.mesh.visible = grassOn;
-      grass.update(clock, 1 - k, orbit.position, fog.near, fog.far);
-      if (!grassOn) grass.mesh.visible = false;
+      words.mat.uniforms.uBright.value = T.wordsBright; words.refl.uniforms.uBright.value = T.wordsBright;
+      words.refl.uniforms.uOpacity.value = T.wordsReflect * (1 - wordsOut);
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(frame);
