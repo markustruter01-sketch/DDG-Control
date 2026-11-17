@@ -98,7 +98,7 @@ export const CARE = 'Care plans from $40 a month for a website and $225 a month 
 
 export const BUILD_STEPS = [
   { title: 'Tell us', line: 'Five quick questions on one page.' },
-  { title: 'Free call', line: 'We talk it through and agree exactly what gets built.' },
+  { title: 'Scope in writing', line: 'We agree by email exactly what gets built.' },
   { title: 'Fixed quote', line: 'One price for the agreed work, paid in stages.' },
   { title: 'Build and launch', line: 'You see progress every week, then we launch and look after it.' },
 ];
@@ -107,10 +107,10 @@ export const BUILD_STEPS = [
 export const START = {
   eyebrow: 'DDG Build',
   title: 'Tell us what you want built.',
-  line: 'Five quick questions. We read every one and email you to set up a free call.',
+  line: 'Five quick questions. We read every one and reply by email.',
   aboutLabel: 'What should it do?',
   aboutHint: 'A sentence or two: who it is for and the main things it needs to do.',
-  done: 'Thanks, we have it. We will email you to set up a free call.',
+  done: 'Thanks, we have it. We will reply by email.',
 };
 
 export const BUILD_FORM = {
@@ -191,7 +191,6 @@ export const QUOTE_PAGE = {
 export const HOME = {
   eyebrow: 'Digital Dynamics Group',
   title: 'We build it all.',
-  core: 'AI core · powering 4 businesses',
   powers: [
     { n: '01', name: 'Coffee', line: 'Beans to your door' },
     { n: '02', name: 'Finance', line: 'Our own trading platform' },
@@ -200,4 +199,61 @@ export const HOME = {
   ],
   work: { eyebrow: 'Our work', title: 'Built in Brisbane. Running live.' },
   businesses: 'Our businesses',
+};
+
+/** One line under the orb in place of the list of businesses. Markus picks one in the tuner. */
+export const QUOTES = [
+  'We use AI to unlock the digital world. Then we build whatever we want in it.',
+  'One founder. An AI workforce. No ceiling on what gets built.',
+  'If it can live on a screen, we can build it.',
+  'AI is the engine. Imagination is the only spec.',
+  "We don't wait for the future. We ship it.",
+  'Ideas in. Working platforms out.',
+  'Powered by AI. Built by obsession.',
+  'The digital frontier has no fences. We build past the edge.',
+  "Give us a problem. We'll give it a platform.",
+  'Small team. Unreasonable output.',
+];
+
+// ── The home page journey (17 Nov 2026): what we are → what we've built → how we run it →
+// what we can build for you → start your build → charity. Fitness stays a secret: no features named.
+export const ABOUT = {
+  eyebrow: 'Digital Dynamics Group',
+  title: 'An AI-powered development company.',
+  line: 'We design, build and run platforms of any size: websites, online stores, trading systems, phone apps and AI. Tell us what you want, and we build it.',
+  see: 'See what we have built',
+  start: 'Start your build',
+};
+
+export const BUILT = {
+  eyebrow: 'Projects we have built',
+  left: 'Complex platforms.',
+  right: 'Built in-house.',
+  line: 'Examples of what we can build: our own trading platform, online store and fitness app.',
+};
+
+export type ShowcaseKey = 'finance' | 'coffee' | 'fitness';
+export const SHOWCASE: {
+  key: ShowcaseKey; name: string; kind: string; tab: string; title: string; line: string; steps: string[];
+  link: { label: string; href: string; external: boolean } | null; note?: string;
+}[] = [
+  // The platform as it will be once the agreed fund roadmap (17 Nov 2026) is built, said as "being built".
+  { key: 'finance', name: 'DDG Finance', kind: 'Quantitative trading platform', tab: 'Quant trading', title: 'A trading platform that runs itself, tested in the open.',
+    line: 'We are building a system that reads what kind of market it is, picks from strategies that have proven themselves, decides how much each one gets, and trades, with hard limits that stop it when something is wrong.',
+    steps: ['A league of strategies runs on fake money every night', 'Every rule is written down and dated before it runs, then never changed', 'An allocator reads the market each day and shares out the money', 'Hard limits in the code stop it when something goes wrong'],
+    link: { label: 'See the platform', href: '/finance', external: false }, note: 'Paper trading. Not financial advice. We don\u2019t take outside money.' },
+  { key: 'coffee', name: 'DDG Coffee', kind: 'E-commerce', tab: 'E-commerce', title: 'An online store for premium coffee beans.',
+    line: 'Cattle Dog Coffee. Order in a few taps and we deliver to your door. $1 from every bag goes to animal charities.',
+    steps: ['Pick your beans in the online store', 'Pay securely by card', 'The order lands in our command centre', 'Packed and delivered to your door'],
+    link: { label: 'Shop coffee', href: PUBLIC_SITES.coffee, external: true } },
+  { key: 'fitness', name: 'DDG Fitness', kind: 'Coming soon', tab: 'Coming soon', title: 'A global health and fitness app.',
+    line: 'Democratising health and fitness for everyone on planet Earth.',
+    steps: [], link: null },
+];
+
+export const RUN = {
+  eyebrow: 'How we run it',
+  title: 'Every business, run from one screen.',
+  line: CONTROL_CASE.line,
+  built: CONTROL_CASE.built,
 };

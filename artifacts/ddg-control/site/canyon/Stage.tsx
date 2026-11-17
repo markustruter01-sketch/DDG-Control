@@ -1,12 +1,17 @@
 import { useEffect, useRef } from 'react';
 import {
   AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, DynamicDrawUsage, Fog, Group,
-  LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, WebGLRenderer,
+  LineSegments, Mesh, ShaderMaterial, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
 import { makeAirOrb } from './airOrb';
 import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWater } from './water';
+import { T, tuneOn, mountPanel, applyBrand } from './tune';
+import { makeClouds3D } from './clouds';
+import { makeWords } from './words3d';
+import { makeRiverPipe } from './riverPipe';
+import { makeStars } from './stars3d';
 
 /**
  * Home background (fixed): a night sky with the Milky Way over a landscape of ice-blue lines (see landscapes.ts for its shape) with the DDG core, a fast-spinning
@@ -39,7 +44,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const small = innerWidth < 700;
     let renderer: WebGLRenderer;
     try { renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch { stage.style.display = 'none'; return; }
-    renderer.setPixelRatio(Math.min(devicePixelRatio, small ? 1.5 : 1.75));
+    // Sharpness: at most 1.5× (beyond that the extra pixels are hard to see but costly). If frames come
+    // slowly once the scene has settled, step it down (1.5 → 1.2 → 1), so slower devices stay smooth.
+    const ratios = [1.5, 1.2, 1].filter((r) => r <= Math.max(1, devicePixelRatio));
+    let ratioStep = 0;
+    renderer.setPixelRatio(Math.min(devicePixelRatio, ratios[0] ?? 1));
+    let slowSince = -1, slowFrames = 0, sampled = 0;
     const scene = new Scene();
     scene.fog = new Fog(0x0a0d16, 30, 150);
     const camera = new PerspectiveCamera(58, 1, 0.1, 500);
@@ -65,8 +75,18 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const lineGeo = new BufferGeometry(); lineGeo.setAttribute('position', attr); lineGeo.setIndex(seg);
     // Both sides: the grid's triangles face downwards, so one-sided the surface was never drawn from above.
     const surfMat = new MeshBasicMaterial({ color: 0x07090f, side: DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
-    const lineMat = new LineBasicMaterial({ color: 0x6cc7f0, transparent: true, opacity: 0.34 });
-    scene.add(new Mesh(surfGeo, surfMat), new LineSegments(lineGeo, lineMat));
+    // The land's lines, hidden wherever the river covers the ground (so no grid shows under or over the water).
+    lineGeo.setAttribute('aBase', new BufferAttribute(base, 1));
+    const lineMat = new ShaderMaterial({
+      transparent: true,
+      uniforms: { uOpacity: { value: 0.34 }, uFogNear: { value: 30 }, uFogFar: { value: 150 } },
+      vertexShader: `attribute float aBase; varying float vWet; varying float vDist;
+        void main() { vWet = step(aBase, 4.62 - 0.01 * position.z); vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: `uniform float uOpacity; uniform float uFogNear; uniform float uFogFar; varying float vWet; varying float vDist;
+        void main() { if (vWet > 0.5) discard; gl_FragColor = vec4(0.42, 0.78, 0.94, uOpacity * (1.0 - smoothstep(uFogNear, uFogFar, vDist))); }`,
+    });
+    const land = new Mesh(surfGeo, surfMat);
+    scene.add(land, new LineSegments(lineGeo, lineMat));
     disposables.push(surfGeo, lineGeo, surfMat, lineMat);
 
     // The night sky: stars and the Milky Way. The river mirrors the same sky.
@@ -90,14 +110,58 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     scene.add(water.river, water.spray);
     disposables.push(...water.disposables);
 
+    // Settings live in tune.ts; in the preview a panel of sliders changes them live.
+    const unmountPanel = tuneOn() ? mountPanel() : null;
+
+    // "We build it all." standing on the water in front of the orb.
+    const words = makeWords();
+    scene.add(words.group);
+    disposables.push(...words.disposables);
+    let spinClock = 0;
+
+    // A glass pipe along the bottom of the riverbed, with data flowing through it.
+    const riverPipe = makeRiverPipe({ heightAt, zFar: -150, zNear: Z0, small });
+    scene.add(riverPipe.group);
+    disposables.push(...riverPipe.disposables);
+    let pipeR = -1;
+    // Soft low clouds lying over the land.
+    const clouds = makeClouds3D(heightAt, small);
+    scene.add(clouds.group);
+    disposables.push(...clouds.disposables);
+    const stars = makeStars(scene);
+    disposables.push(...stars.disposables);
+
     const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
     resize(); addEventListener('resize', resize);
 
     const look = new Vector3();
+    // For keeping the name, frame and quote lined up with the orb while it moves.
+    const restCam = new PerspectiveCamera(58, 1, 0.1, 500), restLook = new Vector3(0, 12, 2), pv = new Vector3();
+    const topEl = (document.querySelector('.cn-top') as HTMLElement | null) ?? document.documentElement;
+    let lastAlign = '';
+    const onScreen = (cam: PerspectiveCamera, at: Vector3, r: number) => {
+      pv.copy(at).project(cam);
+      const d = cam.position.distanceTo(at);
+      return [((1 - pv.y) / 2) * innerHeight, (r / (d * Math.tan((cam.fov * Math.PI) / 360))) * (innerHeight / 2)];
+    };
     let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      const raw = now - last;
+      const dt = Math.min(0.05, raw / 1000); last = now;
+      // Quality check: after a short settle, look at 90 frames; if most took over 22 ms, step down once
+      // and look again. Hidden tabs and the first frames after a scroll jump are ignored.
+      if (!document.hidden && raw < 250 && ratioStep < ratios.length - 1) {
+        if (slowSince < 0) slowSince = now;
+        if (now - slowSince > 1500) {
+          sampled++; if (raw > 22) slowFrames++;
+          if (sampled >= 90) {
+            if (slowFrames > 60) { ratioStep++; renderer.setPixelRatio(Math.min(devicePixelRatio, ratios[ratioStep])); resize(); slowSince = now; }
+            else ratioStep = ratios.length; // fast enough: stop checking
+            sampled = 0; slowFrames = 0;
+          }
+        }
+      }
       smoothY += (scrollY - smoothY) * (reduced ? 1 : 0.12);
       const vh = innerHeight;
       // Fade the whole stage away as the first section after the canyon arrives.
@@ -105,7 +169,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const top = fadeEl ? fadeEl.getBoundingClientRect().top : vh;
       const show = Math.min(1, Math.max(0, (top - vh * 0.3) / (vh * 0.55)));
       stage.style.opacity = String(show);
-      if (show <= 0) return;
+      if (show <= 0) { document.documentElement.style.setProperty('--pipe-join', '1'); topEl.style.setProperty('--cn-fade', '0'); lastAlign = ''; return; }
 
       // 0 → 1 over the hero and the room after it: the canyon settles into a flat grid seen from above.
       const p = Math.min(1, Math.max(0, smoothY / (vh * 1.35)));
@@ -115,9 +179,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         for (let i = 0; i < count; i++) pos[i * 3 + 1] = base[i] * flat;
         attr.needsUpdate = true; shownK = k;
       }
-      lineMat.opacity = lerp(0.34, 0.16, k);
+      lineMat.uniforms.uOpacity.value = lerp(0.34, 0.16, k) * T.gridLines;
+      water.setLook(T); riverPipe.setLook(T);
+      if (T.pipeRadius !== pipeR) { pipeR = T.pipeRadius; riverPipe.rebuild(0.6 * pipeR); }
+      applyBrand();
+      if (camera.fov !== T.fov) { camera.fov = T.fov; camera.updateProjectionMatrix(); }
       const fog = scene.fog as Fog;
-      fog.near = lerp(30, 200, k); fog.far = lerp(150, 420, k);
+      fog.near = lerp(30, 200, k) * T.fogNear; fog.far = Math.max(fog.near + 1, lerp(150, 420, k) * T.fogFar);
+      lineMat.uniforms.uFogNear.value = fog.near; lineMat.uniforms.uFogFar.value = fog.far;
       const camZ = lerp(42, 0, ease(p * 1.2));
       camera.position.set(0, lerp(9, small ? 95 : 70, k), camZ);
       look.set(0, lerp(12, 0, k), lerp(camZ - 40, camZ - 0.01, k));
@@ -126,21 +195,63 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
 
       // The core drifts up and away as the canyon flattens.
       const away = ease((p - 0.1) / 0.5);
-      orbit.position.set(0, CORE.y + away * 26, CORE.z - away * 10);
-      orbit.scale.setScalar(small ? 1.44 : 2.19);
-      haloMat.opacity = HALO * (1 - away);
-      if (!reduced) clock += dt;
-      air.update(clock, 1 - away);
-      // The water drains away as the canyon flattens; the churning stops as the orb leaves.
+      orbit.position.set(0, CORE.y + T.orbHeight + away * 26, CORE.z - away * 10);
+      orbit.scale.setScalar((small ? 1.44 : 2.19) * T.orbSize);
+      haloMat.opacity = HALO * T.orbGlow * (1 - away);
+      // Where the orb is on screen now, and where it sits before any scrolling. The name and frame follow
+      // it exactly; the quote and the scroll hint move by the same amount as the orb's lower edge.
+      camera.updateMatrixWorld();
+      const R = ORB_R * orbit.scale.x, FRAME = 1.22;
+      const [oy, orR] = onScreen(camera, orbit.position, R);
+      restCam.fov = camera.fov; restCam.aspect = camera.aspect; restCam.updateProjectionMatrix();
+      restCam.position.set(0, 9, 42); restCam.lookAt(restLook); restCam.updateMatrixWorld();
+      pv.set(0, CORE.y + T.orbHeight, CORE.z);
+      const [oy0, or0] = onScreen(restCam, pv.clone(), R);
+      // The name, frame, quote and hint fade out early, well before the orb has gone.
+      const fadeOut = 1 - ease((p - 0.06) / 0.22);
+      // These words sit in a fixed layer (.cn-follow), so they use screen positions straight from the
+      // orb: nothing here waits on the page's own scrolling, so they move exactly with it.
+      const align = `${fadeOut.toFixed(3)}|${oy.toFixed(2)}|${(orR * FRAME).toFixed(2)}|${(oy + orR * FRAME - (oy0 + or0 * FRAME)).toFixed(2)}`;
+      if (align !== lastAlign) {
+        lastAlign = align;
+        const [f, a, b, c] = align.split('|');
+        topEl.style.setProperty('--cn-fade', f);
+        topEl.style.setProperty('--cn-oy', `${a}px`); topEl.style.setProperty('--cn-or', `${b}px`); topEl.style.setProperty('--cn-dy', `${c}px`);
+      }
+      if (!reduced) { clock += dt; spinClock += dt * T.orbSpin; }
+      air.update(clock, 1 - away, spinClock, { bands: T.orbStreaks, zap: T.orbSparks, zapRate: T.orbSparkRate });
+      // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
+      // into the first pipe on the page. The churning stops as the orb leaves.
       water.update({
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
-        flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1 - ease(k * 3), fogNear: fog.near, fogFar: fog.far,
+        flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far,
       });
+      // The join: once the land is almost flat, the riverbed pipe narrows to exactly the page pipe's width
+      // on screen (3.5 px) and takes on its look; the page then draws its own pipe on top from the same spot.
+      const join = ease((k - 0.75) / 0.25);
+      const dist = camera.position.y - 0.15;
+      const pxWorld = (2 * dist * Math.tan((camera.fov * Math.PI) / 360)) / innerHeight;
+      riverPipe.update(clock, 1 - k, orbit.position, 1, join, (1.75 * pxWorld) / (0.6 * T.pipeRadius));
+      document.documentElement.style.setProperty('--pipe-join', String(join));
+      // The words face the screen, then sink into the river and fade as the visitor scrolls.
+      const wordsOut = ease(p / T.wordsFade);
+      if (T.wordsOn > 0.5) words.setFont(T.wordsFont);
+      words.group.visible = T.wordsOn > 0.5 && words.ready() && wordsOut < 0.99;
+      const wz = T.wordsZ;
+      words.group.position.set(T.wordsX, ((4.25 - 0.01 * wz) + T.wordsY) * (1 - k) - wordsOut * 2.2, wz);
+      words.group.quaternion.copy(camera.quaternion);
+      words.group.scale.set(T.wordsSize * (small ? 0.72 : 1), T.wordsSize * (small ? 0.72 : 1), T.wordsSize * T.wordsDepth);
+      words.mat.uniforms.uOpacity.value = 1 - wordsOut;
+      words.mat.uniforms.uBright.value = T.wordsBright; words.refl.uniforms.uBright.value = T.wordsBright;
+      words.refl.uniforms.uOpacity.value = T.wordsReflect * (1 - wordsOut);
+      clouds.update(clock, camera, 1 - k, show, orbit.position);
+      stars.update(now, camera, T, k < 0.3);
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
+      unmountPanel?.();
       removeEventListener('resize', resize);
       disposables.forEach((d) => d.dispose());
       renderer.dispose();

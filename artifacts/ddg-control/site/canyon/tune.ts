@@ -1,0 +1,385 @@
+/**
+ * Scene settings, and (preview only) a panel of sliders to change them live. The panel shows when
+ * the page sets window.__DDG_TUNE__ or its address has #tune. Its "Copy settings" button gives a
+ * block of text that can be pasted back to Claude, who then makes those the real defaults.
+ */
+
+type Spec = { key: string; label: string; min: number; max: number; step: number; group: string; names?: string[]; text?: true };
+
+import { QUOTES } from '../content';
+
+/** 3D fonts for "We build it all." (they come with three.js). */
+export const WORD_FONTS = ['Helvetiker', 'Helvetiker Bold', 'Optimer', 'Optimer Bold', 'Gentilis', 'Gentilis Bold', 'Droid Sans', 'Droid Sans Bold', 'Droid Serif', 'Droid Serif Bold', 'Droid Sans Mono'];
+/** Web fonts for the name. [name shown, Google Fonts family or '' for the site's own font]. */
+export const BRAND_FONTS: [string, string][] = [
+  ['Site font (now)', ''], ['Orbitron', 'Orbitron:wght@400..900'], ['Michroma', 'Michroma'], ['Syncopate', 'Syncopate:wght@400;700'],
+  ['Audiowide', 'Audiowide'], ['Unbounded', 'Unbounded:wght@200..900'], ['Space Grotesk', 'Space+Grotesk:wght@300..700'], ['Oxanium', 'Oxanium:wght@200..800'],
+  ['Chakra Petch', 'Chakra+Petch:wght@300;400;500;600;700'], ['Major Mono Display', 'Major+Mono+Display'], ['Sora', 'Sora:wght@100..800'],
+  ['Exo 2', 'Exo+2:wght@100..900'], ['Tektur', 'Tektur:wght@400..900'], ['Bruno Ace SC', 'Bruno+Ace+SC'],
+];
+
+export const SPECS: Spec[] = [
+  // Orb
+  { group: 'Orb', key: 'orbSpin', label: 'Spin speed', min: 0, max: 3, step: 0.05 },
+  { group: 'Orb', key: 'orbStreaks', label: 'White streaks', min: 0, max: 3, step: 0.05 },
+  { group: 'Orb', key: 'orbSparks', label: 'Spark brightness', min: 0, max: 3, step: 0.05 },
+  { group: 'Orb', key: 'orbSparkRate', label: 'Spark how often', min: 0, max: 4, step: 0.05 },
+  { group: 'Orb', key: 'orbSize', label: 'Size', min: 0.4, max: 2, step: 0.02 },
+  { group: 'Orb', key: 'orbHeight', label: 'Height above water', min: -3, max: 6, step: 0.1 },
+  { group: 'Orb', key: 'orbGlow', label: 'Glow around it', min: 0, max: 2, step: 0.05 },
+  // Water
+  { group: 'Water', key: 'waterDesign', label: 'Design (0 old, 1 glass, 2 cartoon, 3 mirror, 4 silk)', min: 0, max: 4, step: 1 },
+  { group: 'Water', key: 'waterTexture', label: 'Texture (swells)', min: 0, max: 4, step: 0.05 },
+  { group: 'Water', key: 'waterRipples', label: 'Fine ripples', min: 0, max: 4, step: 0.05 },
+  { group: 'Water', key: 'swirlSize', label: 'Swirl size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Water', key: 'swirlDepth', label: 'Swirl depth', min: 0, max: 3, step: 0.05 },
+  { group: 'Water', key: 'swirlSpeed', label: 'Swirl speed', min: 0, max: 3, step: 0.05 },
+  { group: 'Water', key: 'swirlLines', label: 'Swirl lines (how wound up)', min: 0, max: 3, step: 0.05 },
+  { group: 'Water', key: 'swirlSoft', label: 'Swirl softness (bigger = blurrier)', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Water', key: 'waterFoam', label: 'White water', min: 0, max: 3, step: 0.05 },
+  { group: 'Water', key: 'waterGlint', label: 'Orb glint on water', min: 0, max: 3, step: 0.05 },
+  { group: 'Water', key: 'waterReflect', label: 'Reflection strength', min: 0, max: 3, step: 0.05 },
+  { group: 'Water', key: 'waterColour', label: 'Colour brightness', min: 0, max: 3, step: 0.05 },
+  { group: 'Water', key: 'waterSheen', label: 'Silk sheen', min: 0, max: 3, step: 0.05 },
+  { group: 'Water', key: 'waterClear', label: 'Clearness (see into the water)', min: 0, max: 1, step: 0.02 },
+  { group: 'Water', key: 'sprayAmount', label: 'Spray amount', min: 0, max: 1, step: 0.05 },
+  { group: 'Water', key: 'spraySize', label: 'Spray drop size', min: 0, max: 3, step: 0.05 },
+  // Scene
+  { group: 'Scene', key: 'fogNear', label: 'Fog starts', min: 0.2, max: 3, step: 0.05 },
+  { group: 'Scene', key: 'fogFar', label: 'Fog full', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Scene', key: 'fov', label: 'Camera zoom (field of view)', min: 30, max: 90, step: 1 },
+  { group: 'Shooting stars', key: 'starsOn', label: 'On (1) or off (0)', min: 0, max: 1, step: 1 },
+  { group: 'Shooting stars', key: 'starsEvery', label: 'About every … seconds', min: 1, max: 30, step: 0.5 },
+  { group: 'Shooting stars', key: 'starsLength', label: 'Tail length', min: 0.2, max: 3, step: 0.05 },
+  { group: 'Shooting stars', key: 'starsSpeed', label: 'Speed', min: 0.2, max: 3, step: 0.05 },
+  { group: 'Shooting stars', key: 'starsBright', label: 'Brightness', min: 0.1, max: 2, step: 0.05 },
+  { group: 'Shooting stars', key: 'starsWidth', label: 'Thickness', min: 0.3, max: 4, step: 0.05 },
+  { group: 'Shooting stars', key: 'starsSteep', label: 'How steeply they fall', min: 0, max: 2, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'pipeOn', label: 'On (1) or off (0)', min: 0, max: 1, step: 1 },
+  { group: 'Riverbed pipe', key: 'pipeFluid', label: 'Fluid (0 blue water + data, 1 white ink) · all pipes', min: 0, max: 1, step: 1 },
+  { group: 'Riverbed pipe', key: 'inkHue', label: 'Fluid colour: hue (red → yellow → green → blue → pink)', min: 0, max: 360, step: 1 },
+  { group: 'Riverbed pipe', key: 'inkSat', label: 'Fluid colour: how much colour (0 white)', min: 0, max: 1, step: 0.02 },
+  { group: 'Riverbed pipe', key: 'inkLight', label: 'Fluid colour: brightness', min: 0.3, max: 1, step: 0.02 },
+  { group: 'Riverbed pipe', key: 'inkSpeed', label: 'White ink: flow speed', min: 0.2, max: 4, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'inkThick', label: 'White ink: how solid', min: 0.2, max: 1.6, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'pipeRadius', label: 'Pipe thickness', min: 0.2, max: 4, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'pipeLift', label: 'Raise above the bed', min: -1, max: 4, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'pipeGlass', label: 'Glass cloudiness', min: 0, max: 6, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'pipeRim', label: 'Glass edge shine', min: 0, max: 3, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'pipeGlow', label: 'Glow in the water (volumetric)', min: 0, max: 4, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'dataCount', label: 'Data particles: how many', min: 0, max: 1, step: 0.02 },
+  { group: 'Riverbed pipe', key: 'dataSize', label: 'Data particles: size', min: 0.2, max: 4, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'dataSpeed', label: 'Data particles: speed', min: 0, max: 5, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'dataBright', label: 'Data particles: brightness', min: 0, max: 3, step: 0.05 },
+  { group: 'Riverbed pipe', key: 'dataColour', label: 'Data particles: colour (0 blue, 1 mint, 2 white)', min: 0, max: 2, step: 0.05 },
+  { group: 'Scene', key: 'gridLines', label: 'Line grid brightness', min: 0, max: 3, step: 0.05 },
+  // "We build it all." in 3D
+  { group: 'Words (We build it all.)', key: 'wordsOn', label: 'Show the words (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Words (We build it all.)', key: 'wordsFont', label: 'Font', min: 0, max: 10, step: 1, names: WORD_FONTS },
+  { group: 'Words (We build it all.)', key: 'wordsSize', label: 'Size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Words (We build it all.)', key: 'wordsDepth', label: 'Thickness', min: 0, max: 5, step: 0.05 },
+  { group: 'Words (We build it all.)', key: 'wordsZ', label: 'Distance (bigger = closer to you)', min: 0, max: 34, step: 0.25 },
+  { group: 'Words (We build it all.)', key: 'wordsX', label: 'Left / right', min: -20, max: 20, step: 0.25 },
+  { group: 'Words (We build it all.)', key: 'wordsY', label: 'Height above water', min: -2, max: 12, step: 0.1 },
+  { group: 'Words (We build it all.)', key: 'wordsBright', label: 'Brightness', min: 0, max: 2, step: 0.05 },
+  { group: 'Words (We build it all.)', key: 'wordsReflect', label: 'Reflection in water', min: 0, max: 1, step: 0.02 },
+  { group: 'Words (We build it all.)', key: 'wordsFade', label: 'How long they stay when scrolling', min: 0.1, max: 1.5, step: 0.05 },
+  // The quote under the orb
+  { group: 'Quote', key: 'quote', label: 'Which quote', min: 0, max: 9, step: 1, names: QUOTES },
+  { group: 'Quote', key: 'quoteOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Quote', key: 'quoteFont', label: 'Font', min: 0, max: 13, step: 1, names: BRAND_FONTS.map((f) => f[0]) },
+  { group: 'Quote', key: 'quoteSize', label: 'Text size', min: 0.4, max: 3, step: 0.05 },
+  { group: 'Quote', key: 'quoteWeight', label: 'Weight (thin ← → heavy)', min: 100, max: 900, step: 100 },
+  { group: 'Quote', key: 'quoteSpacing', label: 'Letter spacing', min: -0.05, max: 0.4, step: 0.01 },
+  { group: 'Quote', key: 'quoteCaps', label: 'Capitals (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Quote', key: 'quoteAlign', label: 'Place (0 left, 1 middle, 2 right)', min: 0, max: 2, step: 1 },
+  { group: 'Quote', key: 'quoteWidth', label: 'Line length', min: 12, max: 70, step: 1 },
+  { group: 'Quote', key: 'quoteLift', label: 'Move up / down', min: -5, max: 40, step: 0.5 },
+  // Soft frosted-glass patch behind the quote
+  { group: 'Quote background', key: 'qbOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Quote background', key: 'qbDark', label: 'Darkness', min: 0, max: 1, step: 0.02 },
+  { group: 'Quote background', key: 'qbBlur', label: 'Frost (blur behind)', min: 0, max: 40, step: 1 },
+  { group: 'Quote background', key: 'qbTint', label: 'Colour (0 black ← → 1 deep blue)', min: 0, max: 1, step: 0.05 },
+  { group: 'Quote background', key: 'qbPadX', label: 'Width around the text', min: 0, max: 200, step: 2 },
+  { group: 'Quote background', key: 'qbPadY', label: 'Height around the text', min: 0, max: 120, step: 2 },
+  { group: 'Quote background', key: 'qbRadius', label: 'Rounded corners', min: 0, max: 120, step: 2 },
+  { group: 'Quote background', key: 'qbFade', label: 'Edge fall-off (soft ← → softer)', min: 0, max: 50, step: 1 },
+  // Low clouds over the wireframe land (3D)
+  { group: 'Clouds over the land', key: 'cloudsOn', label: 'Show them (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Clouds over the land', key: 'cloudCount', label: 'How many', min: 0, max: 1, step: 0.02 },
+  { group: 'Clouds over the land', key: 'cloudOpacity', label: 'How see-through (0 invisible)', min: 0, max: 1, step: 0.01 },
+  { group: 'Clouds over the land', key: 'cloudSize', label: 'Size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Clouds over the land', key: 'cloudFlat', label: 'Shape (flat ← → puffy)', min: 0.3, max: 2, step: 0.05 },
+  { group: 'Clouds over the land', key: 'cloudHeight', label: 'Height above the ground', min: 0, max: 6, step: 0.1 },
+  { group: 'Clouds over the land', key: 'cloudSpread', label: 'Gap kept from the water', min: 0, max: 1, step: 0.05 },
+  { group: 'Clouds over the land', key: 'cloudDrift', label: 'Wind speed', min: 0, max: 4, step: 0.05 },
+  { group: 'Clouds over the land', key: 'cloudOrbPush', label: 'Orb force field: push strength', min: 0, max: 3, step: 0.05 },
+  { group: 'Clouds over the land', key: 'cloudOrbRadius', label: 'Orb force field: reach', min: 0.2, max: 3, step: 0.05 },
+  { group: 'Clouds over the land', key: 'cloudTint', label: 'Colour (0 white, 1 moonlit blue)', min: 0, max: 1, step: 0.05 },
+  // Clouds behind the rest of the page
+  { group: 'Clouds behind the page', key: 'pageClouds', label: 'How many (0 none)', min: 0, max: 1, step: 0.02 },
+  { group: 'Clouds behind the page', key: 'pageCloudOpacity', label: 'How see-through', min: 0, max: 1, step: 0.01 },
+  { group: 'Clouds behind the page', key: 'pageCloudSize', label: 'Size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Clouds behind the page', key: 'pageCloudDepth', label: 'Depth (0 still ← → moves with the page)', min: 0, max: 1, step: 0.02 },
+  { group: 'Clouds behind the page', key: 'pageCloudDrift', label: 'Drift speed', min: 0, max: 4, step: 0.05 },
+  { group: 'Clouds behind the page', key: 'pageCloudBlur', label: 'Extra softness (blur)', min: 0, max: 20, step: 0.5 },
+  // The business reel
+  { group: 'Businesses', key: 'bizLayout', label: 'Layout (0 3D reel, 1 stacked)', min: 0, max: 1, step: 1 },
+  // "Scroll down" hint
+  { group: 'Scroll hint', key: 'shOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Scroll hint', key: 'shText', label: 'Words (leave empty for arrow only)', min: 0, max: 0, step: 0, text: true },
+  { group: 'Scroll hint', key: 'shArrow', label: 'Arrow style', min: 0, max: 7, step: 1, names: ['Chevron', 'Double chevron', 'Thin arrow', 'Long line arrow', 'Mouse', 'Triangle', 'Circle', 'None'] },
+  { group: 'Scroll hint', key: 'shAnim', label: 'Movement', min: 0, max: 5, step: 1, names: ['Still', 'Bounce down', 'Float up and down', 'Fade in and out', 'Drop and fade', 'Line runs down'] },
+  { group: 'Scroll hint', key: 'shSpeed', label: 'Seconds per move', min: 0.6, max: 5, step: 0.1 },
+  { group: 'Scroll hint', key: 'shTravel', label: 'How far it moves', min: 0, max: 30, step: 1 },
+  { group: 'Scroll hint', key: 'shLayout', label: 'Arrow (0 under words, 1 above, 2 right)', min: 0, max: 2, step: 1 },
+  { group: 'Scroll hint', key: 'shFont', label: 'Font', min: 0, max: 13, step: 1, names: BRAND_FONTS.map((f) => f[0]) },
+  { group: 'Scroll hint', key: 'shSize', label: 'Size', min: 0.5, max: 2.5, step: 0.05 },
+  { group: 'Scroll hint', key: 'shSpacing', label: 'Letter spacing', min: 0, max: 0.8, step: 0.02 },
+  { group: 'Scroll hint', key: 'shCaps', label: 'Capitals (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Scroll hint', key: 'shBright', label: 'Brightness', min: 0.1, max: 1, step: 0.05 },
+  { group: 'Scroll hint', key: 'shPlace', label: 'Place (0 top ← → 100 bottom of screen)', min: 0, max: 100, step: 1 },
+  // The name and logo above the orb
+  { group: 'Name and logo', key: 'brandFont', label: 'Font', min: 0, max: 13, step: 1, names: BRAND_FONTS.map((f) => f[0]) },
+  { group: 'Name and logo', key: 'brandSize', label: 'Text size', min: 0.5, max: 2.5, step: 0.05 },
+  { group: 'Name and logo', key: 'brandWeight', label: 'Weight (thin ← → heavy)', min: 100, max: 900, step: 100 },
+  { group: 'Name and logo', key: 'brandSpacing', label: 'Letter spacing', min: -0.08, max: 0.6, step: 0.01 },
+  { group: 'Name and logo', key: 'brandCaps', label: 'Capitals (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Name and logo', key: 'groupSize', label: '"GROUP" size (vs the line above)', min: 0.3, max: 1.5, step: 0.02 },
+  { group: 'Name and logo', key: 'brandLine', label: 'Gap between the two lines', min: 0.8, max: 2, step: 0.02 },
+  { group: 'Name and logo', key: 'logoOn', label: 'Show the logo (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Name and logo', key: 'logoSize', label: 'Logo size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Name and logo', key: 'logoGap', label: 'Gap between logo and name', min: 0, max: 60, step: 1 },
+  { group: 'Name and logo', key: 'brandLift', label: 'Move up / down', min: -20, max: 30, step: 0.5 },
+];
+
+// Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
+export const DEFAULTS: Record<string, number> = {
+  orbSpin: 2.15, orbStreaks: 0.4, orbSparks: 0.7, orbSparkRate: 2.25, orbSize: 1.32, orbHeight: -1.7, orbGlow: 0,
+  waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.6, swirlDepth: 3, swirlSpeed: 3, swirlLines: 1.8, swirlSoft: 2.2, waterFoam: 0,
+  waterGlint: 2.8, waterReflect: 1.5, waterColour: 0.25, waterSheen: 1.65, sprayAmount: 0, spraySize: 0,
+  fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
+  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.96, waterClear: 0.66,
+  starsEvery: 4.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
+  pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
+  quote: 4, quoteOn: 1, quoteFont: 3, quoteSize: 0.7, quoteWeight: 500, quoteSpacing: -0.01, quoteCaps: 1, quoteAlign: 1, quoteWidth: 19, quoteLift: 2,
+  qbOn: 1, qbDark: 0.52, qbBlur: 25, qbTint: 0, qbPadX: 182, qbPadY: 10, qbRadius: 40, qbFade: 26,
+  bizLayout: 0,
+  cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
+  pageClouds: 0.8, pageCloudOpacity: 0.06, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
+  shOn: 1, shArrow: 4, shAnim: 1, shSpeed: 2, shTravel: 5, shLayout: 0, shFont: 2, shSize: 0.75, shSpacing: 0.3, shCaps: 0, shBright: 0.9, shPlace: 4,
+  brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: 6.5,
+};
+
+export const T: Record<string, number> = { ...DEFAULTS };
+/** Settings that are words, not numbers. */
+export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll' };
+export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
+
+const STORE = 'ddg-scene-tune-9'; // new name, so old saved slider positions don't override these defaults
+/** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
+export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
+  const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
+  const [r, g, b] = h < 1 ? [1, x, 0] : h < 2 ? [x, 1, 0] : h < 3 ? [0, 1, x] : h < 4 ? [0, x, 1] : h < 5 ? [x, 0, 1] : [1, 0, x];
+  const s = k.inkSat ?? 0, l = k.inkLight ?? 1, mix = (c: number) => (1 - s + s * (0.35 + 0.65 * c)) * l;
+  return [mix(r), mix(g), mix(b)];
+}
+
+export function tuneOn(): boolean {
+  return !!(window as unknown as { __DDG_TUNE__?: unknown }).__DDG_TUNE__ || /tune/.test(location.hash);
+}
+
+/** Build the slider panel. Returns a function that removes it. */
+export function mountPanel(): () => void {
+  try { Object.assign(T, JSON.parse(localStorage.getItem(STORE) || '{}')); } catch { /* storage may be blocked */ }
+  try { Object.assign(TX, JSON.parse(localStorage.getItem(STORE + '-text') || '{}')); } catch { /* ignore */ }
+  const save = () => { try { localStorage.setItem(STORE, JSON.stringify(T)); localStorage.setItem(STORE + '-text', JSON.stringify(TX)); } catch { /* ignore */ } };
+  const root = document.createElement('div');
+  root.className = 'tune';
+  const css = document.createElement('style');
+  css.textContent = `
+.tune { position: fixed; top: 12px; right: 12px; bottom: 12px; width: 320px; z-index: 50; display: flex; flex-direction: column;
+  background: rgba(10,13,20,0.88); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; color: #dfe8f2;
+  font: 12px/1.3 ui-sans-serif, system-ui, sans-serif; backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+.tune.min { bottom: auto; }
+.tune.min .tune-body, .tune.min .tune-foot { display: none; }
+.tune-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.tune-head b { flex: 1; font-weight: 600; font-size: 13px; }
+.tune button { background: rgba(255,255,255,0.08); color: inherit; border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; padding: 6px 9px; font: inherit; cursor: pointer; }
+.tune button:hover { background: rgba(255,255,255,0.16); }
+.tune button.go { background: #6cc7f0; color: #061018; border-color: #6cc7f0; font-weight: 600; }
+.tune-body { overflow-y: auto; padding: 4px 12px 12px; flex: 1; }
+.tune h4 { cursor: pointer; user-select: none; } .tune h4::before { content: '▾ '; } .tune section.folded h4::before { content: '▸ '; } .tune section.folded label { display: none; }
+.tune h4 { margin: 14px 0 6px; font: 600 11px ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #6cc7f0; }
+.tune label { display: block; margin: 7px 0; }
+.tune label span { display: flex; justify-content: space-between; color: #b9c6d4; }
+.tune label span i { font-style: normal; color: #fff; font-family: ui-monospace, monospace; }
+.tune input[type=range] { width: 100%; accent-color: #6cc7f0; }
+.tune .tune-text { width: 100%; box-sizing: border-box; margin-top: 4px; background: rgba(0,0,0,0.35); color: #fff; border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; padding: 5px 7px; font: inherit; }
+.tune-foot { padding: 10px 12px; border-top: 1px solid rgba(255,255,255,0.1); display: grid; gap: 8px; }
+.tune textarea { width: 100%; box-sizing: border-box; height: 90px; resize: vertical; background: rgba(0,0,0,0.35); color: #cfe; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; font: 11px ui-monospace, monospace; padding: 6px; }
+.tune-foot div { display: flex; gap: 8px; }
+.tune-note { color: #8fa2b5; font-size: 11px; }`;
+  root.innerHTML = `<div class="tune-head"><b>Scene settings</b><button data-act="min">Hide</button></div><div class="tune-body"></div>
+<div class="tune-foot"><div><button class="go" data-act="copy">Copy settings</button><button data-act="reset">Reset all</button></div>
+<textarea readonly></textarea><p class="tune-note">Changes show straight away. When it looks right, press Copy settings and paste it to Claude (or send a screenshot of this box).</p></div>`;
+  const body = root.querySelector('.tune-body')!, out = root.querySelector('textarea')!;
+  const changed = () => {
+    const diff: Record<string, number | string> = {};
+    for (const s of SPECS) {
+      if (s.text) { if (TX[s.key] !== TEXT_DEFAULTS[s.key]) diff[s.key] = TX[s.key]; }
+      else if (T[s.key] !== DEFAULTS[s.key]) diff[s.key] = T[s.key];
+    }
+    out.value = 'DDG scene settings (changed from default):\n' + JSON.stringify(diff, null, 1);
+  };
+  const inputs: Record<string, [HTMLInputElement, HTMLElement]> = {};
+  const texts: Record<string, HTMLInputElement> = {};
+  const input0 = (k: string) => inputs[k][0].dispatchEvent(new Event('input'));
+  let group = '';
+  let box: HTMLElement = body as HTMLElement;
+  let folded: string[] = [];
+  try { folded = JSON.parse(localStorage.getItem(STORE + '-folded') || '[]'); } catch { /* ignore */ }
+  for (const s of SPECS) {
+    if (s.group !== group) {
+      group = s.group;
+      const sec = document.createElement('section');
+      sec.innerHTML = `<h4 data-act="fold">${group}</h4>`;
+      if (folded.includes(group)) sec.classList.add('folded');
+      body.appendChild(sec);
+      box = sec;
+    }
+    const l = document.createElement('label');
+    if (s.text) {
+      l.innerHTML = `<span>${s.label}</span><input type="text" class="tune-text">`;
+      const ti = l.querySelector('input')!;
+      ti.value = TX[s.key] ?? '';
+      ti.addEventListener('input', () => { TX[s.key] = ti.value; changed(); save(); });
+      texts[s.key] = ti;
+      box.appendChild(l);
+      continue;
+    }
+    l.innerHTML = `<span>${s.label}<i></i></span><input type="range" min="${s.min}" max="${s.max}" step="${s.step}">`;
+    const input = l.querySelector('input')!, val = l.querySelector('i')!;
+    const show = (v: number) => (s.names ? `${v} · ${s.names[v] ?? ''}` : String(v));
+    input.value = String(T[s.key]); val.textContent = show(T[s.key]);
+    input.addEventListener('input', () => { T[s.key] = Number(input.value); val.textContent = show(T[s.key]); changed(); save(); });
+    inputs[s.key] = [input, val];
+    box.appendChild(l);
+  }
+  root.addEventListener('click', async (e) => {
+    const act = (e.target as HTMLElement).dataset?.act;
+    if (act === 'fold') {
+      const sec = (e.target as HTMLElement).parentElement!;
+      sec.classList.toggle('folded');
+      folded = [...root.querySelectorAll('section.folded h4')].map((h) => h.textContent || '');
+      try { localStorage.setItem(STORE + '-folded', JSON.stringify(folded)); } catch { /* ignore */ }
+    }
+    if (act === 'min') { root.classList.toggle('min'); (e.target as HTMLElement).textContent = root.classList.contains('min') ? 'Show' : 'Hide'; }
+    if (act === 'reset') { Object.assign(T, DEFAULTS); Object.assign(TX, TEXT_DEFAULTS); for (const k in texts) texts[k].value = TX[k]; for (const s of SPECS) { if (s.text) continue; inputs[s.key][0].value = String(T[s.key]); inputs[s.key][1].textContent = String(T[s.key]); input0(s.key); } changed(); save(); }
+    if (act === 'copy') {
+      out.select();
+      try { await navigator.clipboard.writeText(out.value); (e.target as HTMLElement).textContent = 'Copied'; } catch { (e.target as HTMLElement).textContent = 'Select the text below and copy it'; }
+      setTimeout(() => { (e.target as HTMLElement).textContent = 'Copy settings'; }, 2500);
+    }
+  });
+  // Scrolling over the panel scrolls the panel, not the page.
+  root.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true });
+  document.head.appendChild(css); document.body.appendChild(root);
+  changed();
+  return () => { root.remove(); css.remove(); };
+}
+
+/** Put the name-and-logo settings on the page (CSS variables), loading the chosen web font. */
+let lastBrand = '';
+let lastFade = '';
+const BG_KEYS = ['qbOn', 'qbDark', 'qbBlur', 'qbTint', 'qbPadX', 'qbPadY', 'qbRadius', 'qbFade'];
+const HINT_KEYS = ['pipeFluid', 'inkHue', 'inkSat', 'inkLight', 'bizLayout', 'shOn', 'shArrow', 'shAnim', 'shSpeed', 'shTravel', 'shLayout', 'shFont', 'shSize', 'shSpacing', 'shCaps', 'shBright', 'shPlace'];
+/** Arrow drawings for the scroll hint (24 wide, drawn in currentColor). */
+const ARROWS = [
+  '<svg viewBox="0 0 24 14" width="24" height="14"><path d="M3 3l9 8 9-8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  '<svg viewBox="0 0 24 22" width="24" height="22"><path d="M4 3l8 7 8-7M4 11l8 7 8-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  '<svg viewBox="0 0 24 26" width="24" height="26"><path d="M12 2v21M5 16l7 7 7-7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  '<svg viewBox="0 0 24 56" width="24" height="56"><path d="M12 2v51" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M7.5 48.5l4.5 4.5 4.5-4.5" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  '<svg viewBox="0 0 24 36" width="24" height="36"><rect x="3" y="1.5" width="18" height="30" rx="9" fill="none" stroke="currentColor" stroke-width="1.4"/><circle class="sh-dot" cx="12" cy="9" r="2" fill="currentColor"/></svg>',
+  '<svg viewBox="0 0 24 14" width="24" height="14"><path d="M5 3h14l-7 9z" fill="currentColor"/></svg>',
+  '<svg viewBox="0 0 30 30" width="30" height="30"><circle cx="15" cy="15" r="13.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M9.5 12.5l5.5 5 5.5-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  '',
+];
+export function applyBrand(): void {
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText;
+  // The hint fades away as soon as the visitor starts scrolling.
+  const fade = String(Math.max(0, 1 - scrollY / (innerHeight * 0.2)).toFixed(3));
+  if (fade !== lastFade) { lastFade = fade; document.documentElement.style.setProperty('--hint-fade', fade); }
+  if (key === lastBrand) return;
+  lastBrand = key;
+  const fontOf = (i: number) => {
+    const [, family] = BRAND_FONTS[i] ?? BRAND_FONTS[0];
+    if (family && !document.getElementById(`bf-${i}`)) {
+      const l = document.createElement('link');
+      l.id = `bf-${i}`; l.rel = 'stylesheet';
+      l.href = `https://fonts.googleapis.com/css2?family=${family}&display=swap`;
+      document.head.appendChild(l);
+    }
+    return family ? `'${family.split(':')[0].replace(/\+/g, ' ')}', var(--ng-font, system-ui), sans-serif` : 'inherit';
+  };
+  const s = document.documentElement.style;
+  s.setProperty('--brand-font', fontOf(T.brandFont));
+  // The quote under the orb.
+  const q = document.querySelector<HTMLElement>('.cn-quote');
+  if (q) { q.textContent = QUOTES[T.quote] ?? QUOTES[0]; q.style.display = T.quoteOn ? '' : 'none'; }
+  s.setProperty('--quote-font', fontOf(T.quoteFont));
+  s.setProperty('--quote-size', String(T.quoteSize));
+  s.setProperty('--quote-weight', String(T.quoteWeight));
+  s.setProperty('--quote-track', `${T.quoteSpacing}em`);
+  s.setProperty('--quote-case', T.quoteCaps ? 'uppercase' : 'none');
+  s.setProperty('--quote-width', `${T.quoteWidth}ch`);
+  s.setProperty('--quote-lift', `${T.quoteLift}vh`);
+  s.setProperty('--quote-align', ['left', 'center', 'right'][T.quoteAlign] ?? 'left');
+  s.setProperty('--quote-left', T.quoteAlign === 2 ? 'auto' : T.quoteAlign === 1 ? '0' : 'var(--s-gutter)');
+  s.setProperty('--quote-right', T.quoteAlign === 0 ? 'auto' : T.quoteAlign === 1 ? '0' : 'var(--s-gutter)');
+  // The frosted patch behind the quote.
+  const t = T.qbTint;
+  s.setProperty('--qb-show', T.qbOn ? 'block' : 'none');
+  s.setProperty('--qb-bg', `rgba(${Math.round(2 + 6 * t)},${Math.round(4 + 14 * t)},${Math.round(8 + 32 * t)},${T.qbDark})`);
+  s.setProperty('--qb-blur', `${T.qbBlur}px`);
+  s.setProperty('--qb-padx', `${T.qbPadX}px`);
+  s.setProperty('--qb-pady', `${T.qbPadY}px`);
+  s.setProperty('--qb-radius', `${T.qbRadius}px`);
+  s.setProperty('--qb-fade', `${T.qbFade}%`);
+  // Blue water or white ink in every pipe on the page (site.css, .pipe-ink).
+  document.documentElement.classList.toggle('pipe-ink', T.pipeFluid === 1);
+  s.setProperty('--pipe-fluid', `rgb(${fluidRGB().map((v) => Math.round(v * 255)).join(',')})`);
+  // The business reel: 3D reel or three stacked cards.
+  const biz = document.querySelector('.j-biz');
+  if (biz) {
+    biz.classList.toggle('j-stack', T.bizLayout === 1);
+    if (T.bizLayout === 1) biz.querySelectorAll('.j-card').forEach((c) => { c.removeAttribute('inert'); c.removeAttribute('aria-hidden'); });
+  }
+  // The scroll hint.
+  const h = document.querySelector<HTMLElement>('.cn-scroll');
+  if (h) {
+    h.style.display = T.shOn ? '' : 'none';
+    h.className = `cn-scroll lay-${T.shLayout} anim-${T.shAnim}`;
+    const w = h.querySelector<HTMLElement>('.cn-scroll-words'), a = h.querySelector<HTMLElement>('.cn-scroll-arrow');
+    if (w) { w.textContent = TX.shText; w.style.display = TX.shText ? '' : 'none'; }
+    if (a) { a.innerHTML = ARROWS[T.shArrow] ?? ''; a.style.display = ARROWS[T.shArrow] ? '' : 'none'; }
+  }
+  s.setProperty('--sh-font', fontOf(T.shFont));
+  s.setProperty('--sh-speed', `${T.shSpeed}s`);
+  s.setProperty('--sh-travel', `${T.shTravel}px`);
+  s.setProperty('--sh-size', String(T.shSize));
+  s.setProperty('--sh-track', `${T.shSpacing}em`);
+  s.setProperty('--sh-case', T.shCaps ? 'uppercase' : 'none');
+  s.setProperty('--sh-bright', String(T.shBright));
+  s.setProperty('--sh-place', String(T.shPlace));
+  s.setProperty('--brand-size', String(T.brandSize));
+  s.setProperty('--brand-weight', String(T.brandWeight));
+  s.setProperty('--brand-track', `${T.brandSpacing}em`);
+  s.setProperty('--brand-case', T.brandCaps ? 'uppercase' : 'none');
+  s.setProperty('--brand-line', String(T.brandLine));
+  s.setProperty('--logo-size', String(T.logoSize));
+  s.setProperty('--logo-white-show', T.logoOn ? 'block' : 'none');
+  s.setProperty('--group-size', String(T.groupSize));
+  s.setProperty('--logo-gap', `${T.logoGap}px`);
+  s.setProperty('--brand-lift', `${T.brandLift}vh`);
+}

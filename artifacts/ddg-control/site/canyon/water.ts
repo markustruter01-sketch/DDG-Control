@@ -25,6 +25,27 @@ uniform float uTime;
 uniform float uStir;
 uniform vec2 uOrb;
 float stirAt(float d) { return uStir * exp(-d * d / 220.0); }
+uniform float uVar;
+uniform float uSwirlR, uSwirlDepth, uSwirlSpeed;
+// Preview water designs 1-4 (0 = the current swirl). Each is a round dent pushed into the water by
+// the orb's air, with a different kind of spin inside it.
+float bowl(float d, float r, float depth) { return -depth * exp(-d * d / (r * r)); }
+float shapeH0(vec2 q, float d, float tt) {
+  float a = atan(q.y, q.x + 0.0001);
+  if (uVar < 1.5) return bowl(d, 3.2, 1.1) + 0.07 * sin(a * 4.0 + d * 1.6 - tt * 6.0) * exp(-d * d / 16.0);
+  if (uVar < 2.5) return bowl(d, 4.0, 1.7) + 0.13 * sin(a * 3.0 + d * 2.6 - tt * 7.0) * exp(-d * d / 22.0) * smoothstep(0.4, 2.0, d);
+  if (uVar < 3.5) return bowl(d, 2.7, 1.0) + 0.32 * exp(-(d - 3.7) * (d - 3.7) / 0.9) + 0.035 * sin(d * 4.0 - tt * 5.0) * exp(-d * d / 45.0) * smoothstep(4.2, 5.2, d);
+  return bowl(d, 3.6, 0.65) + 0.02 * sin(a * 2.0 + d * 0.9 - tt * 2.5) * exp(-d * d / 18.0); // only a soft, broad lean; the swirl detail is in vortex()
+}
+float shapeH(vec2 q, float d) { return uSwirlDepth * shapeH0(q, d / uSwirlR, uTime * uSwirlSpeed); }
+float shapeFoam0(vec2 q, float d, float lace, float tt) {
+  float a = atan(q.y, q.x + 0.0001);
+  if (uVar < 1.5) return smoothstep(0.55, 1.0, sin(a * 4.0 + d * 1.6 - tt * 6.0)) * exp(-d * d / 14.0) * (0.4 + lace);
+  if (uVar < 2.5) return smoothstep(0.4, 1.0, sin(a * 3.0 + d * 2.6 - tt * 7.0)) * exp(-d * d / 18.0) * smoothstep(0.4, 1.6, d) * (0.5 + lace);
+  if (uVar < 3.5) return exp(-(d - 3.6) * (d - 3.6) / 0.6) * (0.25 + 1.3 * lace) + 0.3 * smoothstep(0.7, 1.0, sin(a * 5.0 + d * 1.2 - tt * 6.0)) * exp(-d * d / 6.0) * lace;
+  return 0.0; // silk: soft foam comes from vortex() instead of lines
+}
+float shapeFoam(vec2 q, float d, float lace) { return shapeFoam0(q, d / uSwirlR, lace, uTime * uSwirlSpeed); }
 float swirl(vec2 q, float d, float arms, float wind, float speed) {
   return sin(arms * atan(q.y, q.x + 0.0001) + d * wind - uTime * speed) * smoothstep(1.5, 6.5, d);
 }`;
@@ -44,10 +65,10 @@ void main() {
   float dish = -0.9 * uStir * exp(-d * d / 40.0);
   float arms = 0.55 * swirl(q, d, 3.0, 0.9, 5.0) + 0.3 * swirl(q, d, 2.0, 0.35, 2.6);
   float swell = 0.05 * sin(p.z * 0.3 + p.x * 0.2 + uTime * 1.6);
-  float lift = dish + stirAt(d) * arms + swell;
+  float lift = uVar > 0.5 ? uStir * shapeH(q, d) + swell : dish + stirAt(d) * arms + swell;
   p.y += lift;
   vP = p.xz;
-  vBed = (aBed + lift) * uFlat;
+  vBed = (aBed + lift) * max(uFlat, 0.45); // the river keeps some depth when the land lies flat, so it stays visible
   vec4 world = modelMatrix * vec4(p, 1.0);
   vWorld = world.xyz;
   vec4 mv = viewMatrix * world;
@@ -57,6 +78,7 @@ void main() {
 
 export const WATER_FRAG = /* glsl */ `
 ${STIR}
+uniform float uRough, uDetailK, uFoamK, uGlintK, uReflect, uBody, uSilk, uSwirlLines, uSwirlSoft, uClear;
 ${SKY_GLSL}
 uniform float uGlow;
 uniform float uOpacity;
@@ -92,6 +114,19 @@ float snoise(vec2 v) {
   return 130.0 * dot(m, g);
 }
 vec2 turn(vec2 p, float a) { float c = cos(a), s = sin(a); return vec2(c * p.x - s * p.y, s * p.x + c * p.y); }
+// Silk swirl: the water's own pattern is twisted round the dent (more twist near the middle) and the
+// whole twist turns slowly. The twist is a fixed amount, so the streaks never wind up tighter and
+// tighter over time (that was what filled it with fine rings).
+vec2 vortexUV(vec2 q, float d) {
+  float dn = d / uSwirlR, spin = uTime * uSwirlSpeed * 0.9 + 2.2 * uSwirlLines * exp(-dn * dn / 9.0);
+  float c = cos(spin), s = sin(spin);
+  return vec2(c * q.x - s * q.y, s * q.x + c * q.y) / uSwirlR;
+}
+float vortex(vec2 q, float d) {
+  vec2 r = vortexUV(q, d);
+  float dn = d / uSwirlR;
+  return (0.6 * snoise(r * vec2(0.45, 0.25) / uSwirlSoft) + 0.4 * snoise(r * 0.9 / uSwirlSoft + 3.7)) * exp(-dn * dn / 12.0);
+}
 // Height of the surface detail. Slow swells ride the current, which runs towards +z
 // (the camera); near the orb they are bent round it and the spiral arms are added.
 float surface(vec2 p, float detail) {
@@ -99,11 +134,19 @@ float surface(vec2 p, float detail) {
   float d = length(q), stir = stirAt(d);
   vec2 f = uOrb + turn(q, -1.1 * stir);
   f.y -= uTime * 4.0;
-  // Away from the orb the water is close to glass: two long, low swells and a faint finer one.
-  float h = 0.22 * snoise(f * vec2(0.13, 0.065));
-  h += 0.07 * snoise(f * vec2(0.3, 0.16) + vec2(3.1, -uTime * 0.3));
-  h += 0.012 * detail * snoise(f * vec2(0.8, 0.45) + vec2(-uTime * 0.25, 5.2));
-  h += stir * (0.5 * swirl(q, d, 3.0, 0.9, 5.0) + 0.14 * swirl(q, d, 7.0, 2.2, 9.0));
+  // Away from the orb the water is close to glass: long, low swells moving with the current, a few
+  // gentle wave trains crossing it, and two faint layers of fine ripples drifting in different
+  // directions (blended, they never repeat and never look like a pattern).
+  // Preview styles: how much surface texture each one keeps (1 = today's water).
+  float rough = uVar < 0.5 ? 1.0 : uVar < 1.5 ? 0.18 : uVar < 2.5 ? 0.45 : uVar < 3.5 ? 0.08 : 0.345;
+  rough *= uRough;
+  detail *= (uVar > 0.5 ? (uVar > 3.5 ? 0.15 : 0.0) : 1.0) * uDetailK;
+  float h = 0.16 * rough * snoise(f * vec2(0.11, 0.055));
+  h += 0.045 * rough * snoise(f * vec2(0.26, 0.14) + vec2(3.1, -uTime * 0.25));
+  h += rough * (0.035 * sin(dot(p, vec2(0.21, 0.43)) - uTime * 1.1) + 0.022 * sin(dot(p, vec2(-0.37, 0.29)) - uTime * 1.45) + 0.014 * sin(dot(p, vec2(0.52, -0.18)) - uTime * 1.9));
+  h += detail * (0.009 * snoise(p * 0.9 + vec2(uTime * 0.21, -uTime * 0.33)) + 0.007 * snoise(p * 1.6 + vec2(-uTime * 0.29, -uTime * 0.17) + 7.3));
+  if (uVar > 3.5) h += 0.07 * uStir * uSwirlDepth * vortex(q, d);
+  h += uVar > 0.5 ? 0.6 * uStir * shapeH(q, d) : stir * (0.42 * swirl(q, d, 3.0, 0.9, 5.0) + 0.05 * swirl(q, d, 7.0, 2.2, 9.0));
   return h;
 }
 void main() {
@@ -114,7 +157,7 @@ void main() {
   vec3 n = normalize(vec3(-(surface(vP + vec2(e, 0.0), detail) - h0) / e, 1.0, -(surface(vP + vec2(0.0, e), detail) - h0) / e));
   vec3 v = normalize(cameraPosition - vWorld);
   vec3 r = reflect(-v, n);
-  float fresnel = 0.03 + 0.97 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
+  float fresnel = clamp((0.03 + 0.97 * pow(1.0 - max(dot(n, v), 0.0), 5.0)) * uReflect, 0.0, 1.0);
 
   // What the surface mirrors: the real sky above it (stars and Milky Way, a little brighter than
   // life so they read on the water), a soft lift towards the horizon, and the orb's glow.
@@ -125,23 +168,44 @@ void main() {
 
   // What shows through: teal over the shallows, near-black where it is deep. The orb lights it a little.
   float depth = vBed;
-  vec3 body = mix(vec3(0.05, 0.3, 0.36), vec3(0.004, 0.03, 0.07), 1.0 - exp(-depth * 0.6));
+  vec3 body = mix(vec3(0.05, 0.3, 0.36), vec3(0.004, 0.03, 0.07), 1.0 - exp(-depth * 0.6)) * uBody;
   float reach = uGlow * exp(-length(uOrbPos.xz - vWorld.xz) / 16.0);
   body *= 0.75 + 1.3 * max(dot(n, toOrb), 0.0) * reach;
+  // Light passing through: shallows glow faintly, with soft moving light-lines on the bed.
+  float shallow = exp(-depth * 1.1);
+  float caust = pow(0.5 + 0.5 * snoise(vP * 0.7 + vec2(uTime * 0.18, -uTime * 0.4)), 6.0) + pow(0.5 + 0.5 * snoise(vP * 1.1 - vec2(uTime * 0.23, uTime * 0.31) + 4.0), 6.0);
+  body += vec3(0.1, 0.32, 0.34) * caust * shallow * 0.35 * (0.4 + reach) * (uVar > 0.5 && uVar < 1.5 ? 0.0 : 1.0);
   vec3 col = mix(body, sky, fresnel);
+  // The orb as a light: a tight, bright glint on the water under it and a softer sheen round that.
+  vec3 hv = normalize(toOrb + v);
+  float nh = max(dot(n, hv), 0.0);
+  col += vec3(0.8, 0.93, 1.0) * uGlow * (pow(nh, 420.0) * 2.2 + pow(nh, 64.0) * 0.18) * uGlintK * exp(-length(uOrbPos.xz - vWorld.xz) / 30.0);
 
   // Foam: along the banks (more where the orb throws water at them), and on the spiral arms.
   vec2 q = vP - uOrb;
   float d = length(q), stir = stirAt(d);
   float lace = (0.5 + 0.5 * snoise(vP * 0.55 + vec2(0.0, -uTime * 1.3))) * (0.5 + 0.5 * snoise(vP * 1.5 + vec2(1.3, -uTime * 2.0)));
   float shore = (1.0 - smoothstep(0.0, 0.5, depth)) * smoothstep(0.14, 0.36, lace) * (0.3 + 1.8 * stir);
-  float churn = stir * 1.3 * (smoothstep(0.2, 1.0, swirl(q, d, 3.0, 0.9, 5.0)) * (0.35 + 1.7 * lace) + smoothstep(0.5, 1.0, swirl(q, d, 7.0, 2.2, 9.0)) * (0.1 + 1.3 * lace));
-  float foam = clamp(shore + churn, 0.0, 1.0);
+  float churn = uVar > 0.5 ? uStir * shapeFoam(q, d, lace) : stir * 1.15 * smoothstep(0.25, 1.0, swirl(q, d, 3.0, 0.9, 5.0)) * (0.3 + 1.5 * lace);
+  if (uVar > 3.5) {
+    float dn = d / uSwirlR, vn = 0.5 + 0.5 * vortex(q, d) / max(exp(-dn * dn / 12.0), 0.001);
+    churn += uStir * 0.32 * smoothstep(0.45, 0.95, vn) * exp(-dn * dn / 11.0) * (0.5 + lace);
+  }
+  float foam = clamp((shore + churn) * uFoamK, 0.0, 1.0);
   col = mix(col, vec3(0.8, 0.93, 1.0), foam * 0.85);
+  // Style 2: cartoon (cel) water. Colours snap to a few bands and foam gets a crisp edge.
+  if (uVar > 1.5 && uVar < 2.5) {
+    float lum = dot(col, vec3(0.3, 0.55, 0.15));
+    float band = floor(lum * 6.0 + 0.5) / 6.0;
+    col = mix(vec3(0.02, 0.07, 0.14), vec3(0.55, 0.85, 1.0), band) ;
+    col = mix(col, vec3(0.92, 0.98, 1.0), step(0.45, foam));
+  }
+  // Style 4: silk. Broad, soft highlights and a faint colour shift at grazing angles.
+  if (uVar > 3.5) col += vec3(0.05, 0.08, 0.16) * fresnel + vec3(0.12, 0.16, 0.2) * pow(max(dot(n, normalize(toOrb + v)), 0.0), 12.0) * uGlow * 0.6 * uSilk;
 
   // The water thins out to nothing exactly where it meets the land, so the edge is soft.
   float edge = smoothstep(0.0, 0.4, depth);
-  float alpha = edge * max(mix(0.8, 0.97, 1.0 - exp(-depth * 1.2)), foam * 0.85);
+  float alpha = edge * max(mix(0.8, 0.97, 1.0 - exp(-depth * 1.2)) * (1.0 - 0.75 * uClear), max(foam * 0.85, fresnel * 0.9));
   float fog = smoothstep(uFogNear, uFogFar, vView);
   gl_FragColor = vec4(mix(col, uFog, fog), alpha * uOpacity);
 }`;
@@ -198,7 +262,8 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   riverGeo.setAttribute('position', new BufferAttribute(pos, 3)); riverGeo.setAttribute('aBed', new BufferAttribute(bed, 1));
   riverGeo.setIndex(idx);
   const uniforms = {
-    uTime: { value: 0 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
+    uTime: { value: 0 }, uVar: { value: 0 }, uSwirlR: { value: 1 }, uSwirlDepth: { value: 1 }, uSwirlSpeed: { value: 1 },
+    uRough: { value: 1 }, uClear: { value: 0 }, uSwirlLines: { value: 1 }, uSwirlSoft: { value: 1 }, uDetailK: { value: 1 }, uFoamK: { value: 1 }, uGlintK: { value: 1 }, uReflect: { value: 1 }, uBody: { value: 1 }, uSilk: { value: 1 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
     uOrb: { value: new Vector2() }, uOrbPos: { value: new Vector3() },
     // The shader writes screen colours directly, so the fog colour is passed as plain 0-1 values.
     uFog: { value: new Vector3(((fogColor >> 16) & 255) / 255, ((fogColor >> 8) & 255) / 255, (fogColor & 255) / 255) },
@@ -230,7 +295,8 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     /** 1 = water fully shown. */ show: number; fogNear: number; fogFar: number;
   };
   const update = (f: Frame) => {
-    river.scale.y = f.flat;
+    river.scale.y = Math.max(f.flat, 0.02);
+    river.position.y = (1 - f.flat) * 0.3; // just above the flat grid, so they never flicker through each other
     uniforms.uTime.value = f.t; uniforms.uStir.value = f.stir; uniforms.uGlow.value = f.stir; uniforms.uOpacity.value = f.show; uniforms.uFlat.value = f.flat;
     uniforms.uOrb.value.set(f.orbX, f.orbZ); uniforms.uOrbPos.value.set(f.orbX, f.orbY, f.orbZ);
     uniforms.uFogNear.value = f.fogNear; uniforms.uFogFar.value = f.fogFar;
@@ -247,7 +313,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
       const rad = 2.5 + a * 3.5 + out * s, ang = (a * 37 + c * 11) % 6.283 + wind * s, cos = Math.cos(ang), sin = Math.sin(ang);
       const x = f.orbX + rad * cos, z = f.orbZ + rad * sin, y = waterY + up * s - 0.5 * G * s * s;
       const flying = power > 0.02 && y > waterY && y > heightAt(x, z) * f.flat;
-      const size = flying ? (0.05 + 0.08 * c * c) * Math.min(1, s * 14) * Math.min(1, power * 2) : 0;
+      const size = flying && i < N * sprayAmount ? (0.032 + 0.05 * c * c) * spraySize * Math.min(1, s * 14) * Math.min(1, power * 2) : 0;
       vel.set(out * cos - rad * wind * sin, up - G * s, out * sin + rad * wind * cos);
       const speed = vel.length();
       drop.position.set(x, y, z);
@@ -258,5 +324,14 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     spray.instanceMatrix.needsUpdate = true;
   };
 
-  return { river, spray, update, disposables: [riverGeo, riverMat, dropGeo, dropMat] as { dispose: () => void }[] };
+  const setVariant = (v: number) => { uniforms.uVar.value = v; };
+  let sprayAmount = 1, spraySize = 1;
+  /** Live look settings (from the preview sliders). */
+  const setLook = (k: Record<string, number>) => {
+    uniforms.uVar.value = k.waterDesign; uniforms.uRough.value = k.waterTexture; uniforms.uDetailK.value = k.waterRipples;
+    uniforms.uSwirlR.value = k.swirlSize; uniforms.uSwirlDepth.value = k.swirlDepth; uniforms.uSwirlSpeed.value = k.swirlSpeed; uniforms.uSwirlLines.value = k.swirlLines; uniforms.uClear.value = k.waterClear; uniforms.uSwirlSoft.value = k.swirlSoft;
+    uniforms.uFoamK.value = k.waterFoam; uniforms.uGlintK.value = k.waterGlint; uniforms.uReflect.value = k.waterReflect;
+    uniforms.uBody.value = k.waterColour; uniforms.uSilk.value = k.waterSheen; sprayAmount = k.sprayAmount; spraySize = k.spraySize;
+  };
+  return { river, spray, update, setVariant, setLook, disposables: [riverGeo, riverMat, dropGeo, dropMat] as { dispose: () => void }[] };
 }

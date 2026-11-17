@@ -18,7 +18,11 @@ p { margin: 0; }
 /* Nav */
 /* Side margin of the first screen: grows with the screen, so wide monitors are used, not left empty. */
 :root { --s-gutter: clamp(16px, 4vw, 96px); }
-.s-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 auto; padding: 20px var(--s-gutter); width: 100%; box-sizing: border-box; }
+.s-nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; margin: 0 auto; padding: 20px var(--s-gutter); width: 100%; box-sizing: border-box; }
+/* Name and logo in the middle of the top bar; links on the right. */
+.s-nav .s-brand { grid-column: 2; justify-self: center; }
+.s-nav nav { grid-column: 3; justify-self: end; }
+@media (max-width: 760px) { .s-nav { grid-template-columns: auto 1fr; } .s-nav .s-brand { grid-column: 1; justify-self: start; } .s-nav nav { grid-column: 2; } }
 .s-brand { display: inline-flex; align-items: center; gap: 10px; font-size: clamp(16px, 1.15vw, 20px); letter-spacing: 0.01em; white-space: nowrap; }
 .s-brand b { font-weight: 500; }
 /* The glitch mark is on black; "screen" lets only its light parts show on the dark page. */
@@ -330,10 +334,19 @@ p { margin: 0; }
 
 /* ── Home, first screen: the Canyon stage (site/canyon) with a few quiet words over it ──────────── */
 /* --cn-oy is where the orb's centre sits on screen; --cn-or is half the size of the frame round it. */
-.cn-top { background: var(--ng-night); --cn-oy: 56vh; --cn-or: 15vh; }
+.cn-top { background: var(--ng-night); --cn-oy: 60vh; --cn-or: 15vh; } /* orb centre on screen; matches the orb height setting */
 .cn-stage { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 .cn-stage canvas { width: 100%; height: 100%; display: block; }
-.cn-hero { position: relative; z-index: 1; height: 100vh; min-height: 560px; overflow: hidden; text-shadow: 0 1px 22px rgba(7, 8, 11, 0.9); }
+/* A shooting star: a bright head with a fading tail, flying along its angle and burning out. */
+.cn-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.cn-star { position: absolute; display: block; width: calc(210px * var(--sl, 1)); height: calc(2px * var(--sw, 1)); filter: brightness(var(--sb, 1)); border-radius: 2px; transform-origin: 100% 50%;
+  background: linear-gradient(90deg, rgba(180, 220, 255, 0), rgba(210, 235, 255, 0.7) 75%, #fff);
+  box-shadow: 0 0 6px rgba(170, 220, 255, 0.8); opacity: 0;
+  transform: rotate(var(--a)) translateX(0); animation: cn-star var(--t, 0.9s) cubic-bezier(0.3, 0, 0.7, 1) forwards; }
+.cn-star::after { content: ''; position: absolute; right: -2px; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px 3px rgba(190, 230, 255, 0.9); }
+@keyframes cn-star { 0% { opacity: 0; transform: rotate(var(--a)) translateX(0) scaleX(0.5); } 12% { opacity: 1; }
+  75% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scaleX(1); } }
+.cn-hero { position: relative; z-index: 1; height: 100vh; min-height: 560px; overflow-x: clip; text-shadow: 0 1px 22px rgba(7, 8, 11, 0.9); }
 /* Darker at the top and the edges, so the words read clearly over the stars. */
 .cn-hero::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: linear-gradient(180deg, rgba(7,8,11,0.6) 0%, rgba(7,8,11,0.25) 26%, rgba(7,8,11,0) 46%), radial-gradient(120% 90% at 50% 55%, rgba(7,8,11,0) 55%, rgba(7,8,11,0.55) 100%); }
@@ -345,24 +358,70 @@ p { margin: 0; }
 .cn-frame i:nth-child(3) { left: 0; bottom: 0; border-right: 0; border-top: 0; }
 .cn-frame i:nth-child(4) { right: 0; bottom: 0; border-left: 0; border-top: 0; }
 .cn-tag { position: absolute; left: calc(50% + var(--cn-or) + 14px); top: calc(var(--cn-oy) - var(--cn-or) - 4px); font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ng-ice); white-space: nowrap; }
+.cn-quote { position: absolute; left: var(--quote-left, var(--s-gutter)); right: var(--quote-right, auto); bottom: calc(6vh + var(--quote-lift, 0vh)); margin: 0 auto; max-width: min(var(--quote-width, 30ch), calc(100% - 2 * var(--s-gutter)));
+  text-align: var(--quote-align, left); font-family: var(--quote-font, var(--brand-font, inherit)); font-size: calc(clamp(18px, 1.6vw, 28px) * var(--quote-size, 1));
+  font-weight: var(--quote-weight, 300); letter-spacing: var(--quote-track, 0); line-height: 1.25; color: var(--ng-text); text-transform: var(--quote-case, none); isolation: isolate;
+  transform: translateY(var(--cn-dy, 0px)); }
+/* Dark frosted glass behind the quote. Its edges fade out on all sides, so it melts into the scene. */
+.cn-quote::before { content: ''; position: absolute; z-index: -1; display: var(--qb-show, block); pointer-events: none;
+  inset: calc(-1 * var(--qb-pady, 34px)) calc(-1 * var(--qb-padx, 70px)); border-radius: var(--qb-radius, 40px);
+  background: var(--qb-bg, rgba(2,4,8,0.45)); -webkit-backdrop-filter: blur(var(--qb-blur, 14px)); backdrop-filter: blur(var(--qb-blur, 14px));
+  --f: var(--qb-fade, 26%);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent), linear-gradient(to bottom, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent), linear-gradient(to bottom, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent);
+  mask-composite: intersect; }
+/* "Scroll down" with a moving arrow. Fades away once the visitor scrolls. */
+.cn-scroll { position: absolute; left: 0; right: 0; width: max-content; margin: 0 auto; top: calc(var(--sh-place, 11) * 1vh); transform: translateY(calc(var(--sh-place, 11) * -1% + var(--cn-dy, 0px)));
+  display: flex; flex-direction: column; align-items: center; gap: calc(8px * var(--sh-size, 1)); pointer-events: none;
+  color: var(--ng-text); opacity: calc(var(--sh-bright, 0.7) * var(--hint-fade, 1)); font-family: var(--sh-font, inherit);
+  font-size: calc(11px * var(--sh-size, 1)); letter-spacing: var(--sh-track, 0.3em); text-transform: var(--sh-case, uppercase); }
+.cn-scroll.lay-1 { flex-direction: column-reverse; }
+.cn-scroll.lay-2 { flex-direction: row; gap: calc(10px * var(--sh-size, 1)); }
+.cn-scroll-words { margin-right: calc(-1 * var(--sh-track, 0.3em)); }
+.cn-scroll-arrow { display: block; line-height: 0; }
+.cn-scroll-arrow svg { zoom: var(--sh-size, 1); overflow: visible; }
+.anim-1 .cn-scroll-arrow { animation: sh-bounce var(--sh-speed, 2s) cubic-bezier(.3,0,.3,1) infinite; }
+.anim-2 .cn-scroll-arrow { animation: sh-float var(--sh-speed, 2s) ease-in-out infinite; }
+.anim-3 .cn-scroll-arrow, .anim-3 .cn-scroll-words { animation: sh-pulse var(--sh-speed, 2s) ease-in-out infinite; }
+.anim-4 .cn-scroll-arrow { animation: sh-drop var(--sh-speed, 2s) ease-in infinite; }
+.anim-5 .cn-scroll-arrow svg { animation: sh-wipe var(--sh-speed, 2s) ease-in-out infinite; }
+.anim-1 .sh-dot, .anim-2 .sh-dot, .anim-4 .sh-dot, .anim-5 .sh-dot { animation: sh-dot var(--sh-speed, 2s) ease-in-out infinite; }
+@keyframes sh-bounce { 0%, 55%, 100% { transform: translateY(0); } 25% { transform: translateY(var(--sh-travel, 8px)); } 40% { transform: translateY(calc(var(--sh-travel, 8px) * 0.25)); } }
+@keyframes sh-float { 0%, 100% { transform: translateY(calc(var(--sh-travel, 8px) * -0.5)); } 50% { transform: translateY(calc(var(--sh-travel, 8px) * 0.5)); } }
+@keyframes sh-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@keyframes sh-drop { 0% { transform: translateY(calc(var(--sh-travel, 8px) * -0.6)); opacity: 0; } 25% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(var(--sh-travel, 8px)); opacity: 0; } }
+@keyframes sh-wipe { 0% { clip-path: inset(0 0 100% 0); } 50% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(100% 0 0 0); } }
+@keyframes sh-dot { 0% { transform: translateY(0); opacity: 1; } 70% { transform: translateY(10px); opacity: 0; } 100% { transform: translateY(0); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cn-scroll * { animation: none !important; } }
 /* What the core powers, bottom left; the company's line, bottom right. */
 .cn-readout { position: absolute; left: var(--s-gutter); bottom: 6vh; margin: 0; padding: 0; list-style: none; }
 .cn-readout li { display: grid; grid-template-columns: 30px 84px auto; align-items: baseline; padding: 5px 0; font-size: 13px; color: var(--ng-text-3); }
 .cn-readout em { font: 500 11px var(--ng-mono); font-style: normal; color: var(--ng-ice); }
 .cn-readout b { font-size: 14.5px; font-weight: 500; color: var(--ng-text); }
-.cn-sign { position: absolute; right: var(--s-gutter); bottom: 6vh; text-align: right; }
-.cn-sign .s-eyebrow { color: var(--ng-ice); letter-spacing: 0.24em; }
-.cn-sign h1 { margin-top: 10px; font-size: clamp(26px, 3.6vw, 56px); font-weight: 300; letter-spacing: -0.03em; line-height: 1.08; }
+/* No transform here: it would cut the logo's screen blend off from the scene behind it. */
+.cn-brand { position: absolute; left: 0; right: 0; width: max-content; margin: 0 auto; bottom: calc(100% - var(--cn-oy) + var(--cn-or) + 2.5vh + var(--brand-lift, 0vh));
+  display: flex; flex-direction: column; align-items: center; gap: var(--logo-gap, 10px); text-align: center;
+  font-family: var(--brand-font, inherit); font-size: calc(clamp(22px, 2.3vw, 38px) * var(--brand-size, 1)); font-weight: var(--brand-weight, 400);
+  letter-spacing: var(--brand-track, 0.01em); text-transform: var(--brand-case, none); line-height: var(--brand-line, 1.08); }
+.cn-brand .cn-logo-white { display: var(--logo-white-show, none); }
+.cn-brand .cn-group { font-size: calc(1em * var(--group-size, 1)); }
+.cn-brand img {  width: calc(clamp(46px, 4vw, 66px) * var(--logo-size, 1)); height: auto; } /* a see-through copy of the logo, so no blend is needed here */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* On the home page the name sits over the orb, so the top bar shows only the links. */
+.s-nav-home .s-brand { visibility: hidden; }
 .cn-room { height: 90vh; }
 @media (max-width: 760px) {
   .cn-top { --cn-or: 11vh; }
   .cn-tag { left: 50%; transform: translateX(-50%); top: calc(var(--cn-oy) - var(--cn-or) - 26px); }
-  .cn-sign { left: var(--s-gutter); right: auto; bottom: auto; top: 13vh; text-align: left; }
   .cn-readout li { grid-template-columns: 26px 76px auto; font-size: 12.5px; padding: 3px 0; }
 }
 
 /* ── Home, below the first screen: the sections, joined by pipes of the same water ─────────────── */
-.cn-page { position: relative; z-index: 1; background: var(--ng-graphite); }
+/* The page's colour carries on from the feathered edge above, then thins out over the first screen-height
+   so the 3D scene underneath is gone before the clouds (.cn-clouds) show through, with no hard line. */
+.cn-page { position: relative; z-index: 1; background: linear-gradient(180deg, var(--ng-graphite) 0, var(--ng-graphite) 30vh, rgba(20, 21, 24, 0) 120vh) no-repeat; }
+.cn-clouds { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 /* The page below slides up over the first screen as one sheet with a long feathered top edge,
    so the night scene melts into the page colour instead of ending on a hard line. */
 .cn-page::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 55vh; pointer-events: none;
@@ -372,24 +431,36 @@ p { margin: 0; }
 .cn-head { width: max-content; max-width: calc(100% - 2 * var(--s-gutter)); margin: 0 auto clamp(28px, 4vh, 48px); text-align: center; }
 .cn-head h2 { margin-top: 12px; font-size: clamp(26px, 3vw, 44px); }
 .cn-page .s-main { gap: clamp(96px, 13vh, 130px); padding-top: clamp(96px, 13vh, 130px); }
-.cn-page #businesses h2 { margin-bottom: clamp(72px, 10vh, 96px); }
-/* A pipe: dark glass, then the water inside it, then glints of light moving along the water. */
-.cn-pipes { position: absolute; left: 0; top: 0; width: 100%; z-index: 0; pointer-events: none; overflow: visible; }
+/* A pipe: thin dark glass with blue water inside. */
+.cn-pipes { position: absolute; left: 0; top: 0; width: 100%; z-index: 2; pointer-events: none; overflow: visible; }
 .cn-pipes path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.cn-pipes .wall { stroke: rgba(255, 255, 255, 0.13); stroke-width: 15; }
-.cn-pipes .hollow { stroke: #0b0e14; stroke-width: 12.5; }
-/* --full (0 to 1) is how far the water has run down this pipe; wires.ts sets it as you scroll. */
-.cn-pipes .fill { stroke-dasharray: 1 1; stroke-dashoffset: calc(1 - var(--full, 0)); }
-.cn-pipes .water { stroke: #1d6f93; stroke-width: 8.5; filter: drop-shadow(0 0 5px rgba(108, 199, 240, 0.45)); }
-.cn-pipes .glint { stroke: rgba(205, 238, 255, 0.75); stroke-width: 2.4; stroke-dasharray: 9 38; animation: cn-flow 1.3s linear infinite; }
-.cn-pipes .glint.slow { stroke: rgba(108, 199, 240, 0.8); stroke-width: 5; stroke-dasharray: 22 61; animation: cn-flow-slow 2.9s linear infinite; }
-.cn-pipes .shine { stroke: rgba(255, 255, 255, 0.16); stroke-width: 1.2; transform: translate(-3.2px, 0); }
-.cn-pipes .dry .water, .cn-pipes .dry g { opacity: 0; }
-.cn-pipes .port { fill: #0b0e14; stroke: rgba(108, 199, 240, 0.55); stroke-width: 1.5; }
-/* Each glint moves by a whole number of its own dash pattern, so the loop has no jump. */
-@keyframes cn-flow { to { stroke-dashoffset: -141; } }
-@keyframes cn-flow-slow { to { stroke-dashoffset: -166; } }
-@media (prefers-reduced-motion: reduce) { .cn-pipes .glint { animation: none; } }
+.cn-pipes .wall path { stroke: rgba(255, 255, 255, 0.10); stroke-width: 3.5; }
+.cn-pipes .hollow path { stroke: #0b0e14; stroke-width: 2.5; }
+.cn-pipes .water path { stroke: #2a8fbd; stroke-width: 1.8; filter: drop-shadow(0 0 3px rgba(108, 199, 240, 0.45)); }
+.cn-pipes .water .dry { opacity: 0; }
+.cn-pipes .join { opacity: var(--pipe-join, 0); }
+.cn-pipes .jw { stroke: rgba(255, 255, 255, 0.10); stroke-width: 3.5; }
+.cn-pipes .jh { stroke: #0b0e14; stroke-width: 2.5; }
+.cn-pipes .jv { stroke: #2a8fbd; stroke-width: 1.8; filter: drop-shadow(0 0 3px rgba(108, 199, 240, 0.45)); }
+/* The spark at the front of the water: a faint hot point with a few tiny bits flicking off it. */
+.cn-pipes .spark .halo { fill: rgba(150, 215, 255, 0.22); filter: blur(2px); animation: cn-spark 0.9s ease-in-out infinite alternate; }
+.cn-pipes .spark .core { fill: #eaf8ff; filter: drop-shadow(0 0 3px rgba(150, 215, 255, 0.9)); animation: cn-spark 0.23s steps(2) infinite; }
+.cn-pipes .spark .bit { fill: #cfeeff; opacity: 0; animation: cn-bit 1.1s ease-out infinite; }
+.cn-pipes .spark .b1 { --bx: 6px; --by: -5px; }
+.cn-pipes .spark .b2 { --bx: -5px; --by: -6px; animation-delay: 0.37s; }
+.cn-pipes .spark .b3 { --bx: 3px; --by: 6px; animation-delay: 0.71s; }
+@keyframes cn-spark { from { opacity: 0.55; } to { opacity: 1; } }
+@keyframes cn-bit { 0% { opacity: 0.9; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(var(--bx), var(--by)); } }
+@media (prefers-reduced-motion: reduce) { .cn-pipes .spark * { animation: none; } }
+/* White ink instead of blue water (tuner: Riverbed pipe → Fluid). */
+.pipe-ink .cn-pipes .water path, .pipe-ink .cn-pipes .jv { stroke: var(--pipe-fluid, #f2f5f8); filter: drop-shadow(0 0 2px color-mix(in srgb, var(--pipe-fluid, #fff) 55%, transparent)); }
+.pipe-ink .cn-pipes .spark .halo { fill: color-mix(in srgb, var(--pipe-fluid, #fff) 22%, transparent); }
+.pipe-ink .cn-pipes .spark .core { fill: var(--pipe-fluid, #fff); filter: drop-shadow(0 0 3px var(--pipe-fluid, #fff)); }
+.pipe-ink .cn-pipes .spark .bit { fill: var(--pipe-fluid, #fff); }
+.cn-measuring * { animation: none !important; }
+/* Panels with a pipe round their edge stay put, so the pipe always sits exactly on the edge. */
+.cn-page .s-card, .cn-page .s-case, .cn-page .s-charity, .cn-page #build .glass-plain { animation: none !important; }
+
 
 /* Our work, compact: small tiles on one line on a PC, a two-by-two block on a phone, so the whole
    row fits on one screen with the heading. (The base .s-work rules above were sized for the old
@@ -414,3 +485,106 @@ p { margin: 0; }
   .cn-work .s-hire { order: 0; }
   .cn-work .s-work figcaption { font-size: 12px; }
 }
+
+/* The words and frame over the orb fade out early in the scroll (Stage sets --cn-fade). */
+.cn-brand, .cn-frame, .cn-quote { opacity: var(--cn-fade, 1); }
+
+/* ── The home page journey (Journey.tsx). Night glass panels, white-ink drawings. ─────────── */
+:root { --j-accent: var(--ng-ice); }
+.pipe-ink { --j-accent: var(--pipe-fluid, #fff); }
+:root { --j-glass: linear-gradient(160deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025) 45%, rgba(255,255,255,0.04)); }
+.j-main { max-width: 1240px; gap: clamp(72px, 9vw, 130px); padding-top: clamp(80px, 10vw, 140px); }
+.j-panel { position: relative; border-radius: 28px; padding: clamp(24px, 3.4vw, 52px); background: var(--j-glass); backdrop-filter: blur(16px); }
+.j-panel h2, .j-biz h2 { font-weight: 300; letter-spacing: -0.02em; line-height: 1.04; font-size: clamp(30px, 3.6vw, 54px); margin: 12px 0 16px; }
+.j-line { color: var(--ng-text-2); font-size: clamp(16px, 1.1vw, 19px); line-height: 1.6; max-width: 52ch; }
+.j-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.j-run { display: grid; grid-template-columns: 1.2fr 1fr; gap: clamp(20px, 3vw, 48px); align-items: center; }
+.j-shot { position: relative; align-self: center; aspect-ratio: 16 / 10; border-radius: 16px; overflow: hidden; border: 1px solid var(--ng-edge); background: rgba(255,255,255,0.03); }
+.j-shot img { width: 100%; height: 100%; object-fit: cover; object-position: left top; display: block; }
+.j-shot-secret img { object-fit: contain; object-position: center; filter: blur(14px) saturate(1.2) brightness(0.75); transform: scale(1.15); }
+.j-shot-secret .j-soon { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; background: rgba(20,21,24,0.6); backdrop-filter: blur(8px); }
+.j-list { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; color: var(--ng-text-2); }
+.j-list li::before { content: '—'; color: var(--j-accent); margin-right: 10px; }
+
+/* What we have built: heading split either side of the pipe, the DDG core, then the 3D reel. */
+.j-biz { position: relative; padding-bottom: 8px; }
+.cn-page { overflow-x: clip; }
+.j-biz-head { display: grid; grid-template-columns: 1fr 96px 1fr; margin-bottom: 36px; }
+.j-biz-head .s-eyebrow { grid-column: 1; text-align: right; }
+.j-biz-head h2 { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 96px 1fr; margin: 12px 0 10px; }
+.j-biz-head h2 span:first-child { grid-column: 1; text-align: right; }
+.j-biz-head h2 span:last-child { grid-column: 3; }
+.j-biz-head .j-line { grid-column: 3; margin: 0; }
+.j-core { width: 132px; height: 132px; border-radius: 50%; margin: 0 auto 56px; display: grid; place-items: center; position: relative;
+  background: var(--j-glass); backdrop-filter: blur(16px); }
+.j-core img { width: 56px; }
+.j-core::after { content: ''; position: absolute; inset: -14px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.18); animation: j-spin 40s linear infinite; }
+@keyframes j-spin { to { transform: rotate(360deg); } }
+.j-reel { position: relative; display: grid; min-height: clamp(520px, 40vw, 580px); perspective: 2000px; outline: none; touch-action: pan-y; }
+.j-slot { position: absolute; inset: 0; border-radius: 28px; pointer-events: none; }
+.j-card { grid-area: 1 / 1; position: relative; border-radius: 28px; display: grid; grid-template-columns: 1.55fr 1fr; gap: clamp(18px, 2.4vw, 40px); padding: clamp(18px, 2.4vw, 34px); align-items: center;
+  background: var(--j-glass), var(--ng-graphite); /* the same glass, on a solid base so cards behind don't show through */
+  transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.9s, filter 0.9s; transform-style: preserve-3d; backface-visibility: hidden; }
+.j-card[data-off='0'] { transform: none; opacity: 1; z-index: 2; }
+.j-card[data-off='1'] { transform: translateX(78%) translateZ(-260px) rotateY(-34deg); opacity: 0.55; filter: blur(0.5px); cursor: pointer; z-index: 1; }
+.j-card[data-off='-1'] { transform: translateX(-78%) translateZ(-260px) rotateY(34deg); opacity: 0.55; filter: blur(0.5px); cursor: pointer; z-index: 1; }
+.j-card-top { display: flex; align-items: center; gap: 14px; }
+.j-card-top b { display: block; font-size: 19px; font-weight: 500; }
+.j-kind { display: block; font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-ice); margin-top: 3px; }
+.j-card h3 { font-size: clamp(22px, 2vw, 32px); font-weight: 300; letter-spacing: -0.01em; line-height: 1.12; margin: 20px 0 10px; }
+.j-card p { color: var(--ng-text-2); font-size: 15px; line-height: 1.55; }
+.j-steps { list-style: none; counter-reset: s; padding: 0; margin: 16px 0 18px; display: grid; gap: 9px; font-size: 14px; color: #d4dce6; }
+.j-steps li { counter-increment: s; display: grid; grid-template-columns: 30px 1fr; }
+.j-steps li::before { content: counter(s, decimal-leading-zero); font: 500 11px/1.9 var(--ng-mono); color: var(--j-accent); }
+.j-card .s-note { margin: 0 0 14px; font-size: 12px; }
+.j-card .s-btn { justify-self: start; }
+.j-card-text { display: flex; flex-direction: column; align-items: flex-start; }
+.j-soon { margin-top: 18px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(108,199,240,0.5); color: var(--ng-ice); font: 500 11px var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; }
+.j-reel-wrap { position: relative; }
+.j-tabs { position: absolute; z-index: 5; top: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; border-radius: 18px;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--ng-edge); backdrop-filter: blur(16px); }
+.j-tab { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 16px 10px 8px; border: 0; border-radius: 13px; background: none; color: var(--ng-text-3); text-align: left; cursor: pointer; font: inherit; transition: background 0.3s, color 0.3s; }
+.j-tab b { display: block; font-size: 14px; font-weight: 500; white-space: nowrap; }
+.j-tab { white-space: nowrap; }
+.j-tab em { display: block; font: 500 10px/1.4 var(--ng-mono); font-style: normal; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ng-text-2); }
+.j-tab:hover { color: var(--ng-text); background: rgba(255,255,255,0.04); }
+.j-tab[aria-selected='true'] { color: var(--ng-text); background: rgba(255,255,255,0.09); }
+.j-tab[aria-selected='true'] em { color: var(--ng-ice); }
+.j-tab-bar { position: absolute; left: 12px; right: 12px; bottom: 3px; height: 2px; border-radius: 2px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.j-tab-bar i { position: absolute; inset: 0; background: var(--j-accent); box-shadow: 0 0 8px var(--j-accent); transform-origin: left; }
+.j-tab-bar i.run { animation: j-bar linear forwards; }
+@keyframes j-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.j-reel .j-card { padding-top: 100px; }
+.j-count { font: 500 11px var(--ng-mono) !important; letter-spacing: 0.14em; color: var(--ng-text-2) !important; margin: 0 0 12px; }
+.j-arrow { position: absolute; z-index: 6; top: calc(50% + 40px); transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.06); color: var(--ng-text); font-size: 18px; cursor: pointer; backdrop-filter: blur(16px); }
+.j-arrow.prev { left: clamp(-72px, calc((1240px - 100vw) / 2 + 12px), 12px); }
+.j-arrow.next { right: clamp(-72px, calc((1240px - 100vw) / 2 + 12px), 12px); }
+.j-arrow:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); }
+/* Stacked (tuner option): three wide cards one under the other. */
+.j-biz.j-stack .j-reel { height: auto; perspective: none; display: grid; gap: 56px; }
+.j-biz.j-stack .j-slot, .j-biz.j-stack .j-tabs, .j-biz.j-stack .j-arrow { display: none; }
+.j-biz.j-stack .j-reel .j-card { padding-top: clamp(18px, 2.4vw, 34px); }
+.j-biz.j-stack .j-card { grid-area: auto; position: relative; transform: none !important; opacity: 1 !important; filter: none !important; cursor: default; min-height: 480px; }
+
+.j-start { display: grid; grid-template-columns: 1fr 1.4fr; gap: clamp(20px, 3vw, 48px); align-items: start; }
+.j-start .s-form { background: none; border: 0; padding: 0; }
+.s-build.j-panel { gap: 18px; }
+
+@media (prefers-reduced-motion: reduce) { .j-card { transition: none; } }
+@media (max-width: 900px) {
+  .j-run, .j-start { grid-template-columns: 1fr; }
+  .j-biz-head, .j-biz-head h2 { grid-template-columns: 1fr; } .j-biz-head > *, .j-biz-head h2 span { grid-column: 1 !important; text-align: left !important; }
+  .j-reel { height: auto; perspective: none; display: grid; }
+  .j-card { position: relative; grid-template-columns: 1fr; transform: none !important; }
+  .j-card:not([data-off='0']) { display: none; }
+  .j-tabs { top: 10px; left: 10px; right: 10px; transform: none; gap: 2px; padding: 4px; }
+  .j-tab { flex: 1; min-width: 0; padding: 6px 6px 9px; gap: 6px; } .j-tab em { display: none; } .j-tab b { font-size: 12px; white-space: nowrap; }
+  .j-reel .j-card { padding-top: 76px; }
+  .j-arrow { display: none; }
+  .j-biz:not(.j-stack) .j-card[data-off='0'] { box-shadow: 0 0 0 1px rgba(42,143,189,0.85), 0 0 22px rgba(42,143,189,0.28); }
+}
+
+/* The words over the orb live in a layer fixed to the screen; Stage moves them with the orb. */
+.cn-follow { position: fixed; inset: 0; pointer-events: none; }
+.cn-page .s-charity { background: var(--j-glass); backdrop-filter: blur(16px); }
