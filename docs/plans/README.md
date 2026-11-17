@@ -25,6 +25,8 @@ Last updated: Tue 17 Nov 2026 Brisbane (UTC+10) by Claude. For any Claude (any a
 - **DDG Build (client work):** quote page + Stripe deposit, lawyer contract, insurance, monthly limit on new projects (see `ddg-build-plan.md`).
 
 ## Files in this folder
+- `growth-plan-2026-11-17.md` — **where the money is**: how Claude would run DDG to earn the most (Build first, kits with monthly fees, brands as the showroom), targets, 90-day plan.
+- The build order for all of it (for Opus 5.5) lives in `quant-terminal/docs/plans/fund-roadmap-build-guide-for-opus.md`, Part B.
 - `company-audit-2026-11-17.md` — **read this first for what to fix**: whole-company audit (sites, security, legal pages, money, operations), top actions in order, each finding marked checked / from notes / not checked.
 - `ddg-build-plan.md` — the contracting service (prices, process, what is built, what is left).
 - `company-handover-2026-10-30.md` — company overview, how it runs, completion snapshot (as of 30 Oct; Finance and Coffee sections are older than their own repos' files).

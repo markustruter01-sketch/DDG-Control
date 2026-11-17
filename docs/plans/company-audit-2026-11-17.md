@@ -15,6 +15,17 @@ Written by Claude (Fable 5.2) for Markus, Tue 17 Nov 2026 (Brisbane).
 
 ---
 
+## Update, 17 Nov, later the same day (after Markus's answers)
+
+- ✅ **Live on ddg.limited:** no charity is named ("animal charities"), "Raised" replaces "Given", the page says the money is paid over in $100 lots, and the description says four businesses. (Control PR #87, published and checked on the live page.)
+- ✅ **Live:** Hypest tells search engines not to list it. (Hypest PR #44, checked on the live page.)
+- 🔴 **Merged but not live:** the same charity wording on the coffee store (coffee PR #15). At about 10:15 the live store still ran the old build with the old wording and flat postage. The database changed, so only Markus can publish it, on the Replit website.
+- **Markus's answers:** Coffee Alliance roasts in Brisbane and says its beans are sustainably harvested, so both claims stay; get that in writing and file it. The charity asked to be paid in $100 lots, so the $61 is not overdue. The DDG Build form stays open.
+- ✅ The coffee store does not load the Replit script (closes the question in 3.3).
+- Everything else in the table below is still open. The build order is in `quant-terminal/docs/plans/fund-roadmap-build-guide-for-opus.md`, Part B. The money plan is `growth-plan-2026-11-17.md`.
+
+---
+
 ## 1. The verdict
 
 1. **The code is in better shape than the paperwork.** No leaked passwords or keys in the current files, private pages refuse strangers, prices are worked out on the server, and tests run on GitHub.
