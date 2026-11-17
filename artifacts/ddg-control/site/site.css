@@ -159,6 +159,9 @@ p { margin: 0; }
 .s-service { padding: 20px; display: flex; flex-direction: column; gap: 8px; }
 .s-service h3 { font-size: 19px; margin-top: 6px; }
 .s-service p { color: var(--ng-text-2); font-size: 14px; }
+/* Three things each service includes (audit: buyers never saw "Bookings" etc.). */
+.s-feats { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.s-feats li { padding: 4px 10px; border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; font-size: 13px; color: var(--ng-text-2); }
 .s-price { display: flex; flex-direction: column; gap: 4px; margin-top: auto; padding-top: 6px; }
 .s-price b { font-size: 24px; font-weight: 300; color: var(--ng-text); }
 .s-price span { font: 500 10.5px/1.3 var(--ng-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ng-text-3); }

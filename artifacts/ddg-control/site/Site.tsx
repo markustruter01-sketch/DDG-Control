@@ -10,7 +10,7 @@ import { QuotePage } from './Quote';
 import { drawPipes, fillPipes } from './canyon/wires';
 import { mountPageClouds } from './canyon/cloudPaint';
 import { CHARITY, COMPANY, HOME, PRIVACY, START, QUOTES } from './content';
-import { About, Run, Showcase } from './Journey';
+import { About, Showcase } from './Journey';
 
 // The 3D first screen is loaded on its own, so the page's words never wait for it.
 const Stage = lazy(() => import('./canyon/Stage'));
@@ -136,9 +136,8 @@ function Home() {
         <svg className="cn-pipes" ref={pipes.svg} aria-hidden="true" />
         <main className="s-main j-main">
           <About onSee={() => toSection('businesses', true)} />
-          <Showcase />
-          <Run />
           <Build summary={summary} />
+          <Showcase />
           <section id="start" className="j-panel j-start" data-pipe aria-labelledby="start-title">
             <div className="j-text">
               <p className="s-eyebrow">{START.eyebrow}</p>

@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import type { PublicSummary } from '@workspace/api-client-react';
-import { BUILD_FORM, BUILD_STEPS, CARE, SERVICES, START, type ServiceKey } from './content';
+import { BUILD_FORM, BUILD_STEPS, CARE, PRICE_BASIS, SERVICES, START, type ServiceKey } from './content';
 
 // DDG Build: we build platforms for other businesses. Shown as a teaser until the server says
 // it is open (SERVICES_OPEN_ON on the server). ?preview=build shows the full section; the server
@@ -116,13 +116,14 @@ export function EnquiryForm() {
 
 export function Build({ summary }: { summary: PublicSummary | null }) {
   const preview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === 'build';
-  const open = Boolean(summary?.services_open);
   const opensOn = summary?.services_open_on ?? '2026-11-08';
+  // If the summary call fails, decide by the date (the server uses the same rule), so a failed call never shows an old date.
+  const open = summary ? Boolean(summary.services_open) : new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Brisbane' }).format(new Date()) >= opensOn;
   return (
     <section id="build" className="s-build j-panel" data-pipe aria-labelledby="build-title">
       <p className="s-eyebrow">What we can build for you{open ? '' : ` · opens ${openDate(opensOn)}`}</p>
       <h2 id="build-title">We build platforms like these, for you.</h2>
-      <p className="s-lead">Websites, online stores, platforms, phone apps and AI, built the way we build our own businesses, at about 25% below typical Australian prices.</p>
+      <p className="s-lead">Websites, online stores, platforms, phone apps and AI, built the way we build our own businesses, at about 25% below typical Australian prices. Fixed quotes, all in writing.</p>
       {!open && !preview ? (
         <div className="s-teaser glass-plain">
           <ul className="s-teaser-list">
@@ -139,16 +140,18 @@ export function Build({ summary }: { summary: PublicSummary | null }) {
                 <span className="s-ico"><ServiceIcon k={s.key} /></span>
                 <h3>{s.name}</h3>
                 <p>{s.line}</p>
-                <p className="s-price"><b>from {aud(s.from)}</b><span>typically {aud(s.from)}–{aud(s.to)}</span></p>
-                <p className="s-note">{s.proof}</p>
+                <ul className="s-feats">{s.features.slice(0, 3).map((f) => <li key={f}>{f}</li>)}</ul>
+                <p className="s-price"><b>from {aud(s.from)}</b><span>our usual range {aud(s.from)}–{aud(s.to)}</span></p>
+                {s.proof && <p className="s-note">{s.proof}</p>}
               </article>
             ))}
           </div>
           <p className="s-note">{CARE}</p>
+          <p className="s-note">{PRICE_BASIS}</p>
           <ol className="s-steps">
             {BUILD_STEPS.map((s, i) => <li key={s.title}><span>{i + 1}</span><b>{s.title}</b><p>{s.line}</p></li>)}
           </ol>
-          <p><a className="s-btn fill" href="/start">Start your build →</a></p>
+          <p><a className="s-btn fill" href="/#start" onClick={(e) => { const el = document.getElementById('start'); if (el) { e.preventDefault(); el.scrollIntoView({ behavior: 'smooth' }); } }}>Get a fixed quote →</a></p>
         </>
       )}
     </section>
