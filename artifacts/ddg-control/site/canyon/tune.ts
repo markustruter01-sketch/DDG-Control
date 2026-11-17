@@ -148,36 +148,35 @@ export const SPECS: Spec[] = [
   { group: 'Name and logo', key: 'groupSize', label: '"GROUP" size (vs the line above)', min: 0.3, max: 1.5, step: 0.02 },
   { group: 'Name and logo', key: 'brandLine', label: 'Gap between the two lines', min: 0.8, max: 2, step: 0.02 },
   { group: 'Name and logo', key: 'logoOn', label: 'Show the logo (0 off, 1 on)', min: 0, max: 1, step: 1 },
-  { group: 'Name and logo', key: 'logoStyle', label: 'Logo (0 glitch, 1 plain white)', min: 0, max: 1, step: 1 },
   { group: 'Name and logo', key: 'logoSize', label: 'Logo size', min: 0.3, max: 3, step: 0.05 },
   { group: 'Name and logo', key: 'logoGap', label: 'Gap between logo and name', min: 0, max: 60, step: 1 },
   { group: 'Name and logo', key: 'brandLift', label: 'Move up / down', min: -20, max: 30, step: 0.5 },
 ];
 
-// Markus's settings from the tuner, 17 Nov 2026 (five rounds).
+// Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
-  orbSpin: 2.15, orbStreaks: 0.25, orbSparks: 0.45, orbSparkRate: 2.75, orbSize: 1.32, orbHeight: -1.7, orbGlow: 1.4,
-  waterDesign: 4, waterTexture: 4, waterRipples: 0, swirlSize: 1.5, swirlDepth: 3, swirlSpeed: 3, swirlLines: 0.75, swirlSoft: 1.95, waterFoam: 0,
-  waterGlint: 3, waterReflect: 0.65, waterColour: 0.8, waterSheen: 0.95, sprayAmount: 0, spraySize: 1,
-  fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.3,
-  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.96, waterClear: 0.45,
+  orbSpin: 2.15, orbStreaks: 0.4, orbSparks: 0.7, orbSparkRate: 2.25, orbSize: 1.32, orbHeight: -1.7, orbGlow: 0,
+  waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.6, swirlDepth: 3, swirlSpeed: 3, swirlLines: 1.8, swirlSoft: 2.2, waterFoam: 0,
+  waterGlint: 2.8, waterReflect: 1.5, waterColour: 0.25, waterSheen: 1.65, sprayAmount: 0, spraySize: 0,
+  fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
+  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.96, waterClear: 0.66,
   starsEvery: 4.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
-  pipeOn: 1, pipeFluid: 0, inkHue: 200, inkSat: 0, inkLight: 1, inkSpeed: 1, inkThick: 1, pipeRadius: 2.45, pipeLift: -0.35, pipeGlass: 0, pipeRim: 0.75, pipeGlow: 0.5, dataCount: 0.56, dataSize: 1.6, dataSpeed: 5, dataBright: 0.1, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
-  quote: 0, quoteOn: 1, quoteFont: 3, quoteSize: 1, quoteWeight: 300, quoteSpacing: 0, quoteCaps: 0, quoteAlign: 0, quoteWidth: 30, quoteLift: 0,
-  qbOn: 1, qbDark: 0.6, qbBlur: 14, qbTint: 0, qbPadX: 70, qbPadY: 34, qbRadius: 40, qbFade: 26,
+  pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
+  quote: 4, quoteOn: 1, quoteFont: 3, quoteSize: 0.7, quoteWeight: 500, quoteSpacing: -0.01, quoteCaps: 1, quoteAlign: 1, quoteWidth: 19, quoteLift: 2,
+  qbOn: 1, qbDark: 0.52, qbBlur: 25, qbTint: 0, qbPadX: 182, qbPadY: 10, qbRadius: 40, qbFade: 26,
   bizLayout: 0,
-  cloudsOn: 1, cloudCount: 0.35, cloudOpacity: 0.3, cloudSize: 1, cloudFlat: 1, cloudHeight: 1.5, cloudSpread: 0.2, cloudDrift: 0.6, cloudOrbPush: 1, cloudOrbRadius: 1, cloudTint: 0.5,
-  pageClouds: 0.4, pageCloudOpacity: 0.16, pageCloudSize: 1, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
-  shOn: 1, shArrow: 0, shAnim: 1, shSpeed: 2, shTravel: 8, shLayout: 0, shFont: 3, shSize: 1, shSpacing: 0.3, shCaps: 1, shBright: 0.7, shPlace: 11,
-  brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: -2.5,
+  cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
+  pageClouds: 0.8, pageCloudOpacity: 0.06, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
+  shOn: 1, shArrow: 4, shAnim: 1, shSpeed: 2, shTravel: 5, shLayout: 0, shFont: 2, shSize: 0.75, shSpacing: 0.3, shCaps: 0, shBright: 0.9, shPlace: 4,
+  brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: 6.5,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
 /** Settings that are words, not numbers. */
-export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll down' };
+export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-8'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-9'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -379,8 +378,7 @@ export function applyBrand(): void {
   s.setProperty('--brand-case', T.brandCaps ? 'uppercase' : 'none');
   s.setProperty('--brand-line', String(T.brandLine));
   s.setProperty('--logo-size', String(T.logoSize));
-  s.setProperty('--logo-show', T.logoOn && !T.logoStyle ? 'block' : 'none');
-  s.setProperty('--logo-white-show', T.logoOn && T.logoStyle ? 'block' : 'none');
+  s.setProperty('--logo-white-show', T.logoOn ? 'block' : 'none');
   s.setProperty('--group-size', String(T.groupSize));
   s.setProperty('--logo-gap', `${T.logoGap}px`);
   s.setProperty('--brand-lift', `${T.brandLift}vh`);

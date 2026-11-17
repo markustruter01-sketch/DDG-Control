@@ -54,9 +54,9 @@ function Nav({ home = false }: { home?: boolean }) {
   };
   return (
     <header className={home ? 's-nav s-nav-home' : 's-nav'}>
-      <Link href="/" className="s-brand" aria-label="Digital Dynamics Group home"><img src={LOGO} alt="" /><b><span className="s-brand-full">Digital Dynamics Group</span><span className="s-brand-short">DDG</span></b></Link>
+      <Link href="/" className="s-brand" aria-label="Digital Dynamics Group home"><img src={LOGO} alt="" loading="lazy" /><b><span className="s-brand-full">Digital Dynamics Group</span><span className="s-brand-short">DDG</span></b></Link>
       <nav aria-label="Site">
-        <a href="/#businesses" onClick={section('businesses')}>Businesses</a>
+        <a href="/#businesses" onClick={section('businesses')}>Projects</a>
         <Link href="/finance">Finance</Link>
         <a href="/#build" onClick={section('build')}>Build</a>
         <a href="/#charity" onClick={section('charity')}>Charity</a>
@@ -122,10 +122,10 @@ function Home() {
           {/* The company's name and mark, above the orb. "We build it all." stands in the 3D scene. */}
           {/* Fixed to the screen and moved by the 3D stage, so the name, frame and quote stay on the orb. */}
           <div className="cn-follow">
-            <h1 className="cn-brand"><img className="cn-logo-glitch" src="/ddg-core-logo.png" alt="" /><img className="cn-logo-white" src="/ddg-logo-white-512.png" alt="" /><span>Digital Dynamics<br /><span className="cn-group">Group</span></span><span className="sr-only"> · {HOME.title}</span></h1>
+            <h1 className="cn-brand"><img className="cn-logo-white" src="/ddg-logo-white-512.png" alt="" width="512" height="512" /><span>Digital Dynamics<br /><span className="cn-group">Group</span></span><span className="sr-only"> · {HOME.title}</span></h1>
             <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
             <p className="cn-quote">{QUOTES[QUOTE]}</p>
-            <div className="cn-scroll lay-0 anim-1" aria-hidden="true"><span className="cn-scroll-words">Scroll down</span><span className="cn-scroll-arrow" /></div>
+            <div className="cn-scroll lay-0 anim-1" aria-hidden="true"><span className="cn-scroll-words">Scroll</span><span className="cn-scroll-arrow" /></div>
           </div>
         </section>
         {/* Room to scroll while the canyon settles flat and the core lifts away. */}

@@ -16,7 +16,7 @@ function Shot({ k }: { k: ShowcaseKey }) {
   const s = SHOTS[k];
   return (
     <div className={`j-shot${s.secret ? ' j-shot-secret' : ''}`}>
-      <img src={s.src} alt={s.alt} loading="lazy" />
+      <img src={s.src} alt={s.alt} loading="lazy" decoding="async" width="1400" height="875" />
       {s.secret && <span className="j-soon">Coming soon</span>}
     </div>
   );
@@ -75,7 +75,7 @@ export function Showcase() {
       <div className="j-core" data-pipe aria-hidden="true"><img src="/ddg-logo-white-512.png" alt="" /></div>
       <div className="j-reel-wrap" onPointerEnter={() => setHeld(true)} onPointerLeave={() => setHeld(false)} onFocus={() => setHeld(true)} onBlur={() => setHeld(false)}>
         {/* The three businesses as tabs along the top of the reel: always shows there are three. */}
-        <div className="j-tabs" role="tablist" aria-label="Our businesses">
+        <div className="j-tabs" role="tablist" aria-label="Our projects">
           {SHOWCASE.map((b, i) => (
             <button key={b.key} type="button" role="tab" aria-selected={i === at} className="j-tab" onClick={() => go(i)}>
               <span><b>{b.name}</b><em>{b.tab}</em></span>
@@ -83,7 +83,7 @@ export function Showcase() {
             </button>
           ))}
         </div>
-        <div className="j-reel" role="region" aria-roledescription="carousel" aria-label="Our businesses" tabIndex={0} onKeyDown={keys} onPointerDown={down} onPointerUp={up}>
+        <div className="j-reel" role="region" aria-roledescription="carousel" aria-label="Our projects" tabIndex={0} onKeyDown={keys} onPointerDown={down} onPointerUp={up}>
           <div className="j-slot" data-pipe aria-hidden="true" />
           {SHOWCASE.map((b, i) => {
             const o = off(i);

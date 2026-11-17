@@ -226,10 +226,10 @@ export const ABOUT = {
 };
 
 export const BUILT = {
-  eyebrow: 'What we have built',
-  left: 'Three businesses.',
-  right: 'One founder.',
-  line: 'Hard systems we built ourselves, and run every day.',
+  eyebrow: 'Projects we have built',
+  left: 'Complex platforms.',
+  right: 'Built in-house.',
+  line: 'Examples of what we can build: our own trading platform, online store and fitness app.',
 };
 
 export type ShowcaseKey = 'finance' | 'coffee' | 'fitness';

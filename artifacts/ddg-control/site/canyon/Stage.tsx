@@ -44,7 +44,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const small = innerWidth < 700;
     let renderer: WebGLRenderer;
     try { renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch { stage.style.display = 'none'; return; }
-    renderer.setPixelRatio(Math.min(devicePixelRatio, small ? 1.5 : 1.75));
+    // Sharpness: at most 1.5× (beyond that the extra pixels are hard to see but costly). If frames come
+    // slowly once the scene has settled, step it down (1.5 → 1.2 → 1), so slower devices stay smooth.
+    const ratios = [1.5, 1.2, 1].filter((r) => r <= Math.max(1, devicePixelRatio));
+    let ratioStep = 0;
+    renderer.setPixelRatio(Math.min(devicePixelRatio, ratios[0] ?? 1));
+    let slowSince = -1, slowFrames = 0, sampled = 0;
     const scene = new Scene();
     scene.fog = new Fog(0x0a0d16, 30, 150);
     const camera = new PerspectiveCamera(58, 1, 0.1, 500);
@@ -142,7 +147,21 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      const raw = now - last;
+      const dt = Math.min(0.05, raw / 1000); last = now;
+      // Quality check: after a short settle, look at 90 frames; if most took over 22 ms, step down once
+      // and look again. Hidden tabs and the first frames after a scroll jump are ignored.
+      if (!document.hidden && raw < 250 && ratioStep < ratios.length - 1) {
+        if (slowSince < 0) slowSince = now;
+        if (now - slowSince > 1500) {
+          sampled++; if (raw > 22) slowFrames++;
+          if (sampled >= 90) {
+            if (slowFrames > 60) { ratioStep++; renderer.setPixelRatio(Math.min(devicePixelRatio, ratios[ratioStep])); resize(); slowSince = now; }
+            else ratioStep = ratios.length; // fast enough: stop checking
+            sampled = 0; slowFrames = 0;
+          }
+        }
+      }
       smoothY += (scrollY - smoothY) * (reduced ? 1 : 0.12);
       const vh = innerHeight;
       // Fade the whole stage away as the first section after the canyon arrives.
