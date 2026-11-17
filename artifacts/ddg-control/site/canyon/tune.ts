@@ -45,8 +45,10 @@ export const SPECS: Spec[] = [
   { group: 'Scene', key: 'fogNear', label: 'Fog starts', min: 0.2, max: 3, step: 0.05 },
   { group: 'Scene', key: 'fogFar', label: 'Fog full', min: 0.3, max: 3, step: 0.05 },
   { group: 'Scene', key: 'fov', label: 'Camera zoom (field of view)', min: 30, max: 90, step: 1 },
+  { group: 'Scene', key: 'starsOn', label: 'Shooting stars (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Scene', key: 'gridLines', label: 'Line grid brightness', min: 0, max: 3, step: 0.05 },
   // "We build it all." in 3D
+  { group: 'Words (We build it all.)', key: 'wordsOn', label: 'Show the words (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Words (We build it all.)', key: 'wordsFont', label: 'Font', min: 0, max: 10, step: 1, names: WORD_FONTS },
   { group: 'Words (We build it all.)', key: 'wordsSize', label: 'Size', min: 0.3, max: 3, step: 0.05 },
   { group: 'Words (We build it all.)', key: 'wordsDepth', label: 'Thickness', min: 0, max: 5, step: 0.05 },
@@ -63,24 +65,25 @@ export const SPECS: Spec[] = [
   { group: 'Name and logo', key: 'brandSpacing', label: 'Letter spacing', min: -0.08, max: 0.6, step: 0.01 },
   { group: 'Name and logo', key: 'brandCaps', label: 'Capitals (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Name and logo', key: 'brandLine', label: 'Gap between the two lines', min: 0.8, max: 2, step: 0.02 },
+  { group: 'Name and logo', key: 'logoOn', label: 'Show the logo (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Name and logo', key: 'logoSize', label: 'Logo size', min: 0.3, max: 3, step: 0.05 },
   { group: 'Name and logo', key: 'logoGap', label: 'Gap between logo and name', min: 0, max: 60, step: 1 },
   { group: 'Name and logo', key: 'brandLift', label: 'Move up / down', min: -20, max: 30, step: 0.5 },
 ];
 
-// Markus's settings from the tuner, 17 Nov 2026 (two rounds).
+// Markus's settings from the tuner, 17 Nov 2026 (four rounds).
 export const DEFAULTS: Record<string, number> = {
-  orbSpin: 0.35, orbStreaks: 0.15, orbSparks: 0, orbSparkRate: 3.55, orbSize: 1.24, orbHeight: -2, orbGlow: 1.4,
-  waterDesign: 4, waterTexture: 2.9, waterRipples: 1.1, swirlSize: 1.5, swirlDepth: 3, swirlSpeed: 1, swirlLines: 1, swirlSoft: 1, waterFoam: 2.1,
-  waterGlint: 0.3, waterReflect: 0.65, waterColour: 0.8, waterSheen: 0.95, sprayAmount: 0, spraySize: 1,
+  orbSpin: 2.15, orbStreaks: 0.25, orbSparks: 0.45, orbSparkRate: 2.75, orbSize: 1.14, orbHeight: -2.7, orbGlow: 1.4,
+  waterDesign: 4, waterTexture: 4, waterRipples: 0, swirlSize: 1.5, swirlDepth: 3, swirlSpeed: 3, swirlLines: 0.75, swirlSoft: 1.95, waterFoam: 0,
+  waterGlint: 3, waterReflect: 0.65, waterColour: 0.8, waterSheen: 0.95, sprayAmount: 0, spraySize: 1,
   fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.45,
-  wordsFont: 0, wordsSize: 1, wordsDepth: 1, wordsZ: 26, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.12, wordsFade: 0.4,
-  brandFont: 0, brandSize: 1, brandWeight: 400, brandSpacing: 0.01, brandCaps: 0, brandLine: 1.08, logoSize: 1, logoGap: 10, brandLift: 0,
+  wordsOn: 0, starsOn: 1, logoOn: 1, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
+  brandFont: 3, brandSize: 0.6, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.14, logoSize: 1.85, logoGap: 5, brandLift: 10,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
 
-const STORE = 'ddg-scene-tune-4'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-5'; // new name, so old saved slider positions don't override these defaults
 export function tuneOn(): boolean {
   return !!(window as unknown as { __DDG_TUNE__?: unknown }).__DDG_TUNE__ || /tune/.test(location.hash);
 }
@@ -104,6 +107,7 @@ export function mountPanel(): () => void {
 .tune button:hover { background: rgba(255,255,255,0.16); }
 .tune button.go { background: #6cc7f0; color: #061018; border-color: #6cc7f0; font-weight: 600; }
 .tune-body { overflow-y: auto; padding: 4px 12px 12px; flex: 1; }
+.tune h4 { cursor: pointer; user-select: none; } .tune h4::before { content: '▾ '; } .tune section.folded h4::before { content: '▸ '; } .tune section.folded label { display: none; }
 .tune h4 { margin: 14px 0 6px; font: 600 11px ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #6cc7f0; }
 .tune label { display: block; margin: 7px 0; }
 .tune label span { display: flex; justify-content: space-between; color: #b9c6d4; }
@@ -125,8 +129,18 @@ export function mountPanel(): () => void {
   const inputs: Record<string, [HTMLInputElement, HTMLElement]> = {};
   const input0 = (k: string) => inputs[k][0].dispatchEvent(new Event('input'));
   let group = '';
+  let box: HTMLElement = body as HTMLElement;
+  let folded: string[] = [];
+  try { folded = JSON.parse(localStorage.getItem(STORE + '-folded') || '[]'); } catch { /* ignore */ }
   for (const s of SPECS) {
-    if (s.group !== group) { group = s.group; body.insertAdjacentHTML('beforeend', `<h4>${group}</h4>`); }
+    if (s.group !== group) {
+      group = s.group;
+      const sec = document.createElement('section');
+      sec.innerHTML = `<h4 data-act="fold">${group}</h4>`;
+      if (folded.includes(group)) sec.classList.add('folded');
+      body.appendChild(sec);
+      box = sec;
+    }
     const l = document.createElement('label');
     l.innerHTML = `<span>${s.label}<i></i></span><input type="range" min="${s.min}" max="${s.max}" step="${s.step}">`;
     const input = l.querySelector('input')!, val = l.querySelector('i')!;
@@ -134,10 +148,16 @@ export function mountPanel(): () => void {
     input.value = String(T[s.key]); val.textContent = show(T[s.key]);
     input.addEventListener('input', () => { T[s.key] = Number(input.value); val.textContent = show(T[s.key]); changed(); save(); });
     inputs[s.key] = [input, val];
-    body.appendChild(l);
+    box.appendChild(l);
   }
   root.addEventListener('click', async (e) => {
     const act = (e.target as HTMLElement).dataset?.act;
+    if (act === 'fold') {
+      const sec = (e.target as HTMLElement).parentElement!;
+      sec.classList.toggle('folded');
+      folded = [...root.querySelectorAll('section.folded h4')].map((h) => h.textContent || '');
+      try { localStorage.setItem(STORE + '-folded', JSON.stringify(folded)); } catch { /* ignore */ }
+    }
     if (act === 'min') { root.classList.toggle('min'); (e.target as HTMLElement).textContent = root.classList.contains('min') ? 'Show' : 'Hide'; }
     if (act === 'reset') { Object.assign(T, DEFAULTS); for (const s of SPECS) { inputs[s.key][0].value = String(T[s.key]); inputs[s.key][1].textContent = String(T[s.key]); input0(s.key); } changed(); save(); }
     if (act === 'copy') {
@@ -156,7 +176,7 @@ export function mountPanel(): () => void {
 /** Put the name-and-logo settings on the page (CSS variables), loading the chosen web font. */
 let lastBrand = '';
 export function applyBrand(): void {
-  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift'].map((k) => T[k]).join(',');
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn'].map((k) => T[k]).join(',');
   if (key === lastBrand) return;
   lastBrand = key;
   const [, family] = BRAND_FONTS[T.brandFont] ?? BRAND_FONTS[0];
@@ -174,6 +194,7 @@ export function applyBrand(): void {
   s.setProperty('--brand-case', T.brandCaps ? 'uppercase' : 'none');
   s.setProperty('--brand-line', String(T.brandLine));
   s.setProperty('--logo-size', String(T.logoSize));
+  s.setProperty('--logo-show', T.logoOn ? 'block' : 'none');
   s.setProperty('--logo-gap', `${T.logoGap}px`);
   s.setProperty('--brand-lift', `${T.brandLift}vh`);
 }

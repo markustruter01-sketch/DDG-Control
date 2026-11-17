@@ -154,8 +154,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       });
       // The words face the screen, then sink into the river and fade as the visitor scrolls.
       const wordsOut = ease(p / T.wordsFade);
-      words.setFont(T.wordsFont);
-      words.group.visible = words.ready() && wordsOut < 0.99;
+      if (T.wordsOn > 0.5) words.setFont(T.wordsFont);
+      words.group.visible = T.wordsOn > 0.5 && words.ready() && wordsOut < 0.99;
       const wz = T.wordsZ;
       words.group.position.set(T.wordsX, ((4.25 - 0.01 * wz) + T.wordsY) * (1 - k) - wordsOut * 2.2, wz);
       words.group.quaternion.copy(camera.quaternion);
@@ -175,5 +175,32 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     };
   }, [fadeAt]);
 
-  return <div className="cn-stage" ref={stageRef} aria-hidden="true"><canvas ref={canvasRef} /></div>;
+  return <div className="cn-stage" ref={stageRef} aria-hidden="true"><canvas ref={canvasRef} /><ShootingStars /></div>;
+}
+
+/** Now and then a shooting star crosses the upper sky: a random one every 5 to 8 seconds. */
+function ShootingStars() {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let timer = 0;
+    const next = () => { timer = window.setTimeout(fire, 5000 + Math.random() * 3000); };
+    const fire = () => {
+      if (T.starsOn > 0.5 && !document.hidden && scrollY < innerHeight * 0.6) {
+        const s = document.createElement('i');
+        const right = Math.random() < 0.5, ang = (right ? 1 : -1) * (14 + Math.random() * 22); // degrees below level
+        const len = 260 + Math.random() * 260;
+        s.className = 'cn-star';
+        s.style.cssText = `left:${right ? 5 + Math.random() * 50 : 45 + Math.random() * 50}%;top:${4 + Math.random() * 26}%;` +
+          `--a:${right ? ang : 180 + ang}deg;--d:${len}px;--t:${0.7 + Math.random() * 0.5}s`;
+        el.appendChild(s);
+        setTimeout(() => s.remove(), 1600);
+      }
+      next();
+    };
+    next();
+    return () => clearTimeout(timer);
+  }, []);
+  return <div className="cn-sky" ref={box} />;
 }
