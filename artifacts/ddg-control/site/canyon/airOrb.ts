@@ -186,7 +186,8 @@ void main() {
       float core = smoothstep(0.55, 0.8, facing);
       float a = atan(N.y, N.x);
       float sw = noise3(vec3(cos(a) * 2.0, sin(a) * 2.0, facing * 6.0 - ft));
-      float ring = exp(-pow((facing - 0.5) / 0.12, 2.0)) * (0.6 + 0.8 * sw);
+      float rd = (facing - 0.5) / 0.12;
+      float ring = exp(-rd * rd) * (0.6 + 0.8 * sw);
       col = vec3(0.5, 0.8, 1.0) * ring * 1.6 + rim * vec3(0.3, 0.6, 1.0);
       alpha = max(core * 0.97, clamp(ring + rim * 0.6, 0.0, 1.0));
     }
