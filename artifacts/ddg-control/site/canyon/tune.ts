@@ -20,6 +20,9 @@ export const BRAND_FONTS: [string, string][] = [
 
 export const SPECS: Spec[] = [
   // Orb
+  { group: 'Orb', key: 'orbStyle', label: 'Style', min: 0, max: 8, step: 1, names: ['Spinning air (now)', 'Cloud core', 'Liquid pearl', 'Water in glass', 'Storm', 'Aurora', 'Neural net', 'Galaxy', 'Singularity'] },
+  { group: 'Orb', key: 'orbFlow', label: 'Movement inside (slow ← → fast)', min: 0.1, max: 4, step: 0.05 },
+  { group: 'Orb', key: 'orbHue', label: 'Colour turn', min: -180, max: 180, step: 5 },
   { group: 'Orb', key: 'orbSpin', label: 'Spin speed', min: 0, max: 3, step: 0.05 },
   { group: 'Orb', key: 'orbStreaks', label: 'White streaks', min: 0, max: 3, step: 0.05 },
   { group: 'Orb', key: 'orbSparks', label: 'Spark brightness', min: 0, max: 3, step: 0.05 },
@@ -97,6 +100,13 @@ export const SPECS: Spec[] = [
   { group: 'Quote', key: 'quoteWidth', label: 'Line length', min: 12, max: 70, step: 1 },
   { group: 'Quote', key: 'quoteLift', label: 'Move up / down', min: -5, max: 40, step: 0.5 },
   // Soft frosted-glass patch behind the quote
+  { group: 'Quote pop', key: 'qpFrame', label: 'Frame round it', min: 0, max: 5, step: 1, names: ['None', 'Thin outline', 'Glowing outline', 'Corner brackets', 'Line above and below', 'Light running round the edge'] },
+  { group: 'Quote pop', key: 'qpBright', label: 'Frame brightness', min: 0.05, max: 1, step: 0.05 },
+  { group: 'Quote pop', key: 'qpBlue', label: 'Frame colour (white ← → blue)', min: 0, max: 1, step: 0.05 },
+  { group: 'Quote pop', key: 'qpGlow', label: 'Glow behind the words', min: 0, max: 2, step: 0.05 },
+  { group: 'Quote pop', key: 'qpHi', label: 'Colour the "~25% cheaper" words (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Quote pop', key: 'qpAnim', label: 'Movement', min: 0, max: 3, step: 1, names: ['None', 'Shine sweeps across the words', 'Soft pulse', 'Gentle float'] },
+  { group: 'Quote pop', key: 'qpSpeed', label: 'Movement speed (slow ← → fast)', min: 0.3, max: 3, step: 0.05 },
   { group: 'Quote background', key: 'qbOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Quote background', key: 'qbDark', label: 'Darkness', min: 0, max: 1, step: 0.02 },
   { group: 'Quote background', key: 'qbBlur', label: 'Frost (blur behind)', min: 0, max: 40, step: 1 },
@@ -167,7 +177,7 @@ export const SPECS: Spec[] = [
 
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
-  orbSpin: 3, orbStreaks: 0.25, orbSparks: 2.05, orbSparkRate: 2.25, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
+  orbStyle: 0, orbFlow: 1, orbHue: 0, orbSpin: 3, orbStreaks: 0.25, orbSparks: 2.05, orbSparkRate: 2.25, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 1.7, swirlSize: 2.5, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
   waterGlint: 0.5, waterReflect: 1.15, waterColour: 1.2, waterSheen: 3, sprayAmount: 0, spraySize: 0,
   fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
@@ -175,6 +185,7 @@ export const DEFAULTS: Record<string, number> = {
   starsEvery: 2.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
   pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   quote: 15, quoteOn: 1, quoteFont: 0, quoteSize: 0.55, quoteWeight: 100, quoteSpacing: 0.09, quoteCaps: 0, quoteAlign: 1, quoteWidth: 39, quoteLift: 11,
+  qpFrame: 0, qpBright: 0.5, qpBlue: 0.6, qpGlow: 0, qpHi: 0, qpAnim: 0, qpSpeed: 1,
   qbOn: 1, qbDark: 0.58, qbBlur: 20, qbTint: 0.1, qbPadX: 182, qbPadY: 42, qbRadius: 40, qbFade: 26,
   bizLayout: 0,
   baseDark: 1, glowStrength: 0.8, glowHue1: 205, glowHue2: 170, glowSize: 1, glowMove: 0.6, edgeLight: 0.6, accentHue: 195, accentSat: 0.75, accentWords: 1,
@@ -319,7 +330,7 @@ const ARROWS = [
   '',
 ];
 export function applyBrand(): void {
-  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText;
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', 'qpFrame', 'qpBright', 'qpBlue', 'qpGlow', 'qpHi', 'qpAnim', 'qpSpeed', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText;
   // The hint fades away as soon as the visitor starts scrolling.
   const fade = String(Math.max(0, 1 - scrollY / (innerHeight * 0.2)).toFixed(3));
   if (fade !== lastFade) { lastFade = fade; document.documentElement.style.setProperty('--hint-fade', fade); }
@@ -339,7 +350,26 @@ export function applyBrand(): void {
   s.setProperty('--brand-font', fontOf(T.brandFont));
   // The quote under the orb.
   const q = document.querySelector<HTMLElement>('.cn-quote');
-  if (q) { q.textContent = TX.quoteText || QUOTES[T.quote] || QUOTES[0]; q.style.display = T.quoteOn ? '' : 'none'; }
+  if (q) {
+    const words = TX.quoteText || QUOTES[T.quote] || QUOTES[0];
+    const holder = q.querySelector<HTMLElement>('.cn-quote-t') ?? q;
+    // The price words ("~25% cheaper") can be picked out in the accent colour. Built as text nodes, never as HTML.
+    holder.textContent = '';
+    const parts = T.qpHi ? words.split(/(~?\d+%(?:\s+cheaper)?)/i) : [words];
+    parts.forEach((part, i) => {
+      if (!part) return;
+      if (i % 2) { const b = document.createElement('b'); b.className = 'cn-quote-hi'; b.textContent = part; holder.appendChild(b); }
+      else holder.appendChild(document.createTextNode(part));
+    });
+    q.style.display = T.quoteOn ? '' : 'none';
+    for (let i = 0; i <= 5; i++) q.classList.toggle(`qp-${i}`, T.qpFrame === i);
+    for (let i = 0; i <= 3; i++) q.classList.toggle(`qa-${i}`, T.qpAnim === i);
+  }
+  const b = T.qpBlue;
+  s.setProperty('--qp-rgb', `${Math.round(255 - 147 * b)},${Math.round(255 - 56 * b)},${Math.round(255 - 15 * b)}`);
+  s.setProperty('--qp-bright', String(T.qpBright));
+  s.setProperty('--qp-glow', String(T.qpGlow));
+  s.setProperty('--qp-dur', `${(6 / T.qpSpeed).toFixed(2)}s`);
   s.setProperty('--quote-font', fontOf(T.quoteFont));
   s.setProperty('--quote-size', String(T.quoteSize));
   s.setProperty('--quote-weight', String(T.quoteWeight));

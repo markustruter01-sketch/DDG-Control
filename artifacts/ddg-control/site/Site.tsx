@@ -126,7 +126,7 @@ function Home() {
           <div className="cn-follow">
             <h1 className="cn-brand"><img className="cn-logo-white" src="/ddg-logo-white-512.png" alt="" width="512" height="512" /><span>Digital Dynamics<br /><span className="cn-group">Group</span></span><span className="sr-only"> · {HOME.title}</span></h1>
             <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
-            <p className="cn-quote">{QUOTES[QUOTE]}</p>
+            <p className="cn-quote"><span className="cn-quote-t">{QUOTES[QUOTE]}</span></p>
             <a className="cn-cta" href="/#start" onClick={(e) => { e.preventDefault(); history.replaceState(null, '', '/#start'); toSection('start', true); }}>{HOME.cta} →</a>
             <div className="cn-scroll lay-0 anim-1" aria-hidden="true"><span className="cn-scroll-words">Scroll</span><span className="cn-scroll-arrow" /></div>
           </div>

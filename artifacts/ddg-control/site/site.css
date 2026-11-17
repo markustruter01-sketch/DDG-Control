@@ -376,6 +376,39 @@ p { margin: 0; }
   -webkit-mask-composite: source-in;
   mask-image: linear-gradient(to right, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent), linear-gradient(to bottom, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent);
   mask-composite: intersect; }
+/* Ways to make the quote stand out (all off by default; set from the tuner). A frame on ::after, a glow, movement. */
+@property --qp-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.cn-quote-t { display: block; text-shadow: 0 0 calc(14px * var(--qp-glow, 0)) rgba(var(--qp-rgb, 255,255,255), calc(0.55 * min(var(--qp-glow, 0), 1))), 0 0 calc(40px * var(--qp-glow, 0)) rgba(var(--qp-rgb, 255,255,255), calc(0.3 * min(var(--qp-glow, 0), 1))); }
+.cn-quote-hi { font-weight: 700; color: var(--j-accent, var(--ng-ice)); }
+.cn-quote::after { content: ''; position: absolute; z-index: -1; display: none; pointer-events: none; --c: rgba(var(--qp-rgb, 255,255,255), var(--qp-bright, 0.5));
+  inset: calc(-1 * var(--qb-pady, 34px)) calc(-1 * var(--qb-padx, 70px)); border-radius: var(--qb-radius, 40px); }
+.cn-quote.qp-1::after { display: block; border: 1px solid var(--c); }
+.cn-quote.qp-2::after { display: block; border: 1px solid var(--c); box-shadow: 0 0 26px rgba(var(--qp-rgb, 255,255,255), calc(0.6 * var(--qp-bright, 0.5))), inset 0 0 26px rgba(var(--qp-rgb, 255,255,255), calc(0.22 * var(--qp-bright, 0.5))); }
+.cn-quote.qp-3::after { display: block; border-radius: 0; --l: 22px;
+  background: linear-gradient(var(--c), var(--c)) left top / var(--l) 1px no-repeat, linear-gradient(var(--c), var(--c)) left top / 1px var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) right top / var(--l) 1px no-repeat, linear-gradient(var(--c), var(--c)) right top / 1px var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) left bottom / var(--l) 1px no-repeat, linear-gradient(var(--c), var(--c)) left bottom / 1px var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) right bottom / var(--l) 1px no-repeat, linear-gradient(var(--c), var(--c)) right bottom / 1px var(--l) no-repeat; }
+.cn-quote.qp-4::after { display: block; border-radius: 0;
+  background: linear-gradient(to right, transparent, var(--c), transparent) top / 100% 1px no-repeat, linear-gradient(to right, transparent, var(--c), transparent) bottom / 100% 1px no-repeat; }
+.cn-quote.qp-5::after { display: block; padding: 1.5px; background: conic-gradient(from var(--qp-ang), rgba(var(--qp-rgb, 255,255,255), calc(0.18 * var(--qp-bright, 0.5))) 0 62%, var(--c) 86%, #fff 92%, rgba(var(--qp-rgb, 255,255,255), calc(0.18 * var(--qp-bright, 0.5))) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: qp-run var(--qp-dur, 6s) linear infinite; }
+@keyframes qp-run { to { --qp-ang: 360deg; } }
+/* Movement. 1: a band of light crosses the words. 2: the glow and frame breathe. 3: the words drift up and down a little. */
+.cn-quote.qa-1 .cn-quote-t { text-shadow: none; color: transparent; -webkit-background-clip: text; background-clip: text;
+  background-image: linear-gradient(100deg, rgba(232,238,246,0.78) 0 42%, #fff 48%, rgb(var(--qp-rgb, 255,255,255)) 50%, #fff 52%, rgba(232,238,246,0.78) 58% 100%); background-size: 300% 100%;
+  animation: qa-shine var(--qp-dur, 6s) linear infinite; }
+.cn-quote.qa-1 .cn-quote-hi { -webkit-text-fill-color: var(--j-accent, var(--ng-ice)); }
+@keyframes qa-shine { from { background-position: 100% 0; } to { background-position: 0% 0; } }
+.cn-quote.qa-2 .cn-quote-t { animation: qa-pulse var(--qp-dur, 6s) ease-in-out infinite; }
+.cn-quote.qa-2::after { animation: qa-breathe var(--qp-dur, 6s) ease-in-out infinite; }
+.cn-quote.qa-2.qp-5::after { animation: qp-run var(--qp-dur, 6s) linear infinite, qa-breathe var(--qp-dur, 6s) ease-in-out infinite; }
+@keyframes qa-pulse { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; text-shadow: 0 0 calc(22px * (var(--qp-glow, 0) + 0.5)) rgba(var(--qp-rgb, 255,255,255), 0.7), 0 0 calc(56px * (var(--qp-glow, 0) + 0.5)) rgba(var(--qp-rgb, 255,255,255), 0.35); } }
+@keyframes qa-breathe { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+.cn-quote.qa-3 .cn-quote-t { animation: qa-float var(--qp-dur, 6s) ease-in-out infinite; }
+@keyframes qa-float { 0%, 100% { transform: translateY(3px); } 50% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .cn-quote .cn-quote-t, .cn-quote::after { animation: none !important; } }
 /* "Scroll down" with a moving arrow. Fades away once the visitor scrolls. */
 .cn-scroll { position: absolute; left: 0; right: 0; width: max-content; margin: 0 auto; top: calc(var(--sh-place, 11) * 1vh); transform: translateY(calc(var(--sh-place, 11) * -1% + var(--cn-dy, 0px)));
   display: flex; flex-direction: column; align-items: center; gap: calc(8px * var(--sh-size, 1)); pointer-events: none;

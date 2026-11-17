@@ -234,7 +234,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         topEl.style.setProperty('--cn-oy', `${a}px`); topEl.style.setProperty('--cn-or', `${b}px`); topEl.style.setProperty('--cn-dy', `${c}px`);
       }
       if (!reduced) { clock += dt; spinClock += dt * T.orbSpin; }
-      air.update(clock, 1 - away, spinClock, { bands: T.orbStreaks, zap: T.orbSparks, zapRate: T.orbSparkRate });
+      air.update(clock, 1 - away, spinClock, { bands: T.orbStreaks, zap: T.orbSparks, zapRate: T.orbSparkRate, style: T.orbStyle, hue: T.orbHue, flow: T.orbFlow });
       // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
       // into the first pipe on the page. The churning stops as the orb leaves.
       water.update({
