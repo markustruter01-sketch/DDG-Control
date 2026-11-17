@@ -42,7 +42,7 @@ function toSection(id: string, smooth: boolean) {
   document.getElementById(id)?.scrollIntoView({ behavior: smooth && !reducedMotion() ? 'smooth' : 'auto', block: 'start' });
 }
 
-function Nav() {
+function Nav({ home = false }: { home?: boolean }) {
   const [path, navigate] = useLocation();
   // A section link: on the home page it scrolls there; from another page it opens home at that section.
   const section = (id: string) => (e: MouseEvent<HTMLAnchorElement>) => {
@@ -54,7 +54,7 @@ function Nav() {
     } else navigate(`/#${id}`);
   };
   return (
-    <header className="s-nav">
+    <header className={home ? 's-nav s-nav-home' : 's-nav'}>
       <Link href="/" className="s-brand" aria-label="Digital Dynamics Group home"><img src={LOGO} alt="" /><b><span className="s-brand-full">Digital Dynamics Group</span><span className="s-brand-short">DDG</span></b></Link>
       <nav aria-label="Site">
         <a href="/#businesses" onClick={section('businesses')}>Businesses</a>
@@ -147,15 +147,13 @@ function Home() {
       <div className="cn-top">
         <Suspense fallback={null}><Stage fadeAt="work" /></Suspense>
         <section className="cn-hero">
-          <Nav />
+          <Nav home />
+          {/* The company's name and mark, above the orb. "We build it all." stands in the 3D scene. */}
+          <h1 className="cn-brand"><img src="/ddg-core-logo.png" alt="" /><span>Digital Dynamics<br />Group</span><span className="sr-only"> · {HOME.title}</span></h1>
           <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
           <ul className="cn-readout" aria-label="Our four businesses">
             {HOME.powers.map((b) => <li key={b.n}><em>{b.n}</em><b>{b.name}</b><span>{b.line}</span></li>)}
           </ul>
-          <div className="cn-sign">
-            <p className="s-eyebrow">{HOME.eyebrow}</p>
-            <h1>{HOME.title}</h1>
-          </div>
         </section>
         {/* Room to scroll while the canyon settles flat and the core lifts away. */}
         <div className="cn-room" aria-hidden="true" />

@@ -9,6 +9,7 @@ import { heightAt } from './landscapes';
 import { makeWater } from './water';
 import { makeGrass } from './grass';
 import { T, tuneOn, mountPanel } from './tune';
+import { makeWords } from './words3d';
 
 /**
  * Home background (fixed): a night sky with the Milky Way over a landscape of ice-blue lines (see landscapes.ts for its shape) with the DDG core, a fast-spinning
@@ -99,6 +100,11 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     scene.add(grass.mesh);
     disposables.push(...grass.disposables);
     const unmountPanel = tuneOn() ? mountPanel() : null;
+
+    // "We build it all." standing on the water in front of the orb.
+    const words = makeWords();
+    scene.add(words.group);
+    disposables.push(...words.disposables);
     let spinClock = 0;
 
     const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
@@ -152,6 +158,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1 - ease(k * 3), fogNear: fog.near, fogFar: fog.far,
       });
+      // The words face the screen, then sink into the river and fade as the visitor scrolls.
+      const wordsOut = ease(p / 0.4);
+      words.group.visible = wordsOut < 0.99;
+      words.group.position.set(0, (4.25 - 0.01 * 18) * (1 - k) - wordsOut * 2.2, 18);
+      words.group.quaternion.copy(camera.quaternion);
+      words.group.scale.setScalar(small ? 0.72 : 1);
+      words.mat.uniforms.uOpacity.value = 1 - wordsOut;
+      words.refl.uniforms.uOpacity.value = 0.12 * (1 - wordsOut);
       grass.mesh.visible = grassOn;
       grass.update(clock, 1 - k, orbit.position, fog.near, fog.far);
       if (!grassOn) grass.mesh.visible = false;

@@ -61,20 +61,20 @@ export const SPECS: Spec[] = [
   { group: 'Scene', key: 'gridLines', label: 'Line grid brightness (grass off)', min: 0, max: 3, step: 0.05 },
 ];
 
-// Markus's settings from the tuner, 17 Nov 2026.
+// Markus's settings from the tuner, 17 Nov 2026 (two rounds).
 export const DEFAULTS: Record<string, number> = {
-  orbSpin: 1.55, orbStreaks: 0.3, orbSparks: 0.3, orbSparkRate: 3.55, orbSize: 1.24, orbHeight: -0.2, orbGlow: 0.5,
-  waterDesign: 4, waterTexture: 2.35, waterRipples: 1.1, swirlSize: 1.75, swirlDepth: 2.1, swirlSpeed: 1, waterFoam: 2.1,
-  waterGlint: 0.3, waterReflect: 1.2, waterColour: 0.8, waterSheen: 0.95, sprayAmount: 0.25, spraySize: 1,
+  orbSpin: 0.35, orbStreaks: 0.15, orbSparks: 0, orbSparkRate: 3.55, orbSize: 1.24, orbHeight: -2, orbGlow: 1.4,
+  waterDesign: 4, waterTexture: 2.9, waterRipples: 1.1, swirlSize: 1.5, swirlDepth: 3, swirlSpeed: 1, waterFoam: 2.1,
+  waterGlint: 0.3, waterReflect: 0.65, waterColour: 0.8, waterSheen: 0.95, sprayAmount: 0, spraySize: 1,
   grassOn: 0, grassDensity: 1, grassHeight: 1.9, grassWidth: 1.55, grassTaper: 0.9, grassLean: 0.25, windStrength: 0.7, windSpeed: 1,
   windWaves: 0.2, windFlutter: 0.4, grassTip: 0.35, grassRoot: 3.3, grassSat: 1, grassHue: 0, grassPatches: 1.1, groundBright: 0,
-  exposure: 0.65, moon: 1.1, moonAngle: 0, backlight: 1.3, orbLight: 4, ambient: 0.7, sheen: 1.15,
+  exposure: 0.9, moon: 1.1, moonAngle: 0, backlight: 1.3, orbLight: 4, ambient: 1, sheen: 1.15,
   fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.45,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
 
-const STORE = 'ddg-scene-tune-2'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-3'; // new name, so old saved slider positions don't override these defaults
 export function tuneOn(): boolean {
   return !!(window as unknown as { __DDG_TUNE__?: unknown }).__DDG_TUNE__ || /tune/.test(location.hash);
 }
