@@ -12,6 +12,7 @@ import { makeClouds3D } from './clouds';
 import { makeWords } from './words3d';
 import { makeRiverPipe } from './riverPipe';
 import { makeStars } from './stars3d';
+import { onStableResize, stableHeight } from './viewport';
 
 /**
  * Home background (fixed): a night sky with the Milky Way over a landscape of ice-blue lines (see landscapes.ts for its shape) with the DDG core, a fast-spinning
@@ -131,8 +132,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const stars = makeStars(scene);
     disposables.push(...stars.disposables);
 
-    const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
-    resize(); addEventListener('resize', resize);
+    const resize = () => { const H = stableHeight(); renderer.setSize(innerWidth, H, false); camera.aspect = innerWidth / H; camera.updateProjectionMatrix(); };
+    resize(); const stopResize = onStableResize(resize);
 
     const look = new Vector3();
     // For keeping the name, frame and quote lined up with the orb while it moves.
@@ -142,7 +143,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const onScreen = (cam: PerspectiveCamera, at: Vector3, r: number) => {
       pv.copy(at).project(cam);
       const d = cam.position.distanceTo(at);
-      return [((1 - pv.y) / 2) * innerHeight, (r / (d * Math.tan((cam.fov * Math.PI) / 360))) * (innerHeight / 2)];
+      const H = stableHeight();
+      return [((1 - pv.y) / 2) * H, (r / (d * Math.tan((cam.fov * Math.PI) / 360))) * (H / 2)];
     };
     let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
     const frame = (now: number) => {
@@ -163,7 +165,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         }
       }
       smoothY += (scrollY - smoothY) * (reduced ? 1 : 0.12);
-      const vh = innerHeight;
+      const vh = stableHeight();
       // Fade the whole stage away as the first section after the canyon arrives.
       const fadeEl = document.getElementById(fadeAt);
       const top = fadeEl ? fadeEl.getBoundingClientRect().top : vh;
@@ -230,7 +232,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // on screen (3.5 px) and takes on its look; the page then draws its own pipe on top from the same spot.
       const join = ease((k - 0.75) / 0.25);
       const dist = camera.position.y - 0.15;
-      const pxWorld = (2 * dist * Math.tan((camera.fov * Math.PI) / 360)) / innerHeight;
+      const pxWorld = (2 * dist * Math.tan((camera.fov * Math.PI) / 360)) / vh;
       riverPipe.update(clock, 1 - k, orbit.position, 1, join, (1.75 * pxWorld) / (0.6 * T.pipeRadius));
       document.documentElement.style.setProperty('--pipe-join', String(join));
       // The words face the screen, then sink into the river and fade as the visitor scrolls.
@@ -252,7 +254,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     return () => {
       cancelAnimationFrame(raf);
       unmountPanel?.();
-      removeEventListener('resize', resize);
+      stopResize();
       disposables.forEach((d) => d.dispose());
       renderer.dispose();
     };
