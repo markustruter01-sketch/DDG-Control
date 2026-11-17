@@ -1,17 +1,53 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { makeInk, type Scene } from './inkfx';
 import { Link } from 'wouter';
 import { ABOUT, BUILT, RUN, SHOWCASE, type ShowcaseKey } from './content';
-import { ABOUT_ART, COFFEE_ART, CONTROL_ART, FINANCE_ART, FITNESS_ART } from './ink';
+import { ABOUT_SCENE, COFFEE_SCENE, CONTROL_SCENE, FINANCE_SCENE, FITNESS_SCENE } from './inkScenes';
 
 // The home page journey after the 3D first screen. Every panel marked data-pipe gets a water pipe
 // round its edge (canyon/wires.ts), in page order.
 
 const TURN_MS = 9000; // how long each business shows before the reel turns by itself
-const ART: Record<ShowcaseKey, string> = { finance: FINANCE_ART, coffee: COFFEE_ART, fitness: FITNESS_ART };
+const ART: Record<ShowcaseKey, Scene> = { finance: FINANCE_SCENE, coffee: COFFEE_SCENE, fitness: FITNESS_SCENE };
 
-/** A white-ink drawing (fixed SVG text from ink.ts, never visitor input). */
-const Art = ({ svg, className = '' }: { svg: string; className?: string }) => (
-  <div className={`j-art ${className}`} aria-hidden="true" dangerouslySetInnerHTML={{ __html: svg }} />
+/**
+ * A system explained in white ink (inkfx.ts): crisp line parts, one drop of liquid ink flowing through
+ * them. Only runs while on screen; with reduced motion it shows one still frame.
+ */
+function Art({ scene, className = '' }: { scene: Scene; className?: string }) {
+  const wrap = useRef<HTMLDivElement>(null), inkC = useRef<HTMLCanvasElement>(null), lineC = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const el = wrap.current, a = inkC.current, b = lineC.current;
+    if (!el || !a || !b) return;
+    const ink = a.getContext('2d')!, line = b.getContext('2d')!;
+    const fx = makeInk(scene);
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let raf = 0, seen = false;
+    const t0 = performance.now() - Math.random() * 4000;
+    const paint = (t: number) => fx.draw(ink, line, t);
+    const size = () => {
+      const w = el.clientWidth, h = (w * scene.h) / scene.w, d = Math.min(2, window.devicePixelRatio || 1);
+      for (const [c, x] of [[a, ink], [b, line]] as const) { c.width = Math.round(w * d); c.height = Math.round(h * d); x.setTransform((w * d) / scene.w, 0, 0, (h * d) / scene.h, 0, 0); }
+      paint(still ? 2.2 : (performance.now() - t0) / 1000);
+    };
+    const loop = (now: number) => { raf = 0; if (!seen) return; paint((now - t0) / 1000); raf = requestAnimationFrame(loop); };
+    const ro = new ResizeObserver(size); ro.observe(el);
+    const io = new IntersectionObserver(([e]) => { seen = e.isIntersecting; if (seen && !still && !raf) raf = requestAnimationFrame(loop); });
+    io.observe(el);
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); };
+  }, [scene]);
+  return (
+    <div className={`j-art ${className}`} aria-hidden="true">
+      <div className="j-ink" ref={wrap} style={{ aspectRatio: `${scene.w} / ${scene.h}` }}><canvas ref={lineC} /><canvas ref={inkC} className="j-goo" /></div>
+    </div>
+  );
+}
+
+/** The "goo" filter for the ink: blur, then a sharp cut-off, so touching drops melt together like liquid. */
+export const InkFilter = () => (
+  <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
+    <filter id="j-goo" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.4" /><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" /></filter>
+  </svg>
 );
 
 /** Small glass logos for each business, in the same white ink. */
@@ -28,6 +64,7 @@ const Mark = ({ k }: { k: ShowcaseKey }) => (
 export function About({ onSee }: { onSee: () => void }) {
   return (
     <section id="about" className="j-panel j-about" data-pipe aria-labelledby="about-title">
+      <InkFilter />
       <div className="j-text">
         <p className="s-eyebrow">{ABOUT.eyebrow}</p>
         <h2 id="about-title">{ABOUT.title}</h2>
@@ -37,7 +74,7 @@ export function About({ onSee }: { onSee: () => void }) {
           <Link className="s-btn fill" href="/start">{ABOUT.start} →</Link>
         </div>
       </div>
-      <Art svg={ABOUT_ART} />
+      <Art scene={ABOUT_SCENE} />
     </section>
   );
 }
@@ -93,7 +130,7 @@ export function Showcase() {
             return (
               <article key={b.key} className="j-card" data-pipe data-off={o} role="tabpanel" aria-label={`${i + 1} of ${n}: ${b.name}`}
                 aria-hidden={o !== 0} inert={o !== 0} onClick={o !== 0 ? () => go(i) : undefined}>
-                <Art svg={ART[b.key]} className="j-card-art" />
+                <Art scene={ART[b.key]} className="j-card-art" />
                 <div className="j-card-text">
                   <p className="j-count">{String(i + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}</p>
                   <div className="j-card-top"><Mark k={b.key} /><div><b>{b.name}</b><span className="j-kind">{b.kind}</span></div></div>
@@ -121,7 +158,7 @@ export function Showcase() {
 export function Run() {
   return (
     <section id="control" className="j-panel j-run" data-pipe aria-labelledby="run-title">
-      <Art svg={CONTROL_ART} />
+      <Art scene={CONTROL_SCENE} />
       <div className="j-text">
         <p className="s-eyebrow">{RUN.eyebrow}</p>
         <h2 id="run-title">{RUN.title}</h2>
