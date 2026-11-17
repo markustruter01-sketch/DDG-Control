@@ -270,7 +270,7 @@ export const PRIVACY = {
     { h: 'Who we are', p: ['Digital Dynamics Group Pty Ltd (ABN 66 687 743 193), Brisbane, Queensland. This page covers ddg.limited. Cattle Dog Coffee has its own privacy page on its own site.'] },
     { h: 'What we collect', p: [
       'When you send the enquiry form: your name, your email address and your answers (what you want built, what you have now, timing and budget).',
-      'We do not use advertising trackers or cookies on this website. Our web host keeps standard technical logs (such as IP address and browser type) to run and protect the site.',
+      'We do not use advertising trackers or cookies on this website. Our web host keeps standard technical logs (such as IP address and browser type) to run and protect the site. The page\u2019s fonts load from Google Fonts, so Google receives your IP address and browser type when the page opens.',
     ] },
     { h: 'Why we collect it', p: ['To read your enquiry, reply to you by email, and if you go ahead, quote and do the work. We do not sell your details and we do not add you to a mailing list.'] },
     { h: 'Who else sees it', p: ['Only the services we need to run the site and reply to you, such as our hosting and email providers. Some of these may store data outside Australia.'] },
