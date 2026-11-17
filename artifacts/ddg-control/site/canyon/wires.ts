@@ -219,11 +219,16 @@ function paint(svg: SVGSVGElement): void {
   });
 }
 
-/** Set how far the water should reach (a point 70% down the screen), then let it run there. */
+/** Set how far the water should reach (a point 70% down the screen, or the very end at the bottom of the page), then let it run there. */
 export function fillPipes(page: HTMLElement, svg: SVGSVGElement): void {
   const f = (svg as unknown as { _flow?: Flow })._flow;
   if (!f) return;
-  const front = window.innerHeight * 0.7 - page.getBoundingClientRect().top;
+  const vh = window.innerHeight, box = page.getBoundingClientRect();
+  // Near the end of the page the front slides down to the very bottom, so the water can finish.
+  const left = document.documentElement.scrollHeight - (window.scrollY + vh);
+  const end = Math.min(1, Math.max(0, 1 - left / (vh * 0.6)));
+  const line = vh * 0.7 + end * Math.max(0, box.bottom + 20 - vh * 0.7);
+  const front = line - box.top;
   let target = 0;
   for (const g of f.segs) for (const pt of g.pts) if (pt.y <= front && pt.s > target) target = pt.s;
   f.target = target;

@@ -125,6 +125,15 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     resize(); addEventListener('resize', resize);
 
     const look = new Vector3();
+    // For keeping the name, frame and quote lined up with the orb while it moves.
+    const restCam = new PerspectiveCamera(58, 1, 0.1, 500), restLook = new Vector3(0, 12, 2), pv = new Vector3();
+    const topEl = (document.querySelector('.cn-top') as HTMLElement | null) ?? document.documentElement;
+    let lastAlign = '';
+    const onScreen = (cam: PerspectiveCamera, at: Vector3, r: number) => {
+      pv.copy(at).project(cam);
+      const d = cam.position.distanceTo(at);
+      return [((1 - pv.y) / 2) * innerHeight, (r / (d * Math.tan((cam.fov * Math.PI) / 360))) * (innerHeight / 2)];
+    };
     let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
@@ -165,6 +174,21 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       orbit.position.set(0, CORE.y + T.orbHeight + away * 26, CORE.z - away * 10);
       orbit.scale.setScalar((small ? 1.44 : 2.19) * T.orbSize);
       haloMat.opacity = HALO * T.orbGlow * (1 - away);
+      // Where the orb is on screen now, and where it sits before any scrolling. The name and frame follow
+      // it exactly; the quote and the scroll hint move by the same amount as the orb's lower edge.
+      camera.updateMatrixWorld();
+      const R = ORB_R * orbit.scale.x, FRAME = 1.22;
+      const [oy, orR] = onScreen(camera, orbit.position, R);
+      restCam.fov = camera.fov; restCam.aspect = camera.aspect; restCam.updateProjectionMatrix();
+      restCam.position.set(0, 9, 42); restCam.lookAt(restLook); restCam.updateMatrixWorld();
+      pv.set(0, CORE.y + T.orbHeight, CORE.z);
+      const [oy0, or0] = onScreen(restCam, pv.clone(), R);
+      const align = `${(oy + scrollY).toFixed(1)}|${(orR * FRAME).toFixed(1)}|${(oy + orR * FRAME + scrollY - (oy0 + or0 * FRAME)).toFixed(1)}`;
+      if (align !== lastAlign) {
+        lastAlign = align;
+        const [a, b, c] = align.split('|');
+        topEl.style.setProperty('--cn-oy', `${a}px`); topEl.style.setProperty('--cn-or', `${b}px`); topEl.style.setProperty('--cn-dy', `${c}px`);
+      }
       if (!reduced) { clock += dt; spinClock += dt * T.orbSpin; }
       air.update(clock, 1 - away, spinClock, { bands: T.orbStreaks, zap: T.orbSparks, zapRate: T.orbSparkRate });
       // The river stays as the canyon flattens: seen from above it runs down the middle of the screen

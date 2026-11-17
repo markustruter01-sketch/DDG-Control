@@ -346,7 +346,7 @@ p { margin: 0; }
 .cn-star::after { content: ''; position: absolute; right: -2px; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px 3px rgba(190, 230, 255, 0.9); }
 @keyframes cn-star { 0% { opacity: 0; transform: rotate(var(--a)) translateX(0) scaleX(0.5); } 12% { opacity: 1; }
   75% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scaleX(1); } }
-.cn-hero { position: relative; z-index: 1; height: 100vh; min-height: 560px; overflow: hidden; text-shadow: 0 1px 22px rgba(7, 8, 11, 0.9); }
+.cn-hero { position: relative; z-index: 1; height: 100vh; min-height: 560px; overflow-x: clip; text-shadow: 0 1px 22px rgba(7, 8, 11, 0.9); }
 /* Darker at the top and the edges, so the words read clearly over the stars. */
 .cn-hero::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: linear-gradient(180deg, rgba(7,8,11,0.6) 0%, rgba(7,8,11,0.25) 26%, rgba(7,8,11,0) 46%), radial-gradient(120% 90% at 50% 55%, rgba(7,8,11,0) 55%, rgba(7,8,11,0.55) 100%); }
@@ -360,7 +360,8 @@ p { margin: 0; }
 .cn-tag { position: absolute; left: calc(50% + var(--cn-or) + 14px); top: calc(var(--cn-oy) - var(--cn-or) - 4px); font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ng-ice); white-space: nowrap; }
 .cn-quote { position: absolute; left: var(--quote-left, var(--s-gutter)); right: var(--quote-right, auto); bottom: calc(6vh + var(--quote-lift, 0vh)); margin: 0 auto; max-width: min(var(--quote-width, 30ch), calc(100% - 2 * var(--s-gutter)));
   text-align: var(--quote-align, left); font-family: var(--quote-font, var(--brand-font, inherit)); font-size: calc(clamp(18px, 1.6vw, 28px) * var(--quote-size, 1));
-  font-weight: var(--quote-weight, 300); letter-spacing: var(--quote-track, 0); line-height: 1.25; color: var(--ng-text); text-transform: var(--quote-case, none); isolation: isolate; }
+  font-weight: var(--quote-weight, 300); letter-spacing: var(--quote-track, 0); line-height: 1.25; color: var(--ng-text); text-transform: var(--quote-case, none); isolation: isolate;
+  transform: translateY(var(--cn-dy, 0px)); }
 /* Dark frosted glass behind the quote. Its edges fade out on all sides, so it melts into the scene. */
 .cn-quote::before { content: ''; position: absolute; z-index: -1; display: var(--qb-show, block); pointer-events: none;
   inset: calc(-1 * var(--qb-pady, 34px)) calc(-1 * var(--qb-padx, 70px)); border-radius: var(--qb-radius, 40px);
@@ -371,7 +372,7 @@ p { margin: 0; }
   mask-image: linear-gradient(to right, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent), linear-gradient(to bottom, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent);
   mask-composite: intersect; }
 /* "Scroll down" with a moving arrow. Fades away once the visitor scrolls. */
-.cn-scroll { position: absolute; left: 0; right: 0; width: max-content; margin: 0 auto; top: calc(var(--sh-place, 11) * 1vh); transform: translateY(calc(var(--sh-place, 11) * -1%));
+.cn-scroll { position: absolute; left: 0; right: 0; width: max-content; margin: 0 auto; top: calc(var(--sh-place, 11) * 1vh); transform: translateY(calc(var(--sh-place, 11) * -1% + var(--cn-dy, 0px)));
   display: flex; flex-direction: column; align-items: center; gap: calc(8px * var(--sh-size, 1)); pointer-events: none;
   color: var(--ng-text); opacity: calc(var(--sh-bright, 0.7) * var(--hint-fade, 1)); font-family: var(--sh-font, inherit);
   font-size: calc(11px * var(--sh-size, 1)); letter-spacing: var(--sh-track, 0.3em); text-transform: var(--sh-case, uppercase); }
