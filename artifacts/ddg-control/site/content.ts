@@ -56,6 +56,7 @@ export const SITE_BUSINESSES: SiteBusiness[] = [
   { key: 'coffee', name: 'Cattle Dog Coffee', kind: 'Online store', href: PUBLIC_SITES.coffee, external: true, imgs: [
     { src: '/work/coffee-1.webp', cap: 'The store your customers see: pick a blend and size, pay by card or subscribe, with the charity total counted live.', alt: 'The Cattle Dog Coffee store on a phone: home page and a product page' },
     { src: '/work/coffee-2.webp', cap: 'The back office we built behind it: sales, margin, stock and every order\u2019s status, updated as orders come in.', alt: 'The Cattle Dog Coffee admin dashboard with sales charts' },
+    { src: '/work/coffee-3.webp', cap: 'Orders and dispatch: every order from paid to delivered, with one-click customer emails. Customer details are blurred here.', alt: 'The Cattle Dog Coffee orders and dispatch screen, customer details blurred' },
   ] },
   { key: 'greenlight', name: 'DDG Greenlight', kind: 'Compliance engine', href: 'https://ddg-greenlight.replit.app/', external: true, imgs: [{ src: '/work/greenlight.webp', cap: 'Seven steps from your code to proof: check it, see what is wrong, fix it, then check it again.', alt: 'DDG Greenlight: check my code' }] },
 ];
