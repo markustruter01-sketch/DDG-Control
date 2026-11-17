@@ -65,20 +65,34 @@ export function mountPageClouds(): () => void {
   reseed(33);
   const clouds = Array.from({ length: 40 }, () => ({ x: rand(), y: rand(), size: 0.6 + rand() * 0.9, pic: Math.floor(rand() * pics.length), drift: 0.4 + rand(), depth: 0.6 + rand() * 0.8 }));
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let raf = 0;
+  let raf = 0, lastDraw = 0, blurFor = -1, soft: HTMLCanvasElement[] = pics;
   const t0 = performance.now();
-  const size = () => { canvas.width = innerWidth; canvas.height = innerHeight; };
+  const size = () => { canvas.width = innerWidth; canvas.height = innerHeight; lastDraw = 0; };
   size(); addEventListener('resize', size);
+  // Softened copies of the pictures, made once per blur setting (blurring every frame is costly).
+  const soften = (b: number) => pics.map((p) => {
+    if (b <= 0) return p;
+    const pad = Math.ceil(b * 2), c = document.createElement('canvas'); c.width = p.width + pad * 2; c.height = p.height + pad * 2;
+    const x = c.getContext('2d')!; x.filter = `blur(${b}px)`; x.drawImage(p, pad, pad); return c;
+  });
+  const page = document.querySelector<HTMLElement>('.cn-page');
+  let lastY = -1;
   const frame = (now: number) => {
     raf = requestAnimationFrame(frame);
+    // Nothing to draw while the first screen still covers the layer, or the tab is hidden.
     if (document.hidden) return;
+    const top = page ? page.getBoundingClientRect().top : 0;
+    if (top > innerHeight) { if (lastDraw) { g.clearRect(0, 0, canvas.width, canvas.height); lastDraw = 0; } return; }
+    // About 30 frames a second is plenty for slow clouds; redraw sooner when the page scrolls.
+    if (now - lastDraw < 33 && scrollY === lastY) return;
+    lastDraw = now; lastY = scrollY;
+    if (T.pageCloudBlur !== blurFor) { blurFor = T.pageCloudBlur; soft = soften(blurFor); }
     const W = canvas.width, H = canvas.height, t = still ? 0 : (now - t0) / 1000;
     g.clearRect(0, 0, W, H);
     if (T.pageClouds <= 0) return;
-    canvas.style.filter = T.pageCloudBlur > 0 ? `blur(${T.pageCloudBlur}px)` : '';
     const n = Math.round(clouds.length * T.pageClouds), span = H * 2.2;
     for (let i = 0; i < n; i++) {
-      const c = clouds[i], p = pics[c.pic];
+      const c = clouds[i], p = soft[c.pic];
       const w = W * 0.45 * T.pageCloudSize * c.size, h = (w * p.height) / p.width;
       const x = ((c.x * (W + w) + t * 8 * T.pageCloudDrift * c.drift) % (W + w) + (W + w)) % (W + w) - w;
       const y = ((c.y * span - scrollY * T.pageCloudDepth * 0.5 * c.depth) % span + span) % span - h;

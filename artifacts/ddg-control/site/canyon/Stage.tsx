@@ -225,7 +225,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       words.mat.uniforms.uOpacity.value = 1 - wordsOut;
       words.mat.uniforms.uBright.value = T.wordsBright; words.refl.uniforms.uBright.value = T.wordsBright;
       words.refl.uniforms.uOpacity.value = T.wordsReflect * (1 - wordsOut);
-      clouds.update(clock, camera, 1 - k, show);
+      clouds.update(clock, camera, 1 - k, show, orbit.position);
       stars.update(now, camera, T, k < 0.3);
       renderer.render(scene, camera);
     };

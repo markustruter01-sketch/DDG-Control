@@ -419,7 +419,9 @@ p { margin: 0; }
 }
 
 /* ── Home, below the first screen: the sections, joined by pipes of the same water ─────────────── */
-.cn-page { position: relative; z-index: 1; background: transparent; } /* clouds (.cn-clouds) show through, behind the glass */
+/* The page's colour carries on from the feathered edge above, then thins out over the first screen-height
+   so the 3D scene underneath is gone before the clouds (.cn-clouds) show through, with no hard line. */
+.cn-page { position: relative; z-index: 1; background: linear-gradient(180deg, var(--ng-graphite) 0, var(--ng-graphite) 30vh, rgba(20, 21, 24, 0) 120vh) no-repeat; }
 .cn-clouds { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 /* The page below slides up over the first screen as one sheet with a long feathered top edge,
    so the night scene melts into the page colour instead of ending on a hard line. */
