@@ -49,7 +49,7 @@ export type SiteBusiness = {
 
 export const SITE_BUSINESSES: SiteBusiness[] = [
   { key: 'coffee', name: 'DDG Coffee', product: 'Cattle Dog Coffee', accent: BUSINESS_ACCENT.coffee, status: 'Open now',
-    line: 'Coffee beans delivered to your door. $1 from every bag goes to RSPCA Queensland.',
+    line: 'Coffee beans delivered to your door. $1 from every bag goes to animal charities.',
     built: ['Online shop with Stripe checkout', 'Orders and charity tracked live', 'Sales feed into our command centre'],
     link: { label: 'Shop coffee', href: site('coffee'), external: true } },
   { key: 'finance', name: 'DDG Finance', product: 'Trading platform', accent: BUSINESS_ACCENT.finance, status: 'From 1 Jan 2027',
@@ -63,9 +63,8 @@ export const SITE_BUSINESSES: SiteBusiness[] = [
 ];
 
 export const CHARITY = {
-  title: 'Helping RSPCA Queensland',
-  body: 'Every bag of Cattle Dog Coffee gives $1 to RSPCA Queensland. From 1 January 2027, 1% of everything else DDG earns, from Finance and Fitness, goes to them too. Want to help directly? Donate to RSPCA Queensland.',
-  donate: { label: 'Donate to RSPCA Queensland', href: 'https://www.rspcaqld.org.au/get-involved/ways-you-can-donate/make-a-donation' },
+  title: 'Helping animal charities',
+  body: 'Every bag of Cattle Dog Coffee raises $1 for animal charities. We pay it over in $100 lots. From 1 January 2027, 1% of DDG\'s other revenue, from Finance and Fitness, goes to them too.',
 };
 
 
