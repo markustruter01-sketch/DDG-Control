@@ -18,7 +18,7 @@ p { margin: 0; }
 /* Nav */
 /* Side margin of the first screen: grows with the screen, so wide monitors are used, not left empty. */
 :root { --s-gutter: clamp(16px, 4vw, 96px); }
-.s-nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; margin: 0 auto; padding: 20px var(--s-gutter); width: 100%; box-sizing: border-box; }
+.s-nav { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); /* equal side columns, so the menu is truly centred */ align-items: center; gap: 16px; margin: 0 auto; padding: 20px var(--s-gutter); width: 100%; box-sizing: border-box; }
 /* Name and logo in the middle of the top bar; links on the right. */
 .s-nav .s-brand { grid-column: 1; justify-self: start; }
 /* The menu sits in the middle of the screen (Markus, 17 Nov). */
@@ -631,3 +631,9 @@ p { margin: 0; }
 /* Short screens (phones turned sideways, small laptops): smaller quote so it stays between the orb and the button. */
 @media (max-height: 560px) { .cn-quote { font-size: calc(clamp(14px, 1.6vw, 20px) * var(--quote-size, 1)); } .cn-follow { --cta-gap: 10px; --cta-h: 44px; } }
 .cn-cta:hover { background: #fff; }
+
+/* Tall phone screens: the scroll hint sits in the gap between the name and the orb, following the orb,
+   instead of at a fixed height (which could land on the name or the orb once the scene is lifted). */
+@media (max-aspect-ratio: 4/5) {
+  .cn-scroll { top: calc(var(--cn-oy) - var(--cn-or) - 9vh); transform: none; }
+}

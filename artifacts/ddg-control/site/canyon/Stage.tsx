@@ -132,7 +132,17 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const stars = makeStars(scene);
     disposables.push(...stars.disposables);
 
-    const resize = () => { const H = stableHeight(); renderer.setSize(innerWidth, H, false); camera.aspect = innerWidth / H; camera.updateProjectionMatrix(); };
+    // Tall phone screens: the scene is framed for wide screens, so on a phone the orb sat low, near the quote,
+    // with empty sky above. Slide the picture up by part of the screen height (none on wide screens, ~17% on a
+    // tall phone). The word positions are worked out from the same camera, so they follow automatically.
+    let liftPx = 0;
+    const portraitLift = (W: number, H: number) => Math.min(1, Math.max(0, (H / W - 1.15) / 0.8)) * 0.17 * H;
+    const resize = () => {
+      const H = stableHeight(); renderer.setSize(innerWidth, H, false); camera.aspect = innerWidth / H;
+      liftPx = portraitLift(innerWidth, H);
+      if (liftPx > 0) camera.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); else camera.clearViewOffset();
+      camera.updateProjectionMatrix();
+    };
     resize(); const stopResize = onStableResize(resize);
 
     const look = new Vector3();
@@ -205,7 +215,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       camera.updateMatrixWorld();
       const R = ORB_R * orbit.scale.x, FRAME = 1.22;
       const [oy, orR] = onScreen(camera, orbit.position, R);
-      restCam.fov = camera.fov; restCam.aspect = camera.aspect; restCam.updateProjectionMatrix();
+      restCam.fov = camera.fov; restCam.aspect = camera.aspect;
+      if (liftPx > 0) { const H = stableHeight(); restCam.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); } else restCam.clearViewOffset();
+      restCam.updateProjectionMatrix();
       restCam.position.set(0, 9, 42); restCam.lookAt(restLook); restCam.updateMatrixWorld();
       pv.set(0, CORE.y + T.orbHeight, CORE.z);
       const [oy0, or0] = onScreen(restCam, pv.clone(), R);
