@@ -21,12 +21,23 @@ uniform vec3 uTint;
 uniform float uOpacity;
 uniform float uRim;
 uniform float uShow;
+uniform float uJoin; // 0 = glass pipe in the river; 1 = drawn exactly like the page's pipes (thin glass, blue water)
 uniform vec3 uOrbPos;
 varying vec3 vN;
 varying vec3 vW;
 void main() {
   vec3 v = normalize(cameraPosition - vW), n = normalize(vN);
   float f = pow(1.0 - abs(dot(n, v)), 2.5);
+  if (uJoin > 0.001) {
+    // The page pipe in cross-section: a faint light wall, then blue water in the middle.
+    float across = abs(dot(n, v));
+    vec3 page = mix(vec3(0.17, 0.18, 0.2), vec3(0.165, 0.56, 0.74), smoothstep(0.55, 0.75, across));
+    page = mix(vec3(0.04, 0.05, 0.08), page, smoothstep(0.15, 0.3, across));
+    vec3 toO = normalize(uOrbPos - vW);
+    vec3 glassCol = uTint * (0.25 + 1.6 * f * uRim);
+    gl_FragColor = vec4(mix(glassCol, page, uJoin), mix(uOpacity + f * 0.55 * uRim, 1.0, uJoin) * uShow);
+    return;
+  }
   vec3 toOrb = normalize(uOrbPos - vW);
   float spec = pow(max(dot(reflect(-toOrb, n), v), 0.0), 40.0);
   vec3 col = uTint * (0.25 + 1.6 * f * uRim) + vec3(0.9, 0.97, 1.0) * spec * 0.8;
@@ -70,7 +81,7 @@ export function makeRiverPipe({ heightAt, zFar, zNear, small }: Opts) {
   const glowTube = new TubeGeometry(curve, 300, 1, 20, false);
 
   const tint = new Color(0x6cc7f0);
-  const shared = { uTint: { value: tint }, uShow: { value: 1 }, uOrbPos: { value: new Vector3() } };
+  const shared = { uTint: { value: tint }, uShow: { value: 1 }, uJoin: { value: 0 }, uOrbPos: { value: new Vector3() } };
   const glass = new ShaderMaterial({
     vertexShader: GLASS_VERT, fragmentShader: GLASS_FRAG, transparent: true, depthWrite: false, side: FrontSide,
     uniforms: { ...shared, uOpacity: { value: 0.12 }, uRim: { value: 1 } },
@@ -113,11 +124,15 @@ export function makeRiverPipe({ heightAt, zFar, zNear, small }: Opts) {
   };
 
   /** `flat` follows the land as it flattens (1 = full height); `show` fades it with the stage. */
-  const update = (t: number, flat: number, orb: Vector3, show: number) => {
+  /** `join` (0-1): near the end of the scroll the pipe narrows to `joinWidth` (a fraction of its own width)
+   *  and takes on the page pipe's look, so it runs straight into the first pipe on the page. */
+  const update = (t: number, flat: number, orb: Vector3, show: number, join = 0, joinWidth = 1) => {
     if (!group.visible) return;
-    group.scale.set(1, Math.max(flat, 0.02), 1);
+    group.scale.set(1 + (joinWidth - 1) * join, Math.max(flat, 0.02), 1);
+    shared.uJoin.value = join; halo.visible = join < 0.98;
+    dotMat.uniforms.uShow.value = show * (1 - join);
     group.position.y = (1 - flat) * 0.15 + lift * flat;
-    shared.uShow.value = show; dotMat.uniforms.uShow.value = show; shared.uOrbPos.value.copy(orb);
+    shared.uShow.value = show; shared.uOrbPos.value.copy(orb);
     const n = Math.round(MAX * Math.min(1, count));
     for (let i = 0; i < MAX; i++) {
       if (i >= n) { one.scale.setScalar(0); one.updateMatrix(); dots.setMatrixAt(i, one.matrix); continue; }

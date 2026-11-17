@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import {
   AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, DynamicDrawUsage, Fog, Group,
-  LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, WebGLRenderer,
+  LineSegments, Mesh, ShaderMaterial, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
 import { makeAirOrb } from './airOrb';
 import { makeSky } from './sky';
@@ -10,6 +10,7 @@ import { makeWater } from './water';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeWords } from './words3d';
 import { makeRiverPipe } from './riverPipe';
+import { makeStars } from './stars3d';
 
 /**
  * Home background (fixed): a night sky with the Milky Way over a landscape of ice-blue lines (see landscapes.ts for its shape) with the DDG core, a fast-spinning
@@ -68,7 +69,16 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const lineGeo = new BufferGeometry(); lineGeo.setAttribute('position', attr); lineGeo.setIndex(seg);
     // Both sides: the grid's triangles face downwards, so one-sided the surface was never drawn from above.
     const surfMat = new MeshBasicMaterial({ color: 0x07090f, side: DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
-    const lineMat = new LineBasicMaterial({ color: 0x6cc7f0, transparent: true, opacity: 0.34 });
+    // The land's lines, hidden wherever the river covers the ground (so no grid shows under or over the water).
+    lineGeo.setAttribute('aBase', new BufferAttribute(base, 1));
+    const lineMat = new ShaderMaterial({
+      transparent: true,
+      uniforms: { uOpacity: { value: 0.34 }, uFogNear: { value: 30 }, uFogFar: { value: 150 } },
+      vertexShader: `attribute float aBase; varying float vWet; varying float vDist;
+        void main() { vWet = step(aBase, 4.62 - 0.01 * position.z); vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: `uniform float uOpacity; uniform float uFogNear; uniform float uFogFar; varying float vWet; varying float vDist;
+        void main() { if (vWet > 0.5) discard; gl_FragColor = vec4(0.42, 0.78, 0.94, uOpacity * (1.0 - smoothstep(uFogNear, uFogFar, vDist))); }`,
+    });
     const land = new Mesh(surfGeo, surfMat);
     scene.add(land, new LineSegments(lineGeo, lineMat));
     disposables.push(surfGeo, lineGeo, surfMat, lineMat);
@@ -108,6 +118,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     scene.add(riverPipe.group);
     disposables.push(...riverPipe.disposables);
     let pipeR = -1;
+    const stars = makeStars(scene);
+    disposables.push(...stars.disposables);
 
     const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
     resize(); addEventListener('resize', resize);
@@ -124,7 +136,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const top = fadeEl ? fadeEl.getBoundingClientRect().top : vh;
       const show = Math.min(1, Math.max(0, (top - vh * 0.3) / (vh * 0.55)));
       stage.style.opacity = String(show);
-      if (show <= 0) return;
+      if (show <= 0) { document.documentElement.style.setProperty('--pipe-join', '1'); return; }
 
       // 0 → 1 over the hero and the room after it: the canyon settles into a flat grid seen from above.
       const p = Math.min(1, Math.max(0, smoothY / (vh * 1.35)));
@@ -134,13 +146,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         for (let i = 0; i < count; i++) pos[i * 3 + 1] = base[i] * flat;
         attr.needsUpdate = true; shownK = k;
       }
-      lineMat.opacity = lerp(0.34, 0.16, k) * T.gridLines;
+      lineMat.uniforms.uOpacity.value = lerp(0.34, 0.16, k) * T.gridLines;
       water.setLook(T); riverPipe.setLook(T);
       if (T.pipeRadius !== pipeR) { pipeR = T.pipeRadius; riverPipe.rebuild(0.6 * pipeR); }
       applyBrand();
       if (camera.fov !== T.fov) { camera.fov = T.fov; camera.updateProjectionMatrix(); }
       const fog = scene.fog as Fog;
       fog.near = lerp(30, 200, k) * T.fogNear; fog.far = Math.max(fog.near + 1, lerp(150, 420, k) * T.fogFar);
+      lineMat.uniforms.uFogNear.value = fog.near; lineMat.uniforms.uFogFar.value = fog.far;
       const camZ = lerp(42, 0, ease(p * 1.2));
       camera.position.set(0, lerp(9, small ? 95 : 70, k), camZ);
       look.set(0, lerp(12, 0, k), lerp(camZ - 40, camZ - 0.01, k));
@@ -160,7 +173,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far,
       });
-      riverPipe.update(clock, 1 - k, orbit.position, 1);
+      // The join: once the land is almost flat, the riverbed pipe narrows to exactly the page pipe's width
+      // on screen (3.5 px) and takes on its look; the page then draws its own pipe on top from the same spot.
+      const join = ease((k - 0.75) / 0.25);
+      const dist = camera.position.y - 0.15;
+      const pxWorld = (2 * dist * Math.tan((camera.fov * Math.PI) / 360)) / innerHeight;
+      riverPipe.update(clock, 1 - k, orbit.position, 1, join, (1.75 * pxWorld) / (0.6 * T.pipeRadius));
+      document.documentElement.style.setProperty('--pipe-join', String(join));
       // The words face the screen, then sink into the river and fade as the visitor scrolls.
       const wordsOut = ease(p / T.wordsFade);
       if (T.wordsOn > 0.5) words.setFont(T.wordsFont);
@@ -172,6 +191,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       words.mat.uniforms.uOpacity.value = 1 - wordsOut;
       words.mat.uniforms.uBright.value = T.wordsBright; words.refl.uniforms.uBright.value = T.wordsBright;
       words.refl.uniforms.uOpacity.value = T.wordsReflect * (1 - wordsOut);
+      stars.update(now, camera, T, k < 0.3);
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(frame);
@@ -184,32 +204,5 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     };
   }, [fadeAt]);
 
-  return <div className="cn-stage" ref={stageRef} aria-hidden="true"><canvas ref={canvasRef} /><ShootingStars /></div>;
-}
-
-/** Now and then a shooting star crosses the upper sky: a random one every 5 to 8 seconds. */
-function ShootingStars() {
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = box.current;
-    if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let timer = 0;
-    const next = () => { timer = window.setTimeout(fire, T.starsEvery * 1000 * (0.77 + Math.random() * 0.46)); };
-    const fire = () => {
-      if (T.starsOn > 0.5 && !document.hidden && scrollY < innerHeight * 0.6) {
-        const s = document.createElement('i');
-        const right = Math.random() < 0.5, ang = (right ? 1 : -1) * (14 + Math.random() * 22) * T.starsSteep; // degrees below level
-        const len = (260 + Math.random() * 260) * T.starsLength;
-        s.className = 'cn-star';
-        s.style.cssText = `left:${right ? 5 + Math.random() * 50 : 45 + Math.random() * 50}%;top:${4 + Math.random() * 26}%;` +
-          `--a:${right ? ang : 180 + ang}deg;--d:${len}px;--t:${(0.7 + Math.random() * 0.5) / T.starsSpeed}s;--sl:${T.starsLength};--sw:${T.starsWidth};--sb:${T.starsBright}`;
-        el.appendChild(s);
-        setTimeout(() => s.remove(), 1600 / T.starsSpeed + 200);
-      }
-      next();
-    };
-    next();
-    return () => clearTimeout(timer);
-  }, []);
-  return <div className="cn-sky" ref={box} />;
+  return <div className="cn-stage" ref={stageRef} aria-hidden="true"><canvas ref={canvasRef} /></div>;
 }

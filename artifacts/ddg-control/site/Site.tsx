@@ -11,7 +11,7 @@ import { Build, EnquiryForm } from './Build';
 import { FinancePage } from './Finance';
 import { QuotePage } from './Quote';
 import { drawPipes, fillPipes } from './canyon/wires';
-import { CHARITY, COMPANY, CONTROL_CASE, HIRE, HOME, SITE_BUSINESSES, START, WORK, type SiteBusiness } from './content';
+import { CHARITY, COMPANY, CONTROL_CASE, HIRE, HOME, SITE_BUSINESSES, START, WORK, type SiteBusiness, QUOTES } from './content';
 
 // The 3D first screen is loaded on its own, so the page's words never wait for it.
 const Stage = lazy(() => import('./canyon/Stage'));
@@ -132,6 +132,9 @@ function usePipes() {
   return { page, svg };
 }
 
+/** Which quote shows under the orb (index into QUOTES); the tuner can switch it live. */
+const QUOTE = 0;
+
 function Home() {
   const summary = usePublicSummary();
   const pipes = usePipes();
@@ -151,9 +154,7 @@ function Home() {
           {/* The company's name and mark, above the orb. "We build it all." stands in the 3D scene. */}
           <h1 className="cn-brand"><img className="cn-logo-glitch" src="/ddg-core-logo.png" alt="" /><img className="cn-logo-white" src="/ddg-logo-white-512.png" alt="" /><span>Digital Dynamics<br /><span className="cn-group">Group</span></span><span className="sr-only"> · {HOME.title}</span></h1>
           <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
-          <ul className="cn-readout" aria-label="Our four businesses">
-            {HOME.powers.map((b) => <li key={b.n}><em>{b.n}</em><b>{b.name}</b><span>{b.line}</span></li>)}
-          </ul>
+          <p className="cn-quote">{QUOTES[QUOTE]}</p>
         </section>
         {/* Room to scroll while the canyon settles flat and the core lifts away. */}
         <div className="cn-room" aria-hidden="true" />

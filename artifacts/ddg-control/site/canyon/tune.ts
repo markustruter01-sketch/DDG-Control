@@ -6,6 +6,8 @@
 
 type Spec = { key: string; label: string; min: number; max: number; step: number; group: string; names?: string[] };
 
+import { QUOTES } from '../content';
+
 /** 3D fonts for "We build it all." (they come with three.js). */
 export const WORD_FONTS = ['Helvetiker', 'Helvetiker Bold', 'Optimer', 'Optimer Bold', 'Gentilis', 'Gentilis Bold', 'Droid Sans', 'Droid Sans Bold', 'Droid Serif', 'Droid Serif Bold', 'Droid Sans Mono'];
 /** Web fonts for the name. [name shown, Google Fonts family or '' for the site's own font]. */
@@ -76,6 +78,17 @@ export const SPECS: Spec[] = [
   { group: 'Words (We build it all.)', key: 'wordsBright', label: 'Brightness', min: 0, max: 2, step: 0.05 },
   { group: 'Words (We build it all.)', key: 'wordsReflect', label: 'Reflection in water', min: 0, max: 1, step: 0.02 },
   { group: 'Words (We build it all.)', key: 'wordsFade', label: 'How long they stay when scrolling', min: 0.1, max: 1.5, step: 0.05 },
+  // The quote under the orb
+  { group: 'Quote', key: 'quote', label: 'Which quote', min: 0, max: 9, step: 1, names: QUOTES },
+  { group: 'Quote', key: 'quoteOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Quote', key: 'quoteFont', label: 'Font', min: 0, max: 13, step: 1, names: BRAND_FONTS.map((f) => f[0]) },
+  { group: 'Quote', key: 'quoteSize', label: 'Text size', min: 0.4, max: 3, step: 0.05 },
+  { group: 'Quote', key: 'quoteWeight', label: 'Weight (thin ← → heavy)', min: 100, max: 900, step: 100 },
+  { group: 'Quote', key: 'quoteSpacing', label: 'Letter spacing', min: -0.05, max: 0.4, step: 0.01 },
+  { group: 'Quote', key: 'quoteCaps', label: 'Capitals (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Quote', key: 'quoteAlign', label: 'Place (0 left, 1 middle, 2 right)', min: 0, max: 2, step: 1 },
+  { group: 'Quote', key: 'quoteWidth', label: 'Line length', min: 12, max: 70, step: 1 },
+  { group: 'Quote', key: 'quoteLift', label: 'Move up / down', min: -5, max: 40, step: 0.5 },
   // The name and logo above the orb
   { group: 'Name and logo', key: 'brandFont', label: 'Font', min: 0, max: 13, step: 1, names: BRAND_FONTS.map((f) => f[0]) },
   { group: 'Name and logo', key: 'brandSize', label: 'Text size', min: 0.5, max: 2.5, step: 0.05 },
@@ -91,21 +104,22 @@ export const SPECS: Spec[] = [
   { group: 'Name and logo', key: 'brandLift', label: 'Move up / down', min: -20, max: 30, step: 0.5 },
 ];
 
-// Markus's settings from the tuner, 17 Nov 2026 (four rounds).
+// Markus's settings from the tuner, 17 Nov 2026 (five rounds).
 export const DEFAULTS: Record<string, number> = {
-  orbSpin: 2.15, orbStreaks: 0.25, orbSparks: 0.45, orbSparkRate: 2.75, orbSize: 1.14, orbHeight: -2.7, orbGlow: 1.4,
+  orbSpin: 2.15, orbStreaks: 0.25, orbSparks: 0.45, orbSparkRate: 2.75, orbSize: 1.32, orbHeight: -1.7, orbGlow: 1.4,
   waterDesign: 4, waterTexture: 4, waterRipples: 0, swirlSize: 1.5, swirlDepth: 3, swirlSpeed: 3, swirlLines: 0.75, swirlSoft: 1.95, waterFoam: 0,
   waterGlint: 3, waterReflect: 0.65, waterColour: 0.8, waterSheen: 0.95, sprayAmount: 0, spraySize: 1,
-  fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.45,
-  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 0, groupSize: 1, waterClear: 0.45,
-  starsEvery: 6.5, starsLength: 1, starsSpeed: 1, starsBright: 1, starsWidth: 1, starsSteep: 1,
-  pipeOn: 1, pipeRadius: 1, pipeLift: 0, pipeGlass: 1, pipeRim: 1, pipeGlow: 1.6, dataCount: 0.6, dataSize: 1, dataSpeed: 1, dataBright: 1.5, dataColour: 0, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
-  brandFont: 3, brandSize: 0.6, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.14, logoSize: 1.85, logoGap: 5, brandLift: 10,
+  fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.3,
+  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.96, waterClear: 0.45,
+  starsEvery: 4.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
+  pipeOn: 1, pipeRadius: 2.45, pipeLift: -0.35, pipeGlass: 0, pipeRim: 0.75, pipeGlow: 0.5, dataCount: 0.56, dataSize: 1.6, dataSpeed: 5, dataBright: 0.1, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
+  quote: 0, quoteOn: 1, quoteFont: 3, quoteSize: 1, quoteWeight: 300, quoteSpacing: 0, quoteCaps: 0, quoteAlign: 0, quoteWidth: 30, quoteLift: 0,
+  brandFont: 3, brandSize: 0.55, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.06, logoSize: 1.1, logoGap: 7, brandLift: -2.5,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
 
-const STORE = 'ddg-scene-tune-6'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-8'; // new name, so old saved slider positions don't override these defaults
 export function tuneOn(): boolean {
   return !!(window as unknown as { __DDG_TUNE__?: unknown }).__DDG_TUNE__ || /tune/.test(location.hash);
 }
@@ -198,18 +212,34 @@ export function mountPanel(): () => void {
 /** Put the name-and-logo settings on the page (CSS variables), loading the chosen web font. */
 let lastBrand = '';
 export function applyBrand(): void {
-  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize'].map((k) => T[k]).join(',');
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift'].map((k) => T[k]).join(',');
   if (key === lastBrand) return;
   lastBrand = key;
-  const [, family] = BRAND_FONTS[T.brandFont] ?? BRAND_FONTS[0];
-  if (family && !document.getElementById(`bf-${T.brandFont}`)) {
-    const l = document.createElement('link');
-    l.id = `bf-${T.brandFont}`; l.rel = 'stylesheet';
-    l.href = `https://fonts.googleapis.com/css2?family=${family}&display=swap`;
-    document.head.appendChild(l);
-  }
+  const fontOf = (i: number) => {
+    const [, family] = BRAND_FONTS[i] ?? BRAND_FONTS[0];
+    if (family && !document.getElementById(`bf-${i}`)) {
+      const l = document.createElement('link');
+      l.id = `bf-${i}`; l.rel = 'stylesheet';
+      l.href = `https://fonts.googleapis.com/css2?family=${family}&display=swap`;
+      document.head.appendChild(l);
+    }
+    return family ? `'${family.split(':')[0].replace(/\+/g, ' ')}', var(--ng-font, system-ui), sans-serif` : 'inherit';
+  };
   const s = document.documentElement.style;
-  s.setProperty('--brand-font', family ? `'${family.split(':')[0].replace(/\+/g, ' ')}', var(--ng-font, system-ui), sans-serif` : 'inherit');
+  s.setProperty('--brand-font', fontOf(T.brandFont));
+  // The quote under the orb.
+  const q = document.querySelector<HTMLElement>('.cn-quote');
+  if (q) { q.textContent = QUOTES[T.quote] ?? QUOTES[0]; q.style.display = T.quoteOn ? '' : 'none'; }
+  s.setProperty('--quote-font', fontOf(T.quoteFont));
+  s.setProperty('--quote-size', String(T.quoteSize));
+  s.setProperty('--quote-weight', String(T.quoteWeight));
+  s.setProperty('--quote-track', `${T.quoteSpacing}em`);
+  s.setProperty('--quote-case', T.quoteCaps ? 'uppercase' : 'none');
+  s.setProperty('--quote-width', `${T.quoteWidth}ch`);
+  s.setProperty('--quote-lift', `${T.quoteLift}vh`);
+  s.setProperty('--quote-align', ['left', 'center', 'right'][T.quoteAlign] ?? 'left');
+  s.setProperty('--quote-left', T.quoteAlign === 2 ? 'auto' : T.quoteAlign === 1 ? '0' : 'var(--s-gutter)');
+  s.setProperty('--quote-right', T.quoteAlign === 0 ? 'auto' : T.quoteAlign === 1 ? '0' : 'var(--s-gutter)');
   s.setProperty('--brand-size', String(T.brandSize));
   s.setProperty('--brand-weight', String(T.brandWeight));
   s.setProperty('--brand-track', `${T.brandSpacing}em`);

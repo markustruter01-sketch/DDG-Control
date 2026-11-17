@@ -200,3 +200,17 @@ export const HOME = {
   work: { eyebrow: 'Our work', title: 'Built in Brisbane. Running live.' },
   businesses: 'Our businesses',
 };
+
+/** One line under the orb in place of the list of businesses. Markus picks one in the tuner. */
+export const QUOTES = [
+  'We use AI to unlock the digital world. Then we build whatever we want in it.',
+  'One founder. An AI workforce. No ceiling on what gets built.',
+  'If it can live on a screen, we can build it.',
+  'AI is the engine. Imagination is the only spec.',
+  "We don't wait for the future. We ship it.",
+  'Ideas in. Working platforms out.',
+  'Powered by AI. Built by obsession.',
+  'The digital frontier has no fences. We build past the edge.',
+  "Give us a problem. We'll give it a platform.",
+  'Small team. Unreasonable output.',
+];

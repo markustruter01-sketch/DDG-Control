@@ -167,7 +167,11 @@ function layout(page: HTMLElement, svg: SVGSVGElement): void {
   // Drawn in layers (all glass walls, then all insides, then all water) so where pipes meet or
   // run side by side they merge into one tube with no visible joins.
   const layer = (cls: string) => `<g class="${cls}">${plan.map(({ d }) => `<path d="${d}"/>`).join('')}</g>`;
-  svg.innerHTML = layer('wall') + layer('hollow') + layer('water') + '<g class="sparks"></g>';
+  // Above the page: the same pipe carries on up the screen, so the riverbed pipe in the 3D scene runs
+  // straight into it. It only shows once the scene has narrowed its pipe to match (--pipe-join).
+  const up = `M${W / 2} ${-window.innerHeight * 1.4} V${6}`;
+  const joinPipe = `<g class="join"><path class="jw" d="${up}"/><path class="jh" d="${up}"/><path class="jv" d="${up}"/></g>`;
+  svg.innerHTML = joinPipe + layer('wall') + layer('hollow') + layer('water') + '<g class="sparks"></g>';
 
   // Timing: each pipe starts where the latest of the pipes before it ends.
   const waters = [...svg.querySelectorAll<SVGPathElement>('.water path')];
