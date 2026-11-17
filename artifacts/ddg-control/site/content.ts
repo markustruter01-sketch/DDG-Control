@@ -27,14 +27,6 @@ export const HIRE = {
   cta: 'Start your build',
 };
 
-/** Our work, along the bottom of the first screen. Wide = a desktop dashboard, phone is tall. */
-export type WorkItem = { key: string; name: string; line: string; img: string; alt: string; shape: 'wide' | 'phone' };
-export const WORK: WorkItem[] = [
-  { key: 'finance', name: 'DDG Finance', line: 'Trading dashboard', img: '/work/finance.webp?v=3', alt: 'DDG Finance trading dashboard', shape: 'wide' },
-  { key: 'coffee', name: 'DDG Coffee', line: 'Cattle Dog Coffee admin', img: '/work/coffee.webp?v=3', alt: 'Cattle Dog Coffee admin dashboard', shape: 'wide' },
-  { key: 'fitness', name: 'DDG Fitness', line: 'Hypest', img: '/work/hypest.webp', alt: 'Hypest fitness app on a phone', shape: 'phone' },
-];
-
 export type SiteBusiness = {
   key: 'coffee' | 'finance' | 'fitness';
   name: string;
