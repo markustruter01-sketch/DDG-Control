@@ -254,18 +254,18 @@ export const ABOUT = {
 };
 
 /** The carousel under "Complex platforms. Built in-house.": one screenshot per live product (public/work). */
-export const SHOTS: { key: string; name: string; kind: string; imgs: { src: string; alt: string }[]; href: string; external: boolean }[] = [
+export const SHOTS: { key: string; name: string; kind: string; imgs: { src: string; cap: string; alt: string }[]; href: string; external: boolean }[] = [
   { key: 'globe', name: 'God\u2019s Eye View', kind: 'Live 3D globe', href: 'https://gods-eye-view.replit.app/', external: true, imgs: [
-    { src: '/work/globe-1.webp', alt: 'A GPS satellite tracked above the Earth, with its orbit and coverage' },
-    { src: '/work/globe-2.webp', alt: 'The International Space Station over Europe, with live ships and aircraft' },
-    { src: '/work/globe-3.webp', alt: 'A ship followed live in a harbour, with its voyage details' },
-    { src: '/work/globe-4.webp', alt: 'Street level: four live traffic cameras beside a motorway' },
-    { src: '/work/globe-5.webp', alt: 'Trafalgar Square at night in night-vision view, with a live camera' },
-    { src: '/work/globe-6.webp', alt: 'An airfield in thermal view, with live traffic and weather' },
+    { src: '/work/globe-1.webp', cap: 'A GPS satellite 20,300 km up, tracked live with its orbit, speed and the part of the Earth it covers.', alt: 'A GPS satellite tracked above the Earth, with its orbit and coverage' },
+    { src: '/work/globe-2.webp', cap: 'The International Space Station passing over Europe, above thousands of ships and aircraft, all tracked live.', alt: 'The International Space Station over Europe, with live ships and aircraft' },
+    { src: '/work/globe-3.webp', cap: 'One ship followed in its harbour: live speed and course, with its voyage and risk details beside it.', alt: 'A ship followed live in a harbour, with its voyage details' },
+    { src: '/work/globe-4.webp', cap: 'Down at street level: four live traffic cameras playing at once, placed on the 3D city where they stand.', alt: 'Street level: four live traffic cameras beside a motorway' },
+    { src: '/work/globe-5.webp', cap: 'Night-vision mode over London: the view switches itself after dark, with a live camera from Trafalgar Square.', alt: 'Trafalgar Square at night in night-vision view, with a live camera' },
+    { src: '/work/globe-6.webp', cap: 'Thermal view of an airfield, with live aircraft, weather and nearby ships read straight from public feeds.', alt: 'An airfield in thermal view, with live traffic and weather' },
   ] },
-  { key: 'finance', name: 'DDG Finance', kind: 'Trading platform', href: '/finance', external: false, imgs: [{ src: '/work/finance.webp', alt: 'The DDG Finance public page' }] },
-  { key: 'coffee', name: 'Cattle Dog Coffee', kind: 'Online store', href: PUBLIC_SITES.coffee, external: true, imgs: [{ src: '/work/coffee.webp', alt: 'The Cattle Dog Coffee online store' }] },
-  { key: 'greenlight', name: 'DDG Greenlight', kind: 'Compliance engine', href: 'https://ddg-greenlight.replit.app/', external: true, imgs: [{ src: '/work/greenlight.webp', alt: 'DDG Greenlight: check my code' }] },
+  { key: 'finance', name: 'DDG Finance', kind: 'Trading platform', href: '/finance', external: false, imgs: [{ src: '/work/finance.webp', cap: 'The public record page: four trading bots, checked every hour, with every result shown against the S&P 500.', alt: 'The DDG Finance public page' }] },
+  { key: 'coffee', name: 'Cattle Dog Coffee', kind: 'Online store', href: PUBLIC_SITES.coffee, external: true, imgs: [{ src: '/work/coffee.webp', cap: 'A live store: order in a few taps, pay by card or subscribe, with the charity total counted on the page.', alt: 'The Cattle Dog Coffee online store' }] },
+  { key: 'greenlight', name: 'DDG Greenlight', kind: 'Compliance engine', href: 'https://ddg-greenlight.replit.app/', external: true, imgs: [{ src: '/work/greenlight.webp', cap: 'Seven steps from your code to proof: check it, see what is wrong, fix it, then check it again.', alt: 'DDG Greenlight: check my code' }] },
 ];
 export const CONTACT = { eyebrow: 'Contact', title: 'Talk to us in writing.', line: 'Email us, or send the short form above for a fixed quote. We work in writing, so there is no call to book.', emailLabel: 'Email', postLabel: 'Post' };
 

@@ -733,3 +733,8 @@ p { margin: 0; }
   opacity: 0; transform: translateY(12px); pointer-events: none; transition: opacity 0.3s, transform 0.3s; }
 .s-dock.on { opacity: 1; transform: none; pointer-events: auto; }
 .s-dock:hover { background: #fff; }
+
+/* A short white line above each screenshot saying what it shows. Two lines of room, so the slide never jumps. */
+.j-gal-cap { margin: 4px 6px 12px; min-height: 2.8em; font-size: clamp(14px, 1.05vw, 17px); line-height: 1.4; font-weight: 500; color: #fff; font-family: var(--ng-sans, system-ui, sans-serif); }
+.j-gal-wrap.big .j-gal-cap { margin: 0 4px 14px; min-height: 0; font-size: clamp(15px, 1.2vw, 19px); }
+@media (max-width: 760px) { .j-gal-cap { min-height: 4.2em; } }

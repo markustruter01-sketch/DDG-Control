@@ -47,7 +47,7 @@ export function About({ onSee, onQuote }: { onSee: () => void; onQuote: () => vo
 
 /** One product's screenshots: a small carousel inside the big one. Arrows step through the pictures, and
  *  the enlarge button opens the same pictures in a larger box (not full screen). */
-function Gallery({ imgs, name }: { imgs: { src: string; alt: string }[]; name: string }) {
+function Gallery({ imgs, name }: { imgs: { src: string; cap: string; alt: string }[]; name: string }) {
   const [at, setAt] = useState(0);
   const [big, setBig] = useState(false);
   const n = imgs.length;
@@ -63,6 +63,8 @@ function Gallery({ imgs, name }: { imgs: { src: string; alt: string }[]; name: s
     return () => removeEventListener('keydown', key);
   }, [big, n]);
   const view = (inBox: boolean) => (
+    <div className={inBox ? 'j-gal-wrap big' : 'j-gal-wrap'}>
+    <p className="j-gal-cap" aria-live="polite">{imgs[at].cap}</p>
     <div className={inBox ? 'j-gal j-gal-big' : 'j-gal'}>
       {imgs.map((im, i) => <img key={im.src} className={i === at ? 'on' : ''} src={im.src} alt={i === at ? im.alt : ''} loading="lazy" decoding="async" />)}
       {n > 1 && <>
@@ -71,6 +73,7 @@ function Gallery({ imgs, name }: { imgs: { src: string; alt: string }[]; name: s
         <span className="j-gal-count">{at + 1} / {n}</span>
       </>}
       <button type="button" className="j-gal-zoom" aria-label={inBox ? 'Close the larger view' : 'Make this screenshot bigger'} onClick={(e) => { e.stopPropagation(); setBig(!inBox); }}>{inBox ? '✕' : '⤢'}</button>
+    </div>
     </div>
   );
   return (
