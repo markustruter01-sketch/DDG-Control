@@ -61,12 +61,38 @@ Listing data says the same thing more bluntly: agencies and stores change hands 
 - Custom work stays on the menu at today's prices. Kits are the fast, fixed, cheaper door in.
 - **Rule: do not build a kit before a client pays for it.** Client 1 pays for the work. Client 2 pays for turning it into a kit. Client 3 onward is nearly all profit.
 
-**How to get the first five clients (no ads)**
-1. List 20 businesses you already deal with: Coffee Alliance, the markets where you sell coffee, cafes, your gym, your vet, ex-RAAF mates with businesses.
-2. Do not pitch. Show. Open your own coffee admin on your phone and say "I built this. Want one?"
-3. Offer five "founding client" places at a lower price in exchange for a written case study.
-4. Use the quote page and deposit you already built.
-5. Never run more than two builds at once.
+**How to get clients — Markus's rules (17 Nov)**
+- **No talking.** No calls, no meetings, no walking in. Everything in writing.
+- **Nobody Markus knows.** No friends, family, suppliers, customers or business contacts. New people only.
+- **Only people who have shown they want a build.** No blanket emails.
+- **Prices:** listed prices stay (already about 25% below typical). First five clients get the founding price, about 13% below listed: website $1,300, store $6,500, platform or app $9,750, AI assistant $3,250.
+
+**The channels, best chance first**
+
+| # | Channel | Why it fits | Honest catch |
+|---|---|---|---|
+| 1 | **Upwork** | Buyers post a job and a budget, so the need is proven. Proposals are written. Each one carries a small mock-up. | A new profile has no reviews, so the first wins are slow. Some buyers insist on a call; skip those. |
+| 2 | **Australian job boards** where people post "I need a website" (INFERRED: Airtasker, Freelancer, Oneflare, ServiceSeeking; Opus confirms which still take web jobs and what they charge) | Same proven need, less competition from overseas | Smaller jobs |
+| 3 | **Buy-it-now kits** on ddg.limited: fixed price, written brief form, deposit by card, no conversation | Fits "no talking" perfectly | Needs visitors; they come from 4 and 6 |
+| 4 | **Fiverr and similar: the kits as fixed listings** | Buyers come to you and order in writing | Price pressure; kits only, never custom work |
+| 5 | **Mock-up emails, only on a signal** | Our edge: a mock-up costs us little | Only worth it with a strict filter (below) |
+| 6 | **Markus's own content**, each post with one ask and the quote link | Free, already happening | Slow |
+
+**The signal filter for mock-up emails (channel 5).** A business gets a mock-up only if it shows at least two of these in public:
+1. Its own site says "coming soon", is broken, or shows a security warning.
+2. It is paying for ads that land on a poor page.
+3. It has asked in public for a web builder (a post, a job ad, a tender).
+4. It takes bookings or orders by phone or message only, and has many recent reviews (so it has money and customers).
+5. It registered or opened in the last 90 days.
+
+One email, one follow-up, then stop. Each email is personal, says who DDG is, and offers a way to opt out. Check the wording with the lawyer.
+
+**Return on effort: measure, then cut.**
+- For each channel, count: sent, replies, paid jobs, AI cost, Markus's minutes.
+- **Stop rule:** a channel with no paid job after 40 tries is paused and the effort moves up the list.
+- Guess to steer by: 10 written proposals a week on channels 1 and 2.
+- Writing-only costs some big jobs, since larger buyers like a call. Kits and small fixed jobs suit it best.
+- Never run more than two builds at once.
 
 **Before the first paid job:** lawyer contract, professional indemnity insurance, and a GST decision (section 8).
 
@@ -82,7 +108,7 @@ A new coffee brand cannot out-spend the big ones on ads. It can borrow audiences
    - Your edge: animal groups only, fully automatic, public live totals.
    - Needs a short written agreement with each group and a check of fundraising rules (see the audit).
 3. **The charity partnership, once signed.** A co-branded bag and one mention in a big charity's newsletter could beat a year of your own posts. Pay in $100 lots as they asked, and show "Raised" and "Paid" on the site.
-4. **Offices, cafes, vets, groomers.** A standing monthly order of 1 kg bags. One office equals many home customers and never forgets to reorder. You already have one corporate customer (FACT, coffee notes): ask them to introduce two more.
+4. **Offices, cafes, vets, groomers.** A standing monthly order of 1 kg bags. One office equals many home customers and never forgets to reorder.
 5. **A card in every parcel.** One QR code: a free week of Hypest, chapter one of the novel, and "give a friend $5 off, get $5 off". Cost: a few cents.
 6. **Subscriptions over one-off bags, always.** Every screen should nudge to a plan.
 
@@ -152,6 +178,8 @@ Lawyer review and insurance come before live payments (see the audit).
 | Build | Coffee | Hypest | Finance | Creative |
 |---|---|---|---|---|
 | 50% | 20% | 15% | 5% | 10% |
+
+On Markus's full-time week (40 hours): Build 20, Coffee 8, Hypest 6, Finance 2, Creative 4.
 
 **AI staff: one job and one number each**
 
@@ -242,7 +270,7 @@ Rules: bots draft, you approve anything public or anything that moves money. Eac
 
 **This week (17 to 23 Nov)**
 - Lawyer: Build contract. Broker: insurance. Accountant: GST and structure.
-- List 20 warm Build prospects. Show five of them your admin screen.
+- Upwork profile and the first written proposals (channel 1). Founding price on ddg.limited.
 - Coffee: Christmas gift push starts. Look up profit per bag in Control.
 - Turn on 2-step login everywhere (see below).
 
@@ -283,15 +311,14 @@ Rules: bots draft, you approve anything public or anything that moves money. Eac
 
 ---
 
-## 14. Decisions I need from you
+## 14. Decisions made by Markus, 17 Nov
 
-1. Is Build the main engine for 2027? (I say yes.)
-2. How many hours a week can DDG have?
-3. The real profit on a bag of coffee (from Control).
-4. Register for GST now? (Ask the accountant; I lean yes.)
-5. Hypest: test before building more? (I say yes.)
-6. Will you do one video a week?
-7. The founding-client price for the first five Build jobs.
+1. The plan is approved. Build is the main effort for 2027. "Engine" means where the effort goes; it is not a new system to build.
+2. DDG has a full-time week.
+3. Clients come only through written channels, from people outside Markus's circle (section 3).
+4. Markus already makes social content; each post gets one ask and a link.
+5. Listed prices stay. First five clients get the founding price.
+6. Still open: should the Christmas coffee gift option be built before the Finance fixes?
 
 ---
 
