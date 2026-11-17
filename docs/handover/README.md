@@ -36,6 +36,19 @@ Entry shape:
 
 ## 5. Log (newest first)
 
+### Wed 18 Nov 2026, 07:30 — Opus 5.5 (17–18 Nov session)
+- Orders worked on: Part A Phase 0 items 1–7; Markus's no-crypto rule; ddg.limited message audit and fixes.
+- Done (with PR numbers):
+  - quant-terminal: #116 broker time limits; #117 no-crypto order guard; #118 plan says no crypto; #119 BTC sold, `OWNER_KEPT` empty; #120 closing snapshot at 17:25 New York time. All merged and published.
+  - BTC sold 17 Nov 07:41 UTC on Markus's yes (0.097758577 at 64,519.74; ledger row closed). No crypto on the Alpaca or OANDA accounts (VERIFIED, health check 17 Nov 20:44 UTC).
+  - DDG-Control: #93 no-crypto wording; #94 no jump on flick-scroll; #95 offer and quote button on the first screen; #96 prices first, Coffee first, plain words; #97 search title, business details, privacy names Google Fonts; #98 button clears the browser bars; #99 logo size; #100 phone layout (orb higher, menu centred). All merged and published.
+  - Audit write-up: DDG Project doc `claude/site-message-audit-2026-11-17.md`.
+- Half done: quant-terminal #121 kill switch per bot (item 5, stays unarmed), #122 dead code (item 7, code part), #123 plan status. All tests green, waiting for merge.
+- Published live? ddg.limited (checked at phone size in a browser, 18 Nov); DDG-Finance (publish succeeded 17 Nov ~10:07 UTC; health check read-only).
+- Waiting on Markus: merge #121–#123; yes to close 11 stale alarms; yes to delete dead `bots_state` rows; arm the kill switch; 2 heartbeat URLs; where to keep backups; name and email on the site; visitor counting; lawyer on contract vs deposit; whether coffee gifts (B2.1, due 30 Nov) jump the queue.
+- How Replit is updated: merging on GitHub does NOT update Replit. Sync the workspace (`git fetch` + normal merge), build, then publish. Finance: publish only with the US market closed.
+- Next order to start: item 8 (heartbeat) when the URLs arrive; otherwise B2.1 if Markus says so.
+
 ### Tue 17 Nov 2026, 10:45 — Fable 5.2, planning session (no Opus work yet)
 - Done: company audit, growth plan and the work list are written and merged. Charity wording, "Raised", and "four businesses" are live on ddg.limited (PR #87). Hypest is hidden from search engines (ddg-hypest PR #44, live).
 - Half done: nothing. No open pull requests were left by this session.
