@@ -604,7 +604,8 @@ p { margin: 0; }
 .j-hi { color: var(--j-word, inherit); }
 
 /* Phones: the scroll hint sits below the menu, never on it; menu links are easy to tap (about 44 px). */
-@media (max-width: 900px) { .cn-scroll { top: max(calc(var(--sh-place, 11) * 1vh), 84px); } }
+/* Always below the menu: the menu now sits in the middle of the screen, where the hint is (Markus, 17 Nov). */
+.cn-scroll { top: max(calc(var(--sh-place, 11) * 1vh), 92px); }
 .s-nav nav a { display: inline-flex; align-items: center; min-height: 44px; }
 .s-footer a { color: var(--ng-text-2); text-decoration: underline; text-underline-offset: 3px; }
 .s-form-foot .s-note a { color: var(--ng-text); text-decoration: underline; text-underline-offset: 3px; }
