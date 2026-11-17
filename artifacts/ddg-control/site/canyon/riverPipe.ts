@@ -2,6 +2,7 @@ import {
   AdditiveBlending, BackSide, CatmullRomCurve3, Color, DynamicDrawUsage, FrontSide, Group, InstancedMesh, Mesh, Object3D,
   ShaderMaterial, SphereGeometry, TubeGeometry, Vector3,
 } from 'three';
+import { fluidRGB } from './tune';
 
 /**
  * A glass pipe lying along the lowest line of the riverbed, running the whole length of the river.
@@ -23,6 +24,7 @@ uniform float uRim;
 uniform float uShow;
 uniform float uJoin; // 0 = glass pipe in the river; 1 = drawn exactly like the page's pipes (thin glass, blue water)
 uniform float uInk; // 1 = the water is white ink
+uniform vec3 uInkCol;
 uniform vec3 uOrbPos;
 varying vec3 vN;
 varying vec3 vW;
@@ -32,7 +34,7 @@ void main() {
   if (uJoin > 0.001) {
     // The page pipe in cross-section: a faint light wall, then blue water in the middle.
     float across = abs(dot(n, v));
-    vec3 page = mix(vec3(0.17, 0.18, 0.2), mix(vec3(0.165, 0.56, 0.74), vec3(0.96), uInk), smoothstep(0.55, 0.75, across));
+    vec3 page = mix(vec3(0.17, 0.18, 0.2), mix(vec3(0.165, 0.56, 0.74), uInkCol, uInk), smoothstep(0.55, 0.75, across));
     page = mix(vec3(0.04, 0.05, 0.08), page, smoothstep(0.15, 0.3, across));
     vec3 toO = normalize(uOrbPos - vW);
     vec3 glassCol = uTint * (0.25 + 1.6 * f * uRim);
@@ -68,6 +70,7 @@ uniform float uSpeed;
 uniform float uThick;
 uniform float uShow;
 uniform float uJoin;
+uniform vec3 uColor;
 varying vec3 vN;
 varying vec3 vW;
 varying vec2 vUv;
@@ -89,7 +92,7 @@ void main() {
   float strands = smoothstep(0.38, 0.7, f);
   float body = smoothstep(0.08, 0.8, face);
   float a = clamp(body * mix(0.45 + 0.55 * strands, 1.0, uJoin) * uThick * 1.3, 0.0, 1.0);
-  gl_FragColor = vec4(vec3(1.0), a * uShow);
+  gl_FragColor = vec4(uColor, a * uShow);
 }`;
 const DOT_VERT = /* glsl */ `
 varying vec3 vN;
@@ -117,7 +120,7 @@ export function makeRiverPipe({ heightAt, zFar, zNear, small }: Opts) {
   const glowTube = new TubeGeometry(curve, 300, 1, 20, false);
 
   const tint = new Color(0x6cc7f0);
-  const shared = { uTint: { value: tint }, uShow: { value: 1 }, uJoin: { value: 0 }, uInk: { value: 0 }, uOrbPos: { value: new Vector3() } };
+  const shared = { uTint: { value: tint }, uShow: { value: 1 }, uJoin: { value: 0 }, uInk: { value: 0 }, uInkCol: { value: new Color(1, 1, 1) }, uOrbPos: { value: new Vector3() } };
   const glass = new ShaderMaterial({
     vertexShader: GLASS_VERT, fragmentShader: GLASS_FRAG, transparent: true, depthWrite: false, side: FrontSide,
     uniforms: { ...shared, uOpacity: { value: 0.12 }, uRim: { value: 1 } },
@@ -128,7 +131,7 @@ export function makeRiverPipe({ heightAt, zFar, zNear, small }: Opts) {
   });
   const inkMat = new ShaderMaterial({
     vertexShader: INK_VERT, fragmentShader: INK_FRAG, transparent: true, depthWrite: false, side: FrontSide,
-    uniforms: { uTime: { value: 0 }, uSpeed: { value: 6 }, uThick: { value: 1 }, uShow: { value: 1 }, uJoin: shared.uJoin },
+    uniforms: { uTime: { value: 0 }, uSpeed: { value: 6 }, uThick: { value: 1 }, uShow: { value: 1 }, uJoin: shared.uJoin, uColor: shared.uInkCol },
   });
   const inkCore = new Mesh(new TubeGeometry(curve, 400, 0.55, 20, false), inkMat);
   inkCore.renderOrder = 0.65; inkCore.frustumCulled = false;
@@ -165,6 +168,7 @@ export function makeRiverPipe({ heightAt, zFar, zNear, small }: Opts) {
     group.visible = k.pipeOn > 0.5;
     ink = k.pipeFluid > 0.5 ? 1 : 0;
     shared.uInk.value = ink; inkCore.visible = ink > 0;
+    shared.uInkCol.value.setRGB(...fluidRGB(k));
     inkMat.uniforms.uSpeed.value = 4 * k.inkSpeed; inkMat.uniforms.uThick.value = k.inkThick;
   };
 

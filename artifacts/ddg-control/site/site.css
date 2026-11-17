@@ -451,10 +451,10 @@ p { margin: 0; }
 @keyframes cn-bit { 0% { opacity: 0.9; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(var(--bx), var(--by)); } }
 @media (prefers-reduced-motion: reduce) { .cn-pipes .spark * { animation: none; } }
 /* White ink instead of blue water (tuner: Riverbed pipe → Fluid). */
-.pipe-ink .cn-pipes .water path, .pipe-ink .cn-pipes .jv { stroke: #f2f5f8; filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.55)); }
-.pipe-ink .cn-pipes .spark .halo { fill: rgba(255, 255, 255, 0.22); }
-.pipe-ink .cn-pipes .spark .core { fill: #fff; filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9)); }
-.pipe-ink .cn-pipes .spark .bit { fill: #fff; }
+.pipe-ink .cn-pipes .water path, .pipe-ink .cn-pipes .jv { stroke: var(--pipe-fluid, #f2f5f8); filter: drop-shadow(0 0 2px color-mix(in srgb, var(--pipe-fluid, #fff) 55%, transparent)); }
+.pipe-ink .cn-pipes .spark .halo { fill: color-mix(in srgb, var(--pipe-fluid, #fff) 22%, transparent); }
+.pipe-ink .cn-pipes .spark .core { fill: var(--pipe-fluid, #fff); filter: drop-shadow(0 0 3px var(--pipe-fluid, #fff)); }
+.pipe-ink .cn-pipes .spark .bit { fill: var(--pipe-fluid, #fff); }
 .cn-measuring * { animation: none !important; }
 /* Panels with a pipe round their edge stay put, so the pipe always sits exactly on the edge. */
 .cn-page .s-card, .cn-page .s-case, .cn-page .s-charity, .cn-page #build .glass-plain { animation: none !important; }

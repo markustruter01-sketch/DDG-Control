@@ -57,6 +57,9 @@ export const SPECS: Spec[] = [
   { group: 'Shooting stars', key: 'starsSteep', label: 'How steeply they fall', min: 0, max: 2, step: 0.05 },
   { group: 'Riverbed pipe', key: 'pipeOn', label: 'On (1) or off (0)', min: 0, max: 1, step: 1 },
   { group: 'Riverbed pipe', key: 'pipeFluid', label: 'Fluid (0 blue water + data, 1 white ink) · all pipes', min: 0, max: 1, step: 1 },
+  { group: 'Riverbed pipe', key: 'inkHue', label: 'Fluid colour: hue (red → yellow → green → blue → pink)', min: 0, max: 360, step: 1 },
+  { group: 'Riverbed pipe', key: 'inkSat', label: 'Fluid colour: how much colour (0 white)', min: 0, max: 1, step: 0.02 },
+  { group: 'Riverbed pipe', key: 'inkLight', label: 'Fluid colour: brightness', min: 0.3, max: 1, step: 0.02 },
   { group: 'Riverbed pipe', key: 'inkSpeed', label: 'White ink: flow speed', min: 0.2, max: 4, step: 0.05 },
   { group: 'Riverbed pipe', key: 'inkThick', label: 'White ink: how solid', min: 0.2, max: 1.6, step: 0.05 },
   { group: 'Riverbed pipe', key: 'pipeRadius', label: 'Pipe thickness', min: 0.2, max: 4, step: 0.05 },
@@ -140,7 +143,7 @@ export const DEFAULTS: Record<string, number> = {
   fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.3,
   wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.96, waterClear: 0.45,
   starsEvery: 4.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
-  pipeOn: 1, pipeFluid: 0, inkSpeed: 1, inkThick: 1, pipeRadius: 2.45, pipeLift: -0.35, pipeGlass: 0, pipeRim: 0.75, pipeGlow: 0.5, dataCount: 0.56, dataSize: 1.6, dataSpeed: 5, dataBright: 0.1, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
+  pipeOn: 1, pipeFluid: 0, inkHue: 200, inkSat: 0, inkLight: 1, inkSpeed: 1, inkThick: 1, pipeRadius: 2.45, pipeLift: -0.35, pipeGlass: 0, pipeRim: 0.75, pipeGlow: 0.5, dataCount: 0.56, dataSize: 1.6, dataSpeed: 5, dataBright: 0.1, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   quote: 0, quoteOn: 1, quoteFont: 3, quoteSize: 1, quoteWeight: 300, quoteSpacing: 0, quoteCaps: 0, quoteAlign: 0, quoteWidth: 30, quoteLift: 0,
   qbOn: 1, qbDark: 0.6, qbBlur: 14, qbTint: 0, qbPadX: 70, qbPadY: 34, qbRadius: 40, qbFade: 26,
   bizLayout: 0,
@@ -154,6 +157,14 @@ export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll down' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
 const STORE = 'ddg-scene-tune-8'; // new name, so old saved slider positions don't override these defaults
+/** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
+export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
+  const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
+  const [r, g, b] = h < 1 ? [1, x, 0] : h < 2 ? [x, 1, 0] : h < 3 ? [0, 1, x] : h < 4 ? [0, x, 1] : h < 5 ? [x, 0, 1] : [1, 0, x];
+  const s = k.inkSat ?? 0, l = k.inkLight ?? 1, mix = (c: number) => (1 - s + s * (0.35 + 0.65 * c)) * l;
+  return [mix(r), mix(g), mix(b)];
+}
+
 export function tuneOn(): boolean {
   return !!(window as unknown as { __DDG_TUNE__?: unknown }).__DDG_TUNE__ || /tune/.test(location.hash);
 }
@@ -262,7 +273,7 @@ export function mountPanel(): () => void {
 let lastBrand = '';
 let lastFade = '';
 const BG_KEYS = ['qbOn', 'qbDark', 'qbBlur', 'qbTint', 'qbPadX', 'qbPadY', 'qbRadius', 'qbFade'];
-const HINT_KEYS = ['pipeFluid', 'bizLayout', 'shOn', 'shArrow', 'shAnim', 'shSpeed', 'shTravel', 'shLayout', 'shFont', 'shSize', 'shSpacing', 'shCaps', 'shBright', 'shPlace'];
+const HINT_KEYS = ['pipeFluid', 'inkHue', 'inkSat', 'inkLight', 'bizLayout', 'shOn', 'shArrow', 'shAnim', 'shSpeed', 'shTravel', 'shLayout', 'shFont', 'shSize', 'shSpacing', 'shCaps', 'shBright', 'shPlace'];
 /** Arrow drawings for the scroll hint (24 wide, drawn in currentColor). */
 const ARROWS = [
   '<svg viewBox="0 0 24 14" width="24" height="14"><path d="M3 3l9 8 9-8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -317,6 +328,7 @@ export function applyBrand(): void {
   s.setProperty('--qb-fade', `${T.qbFade}%`);
   // Blue water or white ink in every pipe on the page (site.css, .pipe-ink).
   document.documentElement.classList.toggle('pipe-ink', T.pipeFluid === 1);
+  s.setProperty('--pipe-fluid', `rgb(${fluidRGB().map((v) => Math.round(v * 255)).join(',')})`);
   // The business reel: 3D reel or three stacked cards.
   const biz = document.querySelector('.j-biz');
   if (biz) {
