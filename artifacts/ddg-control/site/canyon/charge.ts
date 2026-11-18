@@ -15,7 +15,7 @@ import { SKY_GLSL } from './sky';
  *  - a vortex of droplets spiralling round the orb, and loose ground lifting into the air;
  *  - at the nova everything is flung outwards; drops fall back into the lake (each leaves a ring) and the
  *    ground settles, over the calm-down time.
- * Looks (T.holdFx): 0 none, 1 water globules, 2 vortex, 3 ground lifting, 4 streaks, 5 all of them.
+ * Each effect has its own on/off switch (T.holdFxGlobs, holdFxVortex, holdFxGround, holdFxStreaks).
  */
 
 const DROPS = 320, LINES = 260, ROCKS = 160;
@@ -110,6 +110,19 @@ export function makeCharge() {
   const rand = (a: number, b: number) => a + Math.random() * (b - a);
   const mk = (x: number, y: number, z: number, life: number, size: number): P => ({ x, y, z, vx: 0, vy: 0, vz: 0, age: 0, life, size, seed: Math.random(), out: false });
 
+  /** The nova's splash: water thrown up all round the orb, falling back as drops (each leaves a ring). */
+  const splash = (orb: Vector3, radius: number, count: number, waterAt: (x: number, z: number) => number | null) => {
+    for (let i = 0; i < count && globs.length < DROPS; i++) {
+      const a = Math.random() * Math.PI * 2, r = radius * rand(0.8, 6);
+      const x = orb.x + Math.cos(a) * r, z = orb.z + Math.sin(a) * r * 0.8, w = waterAt(x, z);
+      if (w === null) continue;
+      const p = mk(x, w, z, rand(1.5, 3), radius * rand(0.03, 0.1));
+      const out = rand(4, 12) * (1.3 - r / (radius * 7));
+      p.vx = Math.cos(a) * out; p.vz = Math.sin(a) * out; p.vy = rand(6, 16); p.out = true;
+      globs.push(p);
+    }
+  };
+
   /** The nova: everything flies outwards from the orb. */
   const explode = (orb: Vector3, force: number) => {
     for (const list of [globs, swirls, streaks, chunks]) for (const p of list) {
@@ -126,11 +139,10 @@ export function makeCharge() {
    * `power` 0..1. `look`: style, amount, speed. `ground(x, z)`: land or water height there. `waterAt(x, z)`:
    * the water's height, or null on dry land. `onSplash(x, z, size)`: a drop leaving or landing in the lake.
    */
-  const update = (dt: number, power: number, orb: Vector3, radius: number, look: { style: number; amount: number; speed: number },
+  const update = (dt: number, power: number, orb: Vector3, radius: number, look: { on: [boolean, boolean, boolean, boolean]; amount: number; speed: number },
     ground: (x: number, z: number) => number, waterAt: (x: number, z: number) => number | null,
     onSplash: (x: number, z: number, size: number) => void, pxScale: number, skyTurn: number) => {
-    const s = Math.round(look.style);
-    const want = (k: number) => s === k || s === 5;
+    const want = (k: number) => look.on[k - 1] === true;
     c.copy(orb);
     // Spawn: slow at first, climbing steeply towards the end of the charge.
     owed += dt * look.amount * (power > 0.02 ? 20 + 300 * power * power : 0);
@@ -258,5 +270,5 @@ export function makeCharge() {
     rGeo.attributes.position!.needsUpdate = true; rGeo.attributes.aA!.needsUpdate = true;
     rMat.uniforms.uPx!.value = pxScale;
   };
-  return { group, update, explode, disposables: [dGeo, dMat, lGeo, lMat, rGeo, rMat] as { dispose: () => void }[] };
+  return { group, update, explode, splash, disposables: [dGeo, dMat, lGeo, lMat, rGeo, rMat] as { dispose: () => void }[] };
 }

@@ -11,6 +11,7 @@ import { makeAura } from './aura';
 import { makeSurge } from './surge';
 import { makeBubbles } from './bubbles';
 import { makeCharge } from './charge';
+import { makeDial } from './dial';
 import { introStart, revealPage } from '../intro';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
@@ -130,35 +131,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     // Rings on the water: bubbles bursting, and one big ring when the orb is let go. [x, z, age 0..1, size]
     const pops: [number, number, number, number][] = [];
     let popNext = 0, wasHeld = false, shock = 0, novaT = -1, novaLock = false;
-    // The build-up dial: a thin ring of ticks round the orb, filling from 0 to 100%.
-    const dial = document.createElement('div');
-    dial.className = 'cn-dial'; dial.setAttribute('aria-hidden', 'true');
-    const TICKS = 50, SWEEP = 270, FROM = 135; // degrees: starts bottom-left, ends bottom-right, like a speedometer
-    const tickPath = Array.from({ length: TICKS + 1 }, (_, i) => {
-      const a = ((FROM + (SWEEP * i) / TICKS) * Math.PI) / 180, long = i % 5 === 0, r0 = long ? 86 : 90;
-      return `M${(Math.cos(a) * r0).toFixed(2)} ${(Math.sin(a) * r0).toFixed(2)}L${(Math.cos(a) * 95).toFixed(2)} ${(Math.sin(a) * 95).toFixed(2)}`;
-    }).join('');
-    const arcLen = ((SWEEP / 360) * 2 * Math.PI * 80);
-    dial.innerHTML = `<svg viewBox="-100 -100 200 200"><path class="d-ticks" d="${tickPath}"/><circle class="d-track" r="80" transform="rotate(${FROM})" stroke-dasharray="${arcLen.toFixed(1)} 999"/><circle class="d-fill" r="80" transform="rotate(${FROM})" stroke-dasharray="0 999"/><circle class="d-tip" r="1.8" cx="80" cy="0"/><text class="d-pct" x="0" y="74">0%</text></svg>`;
-    document.body.appendChild(dial);
-    const dFill = dial.querySelector<SVGCircleElement>('.d-fill')!, dTip = dial.querySelector<SVGCircleElement>('.d-tip')!, dPct = dial.querySelector<SVGTextElement>('.d-pct')!;
-    let dialShown = 0, lastPct = -1;
-    const dialUpdate = (x: number, y: number, r: number, v: number, want: number, shake: string) => {
-      dialShown += (want - dialShown) * 0.12;
-      const size = r * 2 * 1.42;
-      dial.style.opacity = dialShown.toFixed(3);
-      // The same shake as the 3D picture, so it stays locked to the orb.
-      dial.style.transform = `${shake} translate(${(x - size / 2).toFixed(1)}px, ${(y - size / 2).toFixed(1)}px)`;
-      dial.style.width = dial.style.height = `${size.toFixed(1)}px`;
-      const pct = Math.round(v * 100);
-      if (pct !== lastPct) {
-        lastPct = pct;
-        dFill.setAttribute('stroke-dasharray', `${(arcLen * v).toFixed(1)} 999`);
-        const a = ((FROM + SWEEP * v) * Math.PI) / 180;
-        dTip.setAttribute('cx', (Math.cos(a) * 80).toFixed(2)); dTip.setAttribute('cy', (Math.sin(a) * 80).toFixed(2));
-        dPct.textContent = `${pct}%`;
-      }
-    };
+    // After the nova the river level drops (water thrown out) and fills up again over T.holdRefill seconds.
+    let drainY = 0;
+    const lvl = (z: number) => water.levelAt(z) - drainY;
+    // The build-up dial: part of the 3D scene, fixed to the orb's centre and facing the camera (dial.ts).
+    const dial = makeDial();
+    orbit.add(dial.mesh);
+    disposables.push(...dial.disposables);
     const addPop = (x: number, z: number, size: number) => { pops[popNext] = [x, z, 0.001, size]; popNext = (popNext + 1) % 8; };
 
     // The river on the canyon floor and the splashes the orb throws up from it.
@@ -337,10 +316,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         if (!reduced) { const sh = 0.14 * T.holdOrbShake * ch * (0.4 + ch); orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
       }
       // The dial round the orb: 0 to 100% of the build-up, thin lines, like a speedometer.
-      // Re-measured after the lift and shake, so the dial sits exactly round the orb wherever the camera is.
-      pv.copy(orbit.position).project(camera);
-      const dialR = onScreen(camera, orbit.position, R)[1];
-      dialUpdate(((pv.x + 1) / 2) * innerWidth, ((1 - pv.y) / 2) * stableHeight(), dialR, charge, hold.down ? 1 : 0, canvas.style.transform);
+      dial.update(charge, hold.down ? 1 : 0, ORB_R);
       restCam.fov = camera.fov; restCam.aspect = camera.aspect;
       if (liftPx > 0) { const H = stableHeight(); restCam.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); } else restCam.clearViewOffset();
       restCam.updateProjectionMatrix();
@@ -391,12 +367,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         bands: T.orbStreaks, zap: T.orbSparks * (1 + ch), zapRate: T.orbSparkRate * (1 + 3 * ch), style: T.orbStyle, hue: T.orbHue, flow: T.orbFlow,
         gate: bolt.gate, flash: flash * 0.6, depth: T.orbDepth, glass: T.orbGlass, fringe: T.orbFringe, cam: camera.position,
       });
-      aura.update(clock, 1 - away, { bloom: T.orbBloom + ch, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
+      aura.update(clock, (1 - away) * born, { bloom: T.orbBloom + ch, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
       haloMat.opacity *= 1 + flash;
       const landFlash = bolt.flash * T.orbFlashLand * (1 - away);
       lineMat.uniforms.uBolt.value.set(orbit.position.x, orbit.position.z, landFlash, T.orbFlashReach);
       // The surge: bolts to the water and land, and the beam. A strike lights the land where it lands.
-      const waterY = water.levelAt(orbit.position.z);
+      const waterY = lvl(orbit.position.z);
       const strike = surge.update(clock, dt, ch * (1 - away), orbit.position, R, waterY, { beam: T.holdBeam, bolts: T.holdBolts, width: T.holdBeamWidth, start: T.holdBeamStart, glow: T.holdBeamGlow, flicker: T.holdBeamFlicker }, () => {
         const a = Math.random() * Math.PI * 2;
         if (Math.random() < 0.6) {
@@ -413,7 +389,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       if (novaNow && T.holdNova > 0) {
         surge.burstAll(orbit.position, R, () => {
           const a = Math.random() * Math.PI * 2, r = R * (1.5 + 4 * Math.random());
-          return strikeAt.set(orbit.position.x + Math.cos(a) * r, water.levelAt(orbit.position.z), orbit.position.z + Math.sin(a) * r * 0.7);
+          return strikeAt.set(orbit.position.x + Math.cos(a) * r, lvl(orbit.position.z), orbit.position.z + Math.sin(a) * r * 0.7);
         });
         addPop(orbit.position.x, orbit.position.z, 12 * T.holdNova);
       }
@@ -429,16 +405,22 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         for (let tries = 0; tries < 6; tries++) {
           const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * T.holdBoilArea * 1.2;
           const x = orbit.position.x + Math.cos(a) * r, z = orbit.position.z + Math.sin(a) * r;
-          const y = water.levelAt(z);
+          const y = lvl(z);
           if (Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.35) return bubbleAt.set(x, y, z);
         }
         return null;
       }, (x, z, size) => { if (T.holdBubbleRings > 0) addPop(x, z, Math.min(2, size * 0.5) * T.holdBubbleRings); }, px, skyTurn);
       // What swirls round the orb as it charges (charge.ts).
-      if (novaNow) chargeFx.explode(orbit.position, T.holdNova);
-      chargeFx.update(dt, ch * (1 - away), orbit.position, R, { style: T.holdFx, amount: T.holdFxAmount, speed: T.holdFxSpeed },
-        (x, z) => Math.max(water.levelAt(z), heightAt(x, z) * (1 - k)),
-        (x, z) => { const y = water.levelAt(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; },
+      if (novaNow) {
+        chargeFx.explode(orbit.position, T.holdNova);
+        chargeFx.splash(orbit.position, R, Math.round(70 * T.holdSplash), (x, z) => { const y = lvl(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; });
+        drainY = T.holdDrain;
+      }
+      // Refill: quick at first, then easing in, like water running back.
+      if (drainY > 0) drainY = Math.max(0, drainY - dt * (T.holdDrain / Math.max(1, T.holdRefill)) * (0.4 + 1.2 * (drainY / Math.max(0.01, T.holdDrain))));
+      chargeFx.update(dt, ch * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5, T.holdFxGround > 0.5, T.holdFxStreaks > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed },
+        (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)),
+        (x, z) => { const y = lvl(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; },
         (x, z, size) => addPop(x, z, Math.min(1.5, size)), px, skyTurn);
       for (const pp of pops) if (pp && pp[2] > 0) { pp[2] += dt / (pp[3] > 2 ? 1.6 : 0.7); if (pp[2] >= 1) pp[2] = 0; }
       if (stage.style.getPropertyValue('--hold') !== (ch * T.holdVignette).toFixed(2)) stage.style.setProperty('--hold', (ch * T.holdVignette).toFixed(2));
@@ -455,8 +437,10 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       }
       water.update({
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
-        flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far, calm,
-        mirror: [T.orbMirror * (1 - away), R, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
+        // The orb's light on the water (its glow, glint and mirror image) follows the orb itself: nothing until it
+        // has spawned, so the reflection never appears before the orb does.
+        flat: 1 - k, stir: (1 - ease(away * 2.5)) * born, show: 1, fogNear: fog.near, fogFar: fog.far, calm, drop: drainY,
+        mirror: [T.orbMirror * (1 - away) * born, R * born, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
         boil: [orbit.position.x, orbit.position.z, boil, T.holdBoilArea], boilLook: [T.holdBoilHeight, T.holdBoilSpeed, T.holdBoilSpecks, R * 0.45 * T.holdBeam], pops, skyTurn,
       });
       // The join: once the land is almost flat, the riverbed pipe narrows to exactly the page pipe's width
@@ -486,7 +470,6 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     return () => {
       cancelAnimationFrame(raf);
       unmountPanel?.();
-      dial.remove();
       removeEventListener('pointerdown', onDown, true);
       removeEventListener('pointermove', onMove);
       removeEventListener('pointerup', onUp);

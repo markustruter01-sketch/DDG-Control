@@ -366,11 +366,12 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     /** 1 = water fully shown. */ show: number; fogNear: number; fogFar: number;
     /** The calm box behind the quote: left, bottom, right, top in canvas pixels, how calm (0 to 1), edge softness. */ calm: [number, number, number, number, number, number];
     /** The orb mirrored in the water: strength, orb radius, spin clock, lightning flash. And how much lightning brightens the water. */ mirror: [number, number, number, number]; flash: number;
+    /** How far the river level has dropped (after the nova). */ drop?: number;
     /** The boil (x, z, strength 0..1, radius), its look (height, speed, specks, spot size), bursting rings, and how far the sky has turned. Optional. */ boil?: [number, number, number, number]; boilLook?: [number, number, number, number]; pops?: [number, number, number, number][]; skyTurn?: number;
   };
   const update = (f: Frame) => {
     river.scale.y = Math.max(f.flat, 0.02);
-    river.position.y = (1 - f.flat) * 0.3; // just above the flat grid, so they never flicker through each other
+    river.position.y = (1 - f.flat) * 0.3 - (f.drop ?? 0); // just above the flat grid, so they never flicker through each other
     uniforms.uTime.value = f.t; uniforms.uStir.value = f.stir; uniforms.uGlow.value = f.stir * (1 + f.flash); uniforms.uOpacity.value = f.show; uniforms.uFlat.value = f.flat;
     uniforms.uOrb.value.set(f.orbX, f.orbZ); uniforms.uOrbPos.value.set(f.orbX, f.orbY, f.orbZ);
     uniforms.uFogNear.value = f.fogNear; uniforms.uFogFar.value = f.fogFar;

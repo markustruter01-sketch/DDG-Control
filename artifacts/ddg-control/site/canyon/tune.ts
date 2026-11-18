@@ -41,7 +41,13 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdBuild', label: 'Build-up time (seconds to the nova)', min: 2, max: 20, step: 0.5 },
   { group: 'Hold the orb', key: 'holdNova', label: 'Nova blast size (0 none)', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdCalm', label: 'Calm-down time after (seconds)', min: 0.5, max: 8, step: 0.25 },
-  { group: 'Hold the orb', key: 'holdFx', label: 'Charge-up effect', min: 0, max: 5, step: 1, names: ['None', 'Water globules from the lake', 'Vortex of drops', 'Ground lifting', 'Streaks pulled in', 'All of them'] },
+  { group: 'Hold the orb', key: 'holdFxGlobs', label: 'Charge-up: water globules from the lake (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Hold the orb', key: 'holdFxVortex', label: 'Charge-up: vortex of drops (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Hold the orb', key: 'holdFxGround', label: 'Charge-up: ground lifting (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Hold the orb', key: 'holdFxStreaks', label: 'Charge-up: streaks pulled in (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Hold the orb', key: 'holdSplash', label: 'Nova: water thrown up (amount)', min: 0, max: 3, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdDrain', label: 'Nova: the river level drops by', min: 0, max: 3, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdRefill', label: 'Nova: seconds for the river to fill again', min: 1, max: 15, step: 0.5 },
   { group: 'Hold the orb', key: 'holdFxAmount', label: 'Charge-up effect: amount', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdFxSpeed', label: 'Charge-up effect: speed', min: 0.2, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdZoom', label: 'Camera move (0 none ← → 1 all the way)', min: 0, max: 1, step: 0.05 },
@@ -199,6 +205,9 @@ export const SPECS: Spec[] = [
   // "Scroll down" hint
   { group: 'Scroll hint', key: 'shOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Scroll hint', key: 'shText', label: 'Words (leave empty for arrow only)', min: 0, max: 0, step: 0, text: true },
+  { group: 'Scroll hint', key: 'shHiWords', label: 'Words in colour (exact words, comma between)', min: 0, max: 0, step: 0, text: true },
+  { group: 'Scroll hint', key: 'shHiHue', label: 'Their colour (0 red, 300 magenta)', min: 0, max: 360, step: 5 },
+  { group: 'Scroll hint', key: 'shHiSat', label: 'How strong the colour is', min: 0, max: 1, step: 0.05 },
   { group: 'Scroll hint', key: 'shArrow', label: 'Arrow style', min: 0, max: 7, step: 1, names: ['Chevron', 'Double chevron', 'Thin arrow', 'Long line arrow', 'Mouse', 'Triangle', 'Circle', 'None'] },
   { group: 'Scroll hint', key: 'shAnim', label: 'Movement', min: 0, max: 5, step: 1, names: ['Still', 'Bounce down', 'Float up and down', 'Fade in and out', 'Drop and fade', 'Line runs down'] },
   { group: 'Scroll hint', key: 'shSpeed', label: 'Seconds per move', min: 0.6, max: 5, step: 0.1 },
@@ -230,7 +239,7 @@ export const DEFAULTS: Record<string, number> = {
   holdOn: 1, holdBeam: 2, holdBolts: 2, holdBoil: 2, holdZoom: 1, holdSky: 3,
   holdCamUp: 6, holdCamBack: 4, holdCamTilt: 0.45, holdRise: 2.4, holdOrbShake: 1, holdScreenShake: 0.3, holdGroundShake: 0.6, holdShock: 1, holdVignette: 0.4,
   holdBeamWidth: 1, holdBeamStart: 0.95, holdBeamGlow: 1, holdBeamFlicker: 1,
-  holdBoilArea: 45, holdBoilHeight: 1, holdBoilSpeed: 1, holdBoilSpecks: 0.35, holdBubbles: 1, holdBubbleSize: 1, holdBubbleShine: 1, holdBubbleRings: 1, holdBubbleDrops: 1, holdBuild: 10, holdNova: 1, holdCalm: 3, holdFx: 5, holdFxAmount: 1, holdFxSpeed: 1,
+  holdBoilArea: 45, holdBoilHeight: 1, holdBoilSpeed: 1, holdBoilSpecks: 0.35, holdBubbles: 1, holdBubbleSize: 1, holdBubbleShine: 1, holdBubbleRings: 1, holdBubbleDrops: 1, holdBuild: 10, holdNova: 1, holdCalm: 3, holdFxGlobs: 1, holdFxVortex: 0, holdFxGround: 0, holdFxStreaks: 0, holdSplash: 1, shHiHue: 300, shHiSat: 1, holdDrain: 0.8, holdRefill: 5, holdFxAmount: 1, holdFxSpeed: 1,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.15, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
@@ -252,10 +261,10 @@ export const DEFAULTS: Record<string, number> = {
 
 export const T: Record<string, number> = { ...DEFAULTS };
 /** Settings that are words, not numbers. */
-export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '' };
+export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-21'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-22'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -320,12 +329,17 @@ export function mountPanel(): () => void {
   let box: HTMLElement = body as HTMLElement;
   let folded: string[] = [];
   try { folded = JSON.parse(localStorage.getItem(STORE + '-folded') || '[]'); } catch { /* ignore */ }
-  for (const s of SPECS) {
+  // Effects switched off (set to 0) are moved to one closed group at the bottom, "Inactive", until turned
+  // up again. Only effect groups; choosers and layout settings stay where they are.
+  const EFFECT_GROUPS = ['Orb extras', 'Hold the orb', 'Hold the beam', 'Boiling lake'];
+  const inactive = (sp: Spec) => !sp.text && !sp.names && EFFECT_GROUPS.includes(sp.group) && sp.min === 0 && T[sp.key] === 0;
+  const ordered = [...SPECS.filter((sp) => !inactive(sp)), ...SPECS.filter(inactive).map((sp) => ({ ...sp, group: 'Inactive (set to 0)', label: `${sp.group}: ${sp.label}` }))];
+  for (const s of ordered) {
     if (s.group !== group) {
       group = s.group;
       const sec = document.createElement('section');
       sec.innerHTML = `<h4 data-act="fold">${group}</h4>${group === 'Load-in' ? '<button data-act="replay">Replay the load-in</button>' : ''}`;
-      if (folded.includes(group)) sec.classList.add('folded');
+      sec.classList.add('folded'); // every group starts closed (Markus, 18 Nov)
       body.appendChild(sec);
       box = sec;
     }
@@ -395,7 +409,7 @@ const ARROWS = [
   '',
 ];
 export function applyBrand(): void {
-  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', 'qpFrame', 'qpBright', 'qpBlue', 'qpGlow', 'qpHi', 'qpAnim', 'qpSpeed', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText;
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', 'qpFrame', 'qpBright', 'qpBlue', 'qpGlow', 'qpHi', 'qpAnim', 'qpSpeed', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText + '|' + TX.shHiWords + '|' + T.shHiHue + '|' + T.shHiSat;
   // The hint fades away as soon as the visitor starts scrolling.
   const fade = String(Math.max(0, 1 - scrollY / (innerHeight * 0.2)).toFixed(3));
   if (fade !== lastFade) { lastFade = fade; document.documentElement.style.setProperty('--hint-fade', fade); }
@@ -482,7 +496,18 @@ export function applyBrand(): void {
     h.style.display = T.shOn ? '' : 'none';
     h.className = `cn-scroll lay-${T.shLayout} anim-${T.shAnim}`;
     const w = h.querySelector<HTMLElement>('.cn-scroll-words'), a = h.querySelector<HTMLElement>('.cn-scroll-arrow');
-    if (w) { w.textContent = TX.shText; w.style.display = TX.shText ? '' : 'none'; }
+    if (w) {
+      // Chosen words in colour (built as text nodes, never as HTML).
+      const pick = (TX.shHiWords || '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
+      w.textContent = '';
+      for (const part of (TX.shText || '').split(/(\s+)/)) {
+        if (pick.includes(part.replace(/[^\p{L}\p{N}]/gu, '').toLowerCase()) && part.trim()) {
+          const b = document.createElement('span'); b.className = 'cn-scroll-hi'; b.textContent = part; w.appendChild(b);
+        } else w.appendChild(document.createTextNode(part));
+      }
+      w.style.display = TX.shText ? '' : 'none';
+      w.style.setProperty('--sh-hi', `hsl(${T.shHiHue}, ${Math.round(T.shHiSat * 100)}%, ${70 - 10 * T.shHiSat}%)`);
+    }
     if (a) { a.innerHTML = ARROWS[T.shArrow] ?? ''; a.style.display = ARROWS[T.shArrow] ? '' : 'none'; }
   }
   s.setProperty('--sh-font', fontOf(T.shFont));
