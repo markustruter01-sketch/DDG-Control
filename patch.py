@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '43'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '44'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -61,6 +61,13 @@ s = one(s, 'It.set(0,12-9*nt.holdCamTilt,2+4*nt.holdCamTilt),', 'It.set(0,12-9*n
 # orb height from its bottom edge, so the bigger computer orb no longer sinks into the water (Markus, 19 Nov 06:36)
 s = one(s, '$.position.set(0,B.y+nt.orbHeight+Xt*26,B.z-Xt*10),$.scale.setScalar((o?1.44:2.19)*nt.orbSize),',
         '$.position.set(0,B.y+nt.orbHeight+et*((o?1.44:2.19)*nt.orbSize-2.88)+Xt*26,B.z-Xt*10),$.scale.setScalar((o?1.44:2.19)*nt.orbSize),')
+# smooth load-in on slow computers: warm-up behind the cover, reveal only when frames are steady, spawn on its own clock (Markus, 19 Nov 09:14)
+s = one(s, 'let Pn=!1,br=0;Promise.race([document.fonts?.ready??Promise.resolve(),new Promise(Pt=>setTimeout(Pt,2500))]).then(()=>{Pn=!0});',
+        'let Pn=!1,br=0,__sd=0,__ws=0,__wl=0,__ps=0,__it=0;Promise.race([document.fonts?.ready??Promise.resolve(),new Promise(Pt=>setTimeout(Pt,2500))]).then(()=>{Pn=!0});const __wu=()=>{const h=[];d.traverse(o=>{o.visible||(h.push(o),o.visible=!0)});try{a.compile(d,g),a.render(d,g)}catch{}for(const o of h)o.visible=!1};')
+s = one(s, 'const gn=nu(),re=s||nt.introSpawn<=0?gn===null?0:1:gn===null?0:Math.min(1,Math.max(0,(Pt-gn)/(nt.introSpawn*1e3)));',
+        'const gn=nu();gn===null?(__it=0):Pt>=gn&&(__it+=Math.min(.1,Math.max(0,ee/1e3)));const re=s||nt.introSpawn<=0?gn===null?0:1:gn===null?0:Math.min(1,__it/nt.introSpawn);')
+s = one(s, '++br>=3&&Pn&&Oa(nt.introFade*1e3)}',
+        'br++,br===2?__wu():br>2&&nu()===null&&(__sd=ee<40?__sd+1:0,++__ws>=12?(__wl>8&&__ps<2&&c<l.length-1&&(c++,__ps++,a.setPixelRatio(Math.min(devicePixelRatio,l[c]??1)),At(),__sd=0),__ws=0,__wl=0):ee>22&&__wl++),br>=3&&Pn&&__sd>=8&&Oa(nt.introFade*1e3)}')
 open(f'{A}/Stage-ddg{NEW}.js', 'w', encoding='utf-8').write(s)
 
 t = rd(f'{A}/site-ddg11.js')

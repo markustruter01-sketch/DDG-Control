@@ -7,7 +7,7 @@ const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m
 await p.goto('http://localhost:8765/' + page, { waitUntil: 'domcontentloaded' });
 for (let i = 0; i < 60 && await p.evaluate(() => !!document.getElementById('intro-cover') || document.querySelector('.cn-follow')?.style.opacity !== '1'); i++) await new Promise(r => setTimeout(r, 1000));
 await p.evaluate(() => { const t = document.querySelector('.tune'); if (t) t.style.display = 'none'; const s = document.querySelector('.pv-status, #pv-status'); if (s) s.style.display = 'none'; });
-await new Promise(r => setTimeout(r, 4000));
+await new Promise(r => setTimeout(r, +(process.env.WAIT||4000)));
 await p.screenshot({ path: out });
 console.log(out, 'errors', JSON.stringify(errs.slice(0, 5)));
 await b.close();
