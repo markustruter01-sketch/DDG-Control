@@ -211,21 +211,36 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     let charge = 0, camHold = 0, skyTurn = 0, fly = 0, flyOn = false;
     const flyDir = new Vector3();
     const hold = { down: false, id: -1, x: 0, y: 0 };
+    // The orb can be pressed until the page has scrolled this far (as a part of the scroll that flattens the
+    // land). It was 0.06, about 70 px: a small scroll left the orb looking the same but dead to a press.
+    const HOLD_REACH = 0.25;
+    // Preview only (the settings panel is on): one line of facts at the bottom left, so a problem with the hold
+    // can be read off the screen and not guessed at.
+    const statusEl = tuneOn() ? document.createElement('div') : null;
+    if (statusEl) {
+      statusEl.style.cssText = 'position:fixed;left:10px;bottom:8px;z-index:2147482000;font:11px/1.4 ui-monospace,Menlo,monospace;color:#9fd8ff;background:rgba(0,0,0,.6);padding:3px 8px;border-radius:6px;pointer-events:none';
+      document.body.appendChild(statusEl);
+    }
+    let lastPress = 'none yet', statusAt = 0, fps = 0, liquidErr = '';
     const orbOnScreen = { x: 0, y: 0, r: 0 };
     const heroEl = document.querySelector<HTMLElement>('.cn-hero');
     const onOrb = (x: number, y: number) => T.holdOn > 0.5 && orbOnScreen.r > 0 && (x - orbOnScreen.x) ** 2 + (y - orbOnScreen.y) ** 2 <= (orbOnScreen.r * 1.05) ** 2;
     const onDown = (e: PointerEvent) => {
-      if (e.button > 0 || !onOrb(e.clientX, e.clientY)) return;
-      if ((e.target as Element | null)?.closest?.('a,button,input,textarea,select,label,.tune')) return;
+      if (e.button > 0 || !onOrb(e.clientX, e.clientY)) { lastPress = e.button > 0 ? 'not the main button' : orbOnScreen.r > 0 ? 'missed the orb' : 'orb not ready'; return; }
+      if ((e.target as Element | null)?.closest?.('a,button,input,textarea,select,label,.tune')) { lastPress = 'on a button or the panel'; return; }
+      lastPress = 'on the orb';
       hold.down = true; hold.id = e.pointerId; hold.x = e.clientX; hold.y = e.clientY;
+      // The page may be scrolled a little (a nudge of the wheel, or the browser putting the old scroll place back
+      // after a reload). The press then brings the page back to the top, and the scene glides there by itself.
+      if (scrollY > 0) scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
     };
     const onMove = (e: PointerEvent) => {
       // Moving the mouse while holding keeps the charge going. On a phone, a finger that starts scrolling the page
       // makes the browser cancel the press (pointercancel), which ends the hold, so scrolling still works.
-      if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) && scrollY < 40 ? 'pointer' : '';
+      if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) ? 'pointer' : '';
     };
     // After the nova the orb needs a fresh press: letting go unlocks it.
-    const onUp = (e: PointerEvent) => { if (e.pointerId === hold.id) { hold.down = false; novaLock = false; } };
+    const onUp = (e: PointerEvent) => { if (e.pointerId === hold.id) { if (hold.down && e.type === 'pointercancel') lastPress = 'cancelled by the browser'; hold.down = false; novaLock = false; } };
     const noMenu = (e: Event) => { if (hold.down) e.preventDefault(); };
     addEventListener('pointerdown', onDown, true);
     addEventListener('pointermove', onMove, { passive: true });
@@ -242,7 +257,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const raw = now - last;
-      const dt = Math.min(0.05, raw / 1000); last = now;
+      // Never negative: the first frame's time stamp can be earlier than the clock read at set-up, and a negative
+      // step used to give the orb a little charge by itself at load (words flying off, dark edges).
+      const dt = Math.min(0.05, Math.max(0, raw / 1000)); last = now;
       // Quality check: after a short settle, look at 90 frames; if most took over 22 ms, step down once
       // and look again. Hidden tabs and the first frames after a scroll jump are ignored.
       if (!document.hidden && raw < 250 && ratioStep < ratios.length - 1) {
@@ -256,6 +273,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
           }
         }
       }
+      if (raw > 0 && raw < 1000) fps += (1000 / raw - fps) * 0.1;
       smoothY += (scrollY - smoothY) * (reduced ? 1 : 0.12);
       const vh = stableHeight();
       // Fade the whole stage away as the first section after the canyon arrives.
@@ -286,7 +304,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // At the top it goes nova (a blast of light, a shock front, every bolt at once), then everything calms
       // down over T.holdCalm seconds. A fresh press starts it again. The camera moves back and up over 2 s,
       // looking down on the river with the sky still in view, while the sky turns as if time ran faster.
-      if (hold.down && (p > 0.08 || T.holdOn < 0.5)) hold.down = false;
+      // Scrolling away while holding ends the hold (the real scroll place, not the smoothed one: a press on a
+      // slightly scrolled page jumps to the top first, and the smoothed value is still catching up).
+      if (hold.down && (scrollY > vh * 0.1 || T.holdOn < 0.5)) hold.down = false;
       const building = hold.down && !novaLock;
       charge = building ? Math.min(1, charge + dt / Math.max(1, T.holdBuild)) : Math.max(0, charge - dt / (novaT >= 0 ? Math.max(0.5, T.holdCalm) : 1.2));
       let novaNow = false;
@@ -332,7 +352,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       camera.updateMatrixWorld();
       const R = ORB_R * orbit.scale.x, FRAME = 1.22;
       const [oy, orR] = onScreen(camera, orbit.position, R);
-      orbOnScreen.x = innerWidth / 2; orbOnScreen.y = oy; orbOnScreen.r = p < 0.06 ? orR : 0;
+      orbOnScreen.x = innerWidth / 2; orbOnScreen.y = oy; orbOnScreen.r = p < HOLD_REACH ? orR : 0;
       // Charging: the orb lifts a little and trembles. Applied after the words have found their places, so the
       // name and quote stay still while the orb shakes.
       if (ch > 0) {
@@ -451,9 +471,15 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         liquid.scatter(orbit.position);
       }
       const liquidOn = T.holdFxVortex > 0.5 && T.holdVortexLook === 5;
-      liquid.update(dt, liquidOn ? fxCh * (1 - away) : 0, orbit.position, R * born,
-        { amount: T.holdFxAmount, speed: T.holdFxSpeed, size: T.holdVortexSize, reach: T.holdVortexReach, glow: T.holdVortexGlow },
-        (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)));
+      // How hard the orb's air presses on the river now, and the dish that makes (the same numbers as water.ts).
+      const stir = (1 - ease(away * 2.5)) * born, silk = T.waterDesign > 3.5;
+      // (If the liquid ever fails on some device it is switched off, and the rest of the scene carries on.)
+      if (!liquidErr) try {
+        liquid.update(dt, liquidOn ? fxCh * (1 - away) : 0, orbit.position, R * born,
+          { amount: T.holdFxAmount, speed: T.holdFxSpeed, size: T.holdVortexSize, reach: T.holdVortexReach, glow: T.holdVortexGlow,
+            bowlDepth: (silk ? 0.65 * T.swirlDepth : 0.9) * stir * (1 - k), bowlR: silk ? 3.6 * T.swirlSize : 6.3 },
+          (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)));
+      } catch (e) { liquidErr = String(e); liquid.funnel.z = 0; }
       chargeFx.update(dt, fxCh * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5 && T.holdVortexLook !== 5, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed,
           vortex: { look: T.holdVortexLook, size: T.holdVortexSize, reach: T.holdVortexReach, trail: T.holdVortexTrail, glow: T.holdVortexGlow } },
         (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)),
@@ -469,7 +495,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         // The orb's light on the water (its glow, glint and mirror image) follows the orb itself: nothing until it
         // has spawned, so the reflection never appears before the orb does.
-        flat: 1 - k, stir: (1 - ease(away * 2.5)) * born, show: 1, fogNear: fog.near, fogFar: fog.far, calm, drop: drainY,
+        flat: 1 - k, stir, show: 1, fogNear: fog.near, fogFar: fog.far, calm, drop: drainY,
         funnel: liquid.funnel,
         nova: novaT >= 0 ? [novaAt.x, novaAt.y, novaT, T.holdNovaWave] : [introWaveAt.x, introWaveAt.y, introWaveT, introWave * 2.5], novaSpeed: novaT >= 0 ? T.holdNovaWaveSpeed : 30,
         mirror: [T.orbMirror * (1 - away) * born, R * born, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
@@ -497,7 +523,11 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       clouds.update(clock, camera, 1 - k, show, orbit.position);
       stars.update(now, camera, T, k < 0.3);
       renderer.render(scene, camera);
-      liquid.render(camera, orbit.position, R * born, skyTurn);
+      if (!liquidErr) try { liquid.render(camera, orbit.position, R * born, skyTurn, (water.river.material as ShaderMaterial).uniforms); } catch (e) { liquidErr = String(e); liquid.funnel.z = 0; renderer.setRenderTarget(null); }
+      if (statusEl && now - statusAt > 250) {
+        statusAt = now;
+        statusEl.textContent = `scroll ${Math.round(scrollY)} px · orb: ${hold.down ? 'HELD' : novaLock ? 'let go first' : orbOnScreen.r > 0 ? 'ready to press' : 'cannot be pressed (page scrolled too far)'} · last press: ${lastPress} · charge ${Math.round(charge * 100)}% · ${Math.round(fps)} frames/s · water vortex: ${liquidErr ? 'failed: ' + liquidErr.slice(0, 80) : liquid.ok ? 'ok' : 'not supported on this device'}`;
+      }
       if (++framesDrawn >= 3 && fontsIn) revealPage(T.introFade * 1000);
     };
     raf = requestAnimationFrame(frame);
@@ -511,6 +541,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       removeEventListener('contextmenu', noMenu);
       document.removeEventListener('selectstart', noMenu);
       if (followEl) followEl.style.opacity = '';
+      statusEl?.remove();
       stopResize();
       disposables.forEach((d) => d.dispose());
       renderer.dispose();

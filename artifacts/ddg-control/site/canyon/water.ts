@@ -49,8 +49,8 @@ float shapeFoam(vec2 q, float d, float lace) { return shapeFoam0(q, d / uSwirlR,
 float swirl(vec2 q, float d, float arms, float wind, float speed) {
   return sin(arms * atan(q.y, q.x + 0.0001) + d * wind - uTime * speed) * smoothstep(1.5, 6.5, d);
 }
-uniform vec4 uFunnel;    // the river drawn down into a funnel under the orb by the liquid vortex: x, z, depth, width
-float funnelDip(vec2 p) { return uFunnel.z <= 0.0 ? 0.0 : -uFunnel.z * exp(-dot(p - uFunnel.xy, p - uFunnel.xy) / (uFunnel.w * uFunnel.w)); }
+uniform vec4 uFunnel;    // the river under the orb while the liquid vortex runs: x, z, depth (below zero = lifted into a mound), width
+float funnelDip(vec2 p) { return uFunnel.z == 0.0 ? 0.0 : -uFunnel.z * exp(-dot(p - uFunnel.xy, p - uFunnel.xy) / (uFunnel.w * uFunnel.w)); }
 uniform vec4 uNova;      // the nova's push on the water: x, z, seconds since the blast (below 0 = none), height
 uniform float uNovaSpeed; // how fast the ring runs out (units a second)
 // The nova pushes the water: a crest of water heaped up at the ring as it runs outwards, the middle pushed
@@ -409,7 +409,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     /** The orb mirrored in the water: strength, orb radius, spin clock, lightning flash. And how much lightning brightens the water. */ mirror: [number, number, number, number]; flash: number;
     /** How far the river level has dropped (after the nova). */ drop?: number;
     /** The nova's push: x, z, seconds since (below 0 = none), height; and its speed. */ nova?: [number, number, number, number]; novaSpeed?: number;
-    /** The funnel under the orb (liquid.ts): x, z, depth, width. */ funnel?: Vector4;
+    /** The river's surface under the orb (liquid.ts): x, z, depth (below zero = a mound), width. */ funnel?: Vector4;
     /** The boil (x, z, strength 0..1, radius), its look (height, speed, specks, spot size), bursting rings, and how far the sky has turned. Optional. */ boil?: [number, number, number, number]; boilLook?: [number, number, number, number]; pops?: [number, number, number, number][]; skyTurn?: number;
   };
   const update = (f: Frame) => {
