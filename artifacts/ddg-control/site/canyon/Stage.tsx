@@ -319,7 +319,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const padQ = T.quoteOn ? T.qbPadY * layZoom : 0, hQ = T.quoteOn ? lay.quote!.getBoundingClientRect().height + 2 * padQ : 0;
       // The orb's size on screen, and where it would sit with no shift.
       layCam.fov = camera.fov; layCam.aspect = camera.aspect; layCam.clearViewOffset(); layCam.updateProjectionMatrix();
-      layCam.position.set(0, 9, 42); zoomAway(layCam.position, restLook, Math.max(0.5, T.camZoom)); layCam.lookAt(restLook); layCam.updateMatrixWorld();
+      layCam.position.set(0, 9, 42); zoomAway(layCam.position, restLook, Math.max(0.5, T.camZoom)); layCam.position.y += T.camUp; layCam.lookAt(restLook); layCam.updateMatrixWorld();
       const [y0, r0] = onScreen(layCam, layPos.set(0, CORE.y + T.orbHeight, CORE.z), R);
       const D = 2 * r0, parts = hH > 0 ? 5 : 4;
       const g = Math.max(6, (bottom - top - hB - hH - D - hQ) / parts);
@@ -430,6 +430,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const zoom = lerp(Math.max(0.5, T.camZoom), 1, ease(p * 1.5));
       const zoomBy = zoomAway(camera.position, look, zoom);
       ISO_POS.add(zoomBy);
+      // Camera height at load (T.camUp, Markus 18 Nov): lifted straight up, still looking at the same point, so it
+      // looks down more. Eases away on scroll like the distance; the hold camera starts from the same height.
+      camera.position.y += T.camUp * (1 - ease(p * 1.5)); ISO_POS.y += T.camUp;
       fog.near += zoomBy.length() * Math.sign(zoom - 1); fog.far += zoomBy.length() * Math.sign(zoom - 1);
       lineMat.uniforms.uFogNear.value = fog.near; lineMat.uniforms.uFogFar.value = fog.far;
       if (cv > 0) { camera.position.lerp(ISO_POS, cv); look.lerp(ISO_LOOK, cv); }
@@ -468,7 +471,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       if (layoutDue(now, p)) phoneLayout(R);
       if (liftPx !== 0) { const H = stableHeight(); restCam.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); } else restCam.clearViewOffset();
       restCam.updateProjectionMatrix();
-      restCam.position.set(0, 9, 42); zoomAway(restCam.position, restLook, Math.max(0.5, T.camZoom)); restCam.lookAt(restLook); restCam.updateMatrixWorld();
+      restCam.position.set(0, 9, 42); zoomAway(restCam.position, restLook, Math.max(0.5, T.camZoom)); restCam.position.y += T.camUp; restCam.lookAt(restLook); restCam.updateMatrixWorld();
       pv.set(0, CORE.y + T.orbHeight, CORE.z);
       const [oy0, or0] = onScreen(restCam, pv.clone(), R);
       // The name, frame, quote and hint fade out early, well before the orb has gone.

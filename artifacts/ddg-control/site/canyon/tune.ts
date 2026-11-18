@@ -33,6 +33,7 @@ export const SPECS: Spec[] = [
   { group: 'Orb', key: 'orbSparks', label: 'Spark brightness', min: 0, max: 3, step: 0.05 },
   { group: 'Orb', key: 'orbSparkRate', label: 'Spark how often', min: 0, max: 4, step: 0.05 },
   { group: 'Orb', key: 'camZoom', label: 'Camera: distance from the orb (1 = close, 2 = twice as far)', min: 0.6, max: 4, step: 0.05 },
+  { group: 'Orb', key: 'camUp', label: 'Camera: height (higher looks down more)', min: -6, max: 40, step: 0.5 },
   { group: 'Orb', key: 'orbSize', label: 'Size', min: 0.4, max: 2, step: 0.02 },
   { group: 'Orb', key: 'orbHeight', label: 'Height above water', min: -3, max: 6, step: 0.1 },
   { group: 'Orb', key: 'orbGlow', label: 'Glow around it', min: 0, max: 2, step: 0.05 },
@@ -227,14 +228,14 @@ export const SPECS: Spec[] = [
 export const DEFAULTS: Record<string, number> = {
   introFade: 3, introStyle: 2, introSpawn: 1.5, introLoop: 0,
   holdOn: 1, holdVibrate: 1, holdFlyOff: 1, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
-  holdCamUp: 10, holdCamBack: 30, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 6, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 0,
-    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 0.05, holdNovaWave: 10.55, holdNovaWaveSpeed: 75, holdCalm: 3, holdFxGlobs: 0, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 0.9, holdFxSpeed: 3,
+  holdCamUp: 10, holdCamBack: 30, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 6, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 2, holdVignette: 0,
+    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 0.05, holdNovaWave: 10.55, holdNovaWaveSpeed: 75, holdCalm: 2.5, holdFxGlobs: 0, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 3, holdFxSpeed: 3,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
-  orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
+  orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 2, orbHeight: -1.6, orbGlow: 0,
   waterDesign: 1, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.25, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
   waterGlint: 2.05, waterReflect: 1.1, waterColour: 3, waterSheen: 1.05, sprayAmount: 0.1, spraySize: 0,
-  camZoom: 2, fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
-  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.7, waterClear: 0.18,
+  camZoom: 2, camUp: 10, fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
+  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.7, waterClear: 0.82,
   starsEvery: 2.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
   pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   quote: 15, quoteOn: 1, quoteFont: 6, quoteSize: 0.55, quoteWeight: 400, quoteSpacing: 0.09, quoteCaps: 0, quoteAlign: 1, quoteWidth: 42, quoteLift: 7,
@@ -253,7 +254,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for Web-Page or | Press & Hold Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-47'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-51'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
