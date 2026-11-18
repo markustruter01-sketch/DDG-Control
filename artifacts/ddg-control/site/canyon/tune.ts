@@ -42,6 +42,11 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdCalm', label: 'Calm-down time after (seconds)', min: 0.5, max: 8, step: 0.25 },
   { group: 'Hold the orb', key: 'holdFxGlobs', label: 'Charge-up: water globules from the lake (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdFxVortex', label: 'Charge-up: vortex of drops (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Hold the orb', key: 'holdVortexLook', label: 'Vortex made of', min: 0, max: 4, step: 1, names: ['Water drops', 'Wind', 'Sparks (electric)', 'Mist', 'Water spout from the lake'] },
+  { group: 'Hold the orb', key: 'holdVortexSize', label: 'Vortex: particle size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdVortexReach', label: 'Vortex: how wide', min: 0.6, max: 2.5, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdVortexTrail', label: 'Vortex: trail length', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdVortexGlow', label: 'Vortex: brightness', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdFxGround', label: 'Charge-up: ground lifting (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdSplash', label: 'Nova: water thrown up (amount)', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdDrain', label: 'Nova: the river level drops by', min: 0, max: 3, step: 0.05 },
@@ -228,7 +233,7 @@ export const DEFAULTS: Record<string, number> = {
   introFade: 3, introSpawn: 1.4, introLoop: 0,
   holdOn: 1, holdBolts: 2, holdBoil: 1.4, holdZoom: 1, holdSky: 3,
   holdCamUp: 5, holdCamBack: 15, holdCamTilt: 0.7, holdRise: 3.5, holdOrbShake: 3, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 1,
-    holdBoilArea: 45, holdBoilLift: 0.8, holdBoilHeight: 1, holdBoilSpeed: 1, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 1, holdCalm: 1, holdFxGlobs: 0, holdFxVortex: 1, holdFxGround: 1, holdSplash: 1, shHiHue: 300, shHiSat: 1, holdDrain: 3, holdRefill: 2.5, holdFxAmount: 3, holdFxSpeed: 3,
+    holdBoilArea: 45, holdBoilLift: 0.8, holdBoilHeight: 1, holdBoilSpeed: 1, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 1, holdCalm: 1, holdFxGlobs: 0, holdFxVortex: 1, holdVortexLook: 1, holdVortexSize: 1, holdVortexReach: 1, holdVortexTrail: 1, holdVortexGlow: 1, holdFxGround: 1, holdSplash: 1, shHiHue: 300, shHiSat: 1, holdDrain: 3, holdRefill: 2.5, holdFxAmount: 3, holdFxSpeed: 3,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.15, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
@@ -253,7 +258,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-23'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-24'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);

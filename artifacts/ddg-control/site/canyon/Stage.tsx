@@ -406,7 +406,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       }
       // Refill: quick at first, then easing in, like water running back.
       if (drainY > 0) drainY = Math.max(0, drainY - dt * (T.holdDrain / Math.max(1, T.holdRefill)) * (0.4 + 1.2 * (drainY / Math.max(0.01, T.holdDrain))));
-      chargeFx.update(dt, ch * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed },
+      chargeFx.update(dt, ch * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed,
+          vortex: { look: T.holdVortexLook, size: T.holdVortexSize, reach: T.holdVortexReach, trail: T.holdVortexTrail, glow: T.holdVortexGlow } },
         (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)),
         (x, z) => { const y = lvl(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; },
         (x, z, size) => addPop(x, z, Math.min(1.5, size)), px, skyTurn);
