@@ -32,7 +32,7 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 
 ## State 18 Nov 18:35 (source: claude/hold-polish, commit "remove the water vortex")
 - Markus asked to undo the vortex look work and remove the vortex completely. Done: no liquid, no vortex sliders.
-- Live files here: index.html -> assets/site-ddg27.js (+ site-ddg27.css) -> assets/Stage-ddg27.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
+- Live files here: index.html -> assets/site-ddg28.js (+ site-ddg28.css) -> assets/Stage-ddg28.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
   from the ddg11 base files (keep those; they are not served).
 - Kept: hold fixes (press works on a slightly scrolled page and jumps to the top; no charge by itself at load),
   a preview-only status line at the bottom left, Hide leaves one small Show button.
@@ -94,3 +94,6 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - New branch `claude/words-back-after-settle` (PR open, NOT merged, NOT live): words fly back when the charge has
   run out after the blast (end of holdCalm), not at the blast; holdVignette default 0. Same in this preview.
 - VERIFIED headless (t11.mjs): words away at 5.6 s, back at 6.3 s (blast at 3.0 s, settle 3 s); no errors.
+- 20:25 (build ddg28, also in PR #122): the dent fades towards its edge (mask); the buzz starts with a faint tick every
+  0.48 s and builds to 49 ms ticks every 0.1 s, then stops at the blast (no long pulse). VERIFIED headless with touch
+  (t12.mjs, vibrate stubbed): 6 ms @ 450 ms apart -> 49 ms @ 100 ms apart, then 0 at the blast; no errors.
