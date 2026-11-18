@@ -32,7 +32,7 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 
 ## State 18 Nov 18:35 (source: claude/hold-polish, commit "remove the water vortex")
 - Markus asked to undo the vortex look work and remove the vortex completely. Done: no liquid, no vortex sliders.
-- Live files here: index.html -> assets/site-ddg19.js (+ site-ddg19.css) -> assets/Stage-ddg19.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
+- Live files here: index.html -> assets/site-ddg22.js (+ site-ddg22.css) -> assets/Stage-ddg22.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
   from the ddg11 base files (keep those; they are not served).
 - Kept: hold fixes (press works on a slightly scrolled page and jumps to the top; no charge by itself at load),
   a preview-only status line at the bottom left, Hide leaves one small Show button.
@@ -72,3 +72,11 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - Then Markus sent new tuner settings (19:07). They are on branch `claude/scene-settings-1907` (new PR, tune.ts only)
   and in this preview (ddg19). NOT merged, NOT live: wait for Markus's yes.
 - New source work starts from main now, not from claude/hold-polish.
+
+## 18 Nov 19:45: drag anywhere while holding; scroll hint on two lines (build ddg22)
+- PR #119 and PR #120 are merged and live on ddg.limited (Replit publish success, 19:20).
+- New branch `claude/hold-anywhere` (PR open, NOT merged, NOT live): hold continues wherever the finger goes;
+  scroll hint breaks after "or" ("|" in the words = new line). Same in this preview.
+- VERIFIED headless with touch (t8.mjs: hide the panel first, it covers the orb on a narrow screen): hold stays on
+  through drags, no pointercancel, no scroll, nova fires, hint is two lines, no errors.
+- NOT VERIFIED: a real phone (iOS Safari especially).
