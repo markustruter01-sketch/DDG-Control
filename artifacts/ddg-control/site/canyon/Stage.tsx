@@ -12,6 +12,7 @@ import { makeSurge } from './surge';
 import { makeCharge } from './charge';
 import { makeDial } from './dial';
 import { makeSpawnFx, spawnLook } from './spawn';
+import { makeLiquid } from './liquid';
 import { introStart, revealPage } from '../intro';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
@@ -131,6 +132,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const spawnFx = makeSpawnFx();
     scene.add(spawnFx.group);
     disposables.push(...spawnFx.disposables);
+    // The liquid vortex (liquid.ts): water drawn off the river, swirling round the orb as it charges.
+    const liquid = makeLiquid(renderer);
+    disposables.push(...liquid.disposables);
     let spawnPrev = 0, introWaveT = -1, introWave = 0;
     const introWaveAt = new Vector3();
     const ISO_POS = new Vector3(), ISO_LOOK = new Vector3(), strikeAt = new Vector3();
@@ -459,8 +463,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         chargeFx.explode(orbit.position, T.holdNova);
         // The only water effect of the blast is its push on the river (novaWave in water.ts).
         novaAt.set(orbit.position.x, orbit.position.z, 0);
+        liquid.scatter(orbit.position);
       }
-      chargeFx.update(dt, ch * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed,
+      const liquidOn = T.holdFxVortex > 0.5 && T.holdVortexLook === 5;
+      liquid.update(dt, liquidOn ? ch * (1 - away) : 0, orbit.position, R * born,
+        { amount: T.holdFxAmount, speed: T.holdFxSpeed, size: T.holdVortexSize, reach: T.holdVortexReach, glow: T.holdVortexGlow },
+        (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)));
+      chargeFx.update(dt, ch * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5 && T.holdVortexLook !== 5, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed,
           vortex: { look: T.holdVortexLook, size: T.holdVortexSize, reach: T.holdVortexReach, trail: T.holdVortexTrail, glow: T.holdVortexGlow } },
         (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)),
         (x, z) => { const y = lvl(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; },
@@ -476,6 +485,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         // The orb's light on the water (its glow, glint and mirror image) follows the orb itself: nothing until it
         // has spawned, so the reflection never appears before the orb does.
         flat: 1 - k, stir: (1 - ease(away * 2.5)) * born, show: 1, fogNear: fog.near, fogFar: fog.far, calm, drop: drainY,
+        funnel: liquid.funnel,
         nova: novaT >= 0 ? [novaAt.x, novaAt.y, novaT, T.holdNovaWave] : [introWaveAt.x, introWaveAt.y, introWaveT, introWave * 2.5], novaSpeed: novaT >= 0 ? T.holdNovaWaveSpeed : 30,
         mirror: [T.orbMirror * (1 - away) * born, R * born, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
         boil: [orbit.position.x, orbit.position.z, boil, T.holdBoilArea], boilLook: [T.holdBoilHeight, T.holdBoilSpeed, T.holdBoilSpecks, T.holdBoilLift], pops, skyTurn,
@@ -502,6 +512,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       clouds.update(clock, camera, 1 - k, show, orbit.position);
       stars.update(now, camera, T, k < 0.3);
       renderer.render(scene, camera);
+      liquid.render(camera, orbit.position, R * born, skyTurn);
       if (++framesDrawn >= 3 && fontsIn) revealPage(T.introFade * 1000);
     };
     raf = requestAnimationFrame(frame);
