@@ -1,4 +1,5 @@
-import { AdditiveBlending, Group, Mesh, ShaderMaterial, SphereGeometry } from 'three';
+import { AdditiveBlending, Group, Mesh, ShaderMaterial, SphereGeometry, Vector3 } from 'three';
+import { SKY_GLSL } from './sky';
 
 /**
  * The DDG core as a solid ball of spinning air (clockwise seen from above). One smooth sphere whose surface is drawn by a
@@ -11,8 +12,12 @@ const VERT = /* glsl */ `
 varying vec3 vObj;
 varying vec3 vN;
 varying vec3 vV;
+varying vec3 vWN;
+varying vec3 vWP;
 void main() {
   vObj = normalize(position);
+  vWN = mat3(modelMatrix) * normal;
+  vWP = (modelMatrix * vec4(position, 1.0)).xyz;
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   vN = normalMatrix * normal;
   vV = -mv.xyz;
@@ -30,6 +35,15 @@ uniform float uZapRate; // how often sparks happen
 uniform float uStyle;   // which orb (0 air, 1 clouds, 2 liquid pearl, 3 water, 4 storm, 5 aurora, 6 neural net, 7 galaxy, 8 singularity)
 uniform float uHue;     // colour turn, radians
 uniform float uFlow;    // speed of the movement inside
+uniform vec2 uGate;     // which of the two lightning streams is firing right now (worked out outside, so the water and land can flash with it)
+uniform float uFlash;   // how brightly the lightning lights the inside of the ball right now
+uniform float uDepth;   // layers of wind seen inside the ball
+uniform float uGlass;   // glass shell: the stars behind are bent through it, with a glossy highlight
+uniform float uFringe;  // a thin rainbow along the edge, like a lens
+uniform vec3 uCamObj;   // the camera, seen from the ball (1 = the ball's radius)
+varying vec3 vWN;
+varying vec3 vWP;
+${SKY_GLSL}
 varying vec3 vObj;
 varying vec3 vN;
 varying vec3 vV;
@@ -48,8 +62,7 @@ vec3 rotZ(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(c * p.x -
 // split second at a random spot. Two independent streams, so the timing never looks regular.
 float arc(float lane, float rate, float chance) {
   float slot = floor(uTime * rate + lane * 13.7), lt = fract(uTime * rate + lane * 13.7);
-  float r = hash3(vec3(slot, lane, 1.3));
-  if (r > chance) return 0.0;
+  if ((lane < 0.5 ? uGate.x : uGate.y) < 0.5) return 0.0;
   vec3 c = normalize(vec3(hash3(vec3(slot, 2.1, lane)), hash3(vec3(slot, 5.7, lane)), hash3(vec3(slot, 9.2, lane))) * 2.0 - 1.0);
   c.z = abs(c.z) * 0.8 + 0.2; // keep most flashes on the side facing the camera
   c = normalize(c);
@@ -92,6 +105,35 @@ void main() {
     col *= 0.8 + 0.2 * N.y;
     col += rim * vec3(0.45, 0.8, 1.0) * 0.9;
     float zap = clamp(arc(0.0, 2.6, 0.16 * uZapRate) + arc(1.0, 3.7, 0.11 * uZapRate), 0.0, 1.5);
+    // Depth: three shells of wind inside the ball, each found by following the line of sight inwards.
+    if (uDepth > 0.001) {
+      vec3 dir = normalize(vObj - uCamObj);
+      float bq = dot(vObj, dir), deep = 0.0;
+      for (int k = 1; k <= 3; k++) {
+        float fk = float(k), rr = 1.0 - 0.2 * fk, disc = bq * bq - (1.0 - rr * rr);
+        if (disc > 0.0) {
+          vec3 p = normalize(vObj + dir * (-bq - sqrt(disc)));
+          vec3 pa = rotY(rotX(p, 0.28 + 0.3 * fk), uSpinT * (18.0 - 4.0 * fk) + fk * 1.7);
+          deep += smoothstep(0.5, 0.85, noise3(pa * vec3(1.5, 8.0, 1.5) * (1.0 + 0.25 * fk))) * (0.55 - 0.12 * fk);
+        }
+      }
+      col += vec3(0.35, 0.7, 1.0) * deep * uDepth * 0.5;
+    }
+    // Glass shell: the night sky behind, bent through the ball, and one glossy highlight.
+    if (uGlass > 0.001) {
+      vec3 wv = normalize(cameraPosition - vWP), wn = normalize(vWN);
+      vec3 bent = refract(-wv, wn, 0.75);
+      col += skyColor(normalize(vec3(bent.x, abs(bent.y) + 0.02, bent.z))) * 1.7 * uGlass * (1.0 - bands);
+      col += vec3(1.0) * pow(max(dot(wn, normalize(normalize(vec3(-0.5, 0.8, 0.6)) + wv)), 0.0), 60.0) * 0.9 * uGlass;
+    }
+    // Rainbow edge.
+    if (uFringe > 0.001) {
+      float e = 1.0 - facing;
+      vec3 rb = 0.5 + 0.5 * cos(6.283 * (e * 1.6 + vec3(0.0, 0.33, 0.67)));
+      col += rb * smoothstep(0.55, 0.9, e) * (1.0 - smoothstep(0.93, 1.0, e)) * 0.9 * uFringe;
+    }
+    // Lightning lights the ball from inside.
+    col += vec3(0.7, 0.88, 1.0) * uFlash * (0.25 + 0.75 * centre);
     col += vec3(0.85, 0.95, 1.0) * zap * 1.95 * uZapK;
     alpha = clamp(0.58 + bands * 0.4 + rim * 0.45 + centre * 0.2 + zap * 0.6, 0.0, 1.0);
   } else {
@@ -195,10 +237,33 @@ void main() {
   gl_FragColor = vec4(hueShift(col, uHue), alpha * uOpacity);
 }`;
 
+export type OrbLook = {
+  bands: number; zap: number; zapRate: number; style: number; hue: number; flow: number;
+  /** Which lightning stream is firing (see lightningNow), the inside flash, and the extra looks from the tuner. */
+  gate?: [number, number]; flash?: number; depth?: number; glass?: number; fringe?: number; cam?: Vector3;
+};
+
+/**
+ * When the orb's two lightning streams fire, worked out here so everything can flash together.
+ * Returns which streams are on, and how bright the flash is at this instant (0 when dark).
+ */
+export function lightningNow(t: number, zapRate: number): { gate: [number, number]; flash: number } {
+  const one = (lane: number, rate: number, chance: number): [number, number] => {
+    const x = t * rate + lane * 13.7, slot = Math.floor(x), lt = x - slot;
+    const h = Math.sin(slot * 127.1 + lane * 311.7 + 97.11) * 43758.5453;
+    if (h - Math.floor(h) > chance) return [0, 0];
+    return [1, Math.exp(-lt * 9) * (0.6 + 0.4 * ((lt * 14) % 1 >= 0.5 ? 1 : 0))];
+  };
+  const a = one(0, 2.6, 0.16 * zapRate), b = one(1, 3.7, 0.11 * zapRate);
+  return { gate: [a[0], b[0]], flash: Math.min(1.5, a[1] + b[1]) };
+}
+
 export function makeAirOrb(R: number) {
   const group = new Group();
+  const camObj = new Vector3(0, 0, 10);
   const make = (skin: number) => new ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uOpacity: { value: 1 }, uSkin: { value: skin }, uSpinT: { value: 0 }, uBandsK: { value: 1 }, uZapK: { value: 1 }, uZapRate: { value: 1 }, uStyle: { value: 0 }, uHue: { value: 0 }, uFlow: { value: 1 } },
+    uniforms: { uTime: { value: 0 }, uOpacity: { value: 1 }, uSkin: { value: skin }, uSpinT: { value: 0 }, uBandsK: { value: 1 }, uZapK: { value: 1 }, uZapRate: { value: 1 }, uStyle: { value: 0 }, uHue: { value: 0 }, uFlow: { value: 1 },
+      uGate: { value: [0, 0] }, uFlash: { value: 0 }, uDepth: { value: 0 }, uGlass: { value: 0 }, uFringe: { value: 0 }, uCamObj: { value: new Vector3(0, 0, 10) } },
     vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false,
     ...(skin ? { blending: AdditiveBlending } : {}),
   });
@@ -210,11 +275,14 @@ export function makeAirOrb(R: number) {
   ball.renderOrder = 5; skin.renderOrder = 6;
   group.add(ball, skin);
   /** `t` drives the spin (hold it still for reduced motion); `opacity` fades the whole orb. */
-  const update = (t: number, opacity: number, spinT = t, look = { bands: 1, zap: 1, zapRate: 1, style: 0, hue: 0, flow: 1 }) => {
+  const update = (t: number, opacity: number, spinT = t, look: OrbLook = { bands: 1, zap: 1, zapRate: 1, style: 0, hue: 0, flow: 1 }) => {
+    if (look.cam) { group.updateWorldMatrix(true, true); ball.worldToLocal(camObj.copy(look.cam)).divideScalar(R); }
     for (const m of [ballMat, skinMat]) {
       m.uniforms.uTime.value = t; m.uniforms.uOpacity.value = opacity; m.uniforms.uSpinT.value = spinT;
       m.uniforms.uBandsK.value = look.bands; m.uniforms.uZapK.value = look.zap; m.uniforms.uZapRate.value = look.zapRate;
       m.uniforms.uStyle.value = look.style; m.uniforms.uHue.value = (look.hue * Math.PI) / 180; m.uniforms.uFlow.value = look.flow;
+      m.uniforms.uGate.value = look.gate ?? [0, 0]; m.uniforms.uFlash.value = look.flash ?? 0; m.uniforms.uDepth.value = look.depth ?? 0;
+      m.uniforms.uGlass.value = look.glass ?? 0; m.uniforms.uFringe.value = look.fringe ?? 0; m.uniforms.uCamObj.value.copy(camObj);
     }
     group.position.y = Math.sin(t * 1.3) * 0.05;
   };

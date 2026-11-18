@@ -3,10 +3,11 @@ import {
   AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, DynamicDrawUsage, Fog, Group,
   LineSegments, Mesh, ShaderMaterial, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
-import { makeAirOrb } from './airOrb';
+import { makeAirOrb, lightningNow } from './airOrb';
 import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWater } from './water';
+import { makeAura } from './aura';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
 import { makeWords } from './words3d';
@@ -103,8 +104,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const haloMat = new SpriteMaterial({ map: haloTex, blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: HALO });
     const halo = new Sprite(haloMat); halo.scale.set(10, 10, 1);
     halo.renderOrder = 4; // after the river (1) and before the ball (5), so the ball sits in front of the water
-    orbit.add(halo, air.group);
-    disposables.push(...air.disposables, haloTex, haloMat);
+    const aura = makeAura(ORB_R);
+    orbit.add(halo, aura.group, air.group);
+    disposables.push(...aura.disposables, ...air.disposables, haloTex, haloMat);
 
     // The river on the canyon floor and the splashes the orb throws up from it.
     const water = makeWater({ small, grid: { NX, NZ, W, D, Z0, base }, heightAt, fogColor: 0x0a0d16 });
@@ -234,7 +236,16 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         topEl.style.setProperty('--cn-oy', `${a}px`); topEl.style.setProperty('--cn-or', `${b}px`); topEl.style.setProperty('--cn-dy', `${c}px`);
       }
       if (!reduced) { clock += dt; spinClock += dt * T.orbSpin; }
-      air.update(clock, 1 - away, spinClock, { bands: T.orbStreaks, zap: T.orbSparks, zapRate: T.orbSparkRate, style: T.orbStyle, hue: T.orbHue, flow: T.orbFlow });
+      // Lightning is timed here, so the ball, its glow, the water and the land can all flash together.
+      const bolt = lightningNow(clock, T.orbSparkRate);
+      const flash = bolt.flash * T.orbFlashLight * Math.min(T.orbSparks, 1.5) * (1 - away);
+      air.update(clock, 1 - away, spinClock, {
+        bands: T.orbStreaks, zap: T.orbSparks, zapRate: T.orbSparkRate, style: T.orbStyle, hue: T.orbHue, flow: T.orbFlow,
+        gate: bolt.gate, flash: flash * 0.6, depth: T.orbDepth, glass: T.orbGlass, fringe: T.orbFringe, cam: camera.position,
+      });
+      aura.update(clock, 1 - away, { bloom: T.orbBloom, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
+      haloMat.opacity *= 1 + flash;
+      lineMat.uniforms.uOpacity.value *= 1 + 0.9 * flash;
       // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
       // into the first pipe on the page. The churning stops as the orb leaves.
       // The box behind the quote, in canvas pixels, so the water can go calm exactly there.
@@ -249,6 +260,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       water.update({
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far, calm,
+        mirror: [T.orbMirror * (1 - away), R, spinClock, flash], flash: flash * 0.8,
       });
       // The join: once the land is almost flat, the riverbed pipe narrows to exactly the page pipe's width
       // on screen (3.5 px) and takes on its look; the page then draws its own pipe on top from the same spot.
