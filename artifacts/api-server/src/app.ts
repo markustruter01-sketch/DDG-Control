@@ -2,8 +2,10 @@ import express, { type Express } from "express";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { securityHeaders } from "./lib/security-headers";
 
 const app: Express = express();
+app.disable("x-powered-by");
 
 app.use(
   pinoHttp({
@@ -27,6 +29,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api", router);
+app.use("/api", securityHeaders, router);
 
 export default app;
