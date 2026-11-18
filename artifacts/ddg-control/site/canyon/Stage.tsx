@@ -345,7 +345,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
           dentEl.style.cssText = 'position:fixed;left:0;top:0;z-index:2147481000;pointer-events:none;border-radius:50%;will-change:transform,opacity;'
             + 'background:radial-gradient(circle at 50% 46%,rgba(0,0,0,.34) 0%,rgba(0,0,0,.16) 42%,rgba(255,255,255,.07) 68%,rgba(255,255,255,0) 100%);'
             + 'box-shadow:inset 0 7px 20px rgba(0,0,0,.6),inset 0 -4px 12px rgba(255,255,255,.2),0 0 0 1px rgba(255,255,255,.16),0 0 34px rgba(140,210,255,.18);'
-            + '-webkit-backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25)';
+            + '-webkit-backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);'
+            // It fades away towards its edge, so the dent has no hard rim.
+            + '-webkit-mask-image:radial-gradient(circle,#000 30%,rgba(0,0,0,.55) 52%,transparent 72%);mask-image:radial-gradient(circle,#000 30%,rgba(0,0,0,.55) 52%,transparent 72%)';
           document.body.appendChild(dentEl);
         }
         dentShow = hold.down ? Math.min(1, dentShow + dt / 0.15) : Math.max(0, dentShow - dt / 0.35);
@@ -354,12 +356,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         dentEl.style.transform = `translate(${(hold.x - size / 2).toFixed(1)}px, ${(hold.y - size / 2).toFixed(1)}px)`;
         dentEl.style.opacity = dentShow.toFixed(2);
       } else if (dentEl && dentEl.style.opacity !== '0') { dentShow = 0; dentEl.style.opacity = '0'; }
-      // The buzz: short pulses about nine times a second, each longer as the charge grows; one long one at the
-      // blast; silence the moment the orb is let go.
+      // The buzz starts slow and builds: at first a faint tick about twice a second, then the ticks come faster
+      // and last longer, to a hard rattle at full charge. It stops dead at the blast, and when the orb is let go.
       if (canBuzz && T.holdVibrate > 0 && !reduced) {
-        if (novaNow) { buzz(Math.round(320 * Math.min(1, T.holdVibrate))); buzzing = false; }
-        else if (building) { if (now - buzzAt > 110) { buzzAt = now; buzz(Math.round((4 + 75 * ch * ch) * Math.min(1, T.holdVibrate))); } buzzing = true; }
-        else if (buzzing) { buzzing = false; buzz(0); }
+        if (building && !novaNow) {
+          const gap = 480 - 410 * ch; // milliseconds from one tick to the next: 480 down to 70
+          if (now - buzzAt > gap) { buzzAt = now; buzz(Math.round((6 + 44 * ch) * Math.min(1, T.holdVibrate))); }
+          buzzing = true;
+        } else if (buzzing || novaNow) { buzzing = false; buzz(0); }
       }
       // While it charges the words and logos fly off the screen: the page ones by a class (site.css, 0.3 s), the
       // 3D "We build it all." here, sliding off to the left at the same pace. After the blast they stay away while
