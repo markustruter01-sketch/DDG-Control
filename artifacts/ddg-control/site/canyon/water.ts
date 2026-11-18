@@ -1,6 +1,6 @@
 import {
   BufferAttribute, BufferGeometry, DoubleSide, DynamicDrawUsage, InstancedMesh, Mesh, Object3D, ShaderMaterial, SphereGeometry,
-  Vector2, Vector3,
+  Vector2, Vector3, Vector4,
 } from 'three';
 import { SKY_GLSL } from './sky';
 
@@ -81,6 +81,8 @@ ${STIR}
 uniform float uRough, uDetailK, uFoamK, uGlintK, uReflect, uBody, uSilk, uSwirlLines, uSwirlSoft, uClear;
 ${SKY_GLSL}
 uniform float uGlow;
+uniform vec4 uCalm;      // a box on screen (left, bottom, right, top, in canvas pixels) where the water is kept calm
+uniform vec2 uCalmK;     // x: how calm (0 off, 1 no reflections or highlights at all), y: how soft the box's edges are (part of its size)
 uniform float uOpacity;
 uniform float uFogNear;
 uniform float uFogFar;
@@ -157,7 +159,12 @@ void main() {
   vec3 n = normalize(vec3(-(surface(vP + vec2(e, 0.0), detail) - h0) / e, 1.0, -(surface(vP + vec2(0.0, e), detail) - h0) / e));
   vec3 v = normalize(cameraPosition - vWorld);
   vec3 r = reflect(-v, n);
-  float fresnel = clamp((0.03 + 0.97 * pow(1.0 - max(dot(n, v), 0.0), 5.0)) * uReflect, 0.0, 1.0);
+  // Behind the quote the water goes quiet: no mirrored sky, no orb glint, no foam or light-lines, so the
+  // words are read against plain dark water. The box fades out at its edges.
+  vec2 cs = max(uCalm.zw - uCalm.xy, vec2(1.0)), cf = max(cs * uCalmK.y, vec2(1.0));
+  vec2 cin = smoothstep(vec2(0.0), cf, gl_FragCoord.xy - uCalm.xy) * smoothstep(vec2(0.0), cf, uCalm.zw - gl_FragCoord.xy);
+  float lit = 1.0 - uCalmK.x * cin.x * cin.y;
+  float fresnel = clamp((0.03 + 0.97 * pow(1.0 - max(dot(n, v), 0.0), 5.0)) * uReflect, 0.0, 1.0) * lit;
 
   // What the surface mirrors: the real sky above it (stars and Milky Way, a little brighter than
   // life so they read on the water), a soft lift towards the horizon, and the orb's glow.
@@ -169,17 +176,17 @@ void main() {
   // What shows through: teal over the shallows, near-black where it is deep. The orb lights it a little.
   float depth = vBed;
   vec3 body = mix(vec3(0.05, 0.3, 0.36), vec3(0.004, 0.03, 0.07), 1.0 - exp(-depth * 0.6)) * uBody;
-  float reach = uGlow * exp(-length(uOrbPos.xz - vWorld.xz) / 16.0);
+  float reach = uGlow * exp(-length(uOrbPos.xz - vWorld.xz) / 16.0) * lit;
   body *= 0.75 + 1.3 * max(dot(n, toOrb), 0.0) * reach;
   // Light passing through: shallows glow faintly, with soft moving light-lines on the bed.
   float shallow = exp(-depth * 1.1);
   float caust = pow(0.5 + 0.5 * snoise(vP * 0.7 + vec2(uTime * 0.18, -uTime * 0.4)), 6.0) + pow(0.5 + 0.5 * snoise(vP * 1.1 - vec2(uTime * 0.23, uTime * 0.31) + 4.0), 6.0);
-  body += vec3(0.1, 0.32, 0.34) * caust * shallow * 0.35 * (0.4 + reach) * (uVar > 0.5 && uVar < 1.5 ? 0.0 : 1.0);
+  body += vec3(0.1, 0.32, 0.34) * caust * shallow * 0.35 * (0.4 + reach) * lit * (uVar > 0.5 && uVar < 1.5 ? 0.0 : 1.0);
   vec3 col = mix(body, sky, fresnel);
   // The orb as a light: a tight, bright glint on the water under it and a softer sheen round that.
   vec3 hv = normalize(toOrb + v);
   float nh = max(dot(n, hv), 0.0);
-  col += vec3(0.8, 0.93, 1.0) * uGlow * (pow(nh, 420.0) * 2.2 + pow(nh, 64.0) * 0.18) * uGlintK * exp(-length(uOrbPos.xz - vWorld.xz) / 30.0);
+  col += vec3(0.8, 0.93, 1.0) * uGlow * (pow(nh, 420.0) * 2.2 + pow(nh, 64.0) * 0.18) * uGlintK * lit * exp(-length(uOrbPos.xz - vWorld.xz) / 30.0);
 
   // Foam: along the banks (more where the orb throws water at them), and on the spiral arms.
   vec2 q = vP - uOrb;
@@ -191,7 +198,7 @@ void main() {
     float dn = d / uSwirlR, vn = 0.5 + 0.5 * vortex(q, d) / max(exp(-dn * dn / 12.0), 0.001);
     churn += uStir * 0.32 * smoothstep(0.45, 0.95, vn) * exp(-dn * dn / 11.0) * (0.5 + lace);
   }
-  float foam = clamp((shore + churn) * uFoamK, 0.0, 1.0);
+  float foam = clamp((shore + churn) * uFoamK, 0.0, 1.0) * lit;
   col = mix(col, vec3(0.8, 0.93, 1.0), foam * 0.85);
   // Style 2: cartoon (cel) water. Colours snap to a few bands and foam gets a crisp edge.
   if (uVar > 1.5 && uVar < 2.5) {
@@ -201,7 +208,7 @@ void main() {
     col = mix(col, vec3(0.92, 0.98, 1.0), step(0.45, foam));
   }
   // Style 4: silk. Broad, soft highlights and a faint colour shift at grazing angles.
-  if (uVar > 3.5) col += vec3(0.05, 0.08, 0.16) * fresnel + vec3(0.12, 0.16, 0.2) * pow(max(dot(n, normalize(toOrb + v)), 0.0), 12.0) * uGlow * 0.6 * uSilk;
+  if (uVar > 3.5) col += vec3(0.05, 0.08, 0.16) * fresnel + vec3(0.12, 0.16, 0.2) * pow(max(dot(n, normalize(toOrb + v)), 0.0), 12.0) * uGlow * 0.6 * uSilk * lit;
 
   // The water thins out to nothing exactly where it meets the land, so the edge is soft.
   float edge = smoothstep(0.0, 0.4, depth);
@@ -264,6 +271,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   const uniforms = {
     uTime: { value: 0 }, uVar: { value: 0 }, uSwirlR: { value: 1 }, uSwirlDepth: { value: 1 }, uSwirlSpeed: { value: 1 },
     uRough: { value: 1 }, uClear: { value: 0 }, uSwirlLines: { value: 1 }, uSwirlSoft: { value: 1 }, uDetailK: { value: 1 }, uFoamK: { value: 1 }, uGlintK: { value: 1 }, uReflect: { value: 1 }, uBody: { value: 1 }, uSilk: { value: 1 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
+    uCalm: { value: new Vector4() }, uCalmK: { value: new Vector2() },
     uOrb: { value: new Vector2() }, uOrbPos: { value: new Vector3() },
     // The shader writes screen colours directly, so the fog colour is passed as plain 0-1 values.
     uFog: { value: new Vector3(((fogColor >> 16) & 255) / 255, ((fogColor >> 8) & 255) / 255, (fogColor & 255) / 255) },
@@ -293,6 +301,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     /** 1 = land at full height, 0 = flattened. */ flat: number;
     /** 1 = orb right over the water, 0 = orb gone. */ stir: number;
     /** 1 = water fully shown. */ show: number; fogNear: number; fogFar: number;
+    /** The calm box behind the quote: left, bottom, right, top in canvas pixels, how calm (0 to 1), edge softness. */ calm: [number, number, number, number, number, number];
   };
   const update = (f: Frame) => {
     river.scale.y = Math.max(f.flat, 0.02);
@@ -300,6 +309,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     uniforms.uTime.value = f.t; uniforms.uStir.value = f.stir; uniforms.uGlow.value = f.stir; uniforms.uOpacity.value = f.show; uniforms.uFlat.value = f.flat;
     uniforms.uOrb.value.set(f.orbX, f.orbZ); uniforms.uOrbPos.value.set(f.orbX, f.orbY, f.orbZ);
     uniforms.uFogNear.value = f.fogNear; uniforms.uFogFar.value = f.fogFar;
+    uniforms.uCalm.value.set(f.calm[0], f.calm[1], f.calm[2], f.calm[3]); uniforms.uCalmK.value.set(f.calm[4], f.calm[5]);
     river.visible = spray.visible = f.show > 0.01;
     if (!river.visible) return;
 
