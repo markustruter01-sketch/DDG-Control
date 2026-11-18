@@ -34,6 +34,12 @@ export const SPECS: Spec[] = [
   { group: 'Orb', key: 'orbSize', label: 'Size', min: 0.4, max: 2, step: 0.02 },
   { group: 'Orb', key: 'orbHeight', label: 'Height above water', min: -3, max: 6, step: 0.1 },
   { group: 'Orb', key: 'orbGlow', label: 'Glow around it', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdOn', label: 'Press and hold the orb (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Hold the orb', key: 'holdBeam', label: 'Beam into the water', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdBolts', label: 'Lightning strikes', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdBoil', label: 'Water simmering', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdZoom', label: 'Camera pulls back and looks down', min: 0, max: 1, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdSky', label: 'Sky turning', min: 0, max: 3, step: 0.05 },
   { group: 'Orb extras', key: 'orbBloom', label: 'Bloom (light bleeding out of it)', min: 0, max: 2, step: 0.05 },
   { group: 'Orb extras', key: 'orbGlass', label: 'Glass shell (bends the stars behind it)', min: 0, max: 1, step: 0.05 },
   { group: 'Orb extras', key: 'orbDepth', label: 'Depth inside (layers of wind within)', min: 0, max: 2, step: 0.05 },
@@ -193,6 +199,7 @@ export const SPECS: Spec[] = [
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
   introFade: 1, introSpawn: 3, introLoop: 0,
+  holdOn: 1, holdBeam: 1, holdBolts: 1, holdBoil: 1, holdZoom: 1, holdSky: 1,
   orbBloom: 0.75, orbGlass: 0.75, orbDepth: 0, orbFlashLight: 0.05, orbFlashLand: 0.45, orbFlashReach: 12, orbMirror: 0.35, orbRays: 0, orbFringe: 0.55, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.25, orbSize: 1.24, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 1.7, swirlSize: 2.5, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
@@ -214,10 +221,10 @@ export const DEFAULTS: Record<string, number> = {
 
 export const T: Record<string, number> = { ...DEFAULTS };
 /** Settings that are words, not numbers. */
-export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll', quoteText: '' };
+export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll, or press and hold the orb', quoteText: '' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-15'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-16'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);

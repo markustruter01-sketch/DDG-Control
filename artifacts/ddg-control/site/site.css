@@ -849,3 +849,6 @@ p { margin: 0; }
 .j-ticks li.soon::before { background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3); }
 .j-ticks li.soon::after { border-color: rgba(255,255,255,0.45); }
 
+
+/* Press and hold the orb: no text selection or phone menu on the first screen while holding. */
+.cn-hero { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

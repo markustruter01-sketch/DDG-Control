@@ -8,6 +8,7 @@ import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWater } from './water';
 import { makeAura } from './aura';
+import { makeSurge } from './surge';
 import { introStart, revealPage } from '../intro';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
@@ -112,6 +113,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     orbit.add(halo, aura.group, air.group);
     disposables.push(...aura.disposables, ...air.disposables, haloTex, haloMat);
 
+    // Press and hold the orb: lightning to the water and land, a beam into the water (surge.ts).
+    const surge = makeSurge();
+    scene.add(surge.group);
+    disposables.push(...surge.disposables);
+    const ISO_POS = new Vector3(0, 24, 50), ISO_LOOK = new Vector3(0, 4, 6), strikeAt = new Vector3();
+
     // The river on the canyon floor and the splashes the orb throws up from it.
     const water = makeWater({ small, grid: { NX, NZ, W, D, Z0, base }, heightAt, fogColor: 0x0a0d16 });
     scene.add(water.river, water.spray);
@@ -165,6 +172,29 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       return [((1 - pv.y) / 2) * H, (r / (d * Math.tan((cam.fov * Math.PI) / 360))) * (H / 2)];
     };
     let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
+    // Holding the orb: a press that starts on the orb and does not move (a moving finger is a scroll).
+    let charge = 0, camHold = 0, skyTurn = 0;
+    const hold = { down: false, id: -1, x: 0, y: 0 };
+    const orbOnScreen = { x: 0, y: 0, r: 0 };
+    const heroEl = document.querySelector<HTMLElement>('.cn-hero');
+    const onOrb = (x: number, y: number) => T.holdOn > 0.5 && orbOnScreen.r > 0 && (x - orbOnScreen.x) ** 2 + (y - orbOnScreen.y) ** 2 <= (orbOnScreen.r * 1.05) ** 2;
+    const onDown = (e: PointerEvent) => {
+      if (e.button > 0 || !onOrb(e.clientX, e.clientY)) return;
+      if ((e.target as Element | null)?.closest?.('a,button,input,textarea,select,label,.tune')) return;
+      hold.down = true; hold.id = e.pointerId; hold.x = e.clientX; hold.y = e.clientY;
+    };
+    const onMove = (e: PointerEvent) => {
+      if (hold.down && e.pointerId === hold.id && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 14) hold.down = false;
+      if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) && scrollY < 40 ? 'pointer' : '';
+    };
+    const onUp = (e: PointerEvent) => { if (e.pointerId === hold.id) hold.down = false; };
+    const noMenu = (e: Event) => { if (hold.down) e.preventDefault(); };
+    addEventListener('pointerdown', onDown, true);
+    addEventListener('pointermove', onMove, { passive: true });
+    addEventListener('pointerup', onUp);
+    addEventListener('pointercancel', onUp);
+    addEventListener('contextmenu', noMenu);
+    document.addEventListener('selectstart', noMenu);
     // The load-in: wait for the fonts and a few drawn frames (so every word has found its place), then fade
     // the black cover away; the orb spawns after that (introStart).
     let fontsIn = false, framesDrawn = 0;
@@ -214,22 +244,36 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const fog = scene.fog as Fog;
       fog.near = lerp(30, 200, k) * T.fogNear; fog.far = Math.max(fog.near + 1, lerp(150, 420, k) * T.fogFar);
       lineMat.uniforms.uFogNear.value = fog.near; lineMat.uniforms.uFogFar.value = fog.far;
+      // Holding the orb charges it (about 1.4 s to full) and moves the camera back and up over 2 s,
+      // looking down on the river with the sky still in view, while the sky turns as if time ran faster.
+      if (hold.down && (p > 0.08 || T.holdOn < 0.5)) hold.down = false;
+      charge = hold.down ? Math.min(1, charge + dt / 1.4) : Math.max(0, charge - dt / 0.9);
+      camHold = hold.down ? Math.min(1, camHold + dt / 2) : Math.max(0, camHold - dt / 1.6);
+      const ch = ease(charge), cv = ease(camHold) * T.holdZoom;
+      skyTurn += dt * ease(camHold) * 0.35 * T.holdSky;
       const camZ = lerp(42, 0, ease(p * 1.2));
       camera.position.set(0, lerp(9, small ? 95 : 70, k), camZ);
       look.set(0, lerp(12, 0, k), lerp(camZ - 40, camZ - 0.01, k));
+      if (cv > 0) { camera.position.lerp(ISO_POS, cv); look.lerp(ISO_LOOK, cv); }
       camera.lookAt(look);
-      sky.update(camera.position, 1 - k);
+      sky.update(camera.position, 1 - k, skyTurn);
 
       // The core drifts up and away as the canyon flattens.
       const away = ease((p - 0.1) / 0.5);
       orbit.position.set(0, CORE.y + T.orbHeight + away * 26, CORE.z - away * 10);
       orbit.scale.setScalar((small ? 1.44 : 2.19) * T.orbSize);
+      // Charging: the orb lifts a little and trembles.
+      if (ch > 0) {
+        orbit.position.y += 2.4 * ch;
+        if (!reduced) { orbit.position.x += (Math.random() - 0.5) * 0.14 * ch; orbit.position.z += (Math.random() - 0.5) * 0.14 * ch; }
+      }
       haloMat.opacity = HALO * T.orbGlow * (1 - away);
       // Where the orb is on screen now, and where it sits before any scrolling. The name and frame follow
       // it exactly; the quote and the scroll hint move by the same amount as the orb's lower edge.
       camera.updateMatrixWorld();
       const R = ORB_R * orbit.scale.x, FRAME = 1.22;
       const [oy, orR] = onScreen(camera, orbit.position, R);
+      orbOnScreen.x = innerWidth / 2; orbOnScreen.y = oy; orbOnScreen.r = p < 0.06 ? orR : 0;
       restCam.fov = camera.fov; restCam.aspect = camera.aspect;
       if (liftPx > 0) { const H = stableHeight(); restCam.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); } else restCam.clearViewOffset();
       restCam.updateProjectionMatrix();
@@ -271,18 +315,31 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       orbit.scale.multiplyScalar(born);
       haloMat.opacity = Math.max(haloMat.opacity, (seed * (1 - swell) * 0.95 + pulse * 0.6) * (1 - away));
       halo.scale.setScalar(10 * (0.35 + 0.65 * seed) * (1 + pulse * 0.5));
-      if (followEl) followEl.style.opacity = String(Math.min(1, Math.max(0, (spawn - 0.7) / 0.3)));
+      if (followEl) followEl.style.opacity = String(Math.min(1, Math.max(0, (spawn - 0.7) / 0.3)) * (1 - ease(camHold)));
+      haloMat.opacity += 0.5 * ch * (1 - away);
       // Lightning is timed here, so the ball, its glow, the water and the land can all flash together.
       const bolt = lightningNow(clock, T.orbSparkRate);
       const flash = bolt.flash * T.orbFlashLight * Math.min(T.orbSparks, 1.5) * (1 - away);
       air.update(clock, 1 - away, spinClock, {
-        bands: T.orbStreaks, zap: T.orbSparks, zapRate: T.orbSparkRate, style: T.orbStyle, hue: T.orbHue, flow: T.orbFlow,
+        bands: T.orbStreaks, zap: T.orbSparks * (1 + ch), zapRate: T.orbSparkRate * (1 + 3 * ch), style: T.orbStyle, hue: T.orbHue, flow: T.orbFlow,
         gate: bolt.gate, flash: flash * 0.6, depth: T.orbDepth, glass: T.orbGlass, fringe: T.orbFringe, cam: camera.position,
       });
-      aura.update(clock, 1 - away, { bloom: T.orbBloom, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
+      aura.update(clock, 1 - away, { bloom: T.orbBloom + ch, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
       haloMat.opacity *= 1 + flash;
       const landFlash = bolt.flash * T.orbFlashLand * (1 - away);
       lineMat.uniforms.uBolt.value.set(orbit.position.x, orbit.position.z, landFlash, T.orbFlashReach);
+      // The surge: bolts to the water and land, and the beam. A strike lights the land where it lands.
+      const waterY = water.levelAt(orbit.position.z);
+      const strike = surge.update(clock, dt, ch * (1 - away), orbit.position, R, waterY, { beam: T.holdBeam, bolts: T.holdBolts }, () => {
+        const a = Math.random() * Math.PI * 2;
+        if (Math.random() < 0.6) {
+          const r = R * (1.3 + 1.9 * Math.random());
+          return strikeAt.set(orbit.position.x + Math.cos(a) * r, waterY, orbit.position.z + Math.sin(a) * r * 0.7);
+        }
+        const x = (Math.random() < 0.5 ? -1 : 1) * (14 + 24 * Math.random()), z = orbit.position.z - 25 + 35 * Math.random();
+        return strikeAt.set(x, heightAt(x, z) * (1 - k), z);
+      });
+      if (strike.at && strike.flash * T.holdBolts * 1.5 > landFlash) lineMat.uniforms.uBolt.value.set(strike.at.x, strike.at.z, strike.flash * T.holdBolts * 1.5, 14);
       // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
       // into the first pipe on the page. The churning stops as the orb leaves.
       // The box behind the quote, in canvas pixels, so the water can go calm exactly there.
@@ -297,7 +354,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       water.update({
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far, calm,
-        mirror: [T.orbMirror * (1 - away), R, spinClock, flash], flash: landFlash * 0.5,
+        mirror: [T.orbMirror * (1 - away), R, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
+        boil: [orbit.position.x, orbit.position.z, Math.max(0, (ch - 0.35) / 0.65) * T.holdBoil * T.holdBeam, R * 0.9], skyTurn,
       });
       // The join: once the land is almost flat, the riverbed pipe narrows to exactly the page pipe's width
       // on screen (3.5 px) and takes on its look; the page then draws its own pipe on top from the same spot.
@@ -326,6 +384,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     return () => {
       cancelAnimationFrame(raf);
       unmountPanel?.();
+      removeEventListener('pointerdown', onDown, true);
+      removeEventListener('pointermove', onMove);
+      removeEventListener('pointerup', onUp);
+      removeEventListener('pointercancel', onUp);
+      removeEventListener('contextmenu', noMenu);
+      document.removeEventListener('selectstart', noMenu);
       if (followEl) followEl.style.opacity = '';
       stopResize();
       disposables.forEach((d) => d.dispose());

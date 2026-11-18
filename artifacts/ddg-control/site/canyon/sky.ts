@@ -28,7 +28,9 @@ float skyStars(vec3 d, float cells, float chance, float size) {
 // MILKY_AXIS is the pole of the Milky Way's band; MILKY_CORE the direction of its brightest part.
 const vec3 MILKY_AXIS = vec3(0.6543, -0.7436, -0.1376);
 const vec3 MILKY_CORE = vec3(0.3016, 0.4235, -0.8542);
+uniform float uSkyTurn; // the sky turning while the orb is held (radians); 0 = as drawn
 vec3 skyColor(vec3 d) {
+  { float c = cos(uSkyTurn), s = sin(uSkyTurn); d = vec3(c * d.x - s * d.z, d.y, s * d.x + c * d.z); }
   vec3 col = mix(vec3(0.040, 0.052, 0.088), vec3(0.008, 0.012, 0.028), pow(clamp(d.y, 0.0, 1.0), 0.55));
   float lat = dot(d, MILKY_AXIS) + (skyFbm(d * 3.0) - 0.5) * 0.14;
   float band = exp(-lat * lat / 0.032);
@@ -59,6 +61,7 @@ void main() { gl_FragColor = vec4(mix(uFog, skyColor(normalize(vDir)), uShow), 1
 export function makeSky(fogColor: number) {
   const uniforms = {
     uShow: { value: 1 },
+    uSkyTurn: { value: 0 },
     // The shader writes screen colours directly, so the fog colour is passed as plain 0-1 values.
     uFog: { value: new Vector3(((fogColor >> 16) & 255) / 255, ((fogColor >> 8) & 255) / 255, (fogColor & 255) / 255) },
   };
@@ -67,6 +70,6 @@ export function makeSky(fogColor: number) {
   const dome = new Mesh(geo, mat);
   dome.frustumCulled = false; dome.renderOrder = -1; // behind everything
   /** Keep the dome round the camera; `show` 1 = full sky, 0 = plain background colour. */
-  const update = (cameraPosition: Vector3, show: number) => { dome.position.copy(cameraPosition); uniforms.uShow.value = show; };
+  const update = (cameraPosition: Vector3, show: number, turn = 0) => { dome.position.copy(cameraPosition); uniforms.uShow.value = show; uniforms.uSkyTurn.value = turn; };
   return { dome, update, disposables: [geo, mat] as { dispose: () => void }[] };
 }

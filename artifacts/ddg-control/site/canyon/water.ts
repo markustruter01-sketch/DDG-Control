@@ -82,6 +82,7 @@ uniform float uRough, uDetailK, uFoamK, uGlintK, uReflect, uBody, uSilk, uSwirlL
 ${SKY_GLSL}
 uniform float uGlow;
 uniform vec4 uCalm;      // a box on screen (left, bottom, right, top, in canvas pixels) where the water is kept calm
+uniform vec4 uBoil;      // the beam's hit on the water: x, z, how strongly it simmers (0 to 1), radius
 uniform vec4 uMirror;    // the orb mirrored in the water: x strength, y the orb's radius, z its spin clock, w the lightning flash
 uniform vec2 uCalmK;     // x: how calm (0 off, 1 no reflections or highlights at all), y: how soft the box's edges are (part of its size)
 uniform float uOpacity;
@@ -149,6 +150,11 @@ float surface(vec2 p, float detail) {
   h += rough * (0.035 * sin(dot(p, vec2(0.21, 0.43)) - uTime * 1.1) + 0.022 * sin(dot(p, vec2(-0.37, 0.29)) - uTime * 1.45) + 0.014 * sin(dot(p, vec2(0.52, -0.18)) - uTime * 1.9));
   h += detail * (0.009 * snoise(p * 0.9 + vec2(uTime * 0.21, -uTime * 0.33)) + 0.007 * snoise(p * 1.6 + vec2(-uTime * 0.29, -uTime * 0.17) + 7.3));
   if (uVar > 3.5) h += 0.07 * uStir * uSwirlDepth * vortex(q, d);
+  // Simmering where the beam hits: small fast bubbling bumps and rings running out from the centre.
+  if (uBoil.z > 0.001) {
+    vec2 bq = p - uBoil.xy; float bd = length(bq), near = exp(-bd * bd / (uBoil.w * uBoil.w));
+    h += uBoil.z * near * (0.07 * snoise(p * 2.6 + vec2(uTime * 3.1, -uTime * 2.7)) + 0.05 * snoise(p * 5.3 - vec2(uTime * 4.3, uTime * 3.7)) + 0.025 * sin(bd * 7.0 - uTime * 14.0));
+  }
   h += uVar > 0.5 ? 0.6 * uStir * shapeH(q, d) : stir * (0.42 * swirl(q, d, 3.0, 0.9, 5.0) + 0.05 * swirl(q, d, 7.0, 2.2, 9.0));
   return h;
 }
@@ -217,6 +223,14 @@ void main() {
     churn += uStir * 0.32 * smoothstep(0.45, 0.95, vn) * exp(-dn * dn / 11.0) * (0.5 + lace);
   }
   float foam = clamp((shore + churn) * uFoamK, 0.0, 1.0) * lit;
+  // The beam's hit: a bright spot, and white specks where the water simmers.
+  if (uBoil.z > 0.001) {
+    float bd = length(vP - uBoil.xy);
+    float spot = exp(-bd * bd / (0.08 * uBoil.w * uBoil.w)), near = exp(-bd * bd / (uBoil.w * uBoil.w));
+    float specks = smoothstep(0.72, 0.95, snoise(vP * 4.5 + vec2(uTime * 5.0, -uTime * 4.0)) * 0.5 + 0.5);
+    col += vec3(0.65, 0.88, 1.0) * uBoil.z * (spot * 1.6 + near * 0.18);
+    foam = max(foam, uBoil.z * near * specks * 0.8);
+  }
   col = mix(col, vec3(0.8, 0.93, 1.0), foam * 0.85);
   // Style 2: cartoon (cel) water. Colours snap to a few bands and foam gets a crisp edge.
   if (uVar > 1.5 && uVar < 2.5) {
@@ -289,6 +303,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   const uniforms = {
     uTime: { value: 0 }, uVar: { value: 0 }, uSwirlR: { value: 1 }, uSwirlDepth: { value: 1 }, uSwirlSpeed: { value: 1 },
     uRough: { value: 1 }, uClear: { value: 0 }, uSwirlLines: { value: 1 }, uSwirlSoft: { value: 1 }, uDetailK: { value: 1 }, uFoamK: { value: 1 }, uGlintK: { value: 1 }, uReflect: { value: 1 }, uBody: { value: 1 }, uSilk: { value: 1 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
+    uBoil: { value: new Vector4(0, 0, 0, 3) }, uSkyTurn: { value: 0 },
     uMirror: { value: new Vector4() }, uCalm: { value: new Vector4() }, uCalmK: { value: new Vector2() },
     uOrb: { value: new Vector2() }, uOrbPos: { value: new Vector3() },
     // The shader writes screen colours directly, so the fog colour is passed as plain 0-1 values.
@@ -321,6 +336,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     /** 1 = water fully shown. */ show: number; fogNear: number; fogFar: number;
     /** The calm box behind the quote: left, bottom, right, top in canvas pixels, how calm (0 to 1), edge softness. */ calm: [number, number, number, number, number, number];
     /** The orb mirrored in the water: strength, orb radius, spin clock, lightning flash. And how much lightning brightens the water. */ mirror: [number, number, number, number]; flash: number;
+    /** The beam's simmer (x, z, strength 0..1, radius) and how far the sky has turned. Optional. */ boil?: [number, number, number, number]; skyTurn?: number;
   };
   const update = (f: Frame) => {
     river.scale.y = Math.max(f.flat, 0.02);
@@ -330,6 +346,8 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     uniforms.uFogNear.value = f.fogNear; uniforms.uFogFar.value = f.fogFar;
     uniforms.uCalm.value.set(f.calm[0], f.calm[1], f.calm[2], f.calm[3]); uniforms.uCalmK.value.set(f.calm[4], f.calm[5]);
     uniforms.uMirror.value.set(f.mirror[0], f.mirror[1], f.mirror[2], f.mirror[3]);
+    if (f.boil) uniforms.uBoil.value.set(f.boil[0], f.boil[1], f.boil[2], f.boil[3]); else uniforms.uBoil.value.z = 0;
+    uniforms.uSkyTurn.value = f.skyTurn ?? 0;
     river.visible = spray.visible = f.show > 0.01;
     if (!river.visible) return;
 
@@ -363,5 +381,5 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     uniforms.uFoamK.value = k.waterFoam; uniforms.uGlintK.value = k.waterGlint; uniforms.uReflect.value = k.waterReflect;
     uniforms.uBody.value = k.waterColour; uniforms.uSilk.value = k.waterSheen; sprayAmount = k.sprayAmount; spraySize = k.spraySize;
   };
-  return { river, spray, update, setVariant, setLook, disposables: [riverGeo, riverMat, dropGeo, dropMat] as { dispose: () => void }[] };
+  return { river, spray, update, setVariant, setLook, levelAt, disposables: [riverGeo, riverMat, dropGeo, dropMat] as { dispose: () => void }[] };
 }
