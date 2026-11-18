@@ -204,7 +204,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     };
     let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
     // Holding the orb: a press that starts on the orb, held until it is let go (or the browser cancels it for a scroll).
-    let charge = 0, camHold = 0, skyTurn = 0, fly = 0, flyOn = false, blasted = false;
+    let charge = 0, camHold = 0, skyTurn = 0, fly = 0, flyOn = false;
     const flyDir = new Vector3();
     const hold = { down: false, id: -1, x: 0, y: 0, touching: false };
     const rootStyle = document.documentElement.style;
@@ -330,8 +330,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const building = hold.down && !novaLock;
       charge = building ? Math.min(1, charge + dt / Math.max(1, T.holdBuild)) : Math.max(0, charge - dt / (novaT >= 0 ? Math.max(0.5, T.holdCalm) : 1.2));
       let novaNow = false;
-      if (building && charge >= 1) { novaNow = true; novaLock = true; hold.down = false; novaT = 0; shock = 1.6; blasted = true; }
-      else if (building) blasted = false; // a fresh hold: the words leave again
+      if (building && charge >= 1) { novaNow = true; novaLock = true; hold.down = false; novaT = 0; shock = 1.6; }
       if (novaT >= 0) { novaT += dt; if (novaT > Math.max(4, T.holdCalm + 1)) novaT = -1; }
       camHold = building ? Math.min(1, camHold + dt / 2) : Math.max(0, camHold - dt / (novaT >= 0 ? Math.max(1, T.holdCalm) : 1.6));
       const ch = Math.pow(charge, 1.4), cv = ease(camHold) * T.holdZoom;
@@ -346,7 +345,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
           dentEl.style.cssText = 'position:fixed;left:0;top:0;z-index:2147481000;pointer-events:none;border-radius:50%;will-change:transform,opacity;'
             + 'background:radial-gradient(circle at 50% 46%,rgba(0,0,0,.34) 0%,rgba(0,0,0,.16) 42%,rgba(255,255,255,.07) 68%,rgba(255,255,255,0) 100%);'
             + 'box-shadow:inset 0 7px 20px rgba(0,0,0,.6),inset 0 -4px 12px rgba(255,255,255,.2),0 0 0 1px rgba(255,255,255,.16),0 0 34px rgba(140,210,255,.18);'
-            + '-webkit-backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25)';
+            + '-webkit-backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);'
+            // It fades away towards its edge, so the dent has no hard rim.
+            + '-webkit-mask-image:radial-gradient(circle,#000 30%,rgba(0,0,0,.55) 52%,transparent 72%);mask-image:radial-gradient(circle,#000 30%,rgba(0,0,0,.55) 52%,transparent 72%)';
           document.body.appendChild(dentEl);
         }
         dentShow = hold.down ? Math.min(1, dentShow + dt / 0.15) : Math.max(0, dentShow - dt / 0.35);
@@ -355,17 +356,20 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         dentEl.style.transform = `translate(${(hold.x - size / 2).toFixed(1)}px, ${(hold.y - size / 2).toFixed(1)}px)`;
         dentEl.style.opacity = dentShow.toFixed(2);
       } else if (dentEl && dentEl.style.opacity !== '0') { dentShow = 0; dentEl.style.opacity = '0'; }
-      // The buzz: short pulses about nine times a second, each longer as the charge grows; one long one at the
-      // blast; silence the moment the orb is let go.
+      // The buzz starts slow and builds: at first a faint tick about twice a second, then the ticks come faster
+      // and last longer, to a hard rattle at full charge. It stops dead at the blast, and when the orb is let go.
       if (canBuzz && T.holdVibrate > 0 && !reduced) {
-        if (novaNow) { buzz(Math.round(320 * Math.min(1, T.holdVibrate))); buzzing = false; }
-        else if (building) { if (now - buzzAt > 110) { buzzAt = now; buzz(Math.round((4 + 75 * ch * ch) * Math.min(1, T.holdVibrate))); } buzzing = true; }
-        else if (buzzing) { buzzing = false; buzz(0); }
+        if (building && !novaNow) {
+          const gap = 480 - 410 * ch; // milliseconds from one tick to the next: 480 down to 70
+          if (now - buzzAt > gap) { buzzAt = now; buzz(Math.round((6 + 44 * ch) * Math.min(1, T.holdVibrate))); }
+          buzzing = true;
+        } else if (buzzing || novaNow) { buzzing = false; buzz(0); }
       }
       // While it charges the words and logos fly off the screen: the page ones by a class (site.css, 0.3 s), the
-      // 3D "We build it all." here, sliding off to the left at the same pace. The moment the orb explodes they
-      // all fly back (Markus, 18 Nov), while the scene is still settling.
-      const flyWant = T.holdFlyOff > 0.5 && !blasted && (hold.down || charge > 0.02);
+      // 3D "We build it all." here, sliding off to the left at the same pace. After the blast they stay away while
+      // the scene settles, and fly back at the end of the settle time (T.holdCalm; Markus, 18 Nov 19:57): the
+      // charge runs down over exactly that time, so they return as it reaches nothing.
+      const flyWant = T.holdFlyOff > 0.5 && (hold.down || charge > 0.02);
       if (flyWant !== flyOn) { flyOn = flyWant; topEl.classList.toggle('cn-fly', flyOn); }
       fly = flyOn ? Math.min(1, fly + dt / 0.3) : Math.max(0, fly - dt / 0.7);
       skyTurn += dt * ease(camHold) * 0.35 * T.holdSky * (1 + 2 * ch); // spins up to 3x faster at full charge
@@ -466,8 +470,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       spawnPrev = spawn;
       if (introWaveT >= 0) { introWaveT += dt; if (introWaveT > 4) introWaveT = -1; }
       spawnFx.update(T.introStyle, spawn, clock, orbit.position, R, camera, canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)));
-      // (After the blast the words are shown at once, not faded in with the camera's return.)
-      if (followEl) followEl.style.opacity = String(Math.min(1, Math.max(0, (spawn - 0.7) / 0.3)) * (blasted ? 1 : 1 - ease(camHold)));
+      if (followEl) followEl.style.opacity = String(Math.min(1, Math.max(0, (spawn - 0.7) / 0.3)) * (1 - ease(camHold)));
       haloMat.opacity += 0.5 * ch * (1 - away);
       // Lightning is timed here, so the ball, its glow, the water and the land can all flash together.
       const bolt = lightningNow(clock, T.orbSparkRate);
