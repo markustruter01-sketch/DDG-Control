@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '17'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '18'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -49,12 +49,12 @@ t, n = re.subn(r'\{group:"Hold the orb",key:"hold(?:FxVortex|Vortex[A-Za-z]*)",[
 t, n = re.subn(r'\s*hold(?:FxVortex|Vortex[A-Za-z]*):\s*[0-9.]+,', '', t); assert n == 6, n
 t = one(t, '.tune.min { bottom: auto; }\n.tune.min .tune-body, .tune.min .tune-foot { display: none; }',
   '.tune.min { bottom: auto; width: auto; background: none; border: 0; box-shadow: none; backdrop-filter: none; }\n.tune.min .tune-body, .tune.min .tune-foot, .tune.min .tune-head b { display: none; }\n.tune.min .tune-head { padding: 0; border: 0; } .tune.min button { opacity: 0.55; }')
-t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-35', t.count('ddg-scene-tune-32'))
-# the quote: white patch with black words by default, no frame
+t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-36', t.count('ddg-scene-tune-32'))
+# the quote: a 'White (black words)' colour choice exists; the default stays black with the thin white frame
 t = one(t, '[30,6,10]][r.qbColour]||[0,0,0];', '[30,6,10],[255,255,255]][r.qbColour]||[0,0,0];a.setProperty("--quote-ink",c[0]+c[1]+c[2]>380?"#000":"");')
 t = one(t, 'rgb(${c.map(v=>v+10).join(",")})', 'rgb(${c.map(v=>Math.min(255,v+10)).join(",")})')
 t = one(t, 'max:6,step:1,names:["Black","Charcoal","Midnight","Deep navy","Deep teal","Deep purple","Deep red"]', 'max:7,step:1,names:["Black","Charcoal","Midnight","Deep navy","Deep teal","Deep purple","Deep red","White (black words)"]')
-t = one(t, 'qpFrame:1,', 'qpFrame:0,'); t = one(t, 'qbColour:0,', 'qbColour:7,')
+t = one(t, 'qbPadX:16,', 'qbPadX:32,'); t = one(t, 'qbPadY:12,', 'qbPadY:18,')  # Markus's settings, 18 Nov 19:01 (black patch, thin white frame)
 c = rd(f'{A}/site-ddg6.css')
 c = one(c, '.cn-quote-t{display:block;', '.cn-quote-t{display:block;color:var(--quote-ink, inherit);')
 c = one(c, '.cn-quote-hi{font-weight:700;color:var(--j-accent, var(--ng-ice))}', '.cn-quote-hi{font-weight:700;color:var(--quote-ink, var(--j-accent, var(--ng-ice)))}')

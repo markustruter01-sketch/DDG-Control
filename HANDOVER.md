@@ -32,7 +32,7 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 
 ## State 18 Nov 18:35 (source: claude/hold-polish, commit "remove the water vortex")
 - Markus asked to undo the vortex look work and remove the vortex completely. Done: no liquid, no vortex sliders.
-- Live files here: index.html -> assets/site-ddg17.js (+ site-ddg17.css) -> assets/Stage-ddg17.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
+- Live files here: index.html -> assets/site-ddg18.js (+ site-ddg18.css) -> assets/Stage-ddg18.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
   from the ddg11 base files (keep those; they are not served).
 - Kept: hold fixes (press works on a slightly scrolled page and jumps to the top; no charge by itself at load),
   a preview-only status line at the bottom left, Hide leaves one small Show button.
@@ -60,3 +60,8 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
   t7.mjs (quote words rgb(0,0,0), patch white, frame class qp-0, one panel, no errors).
 - Markus said (18:51) the page may be published once this is done, and he merges PR #119 himself.
   Live publish = after his merge: Replit sync from main, then publish, with checks before and after.
+
+## 18 Nov 19:10: quote back to black with the thin white frame, padding 32 x 18 (build ddg18)
+- Markus's tuner settings: qbColour 0, qbPadX 32, qbPadY 18, plus "slim white frame" (qpFrame 1). Store 36.
+- VERIFIED headless (t7.mjs): white words, black patch, 1 px white frame, padding 32 / 18, no errors.
+- Markus said: merge and publish.
