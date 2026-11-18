@@ -778,6 +778,12 @@ p { margin: 0; }
   .cn-brand { bottom: min(calc(100% - var(--cn-oy) + var(--cn-or) + 2.5vh + var(--brand-lift, 0vh)), calc(100% - 190px)); }
 }
 
+/* Phones: one even layout for the first screen (Stage.tsx, phoneLayout). The scene measures the real sizes and
+   sets --lay-brand, --lay-hint and --lay-quote (tops, in px); everything still moves with the orb when scrolling. */
+.cn-top.cn-lay .cn-brand { top: var(--lay-brand); bottom: auto; transform: translateY(var(--cn-dy, 0px)); }
+.cn-top.cn-lay .cn-scroll { top: var(--lay-hint); transform: translateY(var(--cn-dy, 0px)); }
+.cn-top.cn-lay .cn-quote { top: var(--lay-quote); bottom: auto; }
+
 /* Portfolio list: the short line only, with an "Expand" button whose arrow nudges right (18 Nov 2026). */
 .j-ticks li { display: flex; flex-wrap: wrap; align-items: center; column-gap: 14px; row-gap: 4px; }
 .j-ticks li > b { font-weight: 500; }
