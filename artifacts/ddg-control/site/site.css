@@ -232,7 +232,7 @@ p { margin: 0; }
    table, businesses two by two. */
 @media (max-width: 720px) {
   .s-nav { padding-top: 14px; padding-bottom: 6px; }
-  .s-nav nav { gap: 14px; font-size: 13px; }
+  .s-nav nav { gap: 14px; font-size: 14px; }
   /* Phone first screen: headline, then a sideways swipe row (each item snaps into
      place, the next one peeks in) that opens on the hire card, then our work. */
   .s-hero { height: auto; min-height: 0; }
@@ -664,7 +664,7 @@ p { margin: 0; }
 /* The offer's button under the quote on the first screen (audit 17 Nov 2026). */
 .cn-cta { position: absolute; left: 0; right: 0; bottom: calc(var(--cta-gap) + var(--cn-bar) + var(--cn-safe)); width: max-content; max-width: calc(100vw - 2 * var(--s-gutter)); box-sizing: border-box;
   margin: 0 auto; display: inline-flex; align-items: center; justify-content: center; min-height: var(--cta-h); padding: 0 clamp(18px, 4vw, 28px); white-space: nowrap;
-  border-radius: 999px; background: var(--ng-text); color: var(--ng-night); font: 500 clamp(14px, 0.4vw + 12.5px, 17px)/1 var(--ng-sans); text-decoration: none;
+  border-radius: 999px; background: var(--ng-text); color: var(--ng-night); font: 500 clamp(16px, 0.4vw + 14.4px, 18px)/1 var(--ng-sans); text-decoration: none;
   opacity: var(--cn-fade, 1); pointer-events: var(--cn-pe, auto); transform: translateY(var(--cn-dy, 0px)); box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
 /* Short screens (phones turned sideways, small laptops): smaller quote so it stays between the orb and the button. */
 @media (max-height: 560px) { .cn-quote { font-size: calc(clamp(14px, 1.6vw, 20px) * var(--quote-size, 1)); } .cn-follow { --cta-gap: 10px; --cta-h: 44px; } }
