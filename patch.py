@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '42'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '43'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -100,6 +100,12 @@ c = one(c, '.j-ticks li{display:flex', 'html{-webkit-text-size-adjust:100%;text-
 c = one(c, 'display:flex;flex-direction:column;align-items:center;gap:var(--logo-gap, 10px);text-align:center;', 'display:flex;flex-direction:var(--brand-dir, column);align-items:center;gap:var(--logo-gap, 10px);text-align:var(--brand-text, center);')
 c = one(c, 'font:500 clamp(14px,.4vw + 12.5px,17px)/1 var(--ng-sans)', 'font:500 clamp(16px,.4vw + 14.4px,18px)/1 var(--ng-sans)')
 c = one(c, '.s-nav nav{gap:14px;font-size:13px}', '.s-nav nav{gap:14px;font-size:14px}')
+# thank-you panel after the enquiry form; no "we have emailed you" (Markus, 19 Nov 08:23)
+t = one(t, 'if(w.ok)return h({state:"done",test:!!S.test})', 'if(w.ok)return h({state:"done",test:!!S.test,email:j})')
+t = one(t, 'done:"Thanks, we have it. We have emailed you a confirmation and will reply to that address."', 'done:{title:"Thank you. We have your enquiry.",reply:"We’ll be in touch with you shortly at",nothing:"You don’t need to do anything else."}')
+t = one(t, 'e.jsxs("div",{className:"s-form glass-plain",role:"status",children:[e.jsx("h3",{children:f.test?"Test enquiry saved.":M.done}),f.test&&e.jsx("p",{children:"It is in Control → Clients, marked Test."})]})',
+        'e.jsxs("div",{className:"s-form s-done glass-plain",role:"status",children:[e.jsxs("svg",{className:"s-done-tick",width:"56",height:"56",viewBox:"0 0 56 56",fill:"none","aria-hidden":"true",children:[e.jsx("circle",{cx:"28",cy:"28",r:"26",stroke:"currentColor",strokeWidth:"2"}),e.jsx("path",{d:"M17 29l7.5 7.5L39.5 21",stroke:"currentColor",strokeWidth:"3",strokeLinecap:"round",strokeLinejoin:"round"})]}),e.jsx("h3",{children:f.test?"Test enquiry saved.":M.done.title}),f.test?e.jsx("p",{children:"It is in Control → Clients, marked Test."}):e.jsxs(e.Fragment,{children:[e.jsxs("p",{children:[M.done.reply," ",e.jsx("strong",{children:f.email}),"."]}),e.jsx("p",{children:M.done.nothing})]})]})')
+c = one(c, '.s-start .s-form{margin-top:12px}', '.s-start .s-form{margin-top:12px}.s-done{align-items:center;text-align:center;gap:12px;padding:40px 24px}.s-done h3{margin:4px 0 0;font-size:clamp(22px,2.4vw,28px)}.s-done p{margin:0;color:var(--ng-text-2, rgba(255,255,255,.78));font-size:16px;overflow-wrap:anywhere}.s-done strong{color:var(--ng-text);font-weight:600}.s-done-tick{color:#6cc7f0;animation:s-done-in .5s ease-out both}@keyframes s-done-in{0%{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){.s-done-tick{animation:none}}')
 open(f'{A}/site-ddg{NEW}.css', 'w', encoding='utf-8').write(c)
 t = one(t, '{group:"Hold the orb",key:"holdVignette",label:"Screen edges darken",min:0,max:1,step:.05},', '{group:"Hold the orb",key:"holdVignette",label:"Screen edges darken",min:0,max:1,step:.05},{group:"Hold the orb",key:"holdVibrate",label:"Phone buzz builds with the charge (0 off; Android only)",min:0,max:1,step:.05},')
 t = one(t, 'holdOn:1,', 'holdOn:1,holdDent:0,holdVibrate:1,')  # dent removed (Markus, 18 Nov 21:14)
