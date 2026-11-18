@@ -77,6 +77,7 @@ function ProjectPop({ i, onClose }: { i: number; onClose: () => void }) {
             {x.external
               ? <a className="j-tick-link" href={x.href} target="_blank" rel="noopener noreferrer">{ABOUT.visit}: {x.name} <i aria-hidden="true">↗</i></a>
               : <Link className="j-tick-link" href={x.href} onClick={onClose}>{ABOUT.visit}: {x.name} <i aria-hidden="true">→</i></Link>}
+            {x.screen && <p className="j-tick-screen">{ABOUT.screenNote}</p>}
           </div>
         )}
       </div>
@@ -104,6 +105,7 @@ export function About({ onSee, onQuote }: { onSee: () => void; onQuote: () => vo
               <b>{x.lead}</b>
               {x.soon && <span className="j-tick-soon">{x.soon}</span>}
               <button type="button" className="j-expand" onClick={() => setOpen(i)} aria-haspopup="dialog">{ABOUT.expand}<i aria-hidden="true">→</i></button>
+              {x.screen && <span className="j-tick-screen">{ABOUT.screenNote}</span>}
             </li>
           ))}
         </ul>

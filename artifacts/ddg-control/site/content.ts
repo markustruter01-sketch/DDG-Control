@@ -231,14 +231,16 @@ export const ABOUT = {
   // Every claim is checked against the product: the Greenlight standards are its seven catalogues
   // (ddg-greenlight/lib/greenlight-engine/catalogues); it checks and fixes, it does not certify.
   built: [
-    { key: 'globe', lead: 'The whole planet, live in 3D.', text: 'Aircraft, ships, satellites, earthquakes and fires, tracked as they happen on one screen.', name: 'God\u2019s Eye View', href: 'https://gods-eye-view.replit.app/', external: true },
+    { key: 'globe', lead: 'The whole planet, live in 3D.', text: 'Aircraft, ships, satellites, earthquakes and fires, tracked as they happen on one screen.', name: 'God\u2019s Eye View', href: 'https://gods-eye-view.replit.app/', external: true, screen: true },
     { key: 'finance', lead: 'A trading platform that runs itself.', text: 'Algorithmic bots, Python strategies and a council of three AI models, with hard risk limits that stop it the moment something is wrong.', name: 'DDG Finance', href: '/finance', external: false },
     { key: 'coffee', lead: 'An online store that sells around the clock.', text: 'Real orders, card payments, subscriptions and shipping, all run from one back office.', name: 'Cattle Dog Coffee', href: PUBLIC_SITES.coffee, external: true },
-    { key: 'greenlight', lead: 'A compliance engine for your code.', text: 'It audits any codebase against published standards (ISO/IEC 27001, OWASP ASVS, NIST SSDF, the Australian Essential Eight and more), fixes the gaps it finds, and hands back a stronger product, ready for your team\u2019s final sign-off.', name: 'DDG Greenlight', href: 'https://ddg-greenlight.replit.app/', external: true, standards: true },
+    { key: 'greenlight', lead: 'A compliance engine for your code.', text: 'It audits any codebase against published standards (ISO/IEC 27001, OWASP ASVS, NIST SSDF, the Australian Essential Eight and more), fixes the gaps it finds, and hands back a stronger product, ready for your team\u2019s final sign-off.', name: 'DDG Greenlight', href: 'https://ddg-greenlight.replit.app/', external: true, screen: true, standards: true },
     { key: 'fitness', lead: 'A personal coach in your pocket.', text: 'A health and fitness app with specialist AI coaches (in development).', name: '', href: null, soon: 'Coming soon' },
-  ] as { key: string; lead: string; text: string; name: string; href: string | null; external?: boolean; soon?: string; standards?: boolean }[],
+  ] as { key: string; lead: string; text: string; name: string; href: string | null; external?: boolean; soon?: string; standards?: boolean; screen?: boolean }[],
   // Every standard Greenlight checks against (its catalogues, 18 Nov 2026). Names only.
   expand: 'Expand',
+  // Shown by the big 3D products, which need room (Markus, 18 Nov 20:28).
+  screenNote: 'Best viewed on a computer screen',
   // The pop-up for each project (Markus, 18 Nov 2026): a picture of how it works, a few facts, one
   // screenshot. Short words only. Every number here is from the product itself (VERIFIED, 18 Nov).
   more: {
