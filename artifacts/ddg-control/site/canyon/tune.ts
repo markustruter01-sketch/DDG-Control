@@ -22,6 +22,7 @@ export const BRAND_FONTS: [string, string][] = [
 export const SPECS: Spec[] = [
   // Orb
   { group: 'Load-in', key: 'introFade', label: 'Black to page (seconds)', min: 0.2, max: 3, step: 0.1 },
+  { group: 'Load-in', key: 'introStyle', label: 'How the orb arrives', min: 0, max: 5, step: 1, names: ['Classic', 'Portal', 'Spark', 'Gathering', 'Lightning', 'Rise from the river'] },
   { group: 'Load-in', key: 'introSpawn', label: 'Orb spawning in (seconds, 0 = off)', min: 0, max: 6, step: 0.1 },
   { group: 'Load-in', key: 'introLoop', label: 'Replay it on a loop (preview only: 0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Orb', key: 'orbStyle', label: 'Style', min: 0, max: 8, step: 1, names: ['Spinning air (now)', 'Cloud core', 'Liquid pearl', 'Water in glass', 'Storm', 'Aurora', 'Neural net', 'Galaxy', 'Singularity'] },
@@ -34,14 +35,18 @@ export const SPECS: Spec[] = [
   { group: 'Orb', key: 'orbSize', label: 'Size', min: 0.4, max: 2, step: 0.02 },
   { group: 'Orb', key: 'orbHeight', label: 'Height above water', min: -3, max: 6, step: 0.1 },
   { group: 'Orb', key: 'orbGlow', label: 'Glow around it', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdFlyOff', label: 'Words and logos fly off the screen while it charges', min: 0, max: 1, step: 1, names: ['Off', 'On'] },
   { group: 'Hold the orb', key: 'holdOn', label: 'Press and hold the orb (0 off, 1 on)', min: 0, max: 1, step: 1 },
-  { group: 'Hold the orb', key: 'holdBeam', label: 'Beam into the water', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBolts', label: 'Lightning strikes', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdSkyStrike', label: 'Full charge: lightning from the top of the screen onto the orb', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBoil', label: 'Water simmering', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBuild', label: 'Build-up time (seconds to the nova)', min: 2, max: 20, step: 0.5 },
   { group: 'Hold the orb', key: 'holdNova', label: 'Nova blast size (0 none)', min: 0, max: 2, step: 0.05 },
-  { group: 'Hold the orb', key: 'holdCalm', label: 'Calm-down time after (seconds)', min: 0.5, max: 8, step: 0.25 },
-  { group: 'Hold the orb', key: 'holdFx', label: 'Charge-up effect', min: 0, max: 5, step: 1, names: ['None', 'Water globules from the lake', 'Vortex of drops', 'Ground lifting', 'Streaks pulled in', 'All of them'] },
+  { group: 'Hold the orb', key: 'holdNovaWave', label: 'Nova: how hard it pushes the water', min: 0, max: 40, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdNovaWaveSpeed', label: 'Nova: how fast the push runs out', min: 5, max: 150, step: 1 },
+  { group: 'Hold the orb', key: 'holdCalm', label: 'After the blast: seconds until everything has settled', min: 0.5, max: 8, step: 0.25 },
+  { group: 'Hold the orb', key: 'holdFxGlobs', label: 'Charge-up: water globules from the lake (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Hold the orb', key: 'holdFxGround', label: 'Charge-up: ground lifting (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdFxAmount', label: 'Charge-up effect: amount', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdFxSpeed', label: 'Charge-up effect: speed', min: 0.2, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdZoom', label: 'Camera move (0 none ← → 1 all the way)', min: 0, max: 1, step: 0.05 },
@@ -49,24 +54,16 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdCamBack', label: 'Camera: how far back', min: -10, max: 20, step: 0.5 },
   { group: 'Hold the orb', key: 'holdCamTilt', label: 'Camera: how much it looks down', min: 0, max: 1, step: 0.05 },
   { group: 'Hold the orb', key: 'holdRise', label: 'Orb lifts', min: 0, max: 5, step: 0.1 },
-  { group: 'Hold the orb', key: 'holdOrbShake', label: 'Orb shake', min: 0, max: 3, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdOrbShake', label: 'Orb shake', min: 0, max: 6, step: 0.05 },
   { group: 'Hold the orb', key: 'holdScreenShake', label: 'Screen shake', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdGroundShake', label: 'Ground tremble', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdShock', label: 'Let go: shockwave ring and jolt', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdVignette', label: 'Screen edges darken', min: 0, max: 1, step: 0.05 },
-  { group: 'Hold the beam', key: 'holdBeamWidth', label: 'Width', min: 0.2, max: 3, step: 0.05 },
-  { group: 'Hold the beam', key: 'holdBeamStart', label: 'Starts from (0 orb centre ← → 1 underside)', min: 0, max: 1.2, step: 0.02 },
-  { group: 'Hold the beam', key: 'holdBeamGlow', label: 'Brightness', min: 0, max: 3, step: 0.05 },
-  { group: 'Hold the beam', key: 'holdBeamFlicker', label: 'Flicker', min: 0, max: 2, step: 0.05 },
   { group: 'Boiling lake', key: 'holdBoilArea', label: 'How much of the lake (radius)', min: 2, max: 120, step: 1 },
+  { group: 'Boiling lake', key: 'holdBoilLift', label: 'Water surface heaves up (real height)', min: 0, max: 3, step: 0.05 },
   { group: 'Boiling lake', key: 'holdBoilHeight', label: 'Surface bubbling', min: 0, max: 3, step: 0.05 },
   { group: 'Boiling lake', key: 'holdBoilSpeed', label: 'Speed', min: 0.2, max: 3, step: 0.05 },
   { group: 'Boiling lake', key: 'holdBoilSpecks', label: 'White specks', min: 0, max: 2, step: 0.05 },
-  { group: 'Boiling lake', key: 'holdBubbles', label: 'Bubbles: how many', min: 0, max: 3, step: 0.05 },
-  { group: 'Boiling lake', key: 'holdBubbleSize', label: 'Bubbles: size', min: 0.2, max: 4, step: 0.05 },
-  { group: 'Boiling lake', key: 'holdBubbleShine', label: 'Bubbles: shine', min: 0, max: 2, step: 0.05 },
-  { group: 'Boiling lake', key: 'holdBubbleDrops', label: 'Bubbles: droplets when they burst', min: 0, max: 3, step: 0.05 },
-  { group: 'Boiling lake', key: 'holdBubbleRings', label: 'Bubbles: rings when they burst', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdSky', label: 'Sky turning', min: 0, max: 3, step: 0.05 },
   { group: 'Orb extras', key: 'orbBloom', label: 'Bloom (light bleeding out of it)', min: 0, max: 2, step: 0.05 },
   { group: 'Orb extras', key: 'orbGlass', label: 'Glass shell (bends the stars behind it)', min: 0, max: 1, step: 0.05 },
@@ -155,15 +152,10 @@ export const SPECS: Spec[] = [
   { group: 'Quote pop', key: 'qpHi', label: 'Colour the "~25% cheaper" words (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Quote pop', key: 'qpAnim', label: 'Movement', min: 0, max: 3, step: 1, names: ['None', 'Shine sweeps across the words', 'Soft pulse', 'Gentle float'] },
   { group: 'Quote pop', key: 'qpSpeed', label: 'Movement speed (slow ← → fast)', min: 0.3, max: 3, step: 0.05 },
-  { group: 'Quote background', key: 'qbCalm', label: 'Calm the water behind it (0 off ← → 1 no reflections)', min: 0, max: 1, step: 0.05 },
-  { group: 'Quote background', key: 'qbOn', label: 'Dark frosted patch (0 off, 1 on)', min: 0, max: 1, step: 1 },
-  { group: 'Quote background', key: 'qbDark', label: 'Darkness', min: 0, max: 1, step: 0.02 },
-  { group: 'Quote background', key: 'qbBlur', label: 'Frost (blur behind)', min: 0, max: 40, step: 1 },
-  { group: 'Quote background', key: 'qbTint', label: 'Colour (0 black ← → 1 deep blue)', min: 0, max: 1, step: 0.05 },
+  { group: 'Quote background', key: 'qbColour', label: 'Background colour', min: 0, max: 7, step: 1, names: ['Black', 'Charcoal', 'Midnight', 'Deep navy', 'Deep teal', 'Deep purple', 'Deep red', 'White (black words)'] },
   { group: 'Quote background', key: 'qbPadX', label: 'Width around the text', min: 0, max: 200, step: 2 },
   { group: 'Quote background', key: 'qbPadY', label: 'Height around the text', min: 0, max: 120, step: 2 },
   { group: 'Quote background', key: 'qbRadius', label: 'Rounded corners', min: 0, max: 120, step: 2 },
-  { group: 'Quote background', key: 'qbFade', label: 'Edge fall-off (soft ← → softer)', min: 0, max: 50, step: 1 },
   // The page's colours: base, coloured light behind the glass, lit panel edges, one accent colour
   { group: 'Page look', key: 'baseDark', label: 'Background (0 grey, 1 blue-black)', min: 0, max: 1, step: 0.02 },
   { group: 'Page look', key: 'glowStrength', label: 'Coloured light behind the glass', min: 0, max: 1, step: 0.02 },
@@ -199,6 +191,9 @@ export const SPECS: Spec[] = [
   // "Scroll down" hint
   { group: 'Scroll hint', key: 'shOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Scroll hint', key: 'shText', label: 'Words (leave empty for arrow only)', min: 0, max: 0, step: 0, text: true },
+  { group: 'Scroll hint', key: 'shHiWords', label: 'Words in colour (exact words, comma between)', min: 0, max: 0, step: 0, text: true },
+  { group: 'Scroll hint', key: 'shHiHue', label: 'Their colour (0 red, 300 magenta)', min: 0, max: 360, step: 5 },
+  { group: 'Scroll hint', key: 'shHiSat', label: 'How strong the colour is', min: 0, max: 1, step: 0.05 },
   { group: 'Scroll hint', key: 'shArrow', label: 'Arrow style', min: 0, max: 7, step: 1, names: ['Chevron', 'Double chevron', 'Thin arrow', 'Long line arrow', 'Mouse', 'Triangle', 'Circle', 'None'] },
   { group: 'Scroll hint', key: 'shAnim', label: 'Movement', min: 0, max: 5, step: 1, names: ['Still', 'Bounce down', 'Float up and down', 'Fade in and out', 'Drop and fade', 'Line runs down'] },
   { group: 'Scroll hint', key: 'shSpeed', label: 'Seconds per move', min: 0.6, max: 5, step: 0.1 },
@@ -226,22 +221,21 @@ export const SPECS: Spec[] = [
 
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
-  introFade: 3, introSpawn: 1.4, introLoop: 0,
-  holdOn: 1, holdBeam: 2, holdBolts: 2, holdBoil: 2, holdZoom: 1, holdSky: 3,
-  holdCamUp: 6, holdCamBack: 4, holdCamTilt: 0.45, holdRise: 2.4, holdOrbShake: 1, holdScreenShake: 0.3, holdGroundShake: 0.6, holdShock: 1, holdVignette: 0.4,
-  holdBeamWidth: 1, holdBeamStart: 0.95, holdBeamGlow: 1, holdBeamFlicker: 1,
-  holdBoilArea: 45, holdBoilHeight: 1, holdBoilSpeed: 1, holdBoilSpecks: 1, holdBubbles: 1, holdBubbleSize: 1, holdBubbleShine: 1, holdBubbleRings: 1, holdBubbleDrops: 1, holdBuild: 10, holdNova: 1, holdCalm: 3, holdFx: 5, holdFxAmount: 1, holdFxSpeed: 1,
+  introFade: 3, introStyle: 2, introSpawn: 1.5, introLoop: 0,
+  holdOn: 1, holdFlyOff: 1, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
+  holdCamUp: 5, holdCamBack: 15, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 6, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 1,
+    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 0.2, holdNovaWave: 10.55, holdNovaWaveSpeed: 75, holdCalm: 3, holdFxGlobs: 0, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 0.9, holdFxSpeed: 3,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.15, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
-  waterGlint: 1, waterReflect: 1.4, waterColour: 0.15, waterSheen: 3, sprayAmount: 0, spraySize: 0,
+  waterGlint: 0.35, waterReflect: 0.6, waterColour: 0.7, waterSheen: 1.05, sprayAmount: 0.1, spraySize: 0,
   fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
-  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.7, waterClear: 0.38,
+  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.7, waterClear: 0.18,
   starsEvery: 2.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
   pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   quote: 15, quoteOn: 1, quoteFont: 6, quoteSize: 0.55, quoteWeight: 400, quoteSpacing: 0.09, quoteCaps: 0, quoteAlign: 1, quoteWidth: 42, quoteLift: 7,
   qpFrame: 1, qpBright: 1, qpBlue: 0, qpGlow: 0, qpHi: 1, qpAnim: 0, qpSpeed: 1,
-  qbCalm: 0, qbOn: 1, qbDark: 1, qbBlur: 0, qbTint: 0, qbPadX: 16, qbPadY: 12, qbRadius: 120, qbFade: 0,
+  qbColour: 0, qbPadX: 32, qbPadY: 18, qbRadius: 120,
   bizLayout: 0,
   baseDark: 1, glowStrength: 0.7, glowHue1: 205, glowHue2: 170, glowSize: 1, glowMove: 0.6, edgeLight: 0.6, accentHue: 195, accentSat: 0.75, accentWords: 1,
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
@@ -252,10 +246,10 @@ export const DEFAULTS: Record<string, number> = {
 
 export const T: Record<string, number> = { ...DEFAULTS };
 /** Settings that are words, not numbers. */
-export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '' };
+export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for Web-Page or Press & Hold Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-20'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-36'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -282,8 +276,10 @@ export function mountPanel(): () => void {
 .tune { position: fixed; top: 12px; right: 12px; bottom: 12px; width: 320px; z-index: 2147483600; display: flex; flex-direction: column;
   background: rgba(10,13,20,0.88); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; color: #dfe8f2;
   font: 12px/1.3 ui-sans-serif, system-ui, sans-serif; backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-.tune.min { bottom: auto; }
-.tune.min .tune-body, .tune.min .tune-foot { display: none; }
+/* Hidden: nothing is left but one small "Show" button in the corner. */
+.tune.min { bottom: auto; width: auto; background: none; border: 0; box-shadow: none; backdrop-filter: none; }
+.tune.min .tune-body, .tune.min .tune-foot, .tune.min .tune-head b { display: none; }
+.tune.min .tune-head { padding: 0; border: 0; } .tune.min button { opacity: 0.55; }
 .tune-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .tune-head b { flex: 1; font-weight: 600; font-size: 13px; }
 .tune button { background: rgba(255,255,255,0.08); color: inherit; border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; padding: 6px 9px; font: inherit; cursor: pointer; }
@@ -320,12 +316,18 @@ export function mountPanel(): () => void {
   let box: HTMLElement = body as HTMLElement;
   let folded: string[] = [];
   try { folded = JSON.parse(localStorage.getItem(STORE + '-folded') || '[]'); } catch { /* ignore */ }
-  for (const s of SPECS) {
+  // Effects switched off (set to 0) are moved to one closed group at the bottom, "Inactive", until turned
+  // up again. Only effect groups; choosers and layout settings stay where they are.
+  const EFFECT_GROUPS = ['Orb extras', 'Hold the orb', 'Boiling lake'];
+  const canSleep = (sp: Spec) => !sp.text && !sp.names && EFFECT_GROUPS.includes(sp.group) && sp.min === 0;
+  const inactive = (sp: Spec) => canSleep(sp) && T[sp.key] === 0;
+  const ordered = [...SPECS.filter((sp) => !inactive(sp)), ...SPECS.filter(inactive).map((sp) => ({ ...sp, group: 'Inactive (set to 0)', label: `${sp.group}: ${sp.label}` }))];
+  for (const s of ordered) {
     if (s.group !== group) {
       group = s.group;
       const sec = document.createElement('section');
       sec.innerHTML = `<h4 data-act="fold">${group}</h4>${group === 'Load-in' ? '<button data-act="replay">Replay the load-in</button>' : ''}`;
-      if (folded.includes(group)) sec.classList.add('folded');
+      sec.classList.add('folded'); // every group starts closed (Markus, 18 Nov)
       body.appendChild(sec);
       box = sec;
     }
@@ -343,6 +345,7 @@ export function mountPanel(): () => void {
     const input = l.querySelector('input')!, val = l.querySelector('i')!;
     const show = (v: number) => (s.names ? `${v} · ${s.names[v] ?? ''}` : String(v));
     input.value = String(T[s.key]); val.textContent = show(T[s.key]);
+    input.addEventListener('change', () => { const o = SPECS.find((x) => x.key === s.key)!; if (canSleep(o)) moveSlider(body as HTMLElement, l, o, T[s.key] === 0); });
     input.addEventListener('input', () => { T[s.key] = Number(input.value); val.textContent = show(T[s.key]); changed(); save(); if (s.group === 'Load-in') replaySoon(); });
     inputs[s.key] = [input, val];
     box.appendChild(l);
@@ -378,10 +381,31 @@ export function mountPanel(): () => void {
   return () => { window.clearInterval(loop); window.clearTimeout(replayTimer); root.remove(); css.remove(); };
 }
 
+const INACTIVE = 'Inactive (set to 0)';
+/** Live: a slider let go at 0 moves to "Inactive"; turned up again it goes back to its own group. */
+function moveSlider(body: HTMLElement, l: HTMLElement, s: Spec, off: boolean): void {
+  const want = off ? INACTIVE : s.group;
+  const find = (g: string) => [...body.querySelectorAll('section')].find((x) => x.querySelector('h4')?.textContent === g);
+  const from = l.parentElement;
+  let sec = find(want);
+  if (sec === from) return;
+  if (!sec) {
+    sec = document.createElement('section');
+    sec.innerHTML = `<h4 data-act="fold">${want}</h4>`;
+    const last = find(INACTIVE);
+    if (off || !last) body.appendChild(sec); else body.insertBefore(sec, last);
+  }
+  (l.querySelector('span')!.firstChild as Text).textContent = off ? `${s.group}: ${s.label}` : s.label;
+  sec.appendChild(l);
+  if (from && !from.querySelector('label')) from.remove();
+}
+
 /** Put the name-and-logo settings on the page (CSS variables), loading the chosen web font. */
 let lastBrand = '';
 let lastFade = '';
-const BG_KEYS = ['qbOn', 'qbDark', 'qbBlur', 'qbTint', 'qbPadX', 'qbPadY', 'qbRadius', 'qbFade'];
+const BG_KEYS = ['qbColour', 'qbPadX', 'qbPadY', 'qbRadius'];
+/** Background colours behind the quote (Markus, 18 Nov: one simple choice, black by default). */
+const QB_COLOURS = [[0, 0, 0], [20, 21, 24], [6, 10, 22], [4, 14, 36], [2, 24, 28], [18, 8, 32], [30, 6, 10], [255, 255, 255]];
 const HINT_KEYS = ['baseDark', 'glowStrength', 'glowHue1', 'glowHue2', 'glowSize', 'edgeLight', 'accentHue', 'accentSat', 'accentWords', 'pipeFluid', 'inkHue', 'inkSat', 'inkLight', 'bizLayout', 'shOn', 'shArrow', 'shAnim', 'shSpeed', 'shTravel', 'shLayout', 'shFont', 'shSize', 'shSpacing', 'shCaps', 'shBright', 'shPlace'];
 /** Arrow drawings for the scroll hint (24 wide, drawn in currentColor). */
 const ARROWS = [
@@ -395,7 +419,7 @@ const ARROWS = [
   '',
 ];
 export function applyBrand(): void {
-  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', 'qpFrame', 'qpBright', 'qpBlue', 'qpGlow', 'qpHi', 'qpAnim', 'qpSpeed', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText;
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', 'qpFrame', 'qpBright', 'qpBlue', 'qpGlow', 'qpHi', 'qpAnim', 'qpSpeed', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText + '|' + TX.shHiWords + '|' + T.shHiHue + '|' + T.shHiSat;
   // The hint fades away as soon as the visitor starts scrolling.
   const fade = String(Math.max(0, 1 - scrollY / (innerHeight * 0.2)).toFixed(3));
   if (fade !== lastFade) { lastFade = fade; document.documentElement.style.setProperty('--hint-fade', fade); }
@@ -445,15 +469,14 @@ export function applyBrand(): void {
   s.setProperty('--quote-align', ['left', 'center', 'right'][T.quoteAlign] ?? 'left');
   s.setProperty('--quote-left', T.quoteAlign === 2 ? 'auto' : T.quoteAlign === 1 ? '0' : 'var(--s-gutter)');
   s.setProperty('--quote-right', T.quoteAlign === 0 ? 'auto' : T.quoteAlign === 1 ? '0' : 'var(--s-gutter)');
-  // The frosted patch behind the quote.
-  const t = T.qbTint;
-  s.setProperty('--qb-show', T.qbOn ? 'block' : 'none');
-  s.setProperty('--qb-bg', `rgba(${Math.round(8 * t)},${Math.round(18 * t)},${Math.round(40 * t)},${T.qbDark})`);
-  s.setProperty('--qb-blur', `${T.qbBlur}px`);
+  // The patch behind the quote: one solid colour (a touch lighter at the top), the same box as the frame.
+  const qc = QB_COLOURS[T.qbColour] ?? QB_COLOURS[0]!;
+  s.setProperty('--qb-bg', `linear-gradient(180deg, rgb(${qc.map((v) => Math.min(255, v + 10)).join(',')}), rgb(${qc.join(',')}))`);
+  // On a light patch the words (the picked-out ones too) are black; on a dark one they keep their own colours.
+  s.setProperty('--quote-ink', qc[0]! + qc[1]! + qc[2]! > 380 ? '#000' : '');
   s.setProperty('--qb-padx', `${T.qbPadX}px`);
   s.setProperty('--qb-pady', `${T.qbPadY}px`);
   s.setProperty('--qb-radius', `${T.qbRadius}px`);
-  s.setProperty('--qb-fade', `${T.qbFade}%`);
   // Page look: background tone, coloured light behind the glass, lit edges, the accent colour.
   const mixHex = (a: number[], b: number[], k: number) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',')})`;
   s.setProperty('--site-base', mixHex([20, 21, 24], [9, 11, 17], T.baseDark));
@@ -482,7 +505,18 @@ export function applyBrand(): void {
     h.style.display = T.shOn ? '' : 'none';
     h.className = `cn-scroll lay-${T.shLayout} anim-${T.shAnim}`;
     const w = h.querySelector<HTMLElement>('.cn-scroll-words'), a = h.querySelector<HTMLElement>('.cn-scroll-arrow');
-    if (w) { w.textContent = TX.shText; w.style.display = TX.shText ? '' : 'none'; }
+    if (w) {
+      // Chosen words in colour (built as text nodes, never as HTML).
+      const pick = (TX.shHiWords || '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
+      w.textContent = '';
+      for (const part of (TX.shText || '').split(/(\s+)/)) {
+        if (pick.includes(part.replace(/[^\p{L}\p{N}]/gu, '').toLowerCase()) && part.trim()) {
+          const b = document.createElement('span'); b.className = 'cn-scroll-hi'; b.textContent = part; w.appendChild(b);
+        } else w.appendChild(document.createTextNode(part));
+      }
+      w.style.display = TX.shText ? '' : 'none';
+      w.style.setProperty('--sh-hi', `hsl(${T.shHiHue}, ${Math.round(T.shHiSat * 100)}%, ${70 - 10 * T.shHiSat}%)`);
+    }
     if (a) { a.innerHTML = ARROWS[T.shArrow] ?? ''; a.style.display = ARROWS[T.shArrow] ? '' : 'none'; }
   }
   s.setProperty('--sh-font', fontOf(T.shFont));

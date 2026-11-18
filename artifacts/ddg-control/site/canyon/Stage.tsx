@@ -9,8 +9,9 @@ import { heightAt } from './landscapes';
 import { makeWater } from './water';
 import { makeAura } from './aura';
 import { makeSurge } from './surge';
-import { makeBubbles } from './bubbles';
 import { makeCharge } from './charge';
+import { makeDial } from './dial';
+import { makeSpawnFx, spawnLook } from './spawn';
 import { introStart, revealPage } from '../intro';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
@@ -116,48 +117,37 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     orbit.add(halo, aura.group, air.group);
     disposables.push(...aura.disposables, ...air.disposables, haloTex, haloMat);
 
-    // Press and hold the orb: lightning to the water and land, a beam into the water (surge.ts).
+    // Press and hold the orb: lightning to the water and land, and the nova (surge.ts).
     const surge = makeSurge();
     scene.add(surge.group);
     disposables.push(...surge.disposables);
-    const ISO_POS = new Vector3(), ISO_LOOK = new Vector3(), strikeAt = new Vector3(), bubbleAt = new Vector3();
-    const bubbles = makeBubbles();
-    scene.add(bubbles.mesh, bubbles.drops);
+    /** A big bolt from just above the top edge of the screen (a little in front of the camera) onto the top of the orb. */
+    const strikeFromSky = (power: number, R: number) => {
+      const top = new Vector3((Math.random() - 0.5) * 0.4, 1.25, 0.5).unproject(camera).sub(camera.position).normalize()
+        .multiplyScalar(camera.position.distanceTo(orbit.position) * 0.35).add(camera.position);
+      surge.skyStrike(top, new Vector3(orbit.position.x, orbit.position.y + R, orbit.position.z), power);
+    };
+    // The orb's load-in looks (spawn.ts): the portal, the spark, the motes.
+    const spawnFx = makeSpawnFx();
+    scene.add(spawnFx.group);
+    disposables.push(...spawnFx.disposables);
+    let spawnPrev = 0, introWaveT = -1, introWave = 0;
+    const introWaveAt = new Vector3();
+    const ISO_POS = new Vector3(), ISO_LOOK = new Vector3(), strikeAt = new Vector3();
     const chargeFx = makeCharge();
     scene.add(chargeFx.group);
     disposables.push(...chargeFx.disposables);
-    disposables.push(...bubbles.disposables);
-    // Rings on the water: bubbles bursting, and one big ring when the orb is let go. [x, z, age 0..1, size]
+    // Rings on the water: drops landing, and one big ring when the orb is let go. [x, z, age 0..1, size]
     const pops: [number, number, number, number][] = [];
     let popNext = 0, wasHeld = false, shock = 0, novaT = -1, novaLock = false;
-    // The build-up dial: a thin ring of ticks round the orb, filling from 0 to 100%.
-    const dial = document.createElement('div');
-    dial.className = 'cn-dial'; dial.setAttribute('aria-hidden', 'true');
-    const TICKS = 50, SWEEP = 270, FROM = 135; // degrees: starts bottom-left, ends bottom-right, like a speedometer
-    const tickPath = Array.from({ length: TICKS + 1 }, (_, i) => {
-      const a = ((FROM + (SWEEP * i) / TICKS) * Math.PI) / 180, long = i % 5 === 0, r0 = long ? 86 : 90;
-      return `M${(Math.cos(a) * r0).toFixed(2)} ${(Math.sin(a) * r0).toFixed(2)}L${(Math.cos(a) * 95).toFixed(2)} ${(Math.sin(a) * 95).toFixed(2)}`;
-    }).join('');
-    const arcLen = ((SWEEP / 360) * 2 * Math.PI * 80);
-    dial.innerHTML = `<svg viewBox="-100 -100 200 200"><path class="d-ticks" d="${tickPath}"/><circle class="d-track" r="80" transform="rotate(${FROM})" stroke-dasharray="${arcLen.toFixed(1)} 999"/><circle class="d-fill" r="80" transform="rotate(${FROM})" stroke-dasharray="0 999"/><circle class="d-tip" r="1.8" cx="80" cy="0"/><text class="d-pct" x="0" y="74">0%</text></svg>`;
-    document.body.appendChild(dial);
-    const dFill = dial.querySelector<SVGCircleElement>('.d-fill')!, dTip = dial.querySelector<SVGCircleElement>('.d-tip')!, dPct = dial.querySelector<SVGTextElement>('.d-pct')!;
-    let dialShown = 0, lastPct = -1;
-    const dialUpdate = (x: number, y: number, r: number, v: number, want: number) => {
-      dialShown += (want - dialShown) * 0.12;
-      const size = r * 2 * 1.42;
-      dial.style.opacity = dialShown.toFixed(3);
-      dial.style.transform = `translate(${(x - size / 2).toFixed(1)}px, ${(y - size / 2).toFixed(1)}px)`;
-      dial.style.width = dial.style.height = `${size.toFixed(1)}px`;
-      const pct = Math.round(v * 100);
-      if (pct !== lastPct) {
-        lastPct = pct;
-        dFill.setAttribute('stroke-dasharray', `${(arcLen * v).toFixed(1)} 999`);
-        const a = ((FROM + SWEEP * v) * Math.PI) / 180;
-        dTip.setAttribute('cx', (Math.cos(a) * 80).toFixed(2)); dTip.setAttribute('cy', (Math.sin(a) * 80).toFixed(2));
-        dPct.textContent = `${pct}%`;
-      }
-    };
+    // After the nova the river level drops (water thrown out) and fills up again over T.holdRefill seconds.
+    let drainY = 0;
+    const novaAt = new Vector3(); // where the nova went off (x, z in x, y)
+    const lvl = (z: number) => water.levelAt(z) - drainY;
+    // The build-up dial: part of the 3D scene, fixed to the orb's centre and facing the camera (dial.ts).
+    const dial = makeDial();
+    orbit.add(dial.mesh);
+    disposables.push(...dial.disposables);
     const addPop = (x: number, z: number, size: number) => { pops[popNext] = [x, z, 0.001, size]; popNext = (popNext + 1) % 8; };
 
     // The river on the canyon floor and the splashes the orb throws up from it.
@@ -213,23 +203,40 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       return [((1 - pv.y) / 2) * H, (r / (d * Math.tan((cam.fov * Math.PI) / 360))) * (H / 2)];
     };
     let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
-    // Holding the orb: a press that starts on the orb and does not move (a moving finger is a scroll).
-    let charge = 0, camHold = 0, skyTurn = 0;
+    // Holding the orb: a press that starts on the orb, held until it is let go (or the browser cancels it for a scroll).
+    let charge = 0, camHold = 0, skyTurn = 0, fly = 0, flyOn = false, blasted = false;
+    const flyDir = new Vector3();
     const hold = { down: false, id: -1, x: 0, y: 0 };
+    // The orb can be pressed until the page has scrolled this far (as a part of the scroll that flattens the
+    // land). It was 0.06, about 70 px: a small scroll left the orb looking the same but dead to a press.
+    const HOLD_REACH = 0.25;
+    // Preview only (the settings panel is on): one line of facts at the bottom left, so a problem with the hold
+    // can be read off the screen and not guessed at.
+    const statusEl = tuneOn() ? document.createElement('div') : null;
+    if (statusEl) {
+      statusEl.style.cssText = 'position:fixed;left:10px;bottom:8px;z-index:2147482000;font:11px/1.4 ui-monospace,Menlo,monospace;color:#9fd8ff;background:rgba(0,0,0,.6);padding:3px 8px;border-radius:6px;pointer-events:none';
+      document.body.appendChild(statusEl);
+    }
+    let lastPress = 'none yet', statusAt = 0, fps = 0;
     const orbOnScreen = { x: 0, y: 0, r: 0 };
     const heroEl = document.querySelector<HTMLElement>('.cn-hero');
     const onOrb = (x: number, y: number) => T.holdOn > 0.5 && orbOnScreen.r > 0 && (x - orbOnScreen.x) ** 2 + (y - orbOnScreen.y) ** 2 <= (orbOnScreen.r * 1.05) ** 2;
     const onDown = (e: PointerEvent) => {
-      if (e.button > 0 || !onOrb(e.clientX, e.clientY)) return;
-      if ((e.target as Element | null)?.closest?.('a,button,input,textarea,select,label,.tune')) return;
+      if (e.button > 0 || !onOrb(e.clientX, e.clientY)) { lastPress = e.button > 0 ? 'not the main button' : orbOnScreen.r > 0 ? 'missed the orb' : 'orb not ready'; return; }
+      if ((e.target as Element | null)?.closest?.('a,button,input,textarea,select,label,.tune')) { lastPress = 'on a button or the panel'; return; }
+      lastPress = 'on the orb';
       hold.down = true; hold.id = e.pointerId; hold.x = e.clientX; hold.y = e.clientY;
+      // The page may be scrolled a little (a nudge of the wheel, or the browser putting the old scroll place back
+      // after a reload). The press then brings the page back to the top, and the scene glides there by itself.
+      if (scrollY > 0) scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
     };
     const onMove = (e: PointerEvent) => {
-      if (hold.down && e.pointerId === hold.id && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 14) hold.down = false;
-      if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) && scrollY < 40 ? 'pointer' : '';
+      // Moving the mouse while holding keeps the charge going. On a phone, a finger that starts scrolling the page
+      // makes the browser cancel the press (pointercancel), which ends the hold, so scrolling still works.
+      if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) ? 'pointer' : '';
     };
     // After the nova the orb needs a fresh press: letting go unlocks it.
-    const onUp = (e: PointerEvent) => { if (e.pointerId === hold.id) { hold.down = false; novaLock = false; } };
+    const onUp = (e: PointerEvent) => { if (e.pointerId === hold.id) { if (hold.down && e.type === 'pointercancel') lastPress = 'cancelled by the browser'; hold.down = false; novaLock = false; } };
     const noMenu = (e: Event) => { if (hold.down) e.preventDefault(); };
     addEventListener('pointerdown', onDown, true);
     addEventListener('pointermove', onMove, { passive: true });
@@ -246,7 +253,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const raw = now - last;
-      const dt = Math.min(0.05, raw / 1000); last = now;
+      // Never negative: the first frame's time stamp can be earlier than the clock read at set-up, and a negative
+      // step used to give the orb a little charge by itself at load (words flying off, dark edges).
+      const dt = Math.min(0.05, Math.max(0, raw / 1000)); last = now;
       // Quality check: after a short settle, look at 90 frames; if most took over 22 ms, step down once
       // and look again. Hidden tabs and the first frames after a scroll jump are ignored.
       if (!document.hidden && raw < 250 && ratioStep < ratios.length - 1) {
@@ -260,6 +269,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
           }
         }
       }
+      if (raw > 0 && raw < 1000) fps += (1000 / raw - fps) * 0.1;
       smoothY += (scrollY - smoothY) * (reduced ? 1 : 0.12);
       const vh = stableHeight();
       // Fade the whole stage away as the first section after the canyon arrives.
@@ -290,15 +300,27 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // At the top it goes nova (a blast of light, a shock front, every bolt at once), then everything calms
       // down over T.holdCalm seconds. A fresh press starts it again. The camera moves back and up over 2 s,
       // looking down on the river with the sky still in view, while the sky turns as if time ran faster.
-      if (hold.down && (p > 0.08 || T.holdOn < 0.5)) hold.down = false;
+      // Scrolling away while holding ends the hold (the real scroll place, not the smoothed one: a press on a
+      // slightly scrolled page jumps to the top first, and the smoothed value is still catching up).
+      if (hold.down && (scrollY > vh * 0.1 || T.holdOn < 0.5)) hold.down = false;
       const building = hold.down && !novaLock;
       charge = building ? Math.min(1, charge + dt / Math.max(1, T.holdBuild)) : Math.max(0, charge - dt / (novaT >= 0 ? Math.max(0.5, T.holdCalm) : 1.2));
       let novaNow = false;
-      if (building && charge >= 1) { novaNow = true; novaLock = true; hold.down = false; novaT = 0; shock = 1.6; }
+      if (building && charge >= 1) { novaNow = true; novaLock = true; hold.down = false; novaT = 0; shock = 1.6; blasted = true; }
+      else if (building) blasted = false; // a fresh hold: the words leave again
       if (novaT >= 0) { novaT += dt; if (novaT > Math.max(4, T.holdCalm + 1)) novaT = -1; }
       camHold = building ? Math.min(1, camHold + dt / 2) : Math.max(0, camHold - dt / (novaT >= 0 ? Math.max(1, T.holdCalm) : 1.6));
       const ch = Math.pow(charge, 1.4), cv = ease(camHold) * T.holdZoom;
-      skyTurn += dt * ease(camHold) * 0.35 * T.holdSky;
+      // After the blast every charge-up effect stops at once (Markus, 18 Nov): what is in the air falls back,
+      // nothing new appears, and only the camera, sky, glow and orb settle back over the calm-down time.
+      const fxCh = novaT >= 0 ? 0 : ch;
+      // While it charges the words and logos fly off the screen: the page ones by a class (site.css, 0.3 s), the
+      // 3D "We build it all." here, sliding off to the left at the same pace. The moment the orb explodes they
+      // all fly back (Markus, 18 Nov), while the scene is still settling.
+      const flyWant = T.holdFlyOff > 0.5 && !blasted && (hold.down || charge > 0.02);
+      if (flyWant !== flyOn) { flyOn = flyWant; topEl.classList.toggle('cn-fly', flyOn); }
+      fly = flyOn ? Math.min(1, fly + dt / 0.3) : Math.max(0, fly - dt / 0.7);
+      skyTurn += dt * ease(camHold) * 0.35 * T.holdSky * (1 + 2 * ch); // spins up to 3x faster at full charge
       const camZ = lerp(42, 0, ease(p * 1.2));
       camera.position.set(0, lerp(9, small ? 95 : 70, k), camZ);
       look.set(0, lerp(12, 0, k), lerp(camZ - 40, camZ - 0.01, k));
@@ -311,7 +333,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // Screen shake: the 3D picture itself is moved a few pixels (the words on the page are not), growing
       // with the charge, plus a hard jolt at the nova.
       const jolt = reduced ? 0 : T.holdScreenShake * ch * ch * 7 + shock * T.holdShock * 12;
-      const shakeCss = jolt > 0.05 ? `translate(${((Math.random() - 0.5) * jolt).toFixed(1)}px, ${((Math.random() - 0.5) * jolt).toFixed(1)}px) scale(${(1 + jolt / 300).toFixed(4)})` : '';
+      const shakeCss = jolt > 0.05 ? `translate(${((Math.random() - 0.5) * jolt).toFixed(1)}px, ${((Math.random() - 0.5) * jolt).toFixed(1)}px)` : '';
       if (canvas.style.transform !== shakeCss) canvas.style.transform = shakeCss;
       // The ground trembles.
       const tremble = reduced ? 0 : (T.holdGroundShake * ease(charge) + shock * T.holdShock * 0.6) * 0.12 * Math.sin(clock * 47) * Math.sin(clock * 31 + 1);
@@ -328,15 +350,15 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       camera.updateMatrixWorld();
       const R = ORB_R * orbit.scale.x, FRAME = 1.22;
       const [oy, orR] = onScreen(camera, orbit.position, R);
-      orbOnScreen.x = innerWidth / 2; orbOnScreen.y = oy; orbOnScreen.r = p < 0.06 ? orR : 0;
+      orbOnScreen.x = innerWidth / 2; orbOnScreen.y = oy; orbOnScreen.r = p < HOLD_REACH ? orR : 0;
       // Charging: the orb lifts a little and trembles. Applied after the words have found their places, so the
       // name and quote stay still while the orb shakes.
       if (ch > 0) {
         orbit.position.y += T.holdRise * ch;
-        if (!reduced) { const sh = 0.14 * T.holdOrbShake * ch * (0.4 + ch); orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
+        if (!reduced) { const sh = 0.14 * T.holdOrbShake * fxCh * (0.4 + fxCh) * (1 + fxCh * fxCh); /* twice as hard at full charge */ orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
       }
       // The dial round the orb: 0 to 100% of the build-up, thin lines, like a speedometer.
-      dialUpdate(innerWidth / 2, oy, orR, charge, hold.down ? 1 : 0);
+      dial.update(charge, hold.down ? 1 : 0, ORB_R);
       restCam.fov = camera.fov; restCam.aspect = camera.aspect;
       if (liftPx > 0) { const H = stableHeight(); restCam.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); } else restCam.clearViewOffset();
       restCam.updateProjectionMatrix();
@@ -370,15 +392,34 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // swelling out of it (a little past full size, then settling), a bright pulse, then the words.
       const t0 = introStart();
       const spawn = reduced || T.introSpawn <= 0 ? (t0 === null ? 0 : 1) : t0 === null ? 0 : Math.min(1, Math.max(0, (now - t0) / (T.introSpawn * 1000)));
-      const seed = ease(spawn / 0.22);
-      const swell = spawn <= 0.15 ? 0 : Math.min(1, (spawn - 0.15) / 0.6);
-      const body = swell >= 1 ? 1 : 1 + 2.2 * Math.pow(swell - 1, 3) + 1.2 * Math.pow(swell - 1, 2); // ease out, slightly past 1
-      const pulse = Math.exp(-Math.pow((spawn - 0.78) / 0.07, 2));
-      const born = Math.max(0.001, body);
-      orbit.scale.multiplyScalar(born);
-      haloMat.opacity = Math.max(haloMat.opacity, (seed * (1 - swell) * 0.95 + pulse * 0.6) * (1 - away));
-      halo.scale.setScalar(10 * (0.35 + 0.65 * seed) * (1 + pulse * 0.5));
-      if (followEl) followEl.style.opacity = String(Math.min(1, Math.max(0, (spawn - 0.7) / 0.3)) * (1 - ease(camHold)));
+      const arrive = spawnLook(T.introStyle, spawn, R);
+      let born: number;
+      if (arrive.classic) {
+        const seed = ease(spawn / 0.22);
+        const swell = spawn <= 0.15 ? 0 : Math.min(1, (spawn - 0.15) / 0.6);
+        const body = swell >= 1 ? 1 : 1 + 2.2 * Math.pow(swell - 1, 3) + 1.2 * Math.pow(swell - 1, 2); // ease out, slightly past 1
+        const pulse = Math.exp(-Math.pow((spawn - 0.78) / 0.07, 2));
+        born = Math.max(0.001, body);
+        orbit.scale.multiplyScalar(born);
+        haloMat.opacity = Math.max(haloMat.opacity, (seed * (1 - swell) * 0.95 + pulse * 0.6) * (1 - away));
+        halo.scale.setScalar(10 * (0.35 + 0.65 * seed) * (1 + pulse * 0.5));
+      } else {
+        born = Math.max(0.001, arrive.scale);
+        orbit.scale.multiplyScalar(born);
+        orbit.position.y -= arrive.lift;
+        haloMat.opacity = Math.max(haloMat.opacity * Math.min(1, arrive.scale), arrive.halo * (1 - away));
+        halo.scale.setScalar(10 * arrive.haloSize);
+      }
+      // One-off moments of the load-in: the push on the water and the strike from the sky.
+      const passed = (at: number) => at >= 0 && spawnPrev < at && spawn >= at;
+      if (spawn < spawnPrev) introWaveT = -1; // replayed
+      if (passed(arrive.waveAt)) { introWaveT = 0; introWave = arrive.wave; introWaveAt.set(orbit.position.x, orbit.position.z, 0); }
+      if (passed(arrive.strikeAt)) strikeFromSky(1, R);
+      spawnPrev = spawn;
+      if (introWaveT >= 0) { introWaveT += dt; if (introWaveT > 4) introWaveT = -1; }
+      spawnFx.update(T.introStyle, spawn, clock, orbit.position, R, camera, canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)));
+      // (After the blast the words are shown at once, not faded in with the camera's return.)
+      if (followEl) followEl.style.opacity = String(Math.min(1, Math.max(0, (spawn - 0.7) / 0.3)) * (blasted ? 1 : 1 - ease(camHold)));
       haloMat.opacity += 0.5 * ch * (1 - away);
       // Lightning is timed here, so the ball, its glow, the water and the land can all flash together.
       const bolt = lightningNow(clock, T.orbSparkRate);
@@ -387,13 +428,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         bands: T.orbStreaks, zap: T.orbSparks * (1 + ch), zapRate: T.orbSparkRate * (1 + 3 * ch), style: T.orbStyle, hue: T.orbHue, flow: T.orbFlow,
         gate: bolt.gate, flash: flash * 0.6, depth: T.orbDepth, glass: T.orbGlass, fringe: T.orbFringe, cam: camera.position,
       });
-      aura.update(clock, 1 - away, { bloom: T.orbBloom + ch, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
+      aura.update(clock, (1 - away) * born, { bloom: T.orbBloom + ch, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
       haloMat.opacity *= 1 + flash;
       const landFlash = bolt.flash * T.orbFlashLand * (1 - away);
       lineMat.uniforms.uBolt.value.set(orbit.position.x, orbit.position.z, landFlash, T.orbFlashReach);
-      // The surge: bolts to the water and land, and the beam. A strike lights the land where it lands.
-      const waterY = water.levelAt(orbit.position.z);
-      const strike = surge.update(clock, dt, ch * (1 - away), orbit.position, R, waterY, { beam: T.holdBeam, bolts: T.holdBolts, width: T.holdBeamWidth, start: T.holdBeamStart, glow: T.holdBeamGlow, flicker: T.holdBeamFlicker }, () => {
+      // The surge: bolts to the water and land. A strike lights the land where it lands.
+      const waterY = lvl(orbit.position.z);
+      const strike = surge.update(clock, dt, fxCh * (1 - away), orbit.position, R, waterY, { bolts: T.holdBolts }, () => {
         const a = Math.random() * Math.PI * 2;
         if (Math.random() < 0.6) {
           const r = R * (1.3 + 1.9 * Math.random());
@@ -404,56 +445,49 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       });
       if (strike.at && strike.flash * T.holdBolts * 1.5 > landFlash) lineMat.uniforms.uBolt.value.set(strike.at.x, strike.at.z, strike.flash * T.holdBolts * 1.5, 14);
       // Letting go after a good charge sends a ring of light out across the water and jolts the scene.
-      if (wasHeld && !hold.down && !novaNow && charge > 0.5 && T.holdShock > 0) { addPop(orbit.position.x, orbit.position.z, 6 * T.holdShock); shock = 1; }
+      if (wasHeld && !hold.down && !novaNow && charge > 0.5 && T.holdShock > 0) shock = 1;
       // The nova: a shell of light races out, every bolt fires, a huge ring runs across the water.
       if (novaNow && T.holdNova > 0) {
         surge.burstAll(orbit.position, R, () => {
           const a = Math.random() * Math.PI * 2, r = R * (1.5 + 4 * Math.random());
-          return strikeAt.set(orbit.position.x + Math.cos(a) * r, water.levelAt(orbit.position.z), orbit.position.z + Math.sin(a) * r * 0.7);
+          return strikeAt.set(orbit.position.x + Math.cos(a) * r, lvl(orbit.position.z), orbit.position.z + Math.sin(a) * r * 0.7);
         });
-        addPop(orbit.position.x, orbit.position.z, 12 * T.holdNova);
       }
+      if (novaNow && T.holdSkyStrike > 0) strikeFromSky(T.holdSkyStrike, R);
       surge.novaAt(novaT, orbit.position, R, T.holdNova);
       if (novaT >= 0) haloMat.opacity += Math.exp(-novaT * 3) * 2.5 * T.holdNova;
       wasHeld = hold.down;
       shock = Math.max(0, shock - dt * 2.5);
       haloMat.opacity += shock * 0.8 * T.holdShock;
-      // The lake boils: strength follows the charge; bubbles swell up and burst over the boiling area.
-      const boil = Math.max(0, (ch - 0.1) / 0.9) * T.holdBoil * (1 - away);
+      // The lake boils: strength follows the charge.
+      const boil = Math.max(0, (fxCh - 0.1) / 0.9) * T.holdBoil * (1 - away);
       const px = canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360));
-      bubbles.update(dt, boil, { amount: T.holdBubbles, size: T.holdBubbleSize, speed: T.holdBoilSpeed, bright: T.holdBubbleShine, drops: T.holdBubbleDrops }, () => {
-        for (let tries = 0; tries < 6; tries++) {
-          const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * T.holdBoilArea * 1.2;
-          const x = orbit.position.x + Math.cos(a) * r, z = orbit.position.z + Math.sin(a) * r;
-          const y = water.levelAt(z);
-          if (Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.35) return bubbleAt.set(x, y, z);
-        }
-        return null;
-      }, (x, z, size) => { if (T.holdBubbleRings > 0) addPop(x, z, size * T.holdBubbleRings); }, px, skyTurn);
       // What swirls round the orb as it charges (charge.ts).
-      if (novaNow) chargeFx.explode(orbit.position, T.holdNova);
-      chargeFx.update(dt, ch * (1 - away), orbit.position, R, { style: T.holdFx, amount: T.holdFxAmount, speed: T.holdFxSpeed },
-        (x, z) => Math.max(water.levelAt(z), heightAt(x, z) * (1 - k)),
-        (x, z) => { const y = water.levelAt(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; },
-        (x, z, size) => addPop(x, z, Math.min(1.5, size)), px, skyTurn);
+      if (novaNow) {
+        chargeFx.explode(orbit.position, T.holdNova);
+        // The only water effect of the blast is its push on the river (novaWave in water.ts).
+        novaAt.set(orbit.position.x, orbit.position.z, 0);
+      }
+      chargeFx.update(dt, fxCh * (1 - away), orbit.position, R, { // (No vortex round the orb: removed, Markus 18 Nov. charge.ts still has the code for it, switched off here.)
+          on: [T.holdFxGlobs > 0.5, false, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed,
+          vortex: { look: 0, size: 1, reach: 1, trail: 0, glow: 0 } },
+        (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)),
+        (x, z) => { const y = lvl(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; },
+        () => {}, px, skyTurn); // no splash rings: the nova's push is the only water effect
       for (const pp of pops) if (pp && pp[2] > 0) { pp[2] += dt / (pp[3] > 2 ? 1.6 : 0.7); if (pp[2] >= 1) pp[2] = 0; }
       if (stage.style.getPropertyValue('--hold') !== (ch * T.holdVignette).toFixed(2)) stage.style.setProperty('--hold', (ch * T.holdVignette).toFixed(2));
       // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
       // into the first pipe on the page. The churning stops as the orb leaves.
-      // The box behind the quote, in canvas pixels, so the water can go calm exactly there.
-      const calm: [number, number, number, number, number, number] = [0, 0, 0, 0, 0, 0];
-      const quoteEl = T.qbCalm > 0 && T.quoteOn && fadeOut > 0.01 ? document.querySelector<HTMLElement>('.cn-quote') : null;
-      if (quoteEl) {
-        const qr = quoteEl.getBoundingClientRect(), cr = canvas.getBoundingClientRect(), sc = canvas.width / Math.max(cr.width, 1);
-        calm[0] = (qr.left - T.qbPadX - cr.left) * sc; calm[2] = (qr.right + T.qbPadX - cr.left) * sc;
-        calm[1] = (cr.bottom - qr.bottom - T.qbPadY) * sc; calm[3] = (cr.bottom - qr.top + T.qbPadY) * sc;
-        calm[4] = T.qbCalm * fadeOut; calm[5] = T.qbFade / 100;
-      }
+      // (The calm-water box behind the quote is no longer used: Markus, 18 Nov. All zeros = off.)
+      const calm: [number, number, number, number, number, number, number] = [0, 0, 0, 0, 0, 0, 0];
       water.update({
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
-        flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far, calm,
-        mirror: [T.orbMirror * (1 - away), R, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
-        boil: [orbit.position.x, orbit.position.z, boil, T.holdBoilArea], boilLook: [T.holdBoilHeight, T.holdBoilSpeed, T.holdBoilSpecks, R * 0.45 * T.holdBeam], pops, skyTurn,
+        // The orb's light on the water (its glow, glint and mirror image) follows the orb itself: nothing until it
+        // has spawned, so the reflection never appears before the orb does.
+        flat: 1 - k, stir: (1 - ease(away * 2.5)) * born, show: 1, fogNear: fog.near, fogFar: fog.far, calm, drop: drainY,
+        nova: novaT >= 0 ? [novaAt.x, novaAt.y, novaT, T.holdNovaWave] : [introWaveAt.x, introWaveAt.y, introWaveT, introWave * 2.5], novaSpeed: novaT >= 0 ? T.holdNovaWaveSpeed : 30,
+        mirror: [T.orbMirror * (1 - away) * born, R * born, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
+        boil: [orbit.position.x, orbit.position.z, boil, T.holdBoilArea], boilLook: [T.holdBoilHeight, T.holdBoilSpeed, T.holdBoilSpecks, T.holdBoilLift], pops, skyTurn,
       });
       // The join: once the land is almost flat, the riverbed pipe narrows to exactly the page pipe's width
       // on screen (3.5 px) and takes on its look; the page then draws its own pipe on top from the same spot.
@@ -469,6 +503,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const wz = T.wordsZ;
       words.group.position.set(T.wordsX, ((4.25 - 0.01 * wz) + T.wordsY) * (1 - k) - wordsOut * 2.2, wz);
       words.group.quaternion.copy(camera.quaternion);
+      if (fly > 0) words.group.position.addScaledVector(flyDir.set(1, 0, 0).applyQuaternion(camera.quaternion), -120 * (flyOn ? fly * fly : 1 - (1 - fly) * (1 - fly)));
       words.group.scale.set(T.wordsSize * (small ? 0.72 : 1), T.wordsSize * (small ? 0.72 : 1), T.wordsSize * T.wordsDepth);
       words.mat.uniforms.uOpacity.value = 1 - wordsOut;
       words.mat.uniforms.uBright.value = T.wordsBright; words.refl.uniforms.uBright.value = T.wordsBright;
@@ -476,13 +511,16 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       clouds.update(clock, camera, 1 - k, show, orbit.position);
       stars.update(now, camera, T, k < 0.3);
       renderer.render(scene, camera);
+      if (statusEl && now - statusAt > 250) {
+        statusAt = now;
+        statusEl.textContent = `scroll ${Math.round(scrollY)} px · orb: ${hold.down ? 'HELD' : novaLock ? 'let go first' : orbOnScreen.r > 0 ? 'ready to press' : 'cannot be pressed (page scrolled too far)'} · last press: ${lastPress} · charge ${Math.round(charge * 100)}% · ${Math.round(fps)} frames/s`;
+      }
       if (++framesDrawn >= 3 && fontsIn) revealPage(T.introFade * 1000);
     };
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
       unmountPanel?.();
-      dial.remove();
       removeEventListener('pointerdown', onDown, true);
       removeEventListener('pointermove', onMove);
       removeEventListener('pointerup', onUp);
@@ -490,6 +528,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       removeEventListener('contextmenu', noMenu);
       document.removeEventListener('selectstart', noMenu);
       if (followEl) followEl.style.opacity = '';
+      statusEl?.remove();
       stopResize();
       disposables.forEach((d) => d.dispose());
       renderer.dispose();

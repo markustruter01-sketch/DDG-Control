@@ -1,12 +1,11 @@
 import {
-  AdditiveBlending, BufferAttribute, BufferGeometry, CylinderGeometry, DoubleSide, Group, Line, LineBasicMaterial, Mesh,
+  AdditiveBlending, BufferAttribute, BufferGeometry, Group, Line, LineBasicMaterial, Mesh,
   ShaderMaterial, SphereGeometry, Vector3,
 } from 'three';
 
 /**
  * "Press and hold the orb" (Markus, 18 Nov 2026). While the visitor holds the orb it charges up: lightning
- * jumps from it to the water and the land around it, and a beam of light runs from the orb down into the
- * water. This file draws the bolts and the beam; Stage.tsx works out how charged the orb is (0 to 1) and
+ * jumps from it to the water and the land around it. This file draws the bolts and the nova; Stage.tsx works out how charged the orb is (0 to 1) and
  * does the rest (shake, rise, glow, the water simmering, the camera and the sky).
  */
 
@@ -47,18 +46,6 @@ void main() {
   vN = normalMatrix * normal; vV = -mv.xyz;
   gl_Position = projectionMatrix * mv;
 }`;
-const BEAM_FRAG = /* glsl */ `
-uniform float uTime; uniform float uPower; uniform float uFlicker;
-varying vec3 vN; varying vec3 vV; varying float vY;
-void main() {
-  float facing = abs(dot(normalize(vN), normalize(vV)));
-  float core = pow(facing, 3.0);
-  float flow = 1.0 - uFlicker * (0.25 - 0.25 * sin(vY * 40.0 + uTime * 30.0) * sin(vY * 13.0 - uTime * 17.0));
-  // Soft at both ends: it grows out of the orb's underside and sinks into the water.
-  float ends = smoothstep(0.0, 0.06, vY) * smoothstep(1.0, 0.7, vY);
-  vec3 col = mix(vec3(0.35, 0.7, 1.0), vec3(1.0), core);
-  gl_FragColor = vec4(col * (0.25 + core) * flow * ends * uPower, 1.0);
-}`;
 
 export function makeSurge() {
   const group = new Group();
@@ -71,16 +58,6 @@ export function makeSurge() {
     group.add(line);
     return { pos, geo, mat, line, life: 9, target: new Vector3() };
   });
-  // The beam: an open tube, unit height, stretched from the orb to the water each frame.
-  const beamGeo = new CylinderGeometry(1, 1, 1, 20, 1, true);
-  beamGeo.translate(0, -0.5, 0); // top at 0, bottom at -1
-  const beamMat = new ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uPower: { value: 0 }, uFlicker: { value: 1 } },
-    vertexShader: BEAM_VERT, fragmentShader: BEAM_FRAG, transparent: true, depthWrite: false, blending: AdditiveBlending, side: DoubleSide,
-  });
-  // Drawn before the orb (5), so the orb sits in front of it instead of the beam cutting through it.
-  const beam = new Mesh(beamGeo, beamMat); beam.renderOrder = 4; beam.visible = false; beam.frustumCulled = false;
-  group.add(beam);
 
   const novaGeo = new SphereGeometry(1, 40, 24);
   const novaMat = new ShaderMaterial({ uniforms: { uAlpha: { value: 0 } }, vertexShader: BEAM_VERT, fragmentShader: NOVA_FRAG, transparent: true, depthWrite: false, blending: AdditiveBlending });
@@ -106,6 +83,39 @@ export function makeSurge() {
     }
   };
 
+  // The sky strike (Markus, 18 Nov): at full charge one big bolt drops from above the top of the screen onto
+  // the top of the orb. The main bolt is drawn up to nine times side by side (a 3 x 3 bundle) so it reads thick,
+  // plus three forks. Its strength (slider x 3) sets how thick, how long and how bright the flash.
+  const SKY_MAIN = 9, SKY_FORKS = 3;
+  const sky = Array.from({ length: SKY_MAIN + SKY_FORKS }, () => {
+    const pos = new Float32Array(SEG * 3);
+    const geo = new BufferGeometry(); geo.setAttribute('position', new BufferAttribute(pos, 3));
+    const mat = new LineBasicMaterial({ color: 0xeef8ff, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false });
+    const line = new Line(geo, mat); line.frustumCulled = false; line.renderOrder = 8; line.visible = false;
+    group.add(line);
+    return { pos, geo, mat, line };
+  });
+  let skyLife = 9, skyPower = 0, skyCopies = 0;
+  const skyAt = new Vector3(), fork = new Vector3(), forkEnd = new Vector3();
+  /** Fire the sky strike from `top` (just above the screen) to `hit` (the top of the orb). */
+  const skyStrike = (top: Vector3, hit: Vector3, power: number) => {
+    const P = 3 * power, main = sky[0]!.pos, D = top.distanceTo(hit), w = D * 0.003;
+    jag(top, hit, main, rnd);
+    for (let k = 1; k < SKY_MAIN; k++) {
+      const ox = ((k % 3) - 1) * w, oz = (Math.floor(k / 3) - 1) * w;
+      for (let i = 0; i < SEG; i++) { sky[k]!.pos[i * 3] = main[i * 3]! + ox; sky[k]!.pos[i * 3 + 1] = main[i * 3 + 1]!; sky[k]!.pos[i * 3 + 2] = main[i * 3 + 2]! + oz; }
+    }
+    for (let k = SKY_MAIN; k < SKY_MAIN + SKY_FORKS; k++) {
+      const at = 4 + Math.floor(rnd() * 12);
+      fork.set(main[at * 3]!, main[at * 3 + 1]!, main[at * 3 + 2]!);
+      forkEnd.copy(hit).sub(top).multiplyScalar(0.25 + rnd() * 0.25).add(fork);
+      forkEnd.x += (rnd() - 0.5) * D * 0.4; forkEnd.z += (rnd() - 0.5) * D * 0.25;
+      jag(fork, forkEnd, sky[k]!.pos, rnd);
+    }
+    for (const b of sky) b.geo.attributes.position!.needsUpdate = true;
+    skyAt.copy(hit); skyLife = 0; skyPower = P; skyCopies = Math.max(1, Math.min(SKY_MAIN, Math.round(P)));
+  };
+
   let timer = 0;
   let seed = 1;
   const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
@@ -116,7 +126,7 @@ export function makeSurge() {
    * `pick()` gives a strike point on the water or land. Returns the brightest strike now (for flashes).
    */
   const update = (t: number, dt: number, power: number, orb: Vector3, radius: number, waterY: number,
-    look: { beam: number; bolts: number; width: number; start: number; glow: number; flicker: number }, pick: () => Vector3): { flash: number; at: Vector3 | null } => {
+    look: { bolts: number }, pick: () => Vector3): { flash: number; at: Vector3 | null } => {
     // Bolts: more often as it charges; none below a quarter charge.
     timer -= dt;
     if (power > 0.25 && look.bolts > 0 && timer <= 0) {
@@ -139,21 +149,18 @@ export function makeSurge() {
       b.mat.opacity = Math.min(1, on * 1.4);
       if (on > flash) { flash = on; at = b.target; }
     }
-    // The beam: from just under the orb's centre to the water, as wide as the charge allows.
-    const bp = Math.max(0, (power - 0.35) / 0.65) * look.beam;
-    beam.visible = bp > 0.01;
-    if (beam.visible) {
-      // It starts `start` of the way from the orb's centre to its underside (1 = right at the underside).
-      const top = orb.y - radius * look.start, h = top - waterY;
-      if (h < 0.2) { beam.visible = false; return { flash, at }; }
-      const w = radius * (0.06 + 0.1 * bp) * look.width * (1 + 0.15 * look.flicker * Math.sin(t * 40));
-      beam.position.set(orb.x, top, orb.z);
-      beam.scale.set(w, h, w);
-      beamMat.uniforms.uTime!.value = t; beamMat.uniforms.uPower!.value = bp * look.glow; beamMat.uniforms.uFlicker!.value = look.flicker;
-    }
+    skyLife += dt;
+    const skyEnd = 0.6 + 0.06 * skyPower;
+    const sOn = skyLife < skyEnd ? Math.exp(-skyLife * 4 / (1 + 0.15 * skyPower)) * (skyLife % 0.09 < 0.05 ? 1 : 0.35) : 0;
+    sky.forEach((b, i) => {
+      const used = i < SKY_MAIN ? i < skyCopies : skyPower >= 1.5;
+      b.line.visible = used && sOn > 0.01; b.mat.opacity = Math.min(1, sOn * (i < SKY_MAIN ? 1.5 : 0.9));
+    });
+    const sFlash = Math.min(3, sOn * skyPower * 0.5);
+    if (sFlash > flash) { flash = sFlash; at = skyAt; }
     return { flash, at };
   };
 
-  const disposables: { dispose: () => void }[] = [beamGeo, beamMat, novaGeo, novaMat, ...bolts.flatMap((b) => [b.geo, b.mat])];
-  return { group, update, novaAt, burstAll, disposables };
+  const disposables: { dispose: () => void }[] = [novaGeo, novaMat, ...bolts.flatMap((b) => [b.geo, b.mat]), ...sky.flatMap((b) => [b.geo, b.mat])];
+  return { group, update, novaAt, burstAll, skyStrike, disposables };
 }
