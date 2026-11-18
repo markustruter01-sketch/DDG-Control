@@ -155,6 +155,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const restCam = new PerspectiveCamera(58, 1, 0.1, 500), restLook = new Vector3(0, 12, 2), pv = new Vector3();
     const topEl = (document.querySelector('.cn-top') as HTMLElement | null) ?? document.documentElement;
     let lastAlign = '';
+    // The name's web font can arrive after the first frame and change its height: measure again then.
+    document.fonts?.ready.then(() => { lastAlign = ''; }).catch(() => {});
     const onScreen = (cam: PerspectiveCamera, at: Vector3, r: number) => {
       pv.copy(at).project(cam);
       const d = cam.position.distanceTo(at);
@@ -237,6 +239,16 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         topEl.style.setProperty('--cn-fade', f);
         topEl.style.setProperty('--cn-pe', Number(f) > 0.3 ? 'auto' : 'none'); // the quote button only takes taps while it can be seen
         topEl.style.setProperty('--cn-oy', `${a}px`); topEl.style.setProperty('--cn-or', `${b}px`); topEl.style.setProperty('--cn-dy', `${c}px`);
+        // On shorter screens the "Scroll" hint could sit on top of the company name. At rest (not scrolled),
+        // push it down just enough to clear the name. Measured only at rest, so scrolling stays cheap.
+        if (Math.abs(Number(c)) < 0.5) {
+          const brandEl = topEl.querySelector<HTMLElement>('.cn-brand'), hintEl = topEl.querySelector<HTMLElement>('.cn-scroll');
+          if (brandEl && hintEl && hintEl.offsetParent) {
+            const pushNow = parseFloat(topEl.style.getPropertyValue('--sh-push')) || 0;
+            const need = Math.max(0, Math.ceil(brandEl.getBoundingClientRect().bottom + 12 - (hintEl.getBoundingClientRect().top - pushNow)));
+            if (need !== pushNow) topEl.style.setProperty('--sh-push', `${need}px`);
+          }
+        }
       }
       if (!reduced) { clock += dt; spinClock += dt * T.orbSpin; }
       // Lightning is timed here, so the ball, its glow, the water and the land can all flash together.
