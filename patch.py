@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '15'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '17'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -36,6 +36,11 @@ s = one(s, 'Te.r=H<.06?ke:0', 'Te.r=H<.25?ke:0')
 # the OLD site file as a second copy of the whole page (two panels, two 3D scenes: Hide seems dead, and it lags).
 s = one(s, 'from"./site-ddg11.js"', f'from"./site-ddg{NEW}.js"')
 s = one(s, NOVA_OLD, NOVA_NEW)  # the nova's push on the water, less uniform
+# the moment the orb explodes, the words fly back (and are shown at once)
+s = one(s, "const __st={el:null,lp:'none yet',at:0,fps:0};", "const __st={el:null,lp:'none yet',at:0,fps:0,bl:!1};")
+s = one(s, 'let Lt=!1;St&&ie>=1&&(Lt=!0,_t=!0,de.down=!1,tt=0,ht=1.6),', 'let Lt=!1;St&&ie>=1?(Lt=!0,_t=!0,de.down=!1,tt=0,ht=1.6,__st.bl=!0):St&&(__st.bl=!1),')
+s = one(s, '{const fw=nt.holdFlyOff>.5&&(de.down||tt>=0||ie>.02);', '{const fw=nt.holdFlyOff>.5&&!__st.bl&&(de.down||ie>.02);')
+s = one(s, 'mn.style.opacity=String(Math.min(1,Math.max(0,(re-.7)/.3))*(1-Ze(ve)))', 'mn.style.opacity=String(Math.min(1,Math.max(0,(re-.7)/.3))*(__st.bl?1:1-Ze(ve)))')
 open(f'{A}/Stage-ddg{NEW}.js', 'w', encoding='utf-8').write(s)
 
 t = rd(f'{A}/site-ddg11.js')
@@ -44,7 +49,17 @@ t, n = re.subn(r'\{group:"Hold the orb",key:"hold(?:FxVortex|Vortex[A-Za-z]*)",[
 t, n = re.subn(r'\s*hold(?:FxVortex|Vortex[A-Za-z]*):\s*[0-9.]+,', '', t); assert n == 6, n
 t = one(t, '.tune.min { bottom: auto; }\n.tune.min .tune-body, .tune.min .tune-foot { display: none; }',
   '.tune.min { bottom: auto; width: auto; background: none; border: 0; box-shadow: none; backdrop-filter: none; }\n.tune.min .tune-body, .tune.min .tune-foot, .tune.min .tune-head b { display: none; }\n.tune.min .tune-head { padding: 0; border: 0; } .tune.min button { opacity: 0.55; }')
-t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-34', t.count('ddg-scene-tune-32'))
+t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-35', t.count('ddg-scene-tune-32'))
+# the quote: white patch with black words by default, no frame
+t = one(t, '[30,6,10]][r.qbColour]||[0,0,0];', '[30,6,10],[255,255,255]][r.qbColour]||[0,0,0];a.setProperty("--quote-ink",c[0]+c[1]+c[2]>380?"#000":"");')
+t = one(t, 'rgb(${c.map(v=>v+10).join(",")})', 'rgb(${c.map(v=>Math.min(255,v+10)).join(",")})')
+t = one(t, 'max:6,step:1,names:["Black","Charcoal","Midnight","Deep navy","Deep teal","Deep purple","Deep red"]', 'max:7,step:1,names:["Black","Charcoal","Midnight","Deep navy","Deep teal","Deep purple","Deep red","White (black words)"]')
+t = one(t, 'qpFrame:1,', 'qpFrame:0,'); t = one(t, 'qbColour:0,', 'qbColour:7,')
+c = rd(f'{A}/site-ddg6.css')
+c = one(c, '.cn-quote-t{display:block;', '.cn-quote-t{display:block;color:var(--quote-ink, inherit);')
+c = one(c, '.cn-quote-hi{font-weight:700;color:var(--j-accent, var(--ng-ice))}', '.cn-quote-hi{font-weight:700;color:var(--quote-ink, var(--j-accent, var(--ng-ice)))}')
+c = one(c, '.cn-quote-hi{-webkit-text-fill-color:var(--j-accent, var(--ng-ice))}', '.cn-quote-hi{-webkit-text-fill-color:var(--quote-ink, var(--j-accent, var(--ng-ice)))}')
+open(f'{A}/site-ddg{NEW}.css', 'w', encoding='utf-8').write(c)
 open(f'{A}/site-ddg{NEW}.js', 'w', encoding='utf-8').write(t)
-h = rd('index.html'); h = one(h, 'site-ddg11.js', f'site-ddg{NEW}.js'); open('index.html', 'w', encoding='utf-8').write(h)
+h = rd('index.html'); h = one(h, 'site-ddg11.js', f'site-ddg{NEW}.js'); h = one(h, 'site-ddg6.css', f'site-ddg{NEW}.css'); open('index.html', 'w', encoding='utf-8').write(h)
 print('ok')
