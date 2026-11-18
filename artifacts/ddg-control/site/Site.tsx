@@ -128,7 +128,7 @@ function Home() {
             <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
             <p className="cn-quote"><span className="cn-quote-t">{QUOTES[QUOTE]}</span></p>
             <a className="cn-cta" href="/#start" onClick={(e) => { e.preventDefault(); history.replaceState(null, '', '/#start'); toSection('start', true); }}>{HOME.cta} →</a>
-            <div className="cn-scroll lay-0 anim-1" aria-hidden="true"><span className="cn-scroll-words">Scroll</span><span className="cn-scroll-arrow" /></div>
+            <div className="cn-scroll lay-0 anim-1" aria-hidden="true"><span className="cn-scroll-words">Scroll for WebPage or Press Orb for Fun</span><span className="cn-scroll-arrow" /></div>
           </div>
         </section>
         {/* Room to scroll while the canyon settles flat and the core lifts away. */}
