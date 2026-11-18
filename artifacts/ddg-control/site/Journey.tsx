@@ -25,12 +25,13 @@ function ProjectIcon({ k }: { k: string }) {
 function ProjectPop({ i, onClose }: { i: number; onClose: () => void }) {
   const x = ABOUT.built[i];
   const m = ABOUT.more[x.key];
-  const shot = SHOTS.find((s) => s.key === x.key)?.imgs[0];
+  const shots = SHOTS.find((s) => s.key === x.key);
   const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const back = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
-    const key = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    // Esc closes the pop-up, unless the larger screenshot view is open on top (Esc closes that first).
+    const key = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('.j-gal-back')) onClose(); };
     addEventListener('keydown', key);
     const html = document.documentElement, was = html.style.overflow;
     html.style.overflow = 'hidden';
@@ -70,7 +71,7 @@ function ProjectPop({ i, onClose }: { i: number; onClose: () => void }) {
           {x.standards && <><p className="j-pop-label">{ABOUT.standardsLabel.replace('See all', 'All')}</p><ul className="j-chips">{ABOUT.standards.map((c) => <li key={c}>{c.split(':')[0]}</li>)}</ul></>}
           {m.note && <p className="j-pop-note">{m.note}</p>}
         </>}
-        {shot && <figure className="j-pop-shot"><img src={shot.src} alt={shot.alt} loading="lazy" decoding="async" /><figcaption>{shot.cap}</figcaption></figure>}
+        {shots && shots.imgs.length > 0 && <div className="j-pop-gal"><p className="j-pop-label">{ABOUT.screensLabel}</p><Gallery imgs={shots.imgs} name={x.name} /></div>}
         {x.href && (
           <div className="j-pop-go">
             {x.external
@@ -157,59 +158,13 @@ function Gallery({ imgs, name }: { imgs: { src: string; cap: string; alt: string
   );
 }
 
-/** A plain sideways carousel of our products. The slides on each side peek in, so it is clear there is more
- *  to see. Swipe, scroll, the arrows or the dots all move it; the browser does the snapping. The light pipe
- *  runs round .j-car-slot, a still frame exactly where the slide in front sits, so it never crosses a picture. */
-function Carousel() {
-  const track = useRef<HTMLDivElement>(null);
-  const [at, setAt] = useState(0);
-  const n = SHOTS.length;
-  const go = (i: number) => {
-    const el = track.current; if (!el) return;
-    const slide = el.children[((i % n) + n) % n] as HTMLElement;
-    el.scrollTo({ left: slide.offsetLeft - (el.clientWidth - slide.clientWidth) / 2, behavior: 'smooth' });
-  };
-  const onScroll = () => {
-    const el = track.current; if (!el) return;
-    const mid = el.scrollLeft + el.clientWidth / 2;
-    let best = 0, gap = Infinity;
-    [...el.children].forEach((c, i) => { const s = c as HTMLElement; const d = Math.abs(s.offsetLeft + s.clientWidth / 2 - mid); if (d < gap) { gap = d; best = i; } });
-    if (best !== at) setAt(best);
-  };
-  return (
-    <div className="j-car" role="region" aria-roledescription="carousel" aria-label="Screenshots of what we have built">
-      <div className="j-car-slot" data-pipe aria-hidden="true" />
-      <div className="j-car-track" ref={track} onScroll={onScroll}>
-        {SHOTS.map((x, i) => (
-          <figure key={x.key} className={`j-slide${i === at ? ' on' : ''}`} aria-label={`${i + 1} of ${n}: ${x.name}`} onClick={i === at ? undefined : () => go(i)}>
-            <Gallery imgs={x.imgs} name={x.name} />
-            <figcaption>
-              <span><b>{x.name}</b><em>{x.kind}</em></span>
-              {x.external
-                ? <a className="j-tick-link" href={x.href} target="_blank" rel="noopener noreferrer">Open <i aria-hidden="true">↗</i></a>
-                : <Link className="j-tick-link" href={x.href}>Open <i aria-hidden="true">→</i></Link>}
-            </figcaption>
-          </figure>
-        ))}
-      </div>
-      <button type="button" className="j-car-arrow prev" aria-label="Previous product" onClick={() => go(at - 1)}>←</button>
-      <button type="button" className="j-car-arrow next" aria-label="Next product" onClick={() => go(at + 1)}>→</button>
-      <div className="j-car-dots">{SHOTS.map((x, i) => <button key={x.key} type="button" aria-label={`Show ${x.name}`} aria-current={i === at} onClick={() => go(i)} />)}</div>
-    </div>
-  );
-}
-
 /** 2. "Complex platforms. Built in-house." and the DDG core. The portfolio itself is the tick list above. */
 export function Showcase() {
   return (
     <section id="businesses" className="j-biz" aria-labelledby="b-title">
-      <div className="j-biz-head">
-        <p className="s-eyebrow">{BUILT.eyebrow}</p>
-        <h2 id="b-title"><span>{BUILT.left}</span> <span className="j-hi">{BUILT.right}</span></h2>
-        <p className="j-line">{BUILT.line}</p>
-      </div>
+      {/* The screenshots now live in each project's pop-up (Markus, 18 Nov): only the lit logo stays here. */}
+      <h2 id="b-title" className="sr-only">{BUILT.left} {BUILT.right}</h2>
       <div className="j-core" data-pipe aria-hidden="true"><img src="/ddg-logo-white-512.png" alt="" /></div>
-      <Carousel />
     </section>
   );
 }
