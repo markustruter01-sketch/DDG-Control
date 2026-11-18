@@ -32,7 +32,7 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 
 ## State 18 Nov 18:35 (source: claude/hold-polish, commit "remove the water vortex")
 - Markus asked to undo the vortex look work and remove the vortex completely. Done: no liquid, no vortex sliders.
-- Live files here: index.html -> assets/site-ddg32.js (+ site-ddg32.css) -> assets/Stage-ddg32.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
+- Live files here: index.html -> assets/site-ddg34.js (+ site-ddg34.css) -> assets/Stage-ddg34.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
   from the ddg11 base files (keep those; they are not served).
 - Kept: hold fixes (press works on a slightly scrolled page and jumps to the top; no charge by itself at load),
   a preview-only status line at the bottom left, Hide leaves one small Show button.
@@ -114,3 +114,6 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - NOT VERIFIED: real phone; whether Markus likes the smaller orb at 2x distance.
 - Markus also asked (20:41) for research on making the page run faster while looking the same: see the project doc
   `claude/site-performance-plan-2026-11-18.md` once written.
+- 21:20 (build ddg34, also in PR #124): logo left of the name (setting logoPlace, default left); camera slider renamed
+  "Camera: distance from the orb", first in the Orb group. VERIFIED headless (t15.mjs): slider moves the orb's size
+  on screen (81 px at 1, 37 at 2, 24 at 3); logo and name on one row; phone gaps still even (t14.mjs). No errors.

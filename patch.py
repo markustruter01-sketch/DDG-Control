@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '32'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '34'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -66,7 +66,7 @@ t, n = re.subn(r'\{group:"Hold the orb",key:"hold(?:FxVortex|Vortex[A-Za-z]*)",[
 t, n = re.subn(r'\s*hold(?:FxVortex|Vortex[A-Za-z]*):\s*[0-9.]+,', '', t); assert n == 6, n
 t = one(t, '.tune.min { bottom: auto; }\n.tune.min .tune-body, .tune.min .tune-foot { display: none; }',
   '.tune.min { bottom: auto; width: auto; background: none; border: 0; box-shadow: none; backdrop-filter: none; }\n.tune.min .tune-body, .tune.min .tune-foot, .tune.min .tune-head b { display: none; }\n.tune.min .tune-head { padding: 0; border: 0; } .tune.min button { opacity: 0.55; }')
-t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-44', t.count('ddg-scene-tune-32'))
+t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-45', t.count('ddg-scene-tune-32'))
 # the quote: a 'White (black words)' colour choice exists; the default stays black with the thin white frame
 t = one(t, '[30,6,10]][r.qbColour]||[0,0,0];', '[30,6,10],[255,255,255]][r.qbColour]||[0,0,0];a.setProperty("--quote-ink",c[0]+c[1]+c[2]>380?"#000":"");')
 t = one(t, 'rgb(${c.map(v=>v+10).join(",")})', 'rgb(${c.map(v=>Math.min(255,v+10)).join(",")})')
@@ -90,6 +90,7 @@ t = one(t, 'Words (leave empty for arrow only)', 'Words (| starts a new line; em
 c = one(c, '.cn-scroll-words{margin-right:calc(-1 * var(--sh-track, .3em))}', '.cn-scroll-words{margin-right:calc(-1 * var(--sh-track, .3em));white-space:pre-line;text-align:center}')
 c = one(c, '.j-tick-link i{font-style:normal}', '.j-tick-link i{font-style:normal}.j-tick-screen{display:block;margin:4px 0 0;font:400 11px/1.4 var(--ng-mono);letter-spacing:.08em;text-transform:uppercase;color:#ffffff8c}.j-pop-go .j-tick-screen{margin-top:10px}')
 c = one(c, '.j-ticks li{display:flex', '.cn-top.cn-lay .cn-brand{top:var(--lay-brand);bottom:auto;transform:translateY(var(--cn-dy, 0px))}.cn-top.cn-lay .cn-scroll{top:var(--lay-hint);transform:translateY(var(--cn-dy, 0px))}.cn-top.cn-lay .cn-quote{top:var(--lay-quote);bottom:auto}.j-ticks li{display:flex')
+c = one(c, 'display:flex;flex-direction:column;align-items:center;gap:var(--logo-gap, 10px);text-align:center;', 'display:flex;flex-direction:var(--brand-dir, column);align-items:center;gap:var(--logo-gap, 10px);text-align:var(--brand-text, center);')
 open(f'{A}/site-ddg{NEW}.css', 'w', encoding='utf-8').write(c)
 t = one(t, '{group:"Hold the orb",key:"holdVignette",label:"Screen edges darken",min:0,max:1,step:.05},', '{group:"Hold the orb",key:"holdVignette",label:"Screen edges darken",min:0,max:1,step:.05},{group:"Hold the orb",key:"holdDent",label:"Pressed glass: dent under the finger (0 off)",min:0,max:2.5,step:.05},{group:"Hold the orb",key:"holdVibrate",label:"Phone buzz builds with the charge (0 off; Android only)",min:0,max:1,step:.05},')
 t = one(t, 'holdOn:1,', 'holdOn:1,holdDent:1,holdVibrate:1,')
@@ -101,8 +102,13 @@ t = re.sub(r'(className:"j-expand",onClick:\(\)=>a\(c\),"aria-haspopup":"dialog"
 t = one(t, 'e.jsx("div",{className:"j-pop-go",children:s.external?', 'e.jsxs("div",{className:"j-pop-go",children:[s.external?')
 t = one(t, 'children:[$.visit,": ",s.name," ",e.jsx("i",{"aria-hidden":"true",children:"\u2192"})]})})]})}),document.body)}', 'children:[$.visit,": ",s.name," ",e.jsx("i",{"aria-hidden":"true",children:"\u2192"})]}),s.screen&&e.jsx("p",{className:"j-tick-screen",children:$.screenNote})]})]})}),document.body)}')
 t = one(t, 'fogNear:.2,fogFar:.6,', 'camZoom:2,phoneLayout:1,fogNear:.2,fogFar:.6,')
-t = one(t, '{group:"Scene",key:"fogNear"', '{group:"Scene",key:"camZoom",label:"Camera distance at load (1 = as before, 2 = twice as far)",min:.6,max:3,step:.05},{group:"Scene",key:"fogNear"')
+t = one(t, '{group:"Orb",key:"orbSize"', '{group:"Orb",key:"camZoom",label:"Camera: distance from the orb (1 = close, 2 = twice as far)",min:.6,max:4,step:.05},{group:"Orb",key:"orbSize"')
 t = re.sub(r'(\{group:"Name and logo",key:"brandLift"[^}]*\})', r'\1,{group:"Name and logo",key:"phoneLayout",label:"Phones: space the first screen evenly by itself (0 off: the sliders place things)",min:0,max:1,step:1,names:["Off","On"]}', t, count=1); assert '"phoneLayout",label' in t
+# the logo sits left of the name (Markus, 18 Nov 20:46); setting logoPlace
+t = one(t, '{group:"Name and logo",key:"logoGap"', '{group:"Name and logo",key:"logoPlace",label:"Where the logo sits",min:0,max:1,step:1,names:["Above the name","Left of the name"]},{group:"Name and logo",key:"logoGap"')
+t = one(t, '"logoSize","logoGap","brandLift"', '"logoSize","logoPlace","logoGap","brandLift"')
+t, n = re.subn(r'\blogoGap:\s*13\b', 'logoPlace:1,logoGap:13', t); assert n == 1, n
+t, n = re.subn(r'([a-zA-Z_$]+)\.setProperty\("--logo-gap",', lambda m: m.group(1) + '.setProperty("--brand-dir",r.logoPlace>.5?"row":"column"),' + m.group(1) + '.setProperty("--brand-text",r.logoPlace>.5?"left":"center"),' + m.group(1) + '.setProperty("--logo-gap",', t); assert n == 1, n
 open(f'{A}/site-ddg{NEW}.js', 'w', encoding='utf-8').write(t)
 h = rd('index.html'); h = one(h, 'site-ddg11.js', f'site-ddg{NEW}.js'); h = one(h, 'site-ddg6.css', f'site-ddg{NEW}.css'); open('index.html', 'w', encoding='utf-8').write(h)
 print('ok')

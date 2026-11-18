@@ -1,0 +1,15 @@
+import { createRequire } from 'module'; const puppeteer = createRequire('/opt/npm-tools/node_modules/')('puppeteer');
+const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--window-size=1200,760'] });
+const p = await b.newPage(); await p.setViewport({ width: 1200, height: 760 });
+const errs = []; p.on('pageerror', e => errs.push(String(e)));
+await p.goto('http://localhost:8765/', { waitUntil: 'domcontentloaded' });
+for (let i = 0; i < 40 && await p.evaluate(() => !!document.getElementById('intro-cover') || document.querySelector('.cn-follow')?.style.opacity !== '1'); i++) await new Promise(r => setTimeout(r, 1000));
+const orb = () => p.evaluate(() => Math.round(parseFloat(document.querySelector('.cn-top').style.getPropertyValue('--cn-or')) / 1.22));
+const lab = await p.evaluate(() => { const l = [...document.querySelectorAll('.tune label')].find(l => /distance from the orb/i.test(l.textContent)); return l ? l.closest('section')?.querySelector('h4')?.textContent + ' | ' + l.querySelector('span')?.textContent : 'NOT FOUND'; });
+console.log('slider:', lab, '| orb radius px at default:', await orb());
+await p.evaluate(() => { const l = [...document.querySelectorAll('.tune label')].find(l => /distance from the orb/i.test(l.textContent)); const i = l.querySelector('input'); i.value = '1'; i.dispatchEvent(new Event('input', { bubbles: true })); });
+await new Promise(r => setTimeout(r, 4000)); console.log('orb radius px at 1:', await orb());
+await p.evaluate(() => { const l = [...document.querySelectorAll('.tune label')].find(l => /distance from the orb/i.test(l.textContent)); const i = l.querySelector('input'); i.value = '3'; i.dispatchEvent(new Event('input', { bubbles: true })); });
+await new Promise(r => setTimeout(r, 4000)); console.log('orb radius px at 3:', await orb());
+console.log('brand:', await p.evaluate(() => { const b = document.querySelector('.cn-brand'), i = b.querySelector('img').getBoundingClientRect(), s = b.querySelector('span').getBoundingClientRect(); return 'logo right edge ' + Math.round(i.right) + ', name left edge ' + Math.round(s.left) + ', same row ' + (Math.abs((i.top + i.bottom) / 2 - (s.top + s.bottom) / 2) < 12); }), 'errors', errs.length);
+await b.close();
