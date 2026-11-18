@@ -2600,6 +2600,58 @@ components:
           items:
             $ref: "#/components/schemas/PublicFinancePointBot"
       required: [date, fleet_pct, sp500_pct, bots]
+    PublicFinanceRehearsalBot:
+      type: object
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+        equity_usd:
+          type: number
+        starting_usd:
+          type: [number, "null"]
+        pnl_usd:
+          type: [number, "null"]
+        pnl_pct:
+          type: [number, "null"]
+        open_positions:
+          type: [integer, "null"]
+        stale:
+          type: boolean
+        paused:
+          type: boolean
+      required: [key, equity_usd, starting_usd, pnl_usd, pnl_pct, open_positions, stale, paused]
+    PublicFinanceRehearsalPoint:
+      type: object
+      additionalProperties: false
+      properties:
+        date:
+          type: string
+        pnl_usd:
+          type: number
+      required: [date, pnl_usd]
+    PublicFinanceRehearsal:
+      type: object
+      additionalProperties: false
+      description: The paper rehearsal now, view only (profit and loss since each bot started, practice money).
+      properties:
+        equity_usd:
+          type: number
+        starting_usd:
+          type: [number, "null"]
+        pnl_usd:
+          type: [number, "null"]
+        pnl_pct:
+          type: [number, "null"]
+        bots:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicFinanceRehearsalBot"
+        series:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicFinanceRehearsalPoint"
+      required: [equity_usd, starting_usd, pnl_usd, pnl_pct, bots, series]
     PublicFinance:
       type: object
       additionalProperties: false
@@ -2635,7 +2687,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PublicFinancePoint"
-      required: [updated_at, data_as_of, live, record_start, record_started, fleet_equity_usd, fleet_return_pct, sp500_return_pct, sp500_as_of, bots, series]
+        rehearsal:
+          oneOf:
+            - $ref: "#/components/schemas/PublicFinanceRehearsal"
+            - type: "null"
+      required: [updated_at, data_as_of, live, record_start, record_started, fleet_equity_usd, fleet_return_pct, sp500_return_pct, sp500_as_of, bots, series, rehearsal]
     PublicSummary:
       type: object
       additionalProperties: false

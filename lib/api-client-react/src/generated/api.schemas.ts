@@ -728,6 +728,41 @@ export interface PublicFinancePoint {
   bots: PublicFinancePointBot[];
 }
 
+export interface PublicFinanceRehearsalBot {
+  key: string;
+  equity_usd: number;
+  /** @nullable */
+  starting_usd: number | null;
+  /** @nullable */
+  pnl_usd: number | null;
+  /** @nullable */
+  pnl_pct: number | null;
+  /** @nullable */
+  open_positions: number | null;
+  stale: boolean;
+  paused: boolean;
+}
+
+export interface PublicFinanceRehearsalPoint {
+  date: string;
+  pnl_usd: number;
+}
+
+/**
+ * The paper rehearsal now, view only (profit and loss since each bot started, practice money).
+ */
+export interface PublicFinanceRehearsal {
+  equity_usd: number;
+  /** @nullable */
+  starting_usd: number | null;
+  /** @nullable */
+  pnl_usd: number | null;
+  /** @nullable */
+  pnl_pct: number | null;
+  bots: PublicFinanceRehearsalBot[];
+  series: PublicFinanceRehearsalPoint[];
+}
+
 export interface PublicFinance {
   updated_at: string;
   /** @nullable */
@@ -750,6 +785,8 @@ export interface PublicFinance {
   sp500_as_of: string | null;
   bots: PublicFinanceBot[];
   series: PublicFinancePoint[];
+  /** @nullable */
+  rehearsal: PublicFinanceRehearsal | null;
 }
 
 export type PublicSummaryPlatformsItem = {

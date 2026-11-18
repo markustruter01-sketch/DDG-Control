@@ -3,7 +3,7 @@ import type { PublicFinance, PublicFinancePoint } from '@workspace/api-client-re
 import { daysUntil } from '@/lib/money';
 import { usePublicFinance } from './hooks';
 import {
-  FINANCE_BOTS, FINANCE_FINE_PRINT, FINANCE_HOLDINGS_NOTE, FINANCE_HOW, FINANCE_LINEUP_NOTE, FINANCE_PAGE, FINANCE_PAPER, type FinanceBotKey,
+  FINANCE_BOTS, FINANCE_FINE_PRINT, FINANCE_HOLDINGS_NOTE, FINANCE_HOW, FINANCE_LINEUP_NOTE, FINANCE_NOW, FINANCE_PAGE, FINANCE_PAPER, type FinanceBotKey,
 } from './content';
 
 // ddg.limited/finance: DDG Finance in public. Every number comes from /api/public/finance
@@ -69,6 +69,64 @@ function Record({ data }: { data: PublicFinance | null }) {
   );
 }
 
+const usd2 = (n: number | null | undefined) =>
+  n === null || n === undefined ? '—' : `${n < 0 ? '−' : n > 0 ? '+' : ''}$${Math.abs(Math.round(n)).toLocaleString('en-AU')}`;
+
+/** The rehearsal's profit or loss by day: one white line and a zero line. */
+function PnlChart({ series }: { series: { date: string; pnl_usd: number }[] }) {
+  const W = 800, H = 220, PAD = 8;
+  const values = series.map((p) => p.pnl_usd);
+  const lo = Math.min(0, ...values), hi = Math.max(0, ...values);
+  const span = hi - lo || 1;
+  const x = (i: number) => PAD + (series.length <= 1 ? 0 : (i / (series.length - 1)) * (W - 2 * PAD));
+  const y = (v: number) => PAD + (1 - (v - lo) / span) * (H - 2 * PAD);
+  const last = series.at(-1);
+  return (
+    <figure className="f-chart">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={`Profit or loss of all bots together: ${usd2(last?.pnl_usd)} on ${last?.date ?? ''}`}>
+        <line x1={PAD} x2={W - PAD} y1={y(0)} y2={y(0)} className="f-zero" />
+        <polyline points={series.map((p, i) => `${x(i).toFixed(1)},${y(p.pnl_usd).toFixed(1)}`).join(' ')} className="f-line f-line-now" />
+      </svg>
+      <figcaption><span>{FINANCE_NOW.chart}</span><span>{series[0]?.date} → {last?.date}</span></figcaption>
+    </figure>
+  );
+}
+
+/** The dashboard's main view, read only: fleet totals, a P&L chart and one row per bot. Nothing to press. */
+function Now({ data }: { data: PublicFinance | null }) {
+  const r = data?.rehearsal;
+  const names = new Map(FINANCE_BOTS.map((b) => [b.key as string, b.name]));
+  return (
+    <section className="s-card f-glass f-now" aria-labelledby="f-now-title">
+      <h2 id="f-now-title">{FINANCE_NOW.title}</h2>
+      <p className="s-note">{FINANCE_NOW.line}</p>
+      <div className="f-numbers">
+        <p className="s-stat"><b>{usd(r?.equity_usd)}</b><span>{FINANCE_NOW.equity}</span></p>
+        <p className="s-stat"><b>{usd2(r?.pnl_usd)}</b><span>{FINANCE_NOW.pnl}{r?.pnl_pct !== null && r?.pnl_pct !== undefined ? ` (${signed(r.pnl_pct)})` : ''}</span></p>
+      </div>
+      {r && r.series.length > 1 && <PnlChart series={r.series} />}
+      <div className="f-table-wrap">
+        <table className="f-table">
+          <thead><tr>{FINANCE_NOW.cols.map((c) => <th key={c} scope="col">{c}</th>)}</tr></thead>
+          <tbody>
+            {(r?.bots ?? []).map((b) => (
+              <tr key={b.key}>
+                <th scope="row">{names.get(b.key) ?? b.key}</th>
+                <td>{usd(b.equity_usd)}</td>
+                <td className={b.pnl_usd !== null && b.pnl_usd < 0 ? 'neg' : ''}>{usd2(b.pnl_usd)}</td>
+                <td className={b.pnl_pct !== null && b.pnl_pct < 0 ? 'neg' : ''}>{signed(b.pnl_pct)}</td>
+                <td>{b.open_positions ?? '—'}</td>
+                <td>{b.paused ? FINANCE_NOW.paused : b.stale ? FINANCE_NOW.stale : FINANCE_NOW.running}</td>
+              </tr>
+            ))}
+            {!r && <tr><td colSpan={6}>{data ? 'Not reported yet.' : '—'}</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function Bots({ data }: { data: PublicFinance | null }) {
   const byKey = new Map((data?.bots ?? []).map((b) => [b.key as FinanceBotKey, b]));
   return (
@@ -105,7 +163,7 @@ function Bots({ data }: { data: PublicFinance | null }) {
   );
 }
 
-export function FinancePage({ Nav, Footer }: { Nav: () => ReactElement; Footer: () => ReactElement }) {
+export function FinancePage({ Nav, Footer }: { Nav: (props: { home?: boolean }) => ReactElement; Footer: () => ReactElement }) {
   const { data, failed } = usePublicFinance();
   return (
     <div className="s-plain dusk">
@@ -120,6 +178,7 @@ export function FinancePage({ Nav, Footer }: { Nav: () => ReactElement; Footer: 
             {failed ? 'Live numbers are unavailable right now.' : data ? `${data.live ? 'Live' : 'Last update'} · ${brisbaneTime(data.data_as_of)} Brisbane` : 'Loading live numbers…'}
           </p>
         </header>
+        <Now data={data} />
         <Record data={data} />
         <Bots data={data} />
         <section aria-labelledby="f-how-title">
