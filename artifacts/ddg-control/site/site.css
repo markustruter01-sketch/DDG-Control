@@ -372,9 +372,10 @@ p { margin: 0; }
   inset: calc(-1 * var(--qb-pady, 34px)) calc(-1 * var(--qb-padx, 70px)); border-radius: var(--qb-radius, 40px);
   background: var(--qb-bg, rgba(2,4,8,0.45)); -webkit-backdrop-filter: blur(var(--qb-blur, 14px)) saturate(var(--qb-sat, 1)); backdrop-filter: blur(var(--qb-blur, 14px)) saturate(var(--qb-sat, 1)); box-shadow: var(--qb-edge, none);
   --f: var(--qb-fade, 26%);
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent), linear-gradient(to bottom, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent);
+  clip-path: inset(0 round var(--qb-radius, 40px)); /* the frost stays exactly inside the frame's rounded shape */
+  -webkit-mask-image: var(--qb-mask, linear-gradient(to right, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent), linear-gradient(to bottom, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent));
   -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent), linear-gradient(to bottom, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent);
+  mask-image: var(--qb-mask, linear-gradient(to right, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent), linear-gradient(to bottom, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent));
   mask-composite: intersect; }
 /* Ways to make the quote stand out (all off by default; set from the tuner). A frame on ::after, a glow, movement. */
 @property --qp-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }

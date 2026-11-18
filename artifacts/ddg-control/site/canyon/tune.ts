@@ -485,7 +485,7 @@ export function applyBrand(): void {
     s.setProperty('--qb-bg', `linear-gradient(135deg, rgba(255,255,255,${(0.05 + 0.17 * f).toFixed(3)}), rgba(255,255,255,${(0.02 + 0.07 * f).toFixed(3)})), rgba(6,10,18,${(0.1 + 0.15 * f).toFixed(3)})`);
     s.setProperty('--qb-blur', `${Math.round(4 + 36 * f)}px`);
     s.setProperty('--qb-sat', '1.6');
-    s.setProperty('--qb-edge', `inset 0 0 0 1px rgba(255,255,255,${(0.08 + 0.14 * f).toFixed(3)}), inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 40px rgba(0,0,0,0.3)`);
+    s.setProperty('--qb-edge', 'none'); // the white frame is the only edge
   } else {
     s.setProperty('--qb-bg', `rgba(${Math.round(8 * t)},${Math.round(18 * t)},${Math.round(40 * t)},${T.qbDark})`);
     s.setProperty('--qb-blur', `${T.qbBlur}px`);
@@ -496,6 +496,8 @@ export function applyBrand(): void {
   s.setProperty('--qb-pady', `${T.qbPadY}px`);
   s.setProperty('--qb-radius', `${T.qbRadius}px`);
   s.setProperty('--qb-fade', `${T.qbFade}%`);
+  // No soft edge: no mask, so the frost is cut by the rounded corners alone (same shape as the frame).
+  if (T.qbFade > 0) s.removeProperty('--qb-mask'); else s.setProperty('--qb-mask', 'none');
   // Page look: background tone, coloured light behind the glass, lit edges, the accent colour.
   const mixHex = (a: number[], b: number[], k: number) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',')})`;
   s.setProperty('--site-base', mixHex([20, 21, 24], [9, 11, 17], T.baseDark));

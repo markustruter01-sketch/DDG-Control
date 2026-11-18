@@ -420,13 +420,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
       // into the first pipe on the page. The churning stops as the orb leaves.
       // The box behind the quote, in canvas pixels, so the water can go calm exactly there.
-      const calm: [number, number, number, number, number, number] = [0, 0, 0, 0, 0, 0];
+      const calm: [number, number, number, number, number, number, number] = [0, 0, 0, 0, 0, 0, 0];
       const quoteEl = T.qbCalm > 0 && T.quoteOn && fadeOut > 0.01 ? document.querySelector<HTMLElement>('.cn-quote') : null;
       if (quoteEl) {
         const qr = quoteEl.getBoundingClientRect(), cr = canvas.getBoundingClientRect(), sc = canvas.width / Math.max(cr.width, 1);
         calm[0] = (qr.left - T.qbPadX - cr.left) * sc; calm[2] = (qr.right + T.qbPadX - cr.left) * sc;
         calm[1] = (cr.bottom - qr.bottom - T.qbPadY) * sc; calm[3] = (cr.bottom - qr.top + T.qbPadY) * sc;
-        calm[4] = T.qbCalm * fadeOut; calm[5] = T.qbFade / 100;
+        calm[4] = T.qbCalm * fadeOut; calm[5] = T.qbFade / 100; calm[6] = T.qbRadius * sc;
       }
       water.update({
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,

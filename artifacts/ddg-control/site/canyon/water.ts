@@ -123,7 +123,7 @@ uniform float uGlow;
 uniform vec4 uCalm;      // a box on screen (left, bottom, right, top, in canvas pixels) where the water is kept calm
 uniform vec4 uPops[8];   // bubbles bursting and the release shockwave: x, z, age (0 to 1), size
 uniform vec4 uMirror;    // the orb mirrored in the water: x strength, y the orb's radius, z its spin clock, w the lightning flash
-uniform vec2 uCalmK;     // x: how calm (0 off, 1 no reflections or highlights at all), y: how soft the box's edges are (part of its size)
+uniform vec3 uCalmK;     // x: how calm (0 off, 1 no reflections or highlights at all), y: how soft the box's edges are (part of its size)
 uniform float uOpacity;
 uniform float uFogNear;
 uniform float uFogFar;
@@ -215,9 +215,13 @@ void main() {
   vec3 r = reflect(-v, n);
   // Behind the quote the water goes quiet: no mirrored sky, no orb glint, no foam or light-lines, so the
   // words are read against plain dark water. The box fades out at its edges.
-  vec2 cs = max(uCalm.zw - uCalm.xy, vec2(1.0)), cf = max(cs * uCalmK.y, vec2(1.0));
-  vec2 cin = smoothstep(vec2(0.0), cf, gl_FragCoord.xy - uCalm.xy) * smoothstep(vec2(0.0), cf, uCalm.zw - gl_FragCoord.xy);
-  float lit = 1.0 - uCalmK.x * cin.x * cin.y;
+  // It is the same rounded box as the frosted patch and the frame round the quote (one shape for all three).
+  vec2 cc = (uCalm.xy + uCalm.zw) * 0.5, hs = max((uCalm.zw - uCalm.xy) * 0.5, vec2(0.5));
+  float cr = min(uCalmK.z, min(hs.x, hs.y));
+  vec2 cq = abs(gl_FragCoord.xy - cc) - hs + cr;
+  float csd = length(max(cq, 0.0)) + min(max(cq.x, cq.y), 0.0) - cr;
+  float cfe = max(uCalmK.y * 2.0 * min(hs.x, hs.y), 1.0);
+  float lit = 1.0 - uCalmK.x * (1.0 - smoothstep(-cfe, 0.0, csd));
   float fresnel = clamp((0.03 + 0.97 * pow(1.0 - max(dot(n, v), 0.0), 5.0)) * uReflect, 0.0, 1.0) * lit;
 
   // What the surface mirrors: the real sky above it (stars and Milky Way, a little brighter than
@@ -369,7 +373,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     uRough: { value: 1 }, uClear: { value: 0 }, uSwirlLines: { value: 1 }, uSwirlSoft: { value: 1 }, uDetailK: { value: 1 }, uFoamK: { value: 1 }, uGlintK: { value: 1 }, uReflect: { value: 1 }, uBody: { value: 1 }, uSilk: { value: 1 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
     uNova: { value: new Vector4(0, 0, -1, 0) }, uNovaSpeed: { value: 22 },
     uBoil: { value: new Vector4(0, 0, 0, 3) }, uBoilLook: { value: new Vector4(1, 1, 1, 1) }, uPops: { value: Array.from({ length: 8 }, () => new Vector4()) }, uSkyTurn: { value: 0 },
-    uMirror: { value: new Vector4() }, uCalm: { value: new Vector4() }, uCalmK: { value: new Vector2() },
+    uMirror: { value: new Vector4() }, uCalm: { value: new Vector4() }, uCalmK: { value: new Vector3() },
     uOrb: { value: new Vector2() }, uOrbPos: { value: new Vector3() },
     // The shader writes screen colours directly, so the fog colour is passed as plain 0-1 values.
     uFog: { value: new Vector3(((fogColor >> 16) & 255) / 255, ((fogColor >> 8) & 255) / 255, (fogColor & 255) / 255) },
@@ -399,7 +403,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     /** 1 = land at full height, 0 = flattened. */ flat: number;
     /** 1 = orb right over the water, 0 = orb gone. */ stir: number;
     /** 1 = water fully shown. */ show: number; fogNear: number; fogFar: number;
-    /** The calm box behind the quote: left, bottom, right, top in canvas pixels, how calm (0 to 1), edge softness. */ calm: [number, number, number, number, number, number];
+    /** The calm box behind the quote: left, bottom, right, top in canvas pixels, how calm (0 to 1), edge softness. */ calm: [number, number, number, number, number, number, number?];
     /** The orb mirrored in the water: strength, orb radius, spin clock, lightning flash. And how much lightning brightens the water. */ mirror: [number, number, number, number]; flash: number;
     /** How far the river level has dropped (after the nova). */ drop?: number;
     /** The nova's push: x, z, seconds since (below 0 = none), height; and its speed. */ nova?: [number, number, number, number]; novaSpeed?: number;
@@ -411,7 +415,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     uniforms.uTime.value = f.t; uniforms.uStir.value = f.stir; uniforms.uGlow.value = f.stir * (1 + f.flash); uniforms.uOpacity.value = f.show; uniforms.uFlat.value = f.flat;
     uniforms.uOrb.value.set(f.orbX, f.orbZ); uniforms.uOrbPos.value.set(f.orbX, f.orbY, f.orbZ);
     uniforms.uFogNear.value = f.fogNear; uniforms.uFogFar.value = f.fogFar;
-    uniforms.uCalm.value.set(f.calm[0], f.calm[1], f.calm[2], f.calm[3]); uniforms.uCalmK.value.set(f.calm[4], f.calm[5]);
+    uniforms.uCalm.value.set(f.calm[0], f.calm[1], f.calm[2], f.calm[3]); uniforms.uCalmK.value.set(f.calm[4], f.calm[5], f.calm[6] ?? 0);
     uniforms.uMirror.value.set(f.mirror[0], f.mirror[1], f.mirror[2], f.mirror[3]);
     if (f.boil) uniforms.uBoil.value.set(f.boil[0], f.boil[1], f.boil[2], f.boil[3]); else uniforms.uBoil.value.z = 0;
     if (f.nova) uniforms.uNova.value.set(f.nova[0], f.nova[1], f.nova[2], f.nova[3]); else uniforms.uNova.value.z = -1;
