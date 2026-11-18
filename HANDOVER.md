@@ -152,3 +152,4 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
   (PR #131, NOT merged). Water design 1 (PR #129) merged and LIVE (publish success 22:05).
   PR #127 (text sizes) still open and kept out on Markus's word "ignore all else". The preview HAS the text sizes.
   VERIFIED headless: scroll bar computed style thin + ice-blue (t20.mjs; headless hides bars so no picture).
+- 22:20: PR #130 and #131 merged by Markus, synced (sync-pr131.txt: build passed), published, status success, live page loads. PR #127 (text sizes) still open.
