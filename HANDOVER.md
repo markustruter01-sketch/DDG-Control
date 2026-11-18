@@ -97,3 +97,8 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - 20:25 (build ddg28, also in PR #122): the dent fades towards its edge (mask); the buzz starts with a faint tick every
   0.48 s and builds to 49 ms ticks every 0.1 s, then stops at the blast (no long pulse). VERIFIED headless with touch
   (t12.mjs, vibrate stubbed): 6 ms @ 450 ms apart -> 49 ms @ 100 ms apart, then 0 at the blast; no errors.
+
+## 18 Nov 20:20: PR #122 merged and live
+- Merged by Markus (c8ad032), Replit synced (sync-pr122.txt: build passed), published, status success.
+- Live now: words return after the settle, no dark edges, dent fades at its edge, buzz starts slow and stops at the blast.
+- Preview (ddg28) and main now match. Nothing open.
