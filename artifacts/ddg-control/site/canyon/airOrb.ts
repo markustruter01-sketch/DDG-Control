@@ -268,6 +268,9 @@ export function makeAirOrb(R: number) {
     ...(skin ? { blending: AdditiveBlending } : {}),
   });
   const ballMat = make(0), skinMat = make(1);
+  // The ball writes depth, so things behind it (drops, bolts) are hidden by it and things in front show:
+  // proper 3D layering instead of everything drawn on top.
+  ballMat.depthWrite = true;
   const ballGeo = new SphereGeometry(R, 64, 48), skinGeo = new SphereGeometry(R * 1.14, 48, 32);
   const ball = new Mesh(ballGeo, ballMat), skin = new Mesh(skinGeo, skinMat);
   // Set on the meshes themselves: three.js sorts by each object's own order, and these must be drawn

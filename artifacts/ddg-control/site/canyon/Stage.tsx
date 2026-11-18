@@ -130,6 +130,34 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     // Rings on the water: bubbles bursting, and one big ring when the orb is let go. [x, z, age 0..1, size]
     const pops: [number, number, number, number][] = [];
     let popNext = 0, wasHeld = false, shock = 0, novaT = -1, novaLock = false;
+    // The build-up dial: a thin ring of ticks round the orb, filling from 0 to 100%.
+    const dial = document.createElement('div');
+    dial.className = 'cn-dial'; dial.setAttribute('aria-hidden', 'true');
+    const TICKS = 50, SWEEP = 270, FROM = 135; // degrees: starts bottom-left, ends bottom-right, like a speedometer
+    const tickPath = Array.from({ length: TICKS + 1 }, (_, i) => {
+      const a = ((FROM + (SWEEP * i) / TICKS) * Math.PI) / 180, long = i % 5 === 0, r0 = long ? 86 : 90;
+      return `M${(Math.cos(a) * r0).toFixed(2)} ${(Math.sin(a) * r0).toFixed(2)}L${(Math.cos(a) * 95).toFixed(2)} ${(Math.sin(a) * 95).toFixed(2)}`;
+    }).join('');
+    const arcLen = ((SWEEP / 360) * 2 * Math.PI * 80);
+    dial.innerHTML = `<svg viewBox="-100 -100 200 200"><path class="d-ticks" d="${tickPath}"/><circle class="d-track" r="80" transform="rotate(${FROM})" stroke-dasharray="${arcLen.toFixed(1)} 999"/><circle class="d-fill" r="80" transform="rotate(${FROM})" stroke-dasharray="0 999"/><circle class="d-tip" r="1.8" cx="80" cy="0"/><text class="d-pct" x="0" y="74">0%</text></svg>`;
+    document.body.appendChild(dial);
+    const dFill = dial.querySelector<SVGCircleElement>('.d-fill')!, dTip = dial.querySelector<SVGCircleElement>('.d-tip')!, dPct = dial.querySelector<SVGTextElement>('.d-pct')!;
+    let dialShown = 0, lastPct = -1;
+    const dialUpdate = (x: number, y: number, r: number, v: number, want: number) => {
+      dialShown += (want - dialShown) * 0.12;
+      const size = r * 2 * 1.42;
+      dial.style.opacity = dialShown.toFixed(3);
+      dial.style.transform = `translate(${(x - size / 2).toFixed(1)}px, ${(y - size / 2).toFixed(1)}px)`;
+      dial.style.width = dial.style.height = `${size.toFixed(1)}px`;
+      const pct = Math.round(v * 100);
+      if (pct !== lastPct) {
+        lastPct = pct;
+        dFill.setAttribute('stroke-dasharray', `${(arcLen * v).toFixed(1)} 999`);
+        const a = ((FROM + SWEEP * v) * Math.PI) / 180;
+        dTip.setAttribute('cx', (Math.cos(a) * 80).toFixed(2)); dTip.setAttribute('cy', (Math.sin(a) * 80).toFixed(2));
+        dPct.textContent = `${pct}%`;
+      }
+    };
     const addPop = (x: number, z: number, size: number) => { pops[popNext] = [x, z, 0.001, size]; popNext = (popNext + 1) % 8; };
 
     // The river on the canyon floor and the splashes the orb throws up from it.
@@ -279,9 +307,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       ISO_LOOK.set(0, 12 - 9 * T.holdCamTilt, 2 + 4 * T.holdCamTilt);
       if (cv > 0) { camera.position.lerp(ISO_POS, cv); look.lerp(ISO_LOOK, cv); }
       // Screen shake while charging, and a short jolt when it is let go.
-      const jolt = (T.holdScreenShake * ease(charge) + shock * T.holdShock) * (reduced ? 0 : 1);
-      if (jolt > 0) camera.position.add(strikeAt.set((Math.random() - 0.5) * 0.3 * jolt, (Math.random() - 0.5) * 0.3 * jolt, 0));
       camera.lookAt(look);
+      // Screen shake: the 3D picture itself is moved a few pixels (the words on the page are not), growing
+      // with the charge, plus a hard jolt at the nova.
+      const jolt = reduced ? 0 : T.holdScreenShake * ch * ch * 7 + shock * T.holdShock * 12;
+      const shakeCss = jolt > 0.05 ? `translate(${((Math.random() - 0.5) * jolt).toFixed(1)}px, ${((Math.random() - 0.5) * jolt).toFixed(1)}px) scale(${(1 + jolt / 300).toFixed(4)})` : '';
+      if (canvas.style.transform !== shakeCss) canvas.style.transform = shakeCss;
       // The ground trembles.
       const tremble = reduced ? 0 : (T.holdGroundShake * ease(charge) + shock * T.holdShock * 0.6) * 0.12 * Math.sin(clock * 47) * Math.sin(clock * 31 + 1);
       land.position.y = tremble; landLines.position.y = tremble;
@@ -291,11 +322,6 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const away = ease((p - 0.1) / 0.5);
       orbit.position.set(0, CORE.y + T.orbHeight + away * 26, CORE.z - away * 10);
       orbit.scale.setScalar((small ? 1.44 : 2.19) * T.orbSize);
-      // Charging: the orb lifts a little and trembles.
-      if (ch > 0) {
-        orbit.position.y += T.holdRise * ch;
-        if (!reduced) { const sh = 0.14 * T.holdOrbShake * ch; orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
-      }
       haloMat.opacity = HALO * T.orbGlow * (1 - away);
       // Where the orb is on screen now, and where it sits before any scrolling. The name and frame follow
       // it exactly; the quote and the scroll hint move by the same amount as the orb's lower edge.
@@ -303,6 +329,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const R = ORB_R * orbit.scale.x, FRAME = 1.22;
       const [oy, orR] = onScreen(camera, orbit.position, R);
       orbOnScreen.x = innerWidth / 2; orbOnScreen.y = oy; orbOnScreen.r = p < 0.06 ? orR : 0;
+      // Charging: the orb lifts a little and trembles. Applied after the words have found their places, so the
+      // name and quote stay still while the orb shakes.
+      if (ch > 0) {
+        orbit.position.y += T.holdRise * ch;
+        if (!reduced) { const sh = 0.14 * T.holdOrbShake * ch * (0.4 + ch); orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
+      }
+      // The dial round the orb: 0 to 100% of the build-up, thin lines, like a speedometer.
+      dialUpdate(innerWidth / 2, oy, orR, charge, hold.down ? 1 : 0);
       restCam.fov = camera.fov; restCam.aspect = camera.aspect;
       if (liftPx > 0) { const H = stableHeight(); restCam.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); } else restCam.clearViewOffset();
       restCam.updateProjectionMatrix();
@@ -397,8 +431,11 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         return null;
       }, (x, z, size) => { if (T.holdBubbleRings > 0) addPop(x, z, size * T.holdBubbleRings); }, px, skyTurn);
       // What swirls round the orb as it charges (charge.ts).
+      if (novaNow) chargeFx.explode(orbit.position, T.holdNova);
       chargeFx.update(dt, ch * (1 - away), orbit.position, R, { style: T.holdFx, amount: T.holdFxAmount, speed: T.holdFxSpeed },
-        (x, z) => Math.max(water.levelAt(z), heightAt(x, z) * (1 - k)), px);
+        (x, z) => Math.max(water.levelAt(z), heightAt(x, z) * (1 - k)),
+        (x, z) => { const y = water.levelAt(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; },
+        (x, z, size) => addPop(x, z, Math.min(1.5, size)), px, skyTurn);
       for (const pp of pops) if (pp && pp[2] > 0) { pp[2] += dt / (pp[3] > 2 ? 1.6 : 0.7); if (pp[2] >= 1) pp[2] = 0; }
       if (stage.style.getPropertyValue('--hold') !== (ch * T.holdVignette).toFixed(2)) stage.style.setProperty('--hold', (ch * T.holdVignette).toFixed(2));
       // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
@@ -445,6 +482,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     return () => {
       cancelAnimationFrame(raf);
       unmountPanel?.();
+      dial.remove();
       removeEventListener('pointerdown', onDown, true);
       removeEventListener('pointermove', onMove);
       removeEventListener('pointerup', onUp);
