@@ -110,5 +110,8 @@ t = one(t, '"logoSize","logoGap","brandLift"', '"logoSize","logoPlace","logoGap"
 t, n = re.subn(r'\blogoGap:\s*13\b', 'logoPlace:1,logoGap:13', t); assert n == 1, n
 t, n = re.subn(r'([a-zA-Z_$]+)\.setProperty\("--logo-gap",', lambda m: m.group(1) + '.setProperty("--brand-dir",r.logoPlace>.5?"row":"column"),' + m.group(1) + '.setProperty("--brand-text",r.logoPlace>.5?"left":"center"),' + m.group(1) + '.setProperty("--logo-gap",', t); assert n == 1, n
 open(f'{A}/site-ddg{NEW}.js', 'w', encoding='utf-8').write(t)
-h = rd('index.html'); h = one(h, 'site-ddg11.js', f'site-ddg{NEW}.js'); h = one(h, 'site-ddg6.css', f'site-ddg{NEW}.css'); open('index.html', 'w', encoding='utf-8').write(h)
+# The site itself is site.html (built from the base page, kept as site-base.html). index.html is the phone frame
+# (phone.html in this folder, written by hand) that shows site.html at iPhone size with the settings beside it.
+h = rd('site-base.html'); h = one(h, 'site-ddg11.js', f'site-ddg{NEW}.js'); h = one(h, 'site-ddg6.css', f'site-ddg{NEW}.css'); open('site.html', 'w', encoding='utf-8').write(h)
+open('index.html', 'w', encoding='utf-8').write(rd('phone.html'))
 print('ok')

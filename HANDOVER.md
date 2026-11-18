@@ -117,3 +117,12 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - 21:20 (build ddg34, also in PR #124): logo left of the name (setting logoPlace, default left); camera slider renamed
   "Camera: distance from the orb", first in the Orb group. VERIFIED headless (t15.mjs): slider moves the orb's size
   on screen (81 px at 1, 37 at 2, 24 at 3); logo and name on one row; phone gaps still even (t14.mjs). No errors.
+
+## 18 Nov 21:30: the preview opens as an iPhone 15/16 screen (393 x 852)
+- index.html is now the phone frame (source: phone.html). The site itself is site.html (built by patch.py from
+  site-base.html). The frame moves the settings panel out beside the phone and shows the status line above it.
+  "Open full size" opens site.html on its own.
+- When republishing, upload index.html AND site.html (plus the new asset files). Do not upload phone.html or
+  site-base.html; they are build inputs only.
+- VERIFIED headless (t16.mjs): page inside is 393 wide, phone layout on, panel beside the phone, a slider in the
+  moved panel still changes the scene, Reset all works, no errors.

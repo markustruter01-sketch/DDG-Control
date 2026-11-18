@@ -1,0 +1,24 @@
+import { createRequire } from 'module'; const puppeteer = createRequire('/opt/npm-tools/node_modules/')('puppeteer');
+const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--window-size=1400,960'] });
+const p = await b.newPage(); await p.setViewport({ width: 1400, height: 960 });
+const errs = []; p.on('pageerror', e => errs.push('parent: ' + e)); p.on('frameattached', () => {});
+p.on('console', m => { if (m.type() === 'error' && !/404|ERR_/.test(m.text())) errs.push(m.text()); });
+await p.goto('http://localhost:8765/', { waitUntil: 'domcontentloaded' });
+const fr = async () => p.frames().find(f => /site\.html|\/$/.test(f.url()) && f !== p.mainFrame());
+await new Promise(r => setTimeout(r, 12000));
+const f = await fr();
+console.log('frame url', f && f.url());
+console.log('inside', JSON.stringify(await f.evaluate(() => ({ w: innerWidth, h: innerHeight, cover: !!document.getElementById('intro-cover'), lay: document.querySelector('.cn-top')?.classList.contains('cn-lay'), panelInside: !!document.querySelector('.tune'), canvases: document.querySelectorAll('canvas').length }))));
+console.log('parent', JSON.stringify(await p.evaluate(() => ({ panel: !!document.querySelector('body > .tune'), panelRight: Math.round(document.querySelector('body > .tune')?.getBoundingClientRect().left ?? -1), phone: (() => { const r = document.getElementById('phone').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; })(), css: !!document.getElementById('tune-css') }))));
+// use a slider from the parent panel: camera distance to 1, and check the orb grows in the phone
+const orb = () => f.evaluate(() => Math.round(parseFloat(document.querySelector('.cn-top').style.getPropertyValue('--cn-or')) / 1.22));
+console.log('orb before', await orb());
+await p.evaluate(() => { const l = [...document.querySelectorAll('body > .tune label')].find(l => /distance from the orb/i.test(l.textContent)); l.closest('section')?.classList.remove('folded'); const i = l.querySelector('input'); i.value = '1'; i.dispatchEvent(new Event('input', { bubbles: true })); });
+await new Promise(r => setTimeout(r, 4000));
+console.log('orb after slider=1', await orb());
+await p.evaluate(() => { document.querySelector('body > .tune [data-act="reset"]').click(); });
+await new Promise(r => setTimeout(r, 3000));
+console.log('orb after reset', await orb());
+await p.screenshot({ path: 'q-phone.png' });
+console.log('errors', JSON.stringify(errs.slice(0, 5)));
+await b.close();
