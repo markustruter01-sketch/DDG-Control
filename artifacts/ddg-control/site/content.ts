@@ -275,7 +275,14 @@ export const SHOTS: { key: string; name: string; kind: string; imgs: { src: stri
     { src: '/work/coffee-2.webp', cap: 'The back office we built behind it: sales, margin, stock and every order\u2019s status, updated as orders come in.', alt: 'The Cattle Dog Coffee admin dashboard with sales charts' },
     { src: '/work/coffee-3.webp', cap: 'Orders and dispatch: every order from paid to delivered, with one-click customer emails. Customer details are blurred here.', alt: 'The Cattle Dog Coffee orders and dispatch screen, customer details blurred' },
   ] },
-  { key: 'greenlight', name: 'DDG Greenlight', kind: 'Compliance engine', href: 'https://ddg-greenlight.replit.app/', external: true, imgs: [{ src: '/work/greenlight.webp', cap: 'Seven steps from your code to proof: check it, see what is wrong, fix it, then check it again.', alt: 'DDG Greenlight: check my code' }] },
+  { key: 'greenlight', name: 'DDG Greenlight', kind: 'Compliance engine', href: 'https://ddg-greenlight.replit.app/', external: true, imgs: [
+    { src: '/work/greenlight-1.webp', cap: 'What is wrong: every file is checked against six published standards by code, not guesswork. Each red pin is a gap that must be fixed.', alt: 'DDG Greenlight: a 3D map of a codebase checked against six standards, with the gaps marked in red' },
+    { src: '/work/greenlight-2.webp', cap: 'The plan: the fixes are grouped into rounds, biggest first. Each round shows how far it lifts the score, and nothing changes until you approve it.', alt: 'DDG Greenlight: the fix plan in four rounds, each with its score before and after' },
+    { src: '/work/greenlight-3.webp', cap: 'Fixing: the AI writes each fix live, and the code checks every change again as it goes. Every standard it closes is shown.', alt: 'DDG Greenlight: a fix being written, with the plan, the code and the standards it closes' },
+    { src: '/work/greenlight-4.webp', cap: 'Each round ends with the same checks run again, standard by standard, so you see before and after side by side.', alt: 'DDG Greenlight: each standard\u2019s score before and after a round of fixes' },
+    { src: '/work/greenlight-5.webp', cap: 'The proof: the same rules check the whole codebase again. What is left is only what a person must decide, and it says so.', alt: 'DDG Greenlight: proof screen showing the score after all rounds, and the items that need a person' },
+    { src: '/work/greenlight-6.webp', cap: 'Done: export the fixed code and hand your team a full report: every requirement, every changed line and the risks still open.', alt: 'DDG Greenlight: final report with the fixed code export and audit documents' },
+  ] },
 ];
 export const CONTACT = { eyebrow: 'Contact', title: 'Talk to us in writing.', line: 'Email us, or send the short form above for a fixed quote. We work in writing, so there is no call to book.', emailLabel: 'Email', postLabel: 'Post' };
 
