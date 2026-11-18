@@ -193,7 +193,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       return [((1 - pv.y) / 2) * H, (r / (d * Math.tan((cam.fov * Math.PI) / 360))) * (H / 2)];
     };
     let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
-    // Holding the orb: a press that starts on the orb and does not move (a moving finger is a scroll).
+    // Holding the orb: a press that starts on the orb, held until it is let go (or the browser cancels it for a scroll).
     let charge = 0, camHold = 0, skyTurn = 0;
     const hold = { down: false, id: -1, x: 0, y: 0 };
     const orbOnScreen = { x: 0, y: 0, r: 0 };
@@ -205,7 +205,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       hold.down = true; hold.id = e.pointerId; hold.x = e.clientX; hold.y = e.clientY;
     };
     const onMove = (e: PointerEvent) => {
-      if (hold.down && e.pointerId === hold.id && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 14) hold.down = false;
+      // Moving the mouse while holding keeps the charge going. On a phone, a finger that starts scrolling the page
+      // makes the browser cancel the press (pointercancel), which ends the hold, so scrolling still works.
       if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) && scrollY < 40 ? 'pointer' : '';
     };
     // After the nova the orb needs a fresh press: letting go unlocks it.
