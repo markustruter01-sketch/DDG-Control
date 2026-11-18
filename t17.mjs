@@ -15,7 +15,7 @@ for (const [W, H] of sizes) {
     const nav = R('.cn-hero .s-nav'), br = R('.cn-brand'), hi = R('.cn-scroll'), q = R('.cn-quote'), c = R('.cn-cta');
     const orr = parseFloat(t.style.getPropertyValue('--cn-or')) / 1.22;
     const pc = v => (100 * v / H).toFixed(1) + '%';
-    return { lay: t.classList.contains('cn-lay'), nameH: pc(br.height), nameW: Math.round(br.width), hintH: pc(hi.height), orbD: pc(2 * orr), quoteH: pc(q.height), quoteW: Math.round(q.width), btnH: pc(c.height), gap: pc(br.top - nav.bottom), navFont: getComputedStyle(document.querySelector('.s-nav nav a')).fontSize, brandFont: getComputedStyle(document.querySelector('.cn-brand')).fontSize, quoteFont: getComputedStyle(document.querySelector('.cn-quote')).fontSize };
+    return { lay: t.classList.contains('cn-lay'), nameH: pc(br.height), nameW: Math.round(br.width), hintH: pc(hi.height), orbD: pc(2 * orr), quoteH: pc(q.height), quoteW: Math.round(q.width), btnH: pc(c.height), gap: pc(br.top - nav.bottom), navFont: getComputedStyle(document.querySelector('.s-nav nav a')).fontSize, navW: Math.round(document.querySelector('.cn-hero .s-nav nav').getBoundingClientRect().width), hintFont: getComputedStyle(document.querySelector('.cn-scroll')).fontSize, btnFont: getComputedStyle(document.querySelector('.cn-cta')).fontSize, logoW: Math.round(document.querySelector('.cn-brand img').getBoundingClientRect().width), z: document.querySelector('.cn-top').style.getPropertyValue('--z'), brandFont: getComputedStyle(document.querySelector('.cn-brand')).fontSize, quoteFont: getComputedStyle(document.querySelector('.cn-quote')).fontSize };
   });
   console.log(`${W}x${H}`, JSON.stringify(m), errs.length ? 'ERR ' + errs[0] : '');
   await p.screenshot({ path: `r-${W}x${H}.png` });

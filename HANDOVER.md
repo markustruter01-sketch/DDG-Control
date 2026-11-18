@@ -147,3 +147,4 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - Lesson: read every warning in the Replit sync report before publishing. Never put anything above @import in site.css.
 - 21:45 (build ddg37): water design 1 (glass) default, branch claude/water-glass, PR open. PR #116 (finance rehearsal) publish started.
 - 21:55 (build ddg38): camera height slider camUp (Orb group), in PR #127 with the water default. VERIFIED headless (t19.mjs): slider moves the camera up; no errors. Seen: at 15 a hard line shows across the water near the bottom (not looked into).
+- 22:15 (build ddg39, in PR #127): first-screen text sizes on one scale (name 22, logo 44, button 16, menu 14, quote 13, hint 12.6 px at 393 wide). VERIFIED headless (t17.mjs sizes; phone and desktop pictures look right). Orb not changed.
