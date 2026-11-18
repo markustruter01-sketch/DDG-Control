@@ -47,3 +47,20 @@ assert.deepEqual(after.series[2]!.bots, [{ key: 'atlas', pct: 2 }, { key: 'momen
 assert.equal(buildPublicFinance({ now: at('2027-01-06T00:00:00Z'), latest: wrongBase, baseline: base, daily: [base, wrongBase] }).sp500_return_pct, null);
 
 console.log('test-public-finance: all checks passed');
+
+// The rehearsal (view only): the platform's own P&L since each bot started; unknown accounts never shown.
+const rb = (bot_id: string, equity: number, starting: number, pnl: number, open = 3) => ({ bot_id, equity_cents: equity, paused: false, starting_cents: starting, pnl_cents: pnl, open_positions: open, stale: false });
+const r1: Snapshot = { generated_at: at('2026-11-10T23:05:00Z'), bots: [rb('oracle', 10_100_000, 10_000_000, 100_000), rb('secret_internal_bot', 1, 1, 0)] };
+const r2: Snapshot = { generated_at: at('2026-11-11T23:05:00Z'), bots: [rb('oracle', 10_200_000, 10_000_000, 200_000), rb('forex_ai', 9_900_000, 10_000_000, -100_000, 0)] };
+const reh = buildPublicFinance({ now: at('2026-11-12T00:00:00Z'), latest: r2, baseline: null, daily: [], recent: [r1, r2] }).rehearsal!;
+assert.equal(reh.equity_usd, 201_000);
+assert.equal(reh.starting_usd, 200_000);
+assert.equal(reh.pnl_usd, 1_000);
+assert.equal(reh.pnl_pct, 0.5);
+assert.deepEqual(reh.bots.map((b) => [b.key, b.pnl_pct, b.open_positions]), [['atlas', 2, 3], ['forex', -1, 0]]);
+assert.deepEqual(reh.series, [{ date: '2026-11-10', pnl_usd: 1_000 }, { date: '2026-11-11', pnl_usd: 1_000 }], 'P&L, so a joining account is not drawn as a gain');
+assert.ok(!JSON.stringify(reh).includes('oracle') && !JSON.stringify(reh).includes('secret_internal_bot'), 'no internal ids in the rehearsal');
+// Older pushes without P&L give nulls, never a guess.
+assert.equal(buildPublicFinance({ now: at('2026-11-12T09:00:00Z'), latest: pre, baseline: null, daily: [] }).rehearsal!.pnl_usd, null);
+assert.equal(buildPublicFinance({ now: at('2026-11-12T09:00:00Z'), latest: null, baseline: null, daily: [] }).rehearsal, null);
+console.log('test-public-finance: rehearsal checks passed');

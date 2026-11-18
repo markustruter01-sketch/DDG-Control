@@ -862,6 +862,18 @@ p { margin: 0; }
 .j-pop .j-tick-link:hover { background: rgba(255,255,255,0.08); border-color: #fff; }
 @media (prefers-reduced-motion: reduce) { .j-expand i, .j-pop, .j-pop-back, .j-flow li, .j-bar-track .now { animation: none; } }
 
+/* /finance: the live paper rehearsal, view only (18 Nov 2026). */
+.f-line-now { stroke: #fff; }
+.f-now { display: grid; gap: 18px; }
+.f-now h2 { margin: 0; }
+.f-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.f-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 14px; }
+.f-table th, .f-table td { padding: 12px 10px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.12); white-space: nowrap; }
+.f-table th:first-child, .f-table td:first-child { text-align: left; }
+.f-table thead th { font: 500 11px/1.3 var(--ng-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ng-text-3); }
+.f-table tbody th { font-weight: 500; }
+.f-table td { font-variant-numeric: tabular-nums; }
+.f-table td.neg { color: #ff8a80; }
 /* Screens inside the project pop-up; "coming soon" stays last and greyed (18 Nov). */
 .j-pop-gal { margin-top: 6px; }
 .j-pop-gal .j-gal-cap { color: rgba(255,255,255,0.8); }

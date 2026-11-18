@@ -1260,7 +1260,27 @@ export const GetPublicFinanceResponse = zod.object({
   "key": zod.string(),
   "pct": zod.number()
 }))
+})),
+  "rehearsal": zod.object({
+  "equity_usd": zod.number(),
+  "starting_usd": zod.number().nullable(),
+  "pnl_usd": zod.number().nullable(),
+  "pnl_pct": zod.number().nullable(),
+  "bots": zod.array(zod.object({
+  "key": zod.string(),
+  "equity_usd": zod.number(),
+  "starting_usd": zod.number().nullable(),
+  "pnl_usd": zod.number().nullable(),
+  "pnl_pct": zod.number().nullable(),
+  "open_positions": zod.number().nullable(),
+  "stale": zod.boolean(),
+  "paused": zod.boolean()
+})),
+  "series": zod.array(zod.object({
+  "date": zod.string(),
+  "pnl_usd": zod.number()
 }))
+}).describe('The paper rehearsal now, view only (profit and loss since each bot started, practice money).').nullable()
 })
 
 

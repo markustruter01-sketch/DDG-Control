@@ -18,6 +18,7 @@ export const recordStartInstant = () => new Date(`${RECORD_START}T00:00:00${BRIS
 /** The S&P 500 benchmark is measured from the last close before the record starts. */
 export const BENCHMARK_BASE_DATE = '2026-12-31';
 const LIVE_WITHIN_MS = 2 * 60 * 60_000;
+const REHEARSAL_DAYS = 120;
 
 /** Internal account id -> public name key. Accounts not listed are never shown. */
 export const PUBLIC_BOT_KEYS: Record<string, string> = {
@@ -27,7 +28,11 @@ export const PUBLIC_BOT_KEYS: Record<string, string> = {
   forex_ai: 'forex',
 };
 
-type BotRow = { bot_id: string; equity_cents: number; paused: boolean };
+type BotRow = {
+  bot_id: string; equity_cents: number; paused: boolean;
+  /** Rehearsal figures from the same push (optional: older test fixtures leave them out). */
+  starting_cents?: number; pnl_cents?: number; open_positions?: number; stale?: boolean;
+};
 type Holding = { bot_id: string; label: string; pct: number };
 type Benchmark = { symbol: string; base_date: string; as_of: string; total_return_pct: number };
 export type Snapshot = { generated_at: Date; bots: BotRow[]; holdings?: Holding[]; benchmark?: Benchmark | null };
@@ -46,6 +51,8 @@ export function buildPublicFinance(input: {
   latest: Snapshot | null;
   baseline: Snapshot | null;
   daily: Snapshot[];
+  /** The last push of each of the most recent days, for the rehearsal chart (any date). */
+  recent?: Snapshot[];
 }): PublicFinance {
   const { now, latest, baseline, daily } = input;
   const started = now >= recordStartInstant() && baseline !== null;
@@ -99,6 +106,45 @@ export function buildPublicFinance(input: {
       holdings: (latest?.holdings ?? []).filter((h) => h.bot_id === b.bot_id).map((h) => ({ label: h.label, pct: h.pct })),
     })),
     series,
+    rehearsal: latest ? rehearsalOf(latestBots, input.recent ?? []) : null,
+  };
+}
+
+const dollars = (cents: number) => Math.round(cents) / 100;
+const sumOf = (rows: BotRow[], pick: (b: BotRow) => number | undefined) =>
+  rows.every((b) => typeof pick(b) === 'number') ? rows.reduce((sum, b) => sum + pick(b)!, 0) : null;
+
+/**
+ * The paper rehearsal as it stands now: what the dashboard shows, view only. Profit and loss is the
+ * platform's own figure since each bot started; the chart uses profit, not equity, so an account
+ * joining the fleet is not drawn as a gain.
+ */
+function rehearsalOf(bots: BotRow[], recent: Snapshot[]): NonNullable<PublicFinance['rehearsal']> {
+  const shownBots = bots.filter((b) => PUBLIC_BOT_KEYS[b.bot_id] !== undefined);
+  const start = sumOf(shownBots, (b) => b.starting_cents);
+  const pnl = sumOf(shownBots, (b) => b.pnl_cents);
+  return {
+    equity_usd: dollars(shownBots.reduce((sum, b) => sum + b.equity_cents, 0)),
+    starting_usd: start === null ? null : dollars(start),
+    pnl_usd: pnl === null ? null : dollars(pnl),
+    pnl_pct: pnl === null || start === null || start <= 0 ? null : pct((pnl / start) * 100),
+    bots: shownBots.map((b) => ({
+      key: PUBLIC_BOT_KEYS[b.bot_id]!,
+      equity_usd: dollars(b.equity_cents),
+      starting_usd: typeof b.starting_cents === 'number' ? dollars(b.starting_cents) : null,
+      pnl_usd: typeof b.pnl_cents === 'number' ? dollars(b.pnl_cents) : null,
+      pnl_pct: typeof b.pnl_cents === 'number' && typeof b.starting_cents === 'number' && b.starting_cents > 0 ? pct((b.pnl_cents / b.starting_cents) * 100) : null,
+      open_positions: typeof b.open_positions === 'number' ? b.open_positions : null,
+      stale: b.stale === true,
+      paused: b.paused,
+    })),
+    series: recent
+      .map((s) => {
+        const rows = s.bots.filter((b) => PUBLIC_BOT_KEYS[b.bot_id] !== undefined);
+        const p = sumOf(rows, (b) => b.pnl_cents);
+        return rows.length === 0 || p === null ? null : { date: utcDate(s.generated_at), pnl_usd: dollars(p) };
+      })
+      .filter((p): p is { date: string; pnl_usd: number } => p !== null),
   };
 }
 
@@ -107,10 +153,10 @@ async function loadSnapshots(ids: number[]): Promise<Map<number, { bots: BotRow[
   if (ids.length === 0) return out;
   for (const id of ids) out.set(id, { bots: [] });
   const bots = await db
-    .select({ snapshot_id: fleetBotSnapshotsTable.snapshot_id, bot_id: fleetBotSnapshotsTable.bot_id, equity_cents: fleetBotSnapshotsTable.equity_cents, paused: fleetBotSnapshotsTable.paused })
+    .select({ snapshot_id: fleetBotSnapshotsTable.snapshot_id, bot_id: fleetBotSnapshotsTable.bot_id, equity_cents: fleetBotSnapshotsTable.equity_cents, paused: fleetBotSnapshotsTable.paused, starting_cents: fleetBotSnapshotsTable.starting_cents, pnl_cents: fleetBotSnapshotsTable.pnl_cents, open_positions: fleetBotSnapshotsTable.open_positions, stale: fleetBotSnapshotsTable.stale })
     .from(fleetBotSnapshotsTable)
     .where(inArray(fleetBotSnapshotsTable.snapshot_id, ids));
-  for (const b of bots) out.get(b.snapshot_id)!.bots.push({ bot_id: b.bot_id, equity_cents: b.equity_cents, paused: b.paused });
+  for (const b of bots) out.get(b.snapshot_id)!.bots.push({ bot_id: b.bot_id, equity_cents: b.equity_cents, paused: b.paused, starting_cents: b.starting_cents, pnl_cents: b.pnl_cents, open_positions: b.open_positions, stale: b.stale });
   const details = await db
     .select({ snapshot_id: fleetSnapshotDetailsTable.snapshot_id, detail: fleetSnapshotDetailsTable.detail })
     .from(fleetSnapshotDetailsTable)
@@ -137,7 +183,13 @@ export async function computePublicFinance(now = new Date()): Promise<PublicFina
         FROM fleet_snapshots WHERE generated_at >= ${start.toISOString()}
         ORDER BY (generated_at AT TIME ZONE 'UTC')::date, generated_at DESC`)).rows as Array<{ id: number; generated_at: string | Date }>)
     : [];
-  const ids = [...new Set([latestRow?.id, baseRow?.id, ...dailyRows.map((r) => r.id)].filter((id): id is number => typeof id === 'number'))];
+  // The rehearsal chart: the last push of each UTC day over the past 120 days.
+  const since = new Date(now.getTime() - REHEARSAL_DAYS * 86_400_000);
+  const recentRows = (await db.execute(sql`
+      SELECT DISTINCT ON ((generated_at AT TIME ZONE 'UTC')::date) id, generated_at
+      FROM fleet_snapshots WHERE generated_at >= ${since.toISOString()}
+      ORDER BY (generated_at AT TIME ZONE 'UTC')::date, generated_at DESC`)).rows as Array<{ id: number; generated_at: string | Date }>;
+  const ids = [...new Set([latestRow?.id, baseRow?.id, ...dailyRows.map((r) => r.id), ...recentRows.map((r) => Number(r.id))].filter((id): id is number => typeof id === 'number'))];
   const loaded = await loadSnapshots(ids);
   const snap = (id: number, at: string | Date): Snapshot => ({ generated_at: new Date(at), ...loaded.get(id)! });
   return buildPublicFinance({
@@ -145,5 +197,6 @@ export async function computePublicFinance(now = new Date()): Promise<PublicFina
     latest: latestRow ? snap(latestRow.id, latestRow.generated_at) : null,
     baseline: baseRow ? snap(baseRow.id, baseRow.generated_at) : null,
     daily: dailyRows.map((r) => snap(Number(r.id), r.generated_at)),
+    recent: recentRows.map((r) => snap(Number(r.id), r.generated_at)),
   });
 }

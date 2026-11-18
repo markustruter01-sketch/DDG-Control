@@ -130,19 +130,31 @@ export const FINANCE_BOTS: { key: FinanceBotKey; name: string; broker: string; l
   { key: 'atlas', name: 'Atlas', broker: 'Alpaca · paper',
     line: 'Follows the trend of the S&P 500 and Nasdaq, up to 1.5x, with part of the account in bonds, gold, commodities and the US dollar when they trend.' },
   { key: 'atlas-v2', name: 'Atlas V2', broker: 'Alpaca · paper',
-    line: 'The bolder Atlas: S&P 500 and Nasdaq trend only, up to 1.5x. We don’t trade crypto; one leftover Bitcoin holding is never added to.' },
+    line: 'The bolder Atlas: S&P 500 and Nasdaq trend only, up to 1.5x. We don’t trade crypto.' },
   { key: 'momentum', name: 'Momentum', broker: 'Alpaca · paper',
     line: 'Holds the 50 S&P 500 stocks with the strongest 12-month momentum, rebalanced monthly, and moves to cash when the market trend turns down.' },
   { key: 'forex', name: 'Forex', broker: 'OANDA · practice',
     line: 'Trades major currency pairs. Three AI models vote on each trade; fixed rules size it (0.5% risk a trade, at most 4 open) and set its stop.' },
 ];
-export const FINANCE_LINEUP_NOTE = 'Strategies are final from 22 November 2026. This page is updated then.';
+// The live paper rehearsal on /finance: the dashboard's main numbers, view only (Markus, 18 Nov 2026).
+export const FINANCE_NOW = {
+  title: 'Right now: the paper rehearsal',
+  line: 'The same numbers we see on our own dashboard, view only. Practice money, counted since each bot started. The record that counts starts on 1 January 2027.',
+  equity: 'Paper accounts together (US$)',
+  pnl: 'Profit or loss since each bot started',
+  chart: 'Profit or loss of all bots together, by day (US$)',
+  cols: ['Bot', 'Account (US$)', 'Profit or loss', 'Since start', 'Open positions', 'Status'],
+  running: 'Running',
+  paused: 'Paused',
+  stale: 'Waiting for data',
+};
+export const FINANCE_LINEUP_NOTE = 'The strategies lock in mid-December 2026, and this page is updated then.';
 export const FINANCE_HOLDINGS_NOTE = 'Holdings are each bot’s share of its own account. Vault is profit set aside in short-term US Treasury bills. Forex positions are leveraged, so they can add up to more than 100%.';
 
 export const FINANCE_HOW = [
   { title: 'Rules written down first', line: 'Each strategy is tested on past data and registered before it trades: its rules, the test period and the bar it had to clear.' },
   { title: 'Bots trade on their own', line: 'Every hour the platform runs each bot and places the orders its rules call for. Nobody picks trades by hand.' },
-  { title: 'Checked against the broker', line: 'The platform’s records are checked against the broker. If something looks wrong, an automatic safety switch can halt trading until it is checked.' },
+  { title: 'Checked against the broker', line: 'The platform’s records are checked against the broker. If something looks wrong, an alarm goes out and a bot can be paused until it is checked.' },
   { title: 'Compared with the research', line: 'Every day the live results are compared with what the research said should happen, and a health report goes out each morning.' },
   { title: 'Shown here, as it happens', line: 'This page reads the same numbers we see, pushed from the platform every hour.' },
 ];
@@ -150,13 +162,13 @@ export const FINANCE_HOW = [
 export const FINANCE_PAPER = {
   title: 'The research paper',
   line: 'Which strategies we chose and why, how they were tested, and the tests that failed. Written by Claude, the AI that builds the platform.',
-  status: 'Published after the strategies lock in late November 2026.',
+  status: 'Published after the strategies lock in mid-December 2026.',
 };
 
 export const FINANCE_FINE_PRINT = [
   'Paper money: the bots trade on broker practice accounts, not real money.',
   'Past results don’t predict future ones. Any of these strategies can lose money.',
-  'Some bots borrow to hold up to 1.5x, which makes losses bigger as well as gains.',
+  'Some bots hold up to 1.5x through leveraged funds, which makes losses bigger as well as gains.',
   'The S&P 500 line is SPY with dividends included, over the same dates.',
   'Not financial advice. DDG does not manage money for anyone else.',
 ];
