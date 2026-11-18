@@ -1,0 +1,11 @@
+import { createRequire } from 'module'; const puppeteer = createRequire('/opt/npm-tools/node_modules/')('puppeteer');
+const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--hide-scrollbars=false'] });
+const p = await b.newPage(); await p.setViewport({ width: 1200, height: 760 });
+const errs = []; p.on('pageerror', e => errs.push(String(e)));
+await p.goto('http://localhost:8765/site.html', { waitUntil: 'domcontentloaded' });
+await new Promise(r => setTimeout(r, 9000));
+await p.evaluate(() => { document.querySelector('.tune [data-act="min"]')?.click(); scrollTo({ top: document.documentElement.scrollHeight * 0.4, behavior: 'instant' }); });
+await new Promise(r => setTimeout(r, 2500));
+console.log(JSON.stringify(await p.evaluate(() => ({ width: getComputedStyle(document.documentElement).scrollbarWidth, color: getComputedStyle(document.documentElement).scrollbarColor, gutter: innerWidth - document.documentElement.clientWidth }))), 'errors', errs.length);
+await p.screenshot({ path: 'v-scrollbar.png', clip: { x: 1100, y: 0, width: 100, height: 760 } });
+await b.close();

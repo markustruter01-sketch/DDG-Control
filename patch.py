@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '39'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '41'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -66,7 +66,7 @@ t, n = re.subn(r'\{group:"Hold the orb",key:"hold(?:FxVortex|Vortex[A-Za-z]*)",[
 t, n = re.subn(r'\s*hold(?:FxVortex|Vortex[A-Za-z]*):\s*[0-9.]+,', '', t); assert n == 6, n
 t = one(t, '.tune.min { bottom: auto; }\n.tune.min .tune-body, .tune.min .tune-foot { display: none; }',
   '.tune.min { bottom: auto; width: auto; background: none; border: 0; box-shadow: none; backdrop-filter: none; }\n.tune.min .tune-body, .tune.min .tune-foot, .tune.min .tune-head b { display: none; }\n.tune.min .tune-head { padding: 0; border: 0; } .tune.min button { opacity: 0.55; }')
-t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-49', t.count('ddg-scene-tune-32'))
+t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-51', t.count('ddg-scene-tune-32'))
 # the quote: a 'White (black words)' colour choice exists; the default stays black with the thin white frame
 t = one(t, '[30,6,10]][r.qbColour]||[0,0,0];', '[30,6,10],[255,255,255]][r.qbColour]||[0,0,0];a.setProperty("--quote-ink",c[0]+c[1]+c[2]>380?"#000":"");')
 t = one(t, 'rgb(${c.map(v=>v+10).join(",")})', 'rgb(${c.map(v=>Math.min(255,v+10)).join(",")})')
@@ -77,6 +77,9 @@ t, n = re.subn(r'\bholdNova:\s*[-0-9.]+', 'holdNova:0.05', t); assert n == 1, n 
 t = one(t, 'holdCamUp:5,', 'holdCamUp:10,'); t = one(t, 'holdCamBack:15,', 'holdCamBack:30,'); t = one(t, 'label:"Camera: how far back",min:-10,max:20,', 'label:"Camera: how far back",min:-10,max:40,')
 t = one(t, 'holdVignette:1,', 'holdVignette:0,')  # Markus, 18 Nov 19:59: no dark screen edges while charging
 t = one(t, 'waterDesign:4,', 'waterDesign:1,')  # Markus, 18 Nov 21:41: water design 1 (glass)
+# Markus's settings, 18 Nov 22:03
+for k, v in {'orbSize': 2, 'orbHeight': -1.6, 'holdCalm': 2.5, 'holdFxAmount': 3, 'holdShock': 2, 'waterClear': 0.82}.items():
+    t, n = re.subn(r'\b%s:\s*[-0-9.]+' % k, '%s:%s' % (k, v), t); assert n == 1, (k, n)
 # Markus's settings, 18 Nov 19:07 (text sizes re-set on 18 Nov 21:52 to one scale: name 22, logo 44, button 16, menu 14, quote 13, hint 12.6 px on a 393 phone)
 for k, v in {'swirlSize': 2.25, 'waterGlint': 2.05, 'waterReflect': 1.1, 'waterColour': 3, 'shSize': 1.15, 'shSpacing': 0.12, 'brandSize': 1, 'logoSize': 0.95, 'quoteSize': 0.72, 'logoGap': 13, 'brandLift': 17}.items():
     t, n = re.subn(r'\b%s:\s*[-0-9.]+' % k, '%s:%s' % (k, v), t); assert n == 1, (k, n)
@@ -90,7 +93,7 @@ t = one(t, 'shText:"Scroll for Web-Page or Press & Hold Orb for Fun"', 'shText:"
 t = one(t, 'Words (leave empty for arrow only)', 'Words (| starts a new line; empty = arrow only)')
 c = one(c, '.cn-scroll-words{margin-right:calc(-1 * var(--sh-track, .3em))}', '.cn-scroll-words{margin-right:calc(-1 * var(--sh-track, .3em));white-space:pre-line;text-align:center}')
 c = one(c, '.j-tick-link i{font-style:normal}', '.j-tick-link i{font-style:normal}.j-tick-screen{display:block;margin:4px 0 0;font:400 11px/1.4 var(--ng-mono);letter-spacing:.08em;text-transform:uppercase;color:#ffffff8c}.j-pop-go .j-tick-screen{margin-top:10px}')
-c = one(c, '.j-ticks li{display:flex', 'html{-webkit-text-size-adjust:100%;text-size-adjust:100%}.cn-top.cn-lay .cn-follow{--cta-h:48px;--cta-gap:25.5px}.cn-top.cn-lay .s-nav,.cn-top.cn-lay .cn-brand,.cn-top.cn-lay .cn-scroll,.cn-top.cn-lay .cn-quote,.cn-top.cn-lay .cn-cta{zoom:var(--z, 1)}.cn-top.cn-lay .cn-brand{top:calc(var(--lay-brand) / var(--z, 1));bottom:auto;transform:translateY(calc(var(--cn-dy, 0px) / var(--z, 1)))}.cn-top.cn-lay .cn-scroll{top:calc(var(--lay-hint) / var(--z, 1));transform:translateY(calc(var(--cn-dy, 0px) / var(--z, 1)))}.cn-top.cn-lay .cn-quote{top:calc(var(--lay-quote) / var(--z, 1));bottom:auto;transform:translateY(calc(var(--cn-dy, 0px) / var(--z, 1)))}.cn-top.cn-lay .cn-cta{bottom:calc((var(--cta-gap) + var(--cn-bar) + var(--cn-safe)) / var(--z, 1));transform:translateY(calc(var(--cn-dy, 0px) / var(--z, 1)))}.j-ticks li{display:flex')
+c = one(c, '.j-ticks li{display:flex', 'html{-webkit-text-size-adjust:100%;text-size-adjust:100%}html{scrollbar-width:thin;scrollbar-color:rgba(108,199,240,.32) transparent}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}::-webkit-scrollbar-thumb{background:rgba(108,199,240,.3);border-radius:999px}::-webkit-scrollbar-thumb:hover{background:rgba(108,199,240,.6)}.cn-top.cn-lay .cn-follow{--cta-h:48px;--cta-gap:25.5px}.cn-top.cn-lay .s-nav,.cn-top.cn-lay .cn-brand,.cn-top.cn-lay .cn-scroll,.cn-top.cn-lay .cn-quote,.cn-top.cn-lay .cn-cta{zoom:var(--z, 1)}.cn-top.cn-lay .cn-brand{top:calc(var(--lay-brand) / var(--z, 1));bottom:auto;transform:translateY(calc(var(--cn-dy, 0px) / var(--z, 1)))}.cn-top.cn-lay .cn-scroll{top:calc(var(--lay-hint) / var(--z, 1));transform:translateY(calc(var(--cn-dy, 0px) / var(--z, 1)))}.cn-top.cn-lay .cn-quote{top:calc(var(--lay-quote) / var(--z, 1));bottom:auto;transform:translateY(calc(var(--cn-dy, 0px) / var(--z, 1)))}.cn-top.cn-lay .cn-cta{bottom:calc((var(--cta-gap) + var(--cn-bar) + var(--cn-safe)) / var(--z, 1));transform:translateY(calc(var(--cn-dy, 0px) / var(--z, 1)))}.j-ticks li{display:flex')
 c = one(c, 'display:flex;flex-direction:column;align-items:center;gap:var(--logo-gap, 10px);text-align:center;', 'display:flex;flex-direction:var(--brand-dir, column);align-items:center;gap:var(--logo-gap, 10px);text-align:var(--brand-text, center);')
 c = one(c, 'font:500 clamp(14px,.4vw + 12.5px,17px)/1 var(--ng-sans)', 'font:500 clamp(16px,.4vw + 14.4px,18px)/1 var(--ng-sans)')
 c = one(c, '.s-nav nav{gap:14px;font-size:13px}', '.s-nav nav{gap:14px;font-size:14px}')
@@ -104,7 +107,7 @@ t = one(t, 'expand:"Expand",', 'expand:"Expand",screenNote:"Best viewed on a com
 t = re.sub(r'(className:"j-expand",onClick:\(\)=>a\(c\),"aria-haspopup":"dialog",children:\[\$\.expand,e\.jsx\("i",\{"aria-hidden":"true",children:"\u2192"\}\)\]\}\))', r'\1,l.screen&&e.jsx("span",{className:"j-tick-screen",children:$.screenNote})', t, count=1); assert 'l.screen&&e.jsx("span"' in t
 t = one(t, 'e.jsx("div",{className:"j-pop-go",children:s.external?', 'e.jsxs("div",{className:"j-pop-go",children:[s.external?')
 t = one(t, 'children:[$.visit,": ",s.name," ",e.jsx("i",{"aria-hidden":"true",children:"\u2192"})]})})]})}),document.body)}', 'children:[$.visit,": ",s.name," ",e.jsx("i",{"aria-hidden":"true",children:"\u2192"})]}),s.screen&&e.jsx("p",{className:"j-tick-screen",children:$.screenNote})]})]})}),document.body)}')
-t = one(t, 'fogNear:.2,fogFar:.6,', 'camZoom:2,camUp:0,phoneLayout:1,fogNear:.2,fogFar:.6,')
+t = one(t, 'fogNear:.2,fogFar:.6,', 'camZoom:2,camUp:10,phoneLayout:1,fogNear:.2,fogFar:.6,')
 t = one(t, '{group:"Orb",key:"orbSize"', '{group:"Orb",key:"camZoom",label:"Camera: distance from the orb (1 = close, 2 = twice as far)",min:.6,max:4,step:.05},{group:"Orb",key:"camUp",label:"Camera: height (higher looks down more)",min:-6,max:40,step:.5},{group:"Orb",key:"orbSize"')
 t = re.sub(r'(\{group:"Name and logo",key:"brandLift"[^}]*\})', r'\1,{group:"Name and logo",key:"phoneLayout",label:"Phones: space the first screen evenly by itself (0 off: the sliders place things)",min:0,max:1,step:1,names:["Off","On"]}', t, count=1); assert '"phoneLayout",label' in t
 # the logo sits left of the name (Markus, 18 Nov 20:46); setting logoPlace

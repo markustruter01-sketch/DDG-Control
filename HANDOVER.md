@@ -148,3 +148,7 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - 21:45 (build ddg37): water design 1 (glass) default, branch claude/water-glass, PR open. PR #116 (finance rehearsal) publish started.
 - 21:55 (build ddg38): camera height slider camUp (Orb group), in PR #127 with the water default. VERIFIED headless (t19.mjs): slider moves the camera up; no errors. Seen: at 15 a hard line shows across the water near the bottom (not looked into).
 - 22:15 (build ddg39, in PR #127): first-screen text sizes on one scale (name 22, logo 44, button 16, menu 14, quote 13, hint 12.6 px at 393 wide). VERIFIED headless (t17.mjs sizes; phone and desktop pictures look right). Orb not changed.
+- 22:10 (build ddg41): orb and water settings of 22:03 + camera height slider (PR #130, NOT merged); Night Glass scroll bar
+  (PR #131, NOT merged). Water design 1 (PR #129) merged and LIVE (publish success 22:05).
+  PR #127 (text sizes) still open and kept out on Markus's word "ignore all else". The preview HAS the text sizes.
+  VERIFIED headless: scroll bar computed style thin + ice-blue (t20.mjs; headless hides bars so no picture).
