@@ -7,6 +7,7 @@
 type Spec = { key: string; label: string; min: number; max: number; step: number; group: string; names?: string[]; text?: true };
 
 import { QUOTES } from '../content';
+import { replayIntro } from '../intro';
 
 /** 3D fonts for "We build it all." (they come with three.js). */
 export const WORD_FONTS = ['Helvetiker', 'Helvetiker Bold', 'Optimer', 'Optimer Bold', 'Gentilis', 'Gentilis Bold', 'Droid Sans', 'Droid Sans Bold', 'Droid Serif', 'Droid Serif Bold', 'Droid Sans Mono'];
@@ -22,12 +23,7 @@ export const SPECS: Spec[] = [
   // Orb
   { group: 'Load-in', key: 'introFade', label: 'Black to page (seconds)', min: 0.2, max: 3, step: 0.1 },
   { group: 'Load-in', key: 'introSpawn', label: 'Orb spawning in (seconds, 0 = off)', min: 0, max: 6, step: 0.1 },
-  { group: 'Page building at the bottom', key: 'pbStyle', label: 'Look', min: 0, max: 10, step: 1, names: ['Off', 'Dust settling', 'Tiles', 'Tesseract cubes', 'Weld seam', 'Rising blocks', 'Shards', 'Lattice', 'Light streams', 'Hex cells', 'Glitch slices'] },
-  { group: 'Page building at the bottom', key: 'pbStrength', label: 'Strength (subtle ← → strong)', min: 0, max: 1, step: 0.05 },
-  { group: 'Page building at the bottom', key: 'pbHeight', label: 'Height (share of the screen)', min: 0.06, max: 0.4, step: 0.01 },
-  { group: 'Page building at the bottom', key: 'pbSize', label: 'Piece size', min: 0.4, max: 2.5, step: 0.05 },
-  { group: 'Page building at the bottom', key: 'pbSpeed', label: 'Movement speed', min: 0.2, max: 3, step: 0.05 },
-  { group: 'Page building at the bottom', key: 'pbFeed', label: 'Power from the white lines', min: 0, max: 2, step: 0.05 },
+  { group: 'Load-in', key: 'introLoop', label: 'Replay it on a loop (preview only: 0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Orb', key: 'orbStyle', label: 'Style', min: 0, max: 8, step: 1, names: ['Spinning air (now)', 'Cloud core', 'Liquid pearl', 'Water in glass', 'Storm', 'Aurora', 'Neural net', 'Galaxy', 'Singularity'] },
   { group: 'Orb', key: 'orbFlow', label: 'Movement inside (slow ← → fast)', min: 0.1, max: 4, step: 0.05 },
   { group: 'Orb', key: 'orbHue', label: 'Colour turn', min: -180, max: 180, step: 5 },
@@ -196,7 +192,7 @@ export const SPECS: Spec[] = [
 
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
-  introFade: 1, introSpawn: 3, pbStyle: 3, pbStrength: 0.45, pbHeight: 0.167, pbSize: 1, pbSpeed: 1, pbFeed: 1,
+  introFade: 1, introSpawn: 3, introLoop: 0,
   orbBloom: 0.75, orbGlass: 0.75, orbDepth: 0, orbFlashLight: 0.05, orbFlashLand: 0.45, orbFlashReach: 12, orbMirror: 0.35, orbRays: 0, orbFringe: 0.55, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.25, orbSize: 1.24, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 1.7, swirlSize: 2.5, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
@@ -235,6 +231,8 @@ export function tuneOn(): boolean {
 }
 
 /** Build the slider panel. Returns a function that removes it. */
+let replayTimer = 0;
+
 export function mountPanel(): () => void {
   try { Object.assign(T, JSON.parse(localStorage.getItem(STORE) || '{}')); } catch { /* storage may be blocked */ }
   try { Object.assign(TX, JSON.parse(localStorage.getItem(STORE + '-text') || '{}')); } catch { /* ignore */ }
@@ -243,7 +241,7 @@ export function mountPanel(): () => void {
   root.className = 'tune';
   const css = document.createElement('style');
   css.textContent = `
-.tune { position: fixed; top: 12px; right: 12px; bottom: 12px; width: 320px; z-index: 50; display: flex; flex-direction: column;
+.tune { position: fixed; top: 12px; right: 12px; bottom: 12px; width: 320px; z-index: 2147483600; display: flex; flex-direction: column;
   background: rgba(10,13,20,0.88); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; color: #dfe8f2;
   font: 12px/1.3 ui-sans-serif, system-ui, sans-serif; backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
 .tune.min { bottom: auto; }
@@ -288,7 +286,7 @@ export function mountPanel(): () => void {
     if (s.group !== group) {
       group = s.group;
       const sec = document.createElement('section');
-      sec.innerHTML = `<h4 data-act="fold">${group}</h4>`;
+      sec.innerHTML = `<h4 data-act="fold">${group}</h4>${group === 'Load-in' ? '<button data-act="replay">Replay the load-in</button>' : ''}`;
       if (folded.includes(group)) sec.classList.add('folded');
       body.appendChild(sec);
       box = sec;
@@ -307,7 +305,7 @@ export function mountPanel(): () => void {
     const input = l.querySelector('input')!, val = l.querySelector('i')!;
     const show = (v: number) => (s.names ? `${v} · ${s.names[v] ?? ''}` : String(v));
     input.value = String(T[s.key]); val.textContent = show(T[s.key]);
-    input.addEventListener('input', () => { T[s.key] = Number(input.value); val.textContent = show(T[s.key]); changed(); save(); });
+    input.addEventListener('input', () => { T[s.key] = Number(input.value); val.textContent = show(T[s.key]); changed(); save(); if (s.group === 'Load-in') replaySoon(); });
     inputs[s.key] = [input, val];
     box.appendChild(l);
   }
@@ -319,6 +317,7 @@ export function mountPanel(): () => void {
       folded = [...root.querySelectorAll('section.folded h4')].map((h) => h.textContent || '');
       try { localStorage.setItem(STORE + '-folded', JSON.stringify(folded)); } catch { /* ignore */ }
     }
+    if (act === 'replay') replayNow();
     if (act === 'min') { root.classList.toggle('min'); (e.target as HTMLElement).textContent = root.classList.contains('min') ? 'Show' : 'Hide'; }
     if (act === 'reset') { Object.assign(T, DEFAULTS); Object.assign(TX, TEXT_DEFAULTS); for (const k in texts) texts[k].value = TX[k]; for (const s of SPECS) { if (s.text) continue; inputs[s.key][0].value = String(T[s.key]); inputs[s.key][1].textContent = String(T[s.key]); input0(s.key); } changed(); save(); }
     if (act === 'copy') {
@@ -331,7 +330,14 @@ export function mountPanel(): () => void {
   root.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true });
   document.head.appendChild(css); document.body.appendChild(root);
   changed();
-  return () => { root.remove(); css.remove(); };
+  // Load-in replays: after a slider stops moving, and on a loop when "Replay it on a loop" is on.
+  let lastPlay = performance.now();
+  const loop = window.setInterval(() => {
+    if (T.introLoop > 0.5 && performance.now() - lastPlay > (T.introFade + T.introSpawn + 3) * 1000) replayNow();
+  }, 250);
+  function replayNow() { lastPlay = performance.now(); replayIntro(T.introFade * 1000); }
+  function replaySoon() { window.clearTimeout(replayTimer); replayTimer = window.setTimeout(replayNow, 400); }
+  return () => { window.clearInterval(loop); window.clearTimeout(replayTimer); root.remove(); css.remove(); };
 }
 
 /** Put the name-and-logo settings on the page (CSS variables), loading the chosen web font. */

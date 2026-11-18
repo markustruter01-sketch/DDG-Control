@@ -8,7 +8,6 @@ import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWater } from './water';
 import { makeAura } from './aura';
-import { mountPageBuild } from './pagebuild';
 import { introStart, revealPage } from '../intro';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
@@ -171,8 +170,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     let fontsIn = false, framesDrawn = 0;
     Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 2500))]).then(() => { fontsIn = true; });
     const followEl = topEl.querySelector<HTMLElement>('.cn-follow');
-    // The page building itself at the bottom of the screen as the visitor scrolls (pagebuild.ts).
-    const pageBuild = mountPageBuild();
+
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const raw = now - last;
@@ -328,7 +326,6 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     return () => {
       cancelAnimationFrame(raf);
       unmountPanel?.();
-      pageBuild.dispose();
       if (followEl) followEl.style.opacity = '';
       stopResize();
       disposables.forEach((d) => d.dispose());

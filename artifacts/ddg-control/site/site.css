@@ -849,6 +849,3 @@ p { margin: 0; }
 .j-ticks li.soon::before { background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3); }
 .j-ticks li.soon::after { border-color: rgba(255,255,255,0.45); }
 
-/* The page building itself at the bottom of the screen (canyon/pagebuild.ts): never takes clicks. */
-.pb-canvas { position: fixed; left: 0; bottom: 0; width: 100%; z-index: 30; pointer-events: none; display: block; }
-@media print { .pb-canvas { display: none; } }

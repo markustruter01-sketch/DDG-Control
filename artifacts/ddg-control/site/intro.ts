@@ -23,5 +23,25 @@ export function revealPage(fadeMs = 1000): void {
   window.setTimeout(() => cover.remove(), (reduced ? 200 : fadeMs) + 200);
 }
 
+/**
+ * Preview only (the settings panel): play the load-in again from black, so a change to its settings can be
+ * seen. Jumps to the top, puts the black cover back, and reveals again after a short pause.
+ */
+export function replayIntro(fadeMs: number): void {
+  scrollTo(0, 0);
+  let cover = document.getElementById('intro-cover');
+  if (!cover) {
+    cover = document.createElement('div');
+    cover.id = 'intro-cover';
+    cover.setAttribute('aria-hidden', 'true');
+    document.body.prepend(cover);
+  }
+  cover.style.transition = 'none';
+  cover.style.opacity = '1';
+  revealed = false;
+  startedAt = null;
+  window.setTimeout(() => revealPage(fadeMs), 600);
+}
+
 // Never leave a visitor on a black screen: show the page after 4 s whatever happens.
 window.setTimeout(() => revealPage(), 4000);
