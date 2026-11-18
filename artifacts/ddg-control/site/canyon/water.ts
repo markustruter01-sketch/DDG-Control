@@ -48,6 +48,31 @@ float shapeFoam0(vec2 q, float d, float lace, float tt) {
 float shapeFoam(vec2 q, float d, float lace) { return shapeFoam0(q, d / uSwirlR, lace, uTime * uSwirlSpeed); }
 float swirl(vec2 q, float d, float arms, float wind, float speed) {
   return sin(arms * atan(q.y, q.x + 0.0001) + d * wind - uTime * speed) * smoothstep(1.5, 6.5, d);
+}
+uniform vec4 uBoil;      // the boil: centre x, z (under the orb), strength (0 to 1), how far it spreads (radius)
+uniform vec4 uBoilLook;  // fine bubbling, speed, white specks, how high the surface heaves (real height)
+// A rolling boil: the surface split into jittered cells (Voronoi), each a dome that swells and sinks on its
+// own clock, the way boiling water heaves (the cell method foam and lava artists use).
+float boilHash(vec2 c) { return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453); }
+float boilCells(vec2 p, float t) {
+  vec2 g = floor(p), f = fract(p);
+  float h = 0.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 o = vec2(float(x), float(y)), c = g + o;
+    vec2 r = vec2(boilHash(c), boilHash(c + 7.1));
+    float ph = fract(t * (0.5 + 0.9 * r.x) + r.y);
+    float dome = sin(3.14159 * ph) * smoothstep(0.55 + 0.25 * r.y, 0.0, length(o + r - f));
+    h = max(h, dome);
+  }
+  return h;
+}
+// The heave: big slow domes that lift the water's actual surface (used by the vertex shader to move the mesh,
+// and by the colour shader so the lighting matches). Cheap: two cell lookups, only where it boils.
+float boilHeave(vec2 p) {
+  if (uBoil.z <= 0.001 || uBoilLook.w <= 0.0) return 0.0;
+  vec2 bq = p - uBoil.xy;
+  float near = exp(-dot(bq, bq) / (uBoil.w * uBoil.w)), sp = uBoilLook.y;
+  return uBoil.z * near * uBoilLook.w * (0.8 * boilCells(p * 0.42, uTime * 0.9 * sp) + 0.35 * boilCells(p * 0.85 + 5.0, uTime * 1.4 * sp));
 }`;
 
 export const WATER_VERT = /* glsl */ `
@@ -66,6 +91,7 @@ void main() {
   float arms = 0.55 * swirl(q, d, 3.0, 0.9, 5.0) + 0.3 * swirl(q, d, 2.0, 0.35, 2.6);
   float swell = 0.05 * sin(p.z * 0.3 + p.x * 0.2 + uTime * 1.6);
   float lift = uVar > 0.5 ? uStir * shapeH(q, d) + swell : dish + stirAt(d) * arms + swell;
+  lift += boilHeave(p.xz); // the boiling lake rises and falls for real
   p.y += lift;
   vP = p.xz;
   vBed = (aBed + lift) * max(uFlat, 0.45); // the river keeps some depth when the land lies flat, so it stays visible
@@ -82,8 +108,6 @@ uniform float uRough, uDetailK, uFoamK, uGlintK, uReflect, uBody, uSilk, uSwirlL
 ${SKY_GLSL}
 uniform float uGlow;
 uniform vec4 uCalm;      // a box on screen (left, bottom, right, top, in canvas pixels) where the water is kept calm
-uniform vec4 uBoil;      // the boil: centre x, z (under the orb), strength (0 to 1), how far it spreads (radius)
-uniform vec4 uBoilLook;  // bump height, speed, white specks, size of the bright spot where the beam hits
 uniform vec4 uPops[8];   // bubbles bursting and the release shockwave: x, z, age (0 to 1), size
 uniform vec4 uMirror;    // the orb mirrored in the water: x strength, y the orb's radius, z its spin clock, w the lightning flash
 uniform vec2 uCalmK;     // x: how calm (0 off, 1 no reflections or highlights at all), y: how soft the box's edges are (part of its size)
@@ -135,21 +159,6 @@ float vortex(vec2 q, float d) {
 }
 // Height of the surface detail. Slow swells ride the current, which runs towards +z
 // (the camera); near the orb they are bent round it and the spiral arms are added.
-// A rolling boil: the surface split into jittered cells (Voronoi), each a dome that swells and sinks on its
-// own clock, the way boiling water heaves (the cell method foam and lava artists use).
-float boilHash(vec2 c) { return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453); }
-float boilCells(vec2 p, float t) {
-  vec2 g = floor(p), f = fract(p);
-  float h = 0.0;
-  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
-    vec2 o = vec2(float(x), float(y)), c = g + o;
-    vec2 r = vec2(boilHash(c), boilHash(c + 7.1));
-    float ph = fract(t * (0.5 + 0.9 * r.x) + r.y);
-    float dome = sin(3.14159 * ph) * smoothstep(0.55 + 0.25 * r.y, 0.0, length(o + r - f));
-    h = max(h, dome);
-  }
-  return h;
-}
 float surface(vec2 p, float detail) {
   vec2 q = p - uOrb;
   float d = length(q), stir = stirAt(d);
@@ -167,6 +176,7 @@ float surface(vec2 p, float detail) {
   h += rough * (0.035 * sin(dot(p, vec2(0.21, 0.43)) - uTime * 1.1) + 0.022 * sin(dot(p, vec2(-0.37, 0.29)) - uTime * 1.45) + 0.014 * sin(dot(p, vec2(0.52, -0.18)) - uTime * 1.9));
   h += detail * (0.009 * snoise(p * 0.9 + vec2(uTime * 0.21, -uTime * 0.33)) + 0.007 * snoise(p * 1.6 + vec2(-uTime * 0.29, -uTime * 0.17) + 7.3));
   if (uVar > 3.5) h += 0.07 * uStir * uSwirlDepth * vortex(q, d);
+  h += boilHeave(p);
   // The boil: small fast bumps over the lake (as far as uBoil.w reaches), and rings running out from the beam.
   if (uBoil.z > 0.001) {
     vec2 bq = p - uBoil.xy; float bd = length(bq), near = exp(-bd * bd / (uBoil.w * uBoil.w)), sp = uBoilLook.y;
@@ -247,12 +257,12 @@ void main() {
     churn += uStir * 0.32 * smoothstep(0.45, 0.95, vn) * exp(-dn * dn / 11.0) * (0.5 + lace);
   }
   float foam = clamp((shore + churn) * uFoamK, 0.0, 1.0) * lit;
-  // The beam's hit: a bright spot; white specks wherever the water boils; the bursting rings catch the light.
+  // White specks wherever the water boils; the rings catch the light.
   if (uBoil.z > 0.001) {
     float bd = length(vP - uBoil.xy);
-    float spot = exp(-bd * bd / max(uBoilLook.w * uBoilLook.w, 0.01)), near = exp(-bd * bd / (uBoil.w * uBoil.w));
+    float near = exp(-bd * bd / (uBoil.w * uBoil.w));
     float specks = smoothstep(0.72, 0.95, snoise(vP * 4.5 + vec2(uTime * 5.0, -uTime * 4.0) * uBoilLook.y) * 0.5 + 0.5);
-    col += vec3(0.65, 0.88, 1.0) * uBoil.z * (spot * 1.6 + near * 0.06);
+    col += vec3(0.65, 0.88, 1.0) * uBoil.z * near * 0.06;
     foam = max(foam, uBoil.z * near * specks * 0.8 * uBoilLook.z);
   }
   for (int i = 0; i < 8; i++) {
@@ -313,18 +323,29 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   const { NX, NZ, W, D, Z0, base } = grid, dx = W / NX, dz = D / NZ;
   const ix0 = Math.max(0, Math.floor((W / 2 - HALF) / dx)), ix1 = Math.min(NX, Math.ceil((W / 2 + HALF) / dx));
   const COLS = ix1 - ix0, ROWS = Math.min(NZ, Math.ceil((Z0 - Z_FAR) / dz));
-  const count = (COLS + 1) * (ROWS + 1);
+  // The river's own mesh is twice as fine as the land's, so the boiling surface has points to heave with.
+  // The ground under each point is read off the land's own triangles (same split), so the shore matches.
+  const SUB = 2, RC = COLS * SUB, RR = ROWS * SUB;
+  const landAt = (fx: number, fz: number) => { // fx, fz in land grid cells (fractional)
+    const cx = Math.min(NX - 1, Math.max(0, Math.floor(fx))), cz = Math.min(NZ - 1, Math.max(0, Math.floor(fz)));
+    const u = fx - cx, v = fz - cz;
+    const h = (ix: number, iz: number) => base[iz * (NX + 1) + ix]!;
+    const a = h(cx, cz), b = h(cx + 1, cz), c = h(cx, cz + 1), d = h(cx + 1, cz + 1);
+    // Triangles (a, c, b) and (b, c, d), as the land draws them.
+    return u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
+  };
+  const count = (RC + 1) * (RR + 1);
   const pos = new Float32Array(count * 3), bed = new Float32Array(count), idx: number[] = [];
-  for (let iz = 0, i = 0; iz <= ROWS; iz++) {
-    const z = Z0 - iz * dz, y = levelAt(z);
-    for (let ix = ix0; ix <= ix1; ix++, i++) {
-      pos[i * 3] = -W / 2 + ix * dx; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
-      bed[i] = y - base[iz * (NX + 1) + ix]; // depth of water here; below zero means dry land
+  for (let iz = 0, i = 0; iz <= RR; iz++) {
+    const fz = iz / SUB, z = Z0 - fz * dz, y = levelAt(z);
+    for (let ix = 0; ix <= RC; ix++, i++) {
+      const fx = ix0 + ix / SUB;
+      pos[i * 3] = -W / 2 + fx * dx; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+      bed[i] = y - landAt(fx, fz); // depth of water here; below zero means dry land
     }
   }
-  // Same triangle split as the land, so the depth between grid points matches the land exactly.
-  for (let iz = 0; iz < ROWS; iz++) for (let ix = 0; ix < COLS; ix++) {
-    const a = iz * (COLS + 1) + ix, b = a + 1, c = a + COLS + 1, d = c + 1;
+  for (let iz = 0; iz < RR; iz++) for (let ix = 0; ix < RC; ix++) {
+    const a = iz * (RC + 1) + ix, b = a + 1, c = a + RC + 1, d = c + 1;
     idx.push(a, c, b, b, c, d);
   }
   const riverGeo = new BufferGeometry();

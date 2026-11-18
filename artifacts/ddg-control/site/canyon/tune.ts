@@ -35,7 +35,6 @@ export const SPECS: Spec[] = [
   { group: 'Orb', key: 'orbHeight', label: 'Height above water', min: -3, max: 6, step: 0.1 },
   { group: 'Orb', key: 'orbGlow', label: 'Glow around it', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdOn', label: 'Press and hold the orb (0 off, 1 on)', min: 0, max: 1, step: 1 },
-  { group: 'Hold the orb', key: 'holdBeam', label: 'Beam into the water', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBolts', label: 'Lightning strikes', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBoil', label: 'Water simmering', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBuild', label: 'Build-up time (seconds to the nova)', min: 2, max: 20, step: 0.5 },
@@ -44,7 +43,6 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdFxGlobs', label: 'Charge-up: water globules from the lake (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdFxVortex', label: 'Charge-up: vortex of drops (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdFxGround', label: 'Charge-up: ground lifting (0 off, 1 on)', min: 0, max: 1, step: 1 },
-  { group: 'Hold the orb', key: 'holdFxStreaks', label: 'Charge-up: streaks pulled in (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdSplash', label: 'Nova: water thrown up (amount)', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdDrain', label: 'Nova: the river level drops by', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdRefill', label: 'Nova: seconds for the river to fill again', min: 1, max: 15, step: 0.5 },
@@ -60,19 +58,11 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdGroundShake', label: 'Ground tremble', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdShock', label: 'Let go: shockwave ring and jolt', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdVignette', label: 'Screen edges darken', min: 0, max: 1, step: 0.05 },
-  { group: 'Hold the beam', key: 'holdBeamWidth', label: 'Width', min: 0.2, max: 3, step: 0.05 },
-  { group: 'Hold the beam', key: 'holdBeamStart', label: 'Starts from (0 orb centre ← → 1 underside)', min: 0, max: 1.2, step: 0.02 },
-  { group: 'Hold the beam', key: 'holdBeamGlow', label: 'Brightness', min: 0, max: 3, step: 0.05 },
-  { group: 'Hold the beam', key: 'holdBeamFlicker', label: 'Flicker', min: 0, max: 2, step: 0.05 },
   { group: 'Boiling lake', key: 'holdBoilArea', label: 'How much of the lake (radius)', min: 2, max: 120, step: 1 },
+  { group: 'Boiling lake', key: 'holdBoilLift', label: 'Water surface heaves up (real height)', min: 0, max: 3, step: 0.05 },
   { group: 'Boiling lake', key: 'holdBoilHeight', label: 'Surface bubbling', min: 0, max: 3, step: 0.05 },
   { group: 'Boiling lake', key: 'holdBoilSpeed', label: 'Speed', min: 0.2, max: 3, step: 0.05 },
   { group: 'Boiling lake', key: 'holdBoilSpecks', label: 'White specks', min: 0, max: 2, step: 0.05 },
-  { group: 'Boiling lake', key: 'holdBubbles', label: 'Bubbles: how many', min: 0, max: 3, step: 0.05 },
-  { group: 'Boiling lake', key: 'holdBubbleSize', label: 'Bubbles: size', min: 0.2, max: 4, step: 0.05 },
-  { group: 'Boiling lake', key: 'holdBubbleShine', label: 'Bubbles: shine', min: 0, max: 2, step: 0.05 },
-  { group: 'Boiling lake', key: 'holdBubbleDrops', label: 'Bubbles: droplets when they burst', min: 0, max: 3, step: 0.05 },
-  { group: 'Boiling lake', key: 'holdBubbleRings', label: 'Bubbles: rings when they burst', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdSky', label: 'Sky turning', min: 0, max: 3, step: 0.05 },
   { group: 'Orb extras', key: 'orbBloom', label: 'Bloom (light bleeding out of it)', min: 0, max: 2, step: 0.05 },
   { group: 'Orb extras', key: 'orbGlass', label: 'Glass shell (bends the stars behind it)', min: 0, max: 1, step: 0.05 },
@@ -236,10 +226,9 @@ export const SPECS: Spec[] = [
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
   introFade: 3, introSpawn: 1.4, introLoop: 0,
-  holdOn: 1, holdBeam: 2, holdBolts: 2, holdBoil: 2, holdZoom: 1, holdSky: 3,
-  holdCamUp: 6, holdCamBack: 4, holdCamTilt: 0.45, holdRise: 2.4, holdOrbShake: 1, holdScreenShake: 0.3, holdGroundShake: 0.6, holdShock: 1, holdVignette: 0.4,
-  holdBeamWidth: 1, holdBeamStart: 0.95, holdBeamGlow: 1, holdBeamFlicker: 1,
-  holdBoilArea: 45, holdBoilHeight: 1, holdBoilSpeed: 1, holdBoilSpecks: 0.35, holdBubbles: 1, holdBubbleSize: 1, holdBubbleShine: 1, holdBubbleRings: 1, holdBubbleDrops: 1, holdBuild: 10, holdNova: 1, holdCalm: 3, holdFxGlobs: 1, holdFxVortex: 0, holdFxGround: 0, holdFxStreaks: 0, holdSplash: 1, shHiHue: 300, shHiSat: 1, holdDrain: 0.8, holdRefill: 5, holdFxAmount: 1, holdFxSpeed: 1,
+  holdOn: 1, holdBolts: 2, holdBoil: 1.4, holdZoom: 1, holdSky: 3,
+  holdCamUp: 5, holdCamBack: 15, holdCamTilt: 0.7, holdRise: 3.5, holdOrbShake: 3, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 1,
+    holdBoilArea: 45, holdBoilLift: 0.8, holdBoilHeight: 1, holdBoilSpeed: 1, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 1, holdCalm: 1, holdFxGlobs: 0, holdFxVortex: 1, holdFxGround: 1, holdSplash: 1, shHiHue: 300, shHiSat: 1, holdDrain: 3, holdRefill: 2.5, holdFxAmount: 3, holdFxSpeed: 3,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.15, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
@@ -264,7 +253,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-22'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-23'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -331,7 +320,7 @@ export function mountPanel(): () => void {
   try { folded = JSON.parse(localStorage.getItem(STORE + '-folded') || '[]'); } catch { /* ignore */ }
   // Effects switched off (set to 0) are moved to one closed group at the bottom, "Inactive", until turned
   // up again. Only effect groups; choosers and layout settings stay where they are.
-  const EFFECT_GROUPS = ['Orb extras', 'Hold the orb', 'Hold the beam', 'Boiling lake'];
+  const EFFECT_GROUPS = ['Orb extras', 'Hold the orb', 'Boiling lake'];
   const inactive = (sp: Spec) => !sp.text && !sp.names && EFFECT_GROUPS.includes(sp.group) && sp.min === 0 && T[sp.key] === 0;
   const ordered = [...SPECS.filter((sp) => !inactive(sp)), ...SPECS.filter(inactive).map((sp) => ({ ...sp, group: 'Inactive (set to 0)', label: `${sp.group}: ${sp.label}` }))];
   for (const s of ordered) {

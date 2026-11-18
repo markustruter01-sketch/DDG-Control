@@ -9,7 +9,6 @@ import { heightAt } from './landscapes';
 import { makeWater } from './water';
 import { makeAura } from './aura';
 import { makeSurge } from './surge';
-import { makeBubbles } from './bubbles';
 import { makeCharge } from './charge';
 import { makeDial } from './dial';
 import { introStart, revealPage } from '../intro';
@@ -117,18 +116,15 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     orbit.add(halo, aura.group, air.group);
     disposables.push(...aura.disposables, ...air.disposables, haloTex, haloMat);
 
-    // Press and hold the orb: lightning to the water and land, a beam into the water (surge.ts).
+    // Press and hold the orb: lightning to the water and land, and the nova (surge.ts).
     const surge = makeSurge();
     scene.add(surge.group);
     disposables.push(...surge.disposables);
-    const ISO_POS = new Vector3(), ISO_LOOK = new Vector3(), strikeAt = new Vector3(), bubbleAt = new Vector3();
-    const bubbles = makeBubbles();
-    scene.add(bubbles.mesh, bubbles.drops);
+    const ISO_POS = new Vector3(), ISO_LOOK = new Vector3(), strikeAt = new Vector3();
     const chargeFx = makeCharge();
     scene.add(chargeFx.group);
     disposables.push(...chargeFx.disposables);
-    disposables.push(...bubbles.disposables);
-    // Rings on the water: bubbles bursting, and one big ring when the orb is let go. [x, z, age 0..1, size]
+    // Rings on the water: drops landing, and one big ring when the orb is let go. [x, z, age 0..1, size]
     const pops: [number, number, number, number][] = [];
     let popNext = 0, wasHeld = false, shock = 0, novaT = -1, novaLock = false;
     // After the nova the river level drops (water thrown out) and fills up again over T.holdRefill seconds.
@@ -372,9 +368,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       haloMat.opacity *= 1 + flash;
       const landFlash = bolt.flash * T.orbFlashLand * (1 - away);
       lineMat.uniforms.uBolt.value.set(orbit.position.x, orbit.position.z, landFlash, T.orbFlashReach);
-      // The surge: bolts to the water and land, and the beam. A strike lights the land where it lands.
+      // The surge: bolts to the water and land. A strike lights the land where it lands.
       const waterY = lvl(orbit.position.z);
-      const strike = surge.update(clock, dt, ch * (1 - away), orbit.position, R, waterY, { beam: T.holdBeam, bolts: T.holdBolts, width: T.holdBeamWidth, start: T.holdBeamStart, glow: T.holdBeamGlow, flicker: T.holdBeamFlicker }, () => {
+      const strike = surge.update(clock, dt, ch * (1 - away), orbit.position, R, waterY, { bolts: T.holdBolts }, () => {
         const a = Math.random() * Math.PI * 2;
         if (Math.random() < 0.6) {
           const r = R * (1.3 + 1.9 * Math.random());
@@ -399,18 +395,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       wasHeld = hold.down;
       shock = Math.max(0, shock - dt * 2.5);
       haloMat.opacity += shock * 0.8 * T.holdShock;
-      // The lake boils: strength follows the charge; bubbles swell up and burst over the boiling area.
+      // The lake boils: strength follows the charge.
       const boil = Math.max(0, (ch - 0.1) / 0.9) * T.holdBoil * (1 - away);
       const px = canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360));
-      bubbles.update(dt, boil, { amount: T.holdBubbles, size: T.holdBubbleSize, speed: T.holdBoilSpeed, bright: T.holdBubbleShine, drops: T.holdBubbleDrops }, () => {
-        for (let tries = 0; tries < 6; tries++) {
-          const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * T.holdBoilArea * 1.2;
-          const x = orbit.position.x + Math.cos(a) * r, z = orbit.position.z + Math.sin(a) * r;
-          const y = lvl(z);
-          if (Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.35) return bubbleAt.set(x, y, z);
-        }
-        return null;
-      }, (x, z, size) => { if (T.holdBubbleRings > 0) addPop(x, z, Math.min(2, size * 0.5) * T.holdBubbleRings); }, px, skyTurn);
       // What swirls round the orb as it charges (charge.ts).
       if (novaNow) {
         chargeFx.explode(orbit.position, T.holdNova);
@@ -419,7 +406,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       }
       // Refill: quick at first, then easing in, like water running back.
       if (drainY > 0) drainY = Math.max(0, drainY - dt * (T.holdDrain / Math.max(1, T.holdRefill)) * (0.4 + 1.2 * (drainY / Math.max(0.01, T.holdDrain))));
-      chargeFx.update(dt, ch * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5, T.holdFxGround > 0.5, T.holdFxStreaks > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed },
+      chargeFx.update(dt, ch * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed },
         (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)),
         (x, z) => { const y = lvl(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; },
         (x, z, size) => addPop(x, z, Math.min(1.5, size)), px, skyTurn);
@@ -442,7 +429,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         // has spawned, so the reflection never appears before the orb does.
         flat: 1 - k, stir: (1 - ease(away * 2.5)) * born, show: 1, fogNear: fog.near, fogFar: fog.far, calm, drop: drainY,
         mirror: [T.orbMirror * (1 - away) * born, R * born, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
-        boil: [orbit.position.x, orbit.position.z, boil, T.holdBoilArea], boilLook: [T.holdBoilHeight, T.holdBoilSpeed, T.holdBoilSpecks, R * 0.45 * T.holdBeam], pops, skyTurn,
+        boil: [orbit.position.x, orbit.position.z, boil, T.holdBoilArea], boilLook: [T.holdBoilHeight, T.holdBoilSpeed, T.holdBoilSpecks, T.holdBoilLift], pops, skyTurn,
       });
       // The join: once the land is almost flat, the riverbed pipe narrows to exactly the page pipe's width
       // on screen (3.5 px) and takes on its look; the page then draws its own pipe on top from the same spot.

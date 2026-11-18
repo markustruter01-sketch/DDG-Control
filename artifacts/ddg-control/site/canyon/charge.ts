@@ -1,5 +1,5 @@
 import {
-  AdditiveBlending, BufferAttribute, BufferGeometry, Group, InstancedBufferAttribute, InstancedMesh, LineSegments, Matrix4,
+  BufferAttribute, BufferGeometry, Group, InstancedBufferAttribute, InstancedMesh, Matrix4,
   Points, Quaternion, ShaderMaterial, SphereGeometry, Vector3,
 } from 'three';
 import { SKY_GLSL } from './sky';
@@ -11,15 +11,14 @@ import { SKY_GLSL } from './sky';
  *  - water globules: real 3D drops lifted out of the lake, each a sphere stretched along its direction of travel
  *    (faster = longer), shaded as water: dark blue body, the sky mirrored at the edges (Fresnel), a sharp
  *    highlight, mostly solid rather than see-through. A small ring marks where each one leaves the water;
- *  - streaks: thin blue lines pulled into the centre, more and faster towards the end;
  *  - a vortex of droplets spiralling round the orb, and loose ground lifting into the air;
  *  - at the nova everything is flung outwards; drops fall back into the lake (each leaves a ring) and the
  *    ground settles, over the calm-down time.
  * Each effect has its own on/off switch (T.holdFxGlobs, holdFxVortex, holdFxGround, holdFxStreaks).
  */
 
-const DROPS = 320, LINES = 260, ROCKS = 160;
-type P = { x: number; y: number; z: number; vx: number; vy: number; vz: number; age: number; life: number; size: number; seed: number; out: boolean };
+const DROPS = 320, ROCKS = 160;
+type P = { x: number; y: number; z: number; vx: number; vy: number; vz: number; age: number; life: number; size: number; seed: number; out: boolean; splash?: boolean };
 
 const DROP_VERT = /* glsl */ `
 attribute float aFade;
@@ -51,13 +50,6 @@ void main() {
   vec3 col = mix(body, sky * (1.0 - 0.6 * vMix) + vec3(0.3, 0.6, 1.0) * 0.3 * vMix, fres * (1.0 - 0.5 * vMix)) + vec3(1.0) * spec * 1.4;
   gl_FragColor = vec4(col, (0.85 + 0.15 * fres) * vFade);
 }`;
-const LINE_VERT = /* glsl */ `
-attribute float aA;
-varying float vA;
-void main() { vA = aA; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-const LINE_FRAG = /* glsl */ `
-varying float vA;
-void main() { gl_FragColor = vec4(vec3(0.45, 0.75, 1.0) * vA * 0.6, 1.0); }`;
 const ROCK_VERT = /* glsl */ `
 attribute float aA;
 uniform float uPx;
@@ -89,21 +81,15 @@ export function makeCharge() {
   });
   const drops = new InstancedMesh(dGeo, dMat, DROPS);
   drops.frustumCulled = false; drops.renderOrder = 6; drops.count = 0;
-  // Streaks.
-  const lPos = new Float32Array(LINES * 6), lA = new Float32Array(LINES * 2);
-  const lGeo = new BufferGeometry();
-  lGeo.setAttribute('position', new BufferAttribute(lPos, 3)); lGeo.setAttribute('aA', new BufferAttribute(lA, 1));
-  const lMat = new ShaderMaterial({ vertexShader: LINE_VERT, fragmentShader: LINE_FRAG, transparent: true, depthWrite: false, blending: AdditiveBlending });
-  const lines = new LineSegments(lGeo, lMat); lines.frustumCulled = false; lines.renderOrder = 7;
   // Ground chunks.
   const rPos = new Float32Array(ROCKS * 3), rA = new Float32Array(ROCKS);
   const rGeo = new BufferGeometry();
   rGeo.setAttribute('position', new BufferAttribute(rPos, 3)); rGeo.setAttribute('aA', new BufferAttribute(rA, 1));
   const rMat = new ShaderMaterial({ uniforms: { uPx: { value: 800 } }, vertexShader: ROCK_VERT, fragmentShader: ROCK_FRAG, transparent: true, depthWrite: false });
   const rocks = new Points(rGeo, rMat); rocks.frustumCulled = false; rocks.renderOrder = 3;
-  group.add(drops, lines, rocks);
+  group.add(drops, rocks);
 
-  const globs: P[] = [], swirls: P[] = [], streaks: P[] = [], chunks: P[] = [];
+  const globs: P[] = [], swirls: P[] = [], chunks: P[] = [];
   let owed = 0;
   const m = new Matrix4(), q = new Quaternion(), up = new Vector3(0, 1, 0), dir = new Vector3(), scl = new Vector3(), pos = new Vector3();
   const c = new Vector3();
@@ -118,14 +104,14 @@ export function makeCharge() {
       if (w === null) continue;
       const p = mk(x, w, z, rand(1.5, 3), radius * rand(0.03, 0.1));
       const out = rand(4, 12) * (1.3 - r / (radius * 7));
-      p.vx = Math.cos(a) * out; p.vz = Math.sin(a) * out; p.vy = rand(6, 16); p.out = true;
+      p.vx = Math.cos(a) * out; p.vz = Math.sin(a) * out; p.vy = rand(6, 16); p.out = true; p.splash = true;
       globs.push(p);
     }
   };
 
   /** The nova: everything flies outwards from the orb. */
   const explode = (orb: Vector3, force: number) => {
-    for (const list of [globs, swirls, streaks, chunks]) for (const p of list) {
+    for (const list of [globs, swirls, chunks]) for (const p of list) {
       dir.set(p.x - orb.x, p.y - orb.y, p.z - orb.z);
       if (dir.lengthSq() < 1e-4) dir.set(Math.random() - 0.5, 0.3, Math.random() - 0.5);
       dir.normalize();
@@ -139,7 +125,7 @@ export function makeCharge() {
    * `power` 0..1. `look`: style, amount, speed. `ground(x, z)`: land or water height there. `waterAt(x, z)`:
    * the water's height, or null on dry land. `onSplash(x, z, size)`: a drop leaving or landing in the lake.
    */
-  const update = (dt: number, power: number, orb: Vector3, radius: number, look: { on: [boolean, boolean, boolean, boolean]; amount: number; speed: number },
+  const update = (dt: number, power: number, orb: Vector3, radius: number, look: { on: [boolean, boolean, boolean]; amount: number; speed: number },
     ground: (x: number, z: number) => number, waterAt: (x: number, z: number) => number | null,
     onSplash: (x: number, z: number, size: number) => void, pxScale: number, skyTurn: number) => {
     const want = (k: number) => look.on[k - 1] === true;
@@ -149,7 +135,7 @@ export function makeCharge() {
     let guard = 0;
     while (owed >= 1 && guard++ < 60) {
       owed -= 1;
-      const kinds = [1, 2, 3, 4].filter(want);
+      const kinds = [1, 2, 3].filter(want);
       if (kinds.length === 0) { owed = 0; break; }
       const kind = kinds[Math.floor(Math.random() * kinds.length)]!;
       const a = Math.random() * Math.PI * 2;
@@ -167,9 +153,6 @@ export function makeCharge() {
       } else if (kind === 3 && chunks.length < ROCKS) {
         const r = radius * rand(1.6, 6), x = c.x + Math.cos(a) * r, z = c.z + Math.sin(a) * r * 0.8;
         chunks.push(mk(x, ground(x, z), z, rand(4, 7), 1));
-      } else if (kind === 4 && streaks.length < LINES) {
-        const u = rand(-1, 1), sq = Math.sqrt(1 - u * u), r = radius * rand(2.5, 5.5);
-        streaks.push(mk(c.x + Math.cos(a) * sq * r, c.y + u * r * 0.8, c.z + Math.sin(a) * sq * r, 1.6, 1));
       }
     }
     if (owed > 10) owed = 10;
@@ -220,33 +203,13 @@ export function makeCharge() {
           if (Math.hypot(dx, c.y - p.y, dz) < radius * 0.95 || power < 0.01) dead = true;
         }
         if (dead) { list.splice(i, 1); continue; }
-        drawDrop(p, Math.min(1, p.age * 5) * Math.min(1, (p.life - p.age) * 3));
+        // Thrown-up splash water is see-through; the drawn-in water is denser.
+        drawDrop(p, Math.min(1, p.age * 5) * Math.min(1, (p.life - p.age) * 3) * (p.splash ? 0.4 : 1));
       }
     }
     drops.count = nd; drops.visible = nd > 0;
     drops.instanceMatrix.needsUpdate = true; dFade.needsUpdate = true; dMix.needsUpdate = true;
     dMat.uniforms.uGlow!.value = power; dMat.uniforms.uSkyTurn!.value = skyTurn;
-
-    // Streaks: pulled in fast, with a trail; flung out at the nova.
-    let nl = 0;
-    for (let i = streaks.length - 1; i >= 0; i--) {
-      const p = streaks[i]!;
-      p.age += dt;
-      const ox = p.x, oy = p.y, oz = p.z;
-      let dead = p.age > p.life;
-      if (p.out) { p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; }
-      else {
-        const d = pull(p, (8 + 40 * power) * sp, 0);
-        p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
-        if (d < radius * 0.95 || power < 0.01) dead = true;
-      }
-      if (dead) { streaks.splice(i, 1); continue; }
-      const a = Math.min(1, p.age * 4) * Math.min(1, (p.life - p.age) * 3) * 0.85;
-      lPos.set([p.x, p.y, p.z, p.x - (p.x - ox) * 4, p.y - (p.y - oy) * 4, p.z - (p.z - oz) * 4], nl * 6);
-      lA[nl * 2] = a; lA[nl * 2 + 1] = 0; nl++;
-    }
-    lGeo.setDrawRange(0, nl * 2); lines.visible = nl > 0;
-    lGeo.attributes.position!.needsUpdate = true; lGeo.attributes.aA!.needsUpdate = true;
 
     // Ground chunks: rise and circle while charging; thrown out at the nova; fall back when it ends.
     let nr = 0;
@@ -270,5 +233,5 @@ export function makeCharge() {
     rGeo.attributes.position!.needsUpdate = true; rGeo.attributes.aA!.needsUpdate = true;
     rMat.uniforms.uPx!.value = pxScale;
   };
-  return { group, update, explode, splash, disposables: [dGeo, dMat, lGeo, lMat, rGeo, rMat] as { dispose: () => void }[] };
+  return { group, update, explode, splash, disposables: [dGeo, dMat, rGeo, rMat] as { dispose: () => void }[] };
 }
