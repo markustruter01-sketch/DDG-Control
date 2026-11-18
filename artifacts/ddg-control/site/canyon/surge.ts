@@ -84,8 +84,10 @@ export function makeSurge() {
   };
 
   // The sky strike (Markus, 18 Nov): at full charge one big bolt drops from above the top of the screen onto
-  // the top of the orb. The main bolt is drawn three times side by side so it reads thick, plus two forks.
-  const sky = Array.from({ length: 5 }, () => {
+  // the top of the orb. The main bolt is drawn up to nine times side by side (a 3 x 3 bundle) so it reads thick,
+  // plus three forks. Its strength (slider x 3) sets how thick, how long and how bright the flash.
+  const SKY_MAIN = 9, SKY_FORKS = 3;
+  const sky = Array.from({ length: SKY_MAIN + SKY_FORKS }, () => {
     const pos = new Float32Array(SEG * 3);
     const geo = new BufferGeometry(); geo.setAttribute('position', new BufferAttribute(pos, 3));
     const mat = new LineBasicMaterial({ color: 0xeef8ff, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false });
@@ -93,22 +95,25 @@ export function makeSurge() {
     group.add(line);
     return { pos, geo, mat, line };
   });
-  let skyLife = 9, skyPower = 0;
+  let skyLife = 9, skyPower = 0, skyCopies = 0;
   const skyAt = new Vector3(), fork = new Vector3(), forkEnd = new Vector3();
   /** Fire the sky strike from `top` (just above the screen) to `hit` (the top of the orb). */
   const skyStrike = (top: Vector3, hit: Vector3, power: number) => {
-    const main = sky[0]!.pos, w = top.distanceTo(hit) * 0.004;
+    const P = 3 * power, main = sky[0]!.pos, D = top.distanceTo(hit), w = D * 0.003;
     jag(top, hit, main, rnd);
-    for (let k = 1; k < 3; k++) for (let i = 0; i < SEG * 3; i++) sky[k]!.pos[i] = main[i]! + (i % 3 === 1 ? 0 : (k === 1 ? w : -w));
-    for (let k = 3; k < 5; k++) {
-      const at = 4 + Math.floor(rnd() * 10);
+    for (let k = 1; k < SKY_MAIN; k++) {
+      const ox = ((k % 3) - 1) * w, oz = (Math.floor(k / 3) - 1) * w;
+      for (let i = 0; i < SEG; i++) { sky[k]!.pos[i * 3] = main[i * 3]! + ox; sky[k]!.pos[i * 3 + 1] = main[i * 3 + 1]!; sky[k]!.pos[i * 3 + 2] = main[i * 3 + 2]! + oz; }
+    }
+    for (let k = SKY_MAIN; k < SKY_MAIN + SKY_FORKS; k++) {
+      const at = 4 + Math.floor(rnd() * 12);
       fork.set(main[at * 3]!, main[at * 3 + 1]!, main[at * 3 + 2]!);
-      forkEnd.copy(hit).sub(top).multiplyScalar(0.25 + rnd() * 0.2).add(fork);
-      forkEnd.x += (rnd() - 0.5) * top.distanceTo(hit) * 0.35; forkEnd.z += (rnd() - 0.5) * top.distanceTo(hit) * 0.2;
+      forkEnd.copy(hit).sub(top).multiplyScalar(0.25 + rnd() * 0.25).add(fork);
+      forkEnd.x += (rnd() - 0.5) * D * 0.4; forkEnd.z += (rnd() - 0.5) * D * 0.25;
       jag(fork, forkEnd, sky[k]!.pos, rnd);
     }
     for (const b of sky) b.geo.attributes.position!.needsUpdate = true;
-    skyAt.copy(hit); skyLife = 0; skyPower = power;
+    skyAt.copy(hit); skyLife = 0; skyPower = P; skyCopies = Math.max(1, Math.min(SKY_MAIN, Math.round(P)));
   };
 
   let timer = 0;
@@ -145,9 +150,14 @@ export function makeSurge() {
       if (on > flash) { flash = on; at = b.target; }
     }
     skyLife += dt;
-    const sOn = skyLife < 0.6 ? Math.exp(-skyLife * 4) * (skyLife % 0.09 < 0.05 ? 1 : 0.35) * skyPower : 0;
-    sky.forEach((b, i) => { b.line.visible = sOn > 0.01; b.mat.opacity = Math.min(1, sOn * (i < 3 ? 1.5 : 0.8)); });
-    if (sOn > flash) { flash = Math.min(1.5, sOn); at = skyAt; }
+    const skyEnd = 0.6 + 0.06 * skyPower;
+    const sOn = skyLife < skyEnd ? Math.exp(-skyLife * 4 / (1 + 0.15 * skyPower)) * (skyLife % 0.09 < 0.05 ? 1 : 0.35) : 0;
+    sky.forEach((b, i) => {
+      const used = i < SKY_MAIN ? i < skyCopies : skyPower >= 1.5;
+      b.line.visible = used && sOn > 0.01; b.mat.opacity = Math.min(1, sOn * (i < SKY_MAIN ? 1.5 : 0.9));
+    });
+    const sFlash = Math.min(3, sOn * skyPower * 0.5);
+    if (sFlash > flash) { flash = sFlash; at = skyAt; }
     return { flash, at };
   };
 

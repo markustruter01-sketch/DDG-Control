@@ -58,7 +58,7 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdCamBack', label: 'Camera: how far back', min: -10, max: 20, step: 0.5 },
   { group: 'Hold the orb', key: 'holdCamTilt', label: 'Camera: how much it looks down', min: 0, max: 1, step: 0.05 },
   { group: 'Hold the orb', key: 'holdRise', label: 'Orb lifts', min: 0, max: 5, step: 0.1 },
-  { group: 'Hold the orb', key: 'holdOrbShake', label: 'Orb shake', min: 0, max: 3, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdOrbShake', label: 'Orb shake', min: 0, max: 6, step: 0.05 },
   { group: 'Hold the orb', key: 'holdScreenShake', label: 'Screen shake', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdGroundShake', label: 'Ground tremble', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdShock', label: 'Let go: shockwave ring and jolt', min: 0, max: 2, step: 0.05 },
@@ -233,9 +233,9 @@ export const SPECS: Spec[] = [
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
   introFade: 3, introSpawn: 1.4, introLoop: 0,
-  holdOn: 1, holdBolts: 2, holdSkyStrike: 1, holdBoil: 0.35, holdZoom: 1, holdSky: 3,
+  holdOn: 1, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
   holdCamUp: 5, holdCamBack: 15, holdCamTilt: 0.7, holdRise: 3.5, holdOrbShake: 3, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 1,
-    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 4, holdNova: 0.15, holdNovaWave: 9.6, holdNovaWaveSpeed: 60, holdCalm: 4, holdFxGlobs: 0, holdFxVortex: 1, holdVortexLook: 3, holdVortexSize: 3, holdVortexReach: 1.85, holdVortexTrail: 0.55, holdVortexGlow: 0.15, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 3, holdFxSpeed: 3,
+    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 2.5, holdNova: 0.05, holdNovaWave: 5.45, holdNovaWaveSpeed: 75, holdCalm: 6, holdFxGlobs: 0, holdFxVortex: 1, holdVortexLook: 3, holdVortexSize: 3, holdVortexReach: 2.5, holdVortexTrail: 0.25, holdVortexGlow: 0.2, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 3, holdFxSpeed: 3,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.15, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
@@ -246,7 +246,7 @@ export const DEFAULTS: Record<string, number> = {
   pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   quote: 15, quoteOn: 1, quoteFont: 6, quoteSize: 0.55, quoteWeight: 400, quoteSpacing: 0.09, quoteCaps: 0, quoteAlign: 1, quoteWidth: 42, quoteLift: 7,
   qpFrame: 1, qpBright: 1, qpBlue: 0, qpGlow: 0, qpHi: 1, qpAnim: 0, qpSpeed: 1,
-  qbCalm: 0, qbOn: 1, qbGlass: 1, qbFrost: 0.8, qbDark: 1, qbBlur: 0, qbTint: 0, qbPadX: 16, qbPadY: 12, qbRadius: 120, qbFade: 0,
+  qbCalm: 0, qbOn: 1, qbGlass: 1, qbFrost: 0.8, qbDark: 1, qbBlur: 10, qbTint: 0.4, qbPadX: 16, qbPadY: 12, qbRadius: 120, qbFade: 5,
   bizLayout: 0,
   baseDark: 1, glowStrength: 0.7, glowHue1: 205, glowHue2: 170, glowSize: 1, glowMove: 0.6, edgeLight: 0.6, accentHue: 195, accentSat: 0.75, accentWords: 1,
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
@@ -260,7 +260,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-26'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-27'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);

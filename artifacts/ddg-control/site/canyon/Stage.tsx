@@ -276,7 +276,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       if (novaT >= 0) { novaT += dt; if (novaT > Math.max(4, T.holdCalm + 1)) novaT = -1; }
       camHold = building ? Math.min(1, camHold + dt / 2) : Math.max(0, camHold - dt / (novaT >= 0 ? Math.max(1, T.holdCalm) : 1.6));
       const ch = Math.pow(charge, 1.4), cv = ease(camHold) * T.holdZoom;
-      skyTurn += dt * ease(camHold) * 0.35 * T.holdSky;
+      skyTurn += dt * ease(camHold) * 0.35 * T.holdSky * (1 + 2 * ch); // spins up to 3x faster at full charge
       const camZ = lerp(42, 0, ease(p * 1.2));
       camera.position.set(0, lerp(9, small ? 95 : 70, k), camZ);
       look.set(0, lerp(12, 0, k), lerp(camZ - 40, camZ - 0.01, k));
@@ -311,7 +311,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // name and quote stay still while the orb shakes.
       if (ch > 0) {
         orbit.position.y += T.holdRise * ch;
-        if (!reduced) { const sh = 0.14 * T.holdOrbShake * ch * (0.4 + ch); orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
+        if (!reduced) { const sh = 0.14 * T.holdOrbShake * ch * (0.4 + ch) * (1 + ch * ch); /* twice as hard at full charge */ orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
       }
       // The dial round the orb: 0 to 100% of the build-up, thin lines, like a speedometer.
       dial.update(charge, hold.down ? 1 : 0, ORB_R);
