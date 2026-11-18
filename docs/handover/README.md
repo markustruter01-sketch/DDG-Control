@@ -36,6 +36,18 @@ Entry shape:
 
 ## 5. Log (newest first)
 
+### Wed 18 Nov 2026, 11:45 — Opus 5.5 (same session as 07:30; Fable 5.2 did the morning site work)
+- Orders worked on: ddg.limited design rounds with Markus; B2.1 coffee gifts; Finance plan Phase 3a.
+- Done (with PR numbers):
+  - DDG-Control: #107 orb extras (bloom, glass, mirror, rainbow edge, sparks), black quote box with white outline, lightning that lights the land, Markus's 18 Nov settings; #108 scroll hint clear of the name, quote box fits on phones; #109 page line white again; #110 six real Greenlight screenshots with captions; #111 portfolio list shows short lines with Expand pop-ups (white-line flow, facts, Greenlight chart from its real run, one screenshot), orb size 1.24, quote in Space Grotesk 600. All merged.
+  - quant-terminal: #126 plan Phase 3a (Gromen and Bianco public views in the AI layer, shadow only). Merged.
+  - cattle-dog-coffee: #17 DRAFT, gift orders (B2.1). Built and green, switched off. See below.
+- Half done: cattle-dog-coffee #17 waits for Markus's three card designs. Then: put them in `artifacts/store/public/gift-cards/` and `GIFT_CARD_DESIGNS` (`lib/pricing-core`), one paid sandbox order end to end, Markus publishes on the Replit website (6 order columns, ADD only), then sets the deployment secret `GIFTS_ENABLED=true`.
+- Published live? ddg.limited with #107 to #111 (publish succeeded 01:3x UTC; checked in the browser: 5 Expand buttons, Greenlight pop-up with 6 bars, scroll hint clear of the name). DDG-Finance not republished (waits for #125).
+- Waiting on Markus: merge quant-terminal #125 (publish crash fix) then #124 (quiet alarms); gift card artwork; 2 heartbeat URLs; arm the kill switch; ddg.limited email secrets (`EMAIL_SMTP_URL`, `EMAIL_FROM`, `OWNER_EMAIL`) are not set, so no enquiry emails send.
+- Next order to start: Part B (B1.1 security headers on ddg.limited, then B1.2 type check). Publish Finance after #125 is merged, with the US market closed.
+
+
 ### Wed 18 Nov 2026, 07:30 — Opus 5.5 (17–18 Nov session)
 - Orders worked on: Part A Phase 0 items 1–7; Markus's no-crypto rule; ddg.limited message audit and fixes.
 - Done (with PR numbers):
