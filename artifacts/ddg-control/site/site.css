@@ -411,7 +411,7 @@ p { margin: 0; }
   font-size: calc(11px * var(--sh-size, 1)); letter-spacing: var(--sh-track, 0.3em); text-transform: var(--sh-case, uppercase); }
 .cn-scroll.lay-1 { flex-direction: column-reverse; }
 .cn-scroll.lay-2 { flex-direction: row; gap: calc(10px * var(--sh-size, 1)); }
-.cn-scroll-words { margin-right: calc(-1 * var(--sh-track, 0.3em)); }
+.cn-scroll-words { margin-right: calc(-1 * var(--sh-track, 0.3em)); white-space: pre-line; text-align: center; }
 .cn-scroll-arrow { display: block; line-height: 0; }
 .cn-scroll-arrow svg { zoom: var(--sh-size, 1); overflow: visible; }
 .anim-1 .cn-scroll-arrow { animation: sh-bounce var(--sh-speed, 2s) cubic-bezier(.3,0,.3,1) infinite; }

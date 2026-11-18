@@ -190,7 +190,7 @@ export const SPECS: Spec[] = [
   { group: 'Businesses', key: 'bizLayout', label: 'Layout (0 3D reel, 1 stacked)', min: 0, max: 1, step: 1 },
   // "Scroll down" hint
   { group: 'Scroll hint', key: 'shOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
-  { group: 'Scroll hint', key: 'shText', label: 'Words (leave empty for arrow only)', min: 0, max: 0, step: 0, text: true },
+  { group: 'Scroll hint', key: 'shText', label: 'Words (| starts a new line; empty = arrow only)', min: 0, max: 0, step: 0, text: true },
   { group: 'Scroll hint', key: 'shHiWords', label: 'Words in colour (exact words, comma between)', min: 0, max: 0, step: 0, text: true },
   { group: 'Scroll hint', key: 'shHiHue', label: 'Their colour (0 red, 300 magenta)', min: 0, max: 360, step: 5 },
   { group: 'Scroll hint', key: 'shHiSat', label: 'How strong the colour is', min: 0, max: 1, step: 0.05 },
@@ -246,10 +246,10 @@ export const DEFAULTS: Record<string, number> = {
 
 export const T: Record<string, number> = { ...DEFAULTS };
 /** Settings that are words, not numbers. */
-export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for Web-Page or Press & Hold Orb for Fun', quoteText: '', shHiWords: 'Fun' };
+export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for Web-Page or | Press & Hold Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-37'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-38'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -509,7 +509,8 @@ export function applyBrand(): void {
       // Chosen words in colour (built as text nodes, never as HTML).
       const pick = (TX.shHiWords || '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
       w.textContent = '';
-      for (const part of (TX.shText || '').split(/(\s+)/)) {
+      // A "|" in the words starts a new line (site.css keeps line breaks in this box).
+      for (const part of (TX.shText || '').replace(/\s*\|\s*/g, '\n').split(/(\s+)/)) {
         if (pick.includes(part.replace(/[^\p{L}\p{N}]/gu, '').toLowerCase()) && part.trim()) {
           const b = document.createElement('span'); b.className = 'cn-scroll-hi'; b.textContent = part; w.appendChild(b);
         } else w.appendChild(document.createTextNode(part));

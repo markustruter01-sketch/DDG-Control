@@ -206,7 +206,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     // Holding the orb: a press that starts on the orb, held until it is let go (or the browser cancels it for a scroll).
     let charge = 0, camHold = 0, skyTurn = 0, fly = 0, flyOn = false, blasted = false;
     const flyDir = new Vector3();
-    const hold = { down: false, id: -1, x: 0, y: 0 };
+    const hold = { down: false, id: -1, x: 0, y: 0, touching: false };
+    const rootStyle = document.documentElement.style;
     // The orb can be pressed until the page has scrolled this far (as a part of the scroll that flattens the
     // land). It was 0.06, about 70 px: a small scroll left the orb looking the same but dead to a press.
     const HOLD_REACH = 0.25;
@@ -225,18 +226,27 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       if (e.button > 0 || !onOrb(e.clientX, e.clientY)) { lastPress = e.button > 0 ? 'not the main button' : orbOnScreen.r > 0 ? 'missed the orb' : 'orb not ready'; return; }
       if ((e.target as Element | null)?.closest?.('a,button,input,textarea,select,label,.tune')) { lastPress = 'on a button or the panel'; return; }
       lastPress = 'on the orb';
-      hold.down = true; hold.id = e.pointerId; hold.x = e.clientX; hold.y = e.clientY;
+      hold.down = true; hold.touching = true; hold.id = e.pointerId; hold.x = e.clientX; hold.y = e.clientY;
       // The page may be scrolled a little (a nudge of the wheel, or the browser putting the old scroll place back
       // after a reload). The press then brings the page back to the top, and the scene glides there by itself.
       if (scrollY > 0) scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      // Keep the press even if the pointer leaves the page before it is let go.
+      try { (e.target as Element | null)?.setPointerCapture?.(e.pointerId); } catch { /* not every element can */ }
     };
+    // Once the hold has started, the finger can go anywhere on the screen (Markus, 18 Nov): the charge goes on
+    // until it is lifted. A moving finger would normally start a scroll, and the browser then cancels the press;
+    // so while the orb is held, the page is told not to scroll with that finger (this needs a listener that is
+    // not "passive"), and not to start dragging a picture or selecting words.
+    // (`touching` stays true after the nova until the finger is lifted, so the page does not jump into a scroll
+    // under a finger that is still down.)
+    const noScroll = (e: TouchEvent) => { if ((hold.down || hold.touching) && e.cancelable) e.preventDefault(); };
+    const touchOff = (e: TouchEvent) => { if (e.touches.length === 0) hold.touching = false; };
     const onMove = (e: PointerEvent) => {
-      // Moving the mouse while holding keeps the charge going. On a phone, a finger that starts scrolling the page
-      // makes the browser cancel the press (pointercancel), which ends the hold, so scrolling still works.
+      // Moving the mouse (or the finger, see noScroll) while holding keeps the charge going.
       if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) ? 'pointer' : '';
     };
     // After the nova the orb needs a fresh press: letting go unlocks it.
-    const onUp = (e: PointerEvent) => { if (e.pointerId === hold.id) { if (hold.down && e.type === 'pointercancel') lastPress = 'cancelled by the browser'; hold.down = false; novaLock = false; } };
+    const onUp = (e: PointerEvent) => { if (e.pointerId === hold.id) { if (hold.down && e.type === 'pointercancel') lastPress = 'cancelled by the browser'; hold.down = false; hold.touching = false; novaLock = false; } };
     const noMenu = (e: Event) => { if (hold.down) e.preventDefault(); };
     addEventListener('pointerdown', onDown, true);
     addEventListener('pointermove', onMove, { passive: true });
@@ -244,6 +254,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     addEventListener('pointercancel', onUp);
     addEventListener('contextmenu', noMenu);
     document.addEventListener('selectstart', noMenu);
+    document.addEventListener('dragstart', noMenu);
+    addEventListener('touchmove', noScroll, { passive: false });
+    addEventListener('touchend', touchOff); addEventListener('touchcancel', touchOff);
     // The load-in: wait for the fonts and a few drawn frames (so every word has found its place), then fade
     // the black cover away; the orb spawns after that (introStart).
     let fontsIn = false, framesDrawn = 0;
@@ -303,6 +316,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // Scrolling away while holding ends the hold (the real scroll place, not the smoothed one: a press on a
       // slightly scrolled page jumps to the top first, and the smoothed value is still catching up).
       if (hold.down && (scrollY > vh * 0.1 || T.holdOn < 0.5)) hold.down = false;
+      // While held: no word-selecting and no long-press menu on phones.
+      const sel = hold.down ? 'none' : '';
+      if (rootStyle.userSelect !== sel) { rootStyle.userSelect = sel; rootStyle.setProperty('-webkit-user-select', sel); rootStyle.setProperty('-webkit-touch-callout', sel); }
       const building = hold.down && !novaLock;
       charge = building ? Math.min(1, charge + dt / Math.max(1, T.holdBuild)) : Math.max(0, charge - dt / (novaT >= 0 ? Math.max(0.5, T.holdCalm) : 1.2));
       let novaNow = false;
@@ -527,6 +543,10 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       removeEventListener('pointercancel', onUp);
       removeEventListener('contextmenu', noMenu);
       document.removeEventListener('selectstart', noMenu);
+      document.removeEventListener('dragstart', noMenu);
+      removeEventListener('touchmove', noScroll);
+      removeEventListener('touchend', touchOff); removeEventListener('touchcancel', touchOff);
+      rootStyle.userSelect = ''; rootStyle.setProperty('-webkit-user-select', ''); rootStyle.setProperty('-webkit-touch-callout', '');
       if (followEl) followEl.style.opacity = '';
       statusEl?.remove();
       stopResize();
