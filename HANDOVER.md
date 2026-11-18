@@ -126,3 +126,8 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
   site-base.html; they are build inputs only.
 - VERIFIED headless (t16.mjs): page inside is 393 wide, phone layout on, panel beside the phone, a slider in the
   moved panel still changes the scene, Reset all works, no errors.
+
+## 18 Nov 21:40: PR #123 and #124 merged and live
+- Merged by Markus (df9f0a1, 581008c), Replit synced (sync-pr124.txt: build passed), published, status success twice.
+- Live now: best viewed on a computer screen; even phone spacing; camera at load 2x with slider; logo left of name.
+- Preview and main match (apart from the preview-only phone frame and status line). Nothing open.
