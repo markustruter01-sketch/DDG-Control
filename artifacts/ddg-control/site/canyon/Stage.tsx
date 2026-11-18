@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import {
   AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, DynamicDrawUsage, Fog, Group,
-  LineSegments, Mesh, ShaderMaterial, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, WebGLRenderer,
+  LineSegments, Mesh, ShaderMaterial, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, Vector4, WebGLRenderer,
 } from 'three';
 import { makeAirOrb, lightningNow } from './airOrb';
 import { makeSky } from './sky';
@@ -81,11 +81,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     lineGeo.setAttribute('aBase', new BufferAttribute(base, 1));
     const lineMat = new ShaderMaterial({
       transparent: true,
-      uniforms: { uOpacity: { value: 0.34 }, uFogNear: { value: 30 }, uFogFar: { value: 150 } },
-      vertexShader: `attribute float aBase; varying float vWet; varying float vDist;
-        void main() { vWet = step(aBase, 4.62 - 0.01 * position.z); vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
-      fragmentShader: `uniform float uOpacity; uniform float uFogNear; uniform float uFogFar; varying float vWet; varying float vDist;
-        void main() { if (vWet > 0.5) discard; gl_FragColor = vec4(0.42, 0.78, 0.94, uOpacity * (1.0 - smoothstep(uFogNear, uFogFar, vDist))); }`,
+      uniforms: { uOpacity: { value: 0.34 }, uFogNear: { value: 30 }, uFogFar: { value: 150 }, uBolt: { value: new Vector4(0, 0, 0, 1) } },
+      vertexShader: `attribute float aBase; varying float vWet; varying float vDist; varying vec2 vXZ;
+        void main() { vXZ = position.xz; vWet = step(aBase, 4.62 - 0.01 * position.z); vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
+      // uBolt: where the orb is (x, z), how bright the lightning is right now, and how far its light reaches over the land.
+      fragmentShader: `uniform float uOpacity; uniform float uFogNear; uniform float uFogFar; uniform vec4 uBolt; varying float vWet; varying float vDist; varying vec2 vXZ;
+        void main() { if (vWet > 0.5) discard;
+          float lit = uBolt.z * exp(-distance(vXZ, uBolt.xy) / uBolt.w);
+          gl_FragColor = vec4(mix(vec3(0.42, 0.78, 0.94), vec3(0.85, 0.95, 1.0), clamp(lit, 0.0, 1.0) * 0.7), min(uOpacity * (1.0 + 3.0 * lit), 1.0) * (1.0 - smoothstep(uFogNear, uFogFar, vDist))); }`,
     });
     const land = new Mesh(surfGeo, surfMat);
     scene.add(land, new LineSegments(lineGeo, lineMat));
@@ -245,7 +248,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       });
       aura.update(clock, 1 - away, { bloom: T.orbBloom, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
       haloMat.opacity *= 1 + flash;
-      lineMat.uniforms.uOpacity.value *= 1 + 0.9 * flash;
+      const landFlash = bolt.flash * T.orbFlashLand * (1 - away);
+      lineMat.uniforms.uBolt.value.set(orbit.position.x, orbit.position.z, landFlash, T.orbFlashReach);
       // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
       // into the first pipe on the page. The churning stops as the orb leaves.
       // The box behind the quote, in canvas pixels, so the water can go calm exactly there.
@@ -260,7 +264,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       water.update({
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far, calm,
-        mirror: [T.orbMirror * (1 - away), R, spinClock, flash], flash: flash * 0.8,
+        mirror: [T.orbMirror * (1 - away), R, spinClock, flash], flash: landFlash * 0.5,
       });
       // The join: once the land is almost flat, the riverbed pipe narrows to exactly the page pipe's width
       // on screen (3.5 px) and takes on its look; the page then draws its own pipe on top from the same spot.

@@ -33,7 +33,9 @@ export const SPECS: Spec[] = [
   { group: 'Orb extras', key: 'orbBloom', label: 'Bloom (light bleeding out of it)', min: 0, max: 2, step: 0.05 },
   { group: 'Orb extras', key: 'orbGlass', label: 'Glass shell (bends the stars behind it)', min: 0, max: 1, step: 0.05 },
   { group: 'Orb extras', key: 'orbDepth', label: 'Depth inside (layers of wind within)', min: 0, max: 2, step: 0.05 },
-  { group: 'Orb extras', key: 'orbFlashLight', label: 'Lightning lights the orb, water and land', min: 0, max: 2, step: 0.05 },
+  { group: 'Orb extras', key: 'orbFlashLight', label: 'Lightning lights the inside of the orb', min: 0, max: 2, step: 0.05 },
+  { group: 'Orb extras', key: 'orbFlashLand', label: 'Lightning on the land and water (strength)', min: 0, max: 4, step: 0.05 },
+  { group: 'Orb extras', key: 'orbFlashReach', label: 'Lightning on the land (how far it reaches)', min: 5, max: 150, step: 1 },
   { group: 'Orb extras', key: 'orbMirror', label: 'Real reflection of the orb in the water', min: 0, max: 1.5, step: 0.05 },
   { group: 'Orb extras', key: 'orbRays', label: 'Light shafts and mist', min: 0, max: 2, step: 0.05 },
   { group: 'Orb extras', key: 'orbFringe', label: 'Rainbow edge', min: 0, max: 1.5, step: 0.05 },
@@ -186,22 +188,22 @@ export const SPECS: Spec[] = [
 
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
-  orbBloom: 0, orbGlass: 0, orbDepth: 0, orbFlashLight: 0, orbMirror: 0, orbRays: 0, orbFringe: 0, orbParticles: 0,
-  orbStyle: 0, orbFlow: 1, orbHue: 0, orbSpin: 3, orbStreaks: 0.25, orbSparks: 2.05, orbSparkRate: 2.25, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
+  orbBloom: 0.75, orbGlass: 0.75, orbDepth: 0, orbFlashLight: 0.05, orbFlashLand: 1, orbFlashReach: 45, orbMirror: 0.35, orbRays: 0, orbFringe: 0.55, orbParticles: 0.05,
+  orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.25, orbSize: 0.98, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 1.7, swirlSize: 2.5, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
   waterGlint: 0.5, waterReflect: 1.15, waterColour: 1.2, waterSheen: 3, sprayAmount: 0, spraySize: 0,
   fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
   wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.7, waterClear: 0.38,
   starsEvery: 2.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
-  pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
-  quote: 15, quoteOn: 1, quoteFont: 0, quoteSize: 0.55, quoteWeight: 100, quoteSpacing: 0.09, quoteCaps: 0, quoteAlign: 1, quoteWidth: 39, quoteLift: 11,
-  qpFrame: 0, qpBright: 0.5, qpBlue: 0.6, qpGlow: 0, qpHi: 0, qpAnim: 0, qpSpeed: 1,
-  qbCalm: 1, qbOn: 0, qbDark: 0.58, qbBlur: 20, qbTint: 0.1, qbPadX: 182, qbPadY: 42, qbRadius: 40, qbFade: 26,
+  pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0.54, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
+  quote: 15, quoteOn: 1, quoteFont: 0, quoteSize: 0.55, quoteWeight: 500, quoteSpacing: 0.09, quoteCaps: 0, quoteAlign: 1, quoteWidth: 42, quoteLift: 8,
+  qpFrame: 1, qpBright: 1, qpBlue: 0, qpGlow: 0, qpHi: 1, qpAnim: 0, qpSpeed: 1,
+  qbCalm: 0.65, qbOn: 1, qbDark: 1, qbBlur: 0, qbTint: 0, qbPadX: 22, qbPadY: 14, qbRadius: 120, qbFade: 0,
   bizLayout: 0,
-  baseDark: 1, glowStrength: 0.8, glowHue1: 205, glowHue2: 170, glowSize: 1, glowMove: 0.6, edgeLight: 0.6, accentHue: 195, accentSat: 0.75, accentWords: 1,
+  baseDark: 1, glowStrength: 0.7, glowHue1: 205, glowHue2: 170, glowSize: 1, glowMove: 0.6, edgeLight: 0.6, accentHue: 195, accentSat: 0.75, accentWords: 1,
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
-  pageClouds: 0.8, pageCloudOpacity: 0.06, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
-  shOn: 1, shArrow: 4, shAnim: 1, shSpeed: 2, shTravel: 5, shLayout: 0, shFont: 2, shSize: 0.75, shSpacing: 0.3, shCaps: 0, shBright: 1, shPlace: 35,
+  pageClouds: 0, pageCloudOpacity: 0.22, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
+  shOn: 1, shArrow: 6, shAnim: 1, shSpeed: 2, shTravel: 10, shLayout: 0, shFont: 2, shSize: 0.9, shSpacing: 0.3, shCaps: 0, shBright: 1, shPlace: 35,
   brandFont: 3, brandSize: 0.75, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.04, logoSize: 1, logoGap: 14, brandLift: 16.5,
 };
 
@@ -210,7 +212,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll', quoteText: '' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-9'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-10'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -393,7 +395,7 @@ export function applyBrand(): void {
   // The frosted patch behind the quote.
   const t = T.qbTint;
   s.setProperty('--qb-show', T.qbOn ? 'block' : 'none');
-  s.setProperty('--qb-bg', `rgba(${Math.round(2 + 6 * t)},${Math.round(4 + 14 * t)},${Math.round(8 + 32 * t)},${T.qbDark})`);
+  s.setProperty('--qb-bg', `rgba(${Math.round(8 * t)},${Math.round(18 * t)},${Math.round(40 * t)},${T.qbDark})`);
   s.setProperty('--qb-blur', `${T.qbBlur}px`);
   s.setProperty('--qb-padx', `${T.qbPadX}px`);
   s.setProperty('--qb-pady', `${T.qbPadY}px`);
