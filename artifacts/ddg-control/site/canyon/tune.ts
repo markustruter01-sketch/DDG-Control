@@ -157,17 +157,10 @@ export const SPECS: Spec[] = [
   { group: 'Quote pop', key: 'qpHi', label: 'Colour the "~25% cheaper" words (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Quote pop', key: 'qpAnim', label: 'Movement', min: 0, max: 3, step: 1, names: ['None', 'Shine sweeps across the words', 'Soft pulse', 'Gentle float'] },
   { group: 'Quote pop', key: 'qpSpeed', label: 'Movement speed (slow ← → fast)', min: 0.3, max: 3, step: 0.05 },
-  { group: 'Quote background', key: 'qbCalm', label: 'Calm the water behind it (0 off ← → 1 no reflections)', min: 0, max: 1, step: 0.05 },
-  { group: 'Quote background', key: 'qbOn', label: 'Dark frosted patch (0 off, 1 on)', min: 0, max: 1, step: 1 },
-  { group: 'Quote background', key: 'qbGlass', label: 'Look', min: 0, max: 1, step: 1, names: ['Dark patch', 'Frosted glass'] },
-  { group: 'Quote background', key: 'qbFrost', label: 'Glass: how frosted (0 clear ← → 1 fully frosted)', min: 0, max: 1, step: 0.05 },
-  { group: 'Quote background', key: 'qbDark', label: 'Darkness', min: 0, max: 1, step: 0.02 },
-  { group: 'Quote background', key: 'qbBlur', label: 'Frost (blur behind)', min: 0, max: 40, step: 1 },
-  { group: 'Quote background', key: 'qbTint', label: 'Colour (0 black ← → 1 deep blue)', min: 0, max: 1, step: 0.05 },
+  { group: 'Quote background', key: 'qbColour', label: 'Background colour', min: 0, max: 6, step: 1, names: ['Black', 'Charcoal', 'Midnight', 'Deep navy', 'Deep teal', 'Deep purple', 'Deep red'] },
   { group: 'Quote background', key: 'qbPadX', label: 'Width around the text', min: 0, max: 200, step: 2 },
   { group: 'Quote background', key: 'qbPadY', label: 'Height around the text', min: 0, max: 120, step: 2 },
   { group: 'Quote background', key: 'qbRadius', label: 'Rounded corners', min: 0, max: 120, step: 2 },
-  { group: 'Quote background', key: 'qbFade', label: 'Edge fall-off (soft ← → softer)', min: 0, max: 50, step: 1 },
   // The page's colours: base, coloured light behind the glass, lit panel edges, one accent colour
   { group: 'Page look', key: 'baseDark', label: 'Background (0 grey, 1 blue-black)', min: 0, max: 1, step: 0.02 },
   { group: 'Page look', key: 'glowStrength', label: 'Coloured light behind the glass', min: 0, max: 1, step: 0.02 },
@@ -252,7 +245,7 @@ export const DEFAULTS: Record<string, number> = {
   pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   quote: 15, quoteOn: 1, quoteFont: 6, quoteSize: 0.55, quoteWeight: 400, quoteSpacing: 0.09, quoteCaps: 0, quoteAlign: 1, quoteWidth: 42, quoteLift: 7,
   qpFrame: 1, qpBright: 1, qpBlue: 0, qpGlow: 0, qpHi: 1, qpAnim: 0, qpSpeed: 1,
-  qbCalm: 0, qbOn: 1, qbGlass: 1, qbFrost: 0.8, qbDark: 1, qbBlur: 10, qbTint: 0.4, qbPadX: 16, qbPadY: 12, qbRadius: 120, qbFade: 5,
+  qbColour: 0, qbPadX: 16, qbPadY: 12, qbRadius: 120,
   bizLayout: 0,
   baseDark: 1, glowStrength: 0.7, glowHue1: 205, glowHue2: 170, glowSize: 1, glowMove: 0.6, edgeLight: 0.6, accentHue: 195, accentSat: 0.75, accentWords: 1,
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
@@ -266,7 +259,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-28'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-29'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -418,7 +411,9 @@ function moveSlider(body: HTMLElement, l: HTMLElement, s: Spec, off: boolean): v
 /** Put the name-and-logo settings on the page (CSS variables), loading the chosen web font. */
 let lastBrand = '';
 let lastFade = '';
-const BG_KEYS = ['qbOn', 'qbGlass', 'qbFrost', 'qbDark', 'qbBlur', 'qbTint', 'qbPadX', 'qbPadY', 'qbRadius', 'qbFade'];
+const BG_KEYS = ['qbColour', 'qbPadX', 'qbPadY', 'qbRadius'];
+/** Background colours behind the quote (Markus, 18 Nov: one simple choice, black by default). */
+const QB_COLOURS = [[0, 0, 0], [20, 21, 24], [6, 10, 22], [4, 14, 36], [2, 24, 28], [18, 8, 32], [30, 6, 10]];
 const HINT_KEYS = ['baseDark', 'glowStrength', 'glowHue1', 'glowHue2', 'glowSize', 'edgeLight', 'accentHue', 'accentSat', 'accentWords', 'pipeFluid', 'inkHue', 'inkSat', 'inkLight', 'bizLayout', 'shOn', 'shArrow', 'shAnim', 'shSpeed', 'shTravel', 'shLayout', 'shFont', 'shSize', 'shSpacing', 'shCaps', 'shBright', 'shPlace'];
 /** Arrow drawings for the scroll hint (24 wide, drawn in currentColor). */
 const ARROWS = [
@@ -482,28 +477,12 @@ export function applyBrand(): void {
   s.setProperty('--quote-align', ['left', 'center', 'right'][T.quoteAlign] ?? 'left');
   s.setProperty('--quote-left', T.quoteAlign === 2 ? 'auto' : T.quoteAlign === 1 ? '0' : 'var(--s-gutter)');
   s.setProperty('--quote-right', T.quoteAlign === 0 ? 'auto' : T.quoteAlign === 1 ? '0' : 'var(--s-gutter)');
-  // The frosted patch behind the quote.
-  const t = T.qbTint;
-  s.setProperty('--qb-show', T.qbOn ? 'block' : 'none');
-  if (T.qbGlass) {
-    // Frosted glass (Markus, 18 Nov): the scene behind blurred and brightened, a pale milky sheen, a thin lit edge.
-    const f = T.qbFrost;
-    s.setProperty('--qb-bg', `linear-gradient(135deg, rgba(255,255,255,${(0.05 + 0.17 * f).toFixed(3)}), rgba(255,255,255,${(0.02 + 0.07 * f).toFixed(3)})), rgba(6,10,18,${(0.1 + 0.15 * f).toFixed(3)})`);
-    s.setProperty('--qb-blur', `${Math.round(4 + 36 * f)}px`);
-    s.setProperty('--qb-sat', '1.6');
-    s.setProperty('--qb-edge', 'none'); // the white frame is the only edge
-  } else {
-    s.setProperty('--qb-bg', `rgba(${Math.round(8 * t)},${Math.round(18 * t)},${Math.round(40 * t)},${T.qbDark})`);
-    s.setProperty('--qb-blur', `${T.qbBlur}px`);
-    s.setProperty('--qb-sat', '1');
-    s.setProperty('--qb-edge', 'none');
-  }
+  // The patch behind the quote: one solid colour (a touch lighter at the top), the same box as the frame.
+  const qc = QB_COLOURS[T.qbColour] ?? QB_COLOURS[0]!;
+  s.setProperty('--qb-bg', `linear-gradient(180deg, rgb(${qc.map((v) => v + 10).join(',')}), rgb(${qc.join(',')}))`);
   s.setProperty('--qb-padx', `${T.qbPadX}px`);
   s.setProperty('--qb-pady', `${T.qbPadY}px`);
   s.setProperty('--qb-radius', `${T.qbRadius}px`);
-  s.setProperty('--qb-fade', `${T.qbFade}%`);
-  // No soft edge: no mask, so the frost is cut by the rounded corners alone (same shape as the frame).
-  if (T.qbFade > 0) s.removeProperty('--qb-mask'); else s.setProperty('--qb-mask', 'none');
   // Page look: background tone, coloured light behind the glass, lit edges, the accent colour.
   const mixHex = (a: number[], b: number[], k: number) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',')})`;
   s.setProperty('--site-base', mixHex([20, 21, 24], [9, 11, 17], T.baseDark));
