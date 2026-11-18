@@ -9,6 +9,8 @@ import { heightAt } from './landscapes';
 import { makeWater } from './water';
 import { makeAura } from './aura';
 import { makeSurge } from './surge';
+import { makeBubbles } from './bubbles';
+import { makeCharge } from './charge';
 import { introStart, revealPage } from '../intro';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
@@ -93,7 +95,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
           gl_FragColor = vec4(mix(vec3(0.42, 0.78, 0.94), vec3(0.85, 0.95, 1.0), clamp(lit, 0.0, 1.0) * 0.7), min(uOpacity * (1.0 + 3.0 * lit), 1.0) * (1.0 - smoothstep(uFogNear, uFogFar, vDist))); }`,
     });
     const land = new Mesh(surfGeo, surfMat);
-    scene.add(land, new LineSegments(lineGeo, lineMat));
+    const landLines = new LineSegments(lineGeo, lineMat);
+    scene.add(land, landLines);
     disposables.push(surfGeo, lineGeo, surfMat, lineMat);
 
     // The night sky: stars and the Milky Way. The river mirrors the same sky.
@@ -117,7 +120,17 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const surge = makeSurge();
     scene.add(surge.group);
     disposables.push(...surge.disposables);
-    const ISO_POS = new Vector3(0, 24, 50), ISO_LOOK = new Vector3(0, 4, 6), strikeAt = new Vector3();
+    const ISO_POS = new Vector3(), ISO_LOOK = new Vector3(), strikeAt = new Vector3(), bubbleAt = new Vector3();
+    const bubbles = makeBubbles();
+    scene.add(bubbles.mesh, bubbles.drops);
+    const chargeFx = makeCharge();
+    scene.add(chargeFx.group);
+    disposables.push(...chargeFx.disposables);
+    disposables.push(...bubbles.disposables);
+    // Rings on the water: bubbles bursting, and one big ring when the orb is let go. [x, z, age 0..1, size]
+    const pops: [number, number, number, number][] = [];
+    let popNext = 0, wasHeld = false, shock = 0, novaT = -1, novaLock = false;
+    const addPop = (x: number, z: number, size: number) => { pops[popNext] = [x, z, 0.001, size]; popNext = (popNext + 1) % 8; };
 
     // The river on the canyon floor and the splashes the orb throws up from it.
     const water = makeWater({ small, grid: { NX, NZ, W, D, Z0, base }, heightAt, fogColor: 0x0a0d16 });
@@ -187,7 +200,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       if (hold.down && e.pointerId === hold.id && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 14) hold.down = false;
       if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) && scrollY < 40 ? 'pointer' : '';
     };
-    const onUp = (e: PointerEvent) => { if (e.pointerId === hold.id) hold.down = false; };
+    // After the nova the orb needs a fresh press: letting go unlocks it.
+    const onUp = (e: PointerEvent) => { if (e.pointerId === hold.id) { hold.down = false; novaLock = false; } };
     const noMenu = (e: Event) => { if (hold.down) e.preventDefault(); };
     addEventListener('pointerdown', onDown, true);
     addEventListener('pointermove', onMove, { passive: true });
@@ -244,18 +258,33 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const fog = scene.fog as Fog;
       fog.near = lerp(30, 200, k) * T.fogNear; fog.far = Math.max(fog.near + 1, lerp(150, 420, k) * T.fogFar);
       lineMat.uniforms.uFogNear.value = fog.near; lineMat.uniforms.uFogFar.value = fog.far;
-      // Holding the orb charges it (about 1.4 s to full) and moves the camera back and up over 2 s,
+      // Holding the orb builds its charge slowly over T.holdBuild seconds (about 10): more and more violent.
+      // At the top it goes nova (a blast of light, a shock front, every bolt at once), then everything calms
+      // down over T.holdCalm seconds. A fresh press starts it again. The camera moves back and up over 2 s,
       // looking down on the river with the sky still in view, while the sky turns as if time ran faster.
       if (hold.down && (p > 0.08 || T.holdOn < 0.5)) hold.down = false;
-      charge = hold.down ? Math.min(1, charge + dt / 1.4) : Math.max(0, charge - dt / 0.9);
-      camHold = hold.down ? Math.min(1, camHold + dt / 2) : Math.max(0, camHold - dt / 1.6);
-      const ch = ease(charge), cv = ease(camHold) * T.holdZoom;
+      const building = hold.down && !novaLock;
+      charge = building ? Math.min(1, charge + dt / Math.max(1, T.holdBuild)) : Math.max(0, charge - dt / (novaT >= 0 ? Math.max(0.5, T.holdCalm) : 1.2));
+      let novaNow = false;
+      if (building && charge >= 1) { novaNow = true; novaLock = true; hold.down = false; novaT = 0; shock = 1.6; }
+      if (novaT >= 0) { novaT += dt; if (novaT > Math.max(4, T.holdCalm + 1)) novaT = -1; }
+      camHold = building ? Math.min(1, camHold + dt / 2) : Math.max(0, camHold - dt / (novaT >= 0 ? Math.max(1, T.holdCalm) : 1.6));
+      const ch = Math.pow(charge, 1.4), cv = ease(camHold) * T.holdZoom;
       skyTurn += dt * ease(camHold) * 0.35 * T.holdSky;
       const camZ = lerp(42, 0, ease(p * 1.2));
       camera.position.set(0, lerp(9, small ? 95 : 70, k), camZ);
       look.set(0, lerp(12, 0, k), lerp(camZ - 40, camZ - 0.01, k));
+      // Where the camera goes while the orb is held: up, back, and tipped to look down (all sliders).
+      ISO_POS.set(0, 9 + T.holdCamUp, 42 + T.holdCamBack);
+      ISO_LOOK.set(0, 12 - 9 * T.holdCamTilt, 2 + 4 * T.holdCamTilt);
       if (cv > 0) { camera.position.lerp(ISO_POS, cv); look.lerp(ISO_LOOK, cv); }
+      // Screen shake while charging, and a short jolt when it is let go.
+      const jolt = (T.holdScreenShake * ease(charge) + shock * T.holdShock) * (reduced ? 0 : 1);
+      if (jolt > 0) camera.position.add(strikeAt.set((Math.random() - 0.5) * 0.3 * jolt, (Math.random() - 0.5) * 0.3 * jolt, 0));
       camera.lookAt(look);
+      // The ground trembles.
+      const tremble = reduced ? 0 : (T.holdGroundShake * ease(charge) + shock * T.holdShock * 0.6) * 0.12 * Math.sin(clock * 47) * Math.sin(clock * 31 + 1);
+      land.position.y = tremble; landLines.position.y = tremble;
       sky.update(camera.position, 1 - k, skyTurn);
 
       // The core drifts up and away as the canyon flattens.
@@ -264,8 +293,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       orbit.scale.setScalar((small ? 1.44 : 2.19) * T.orbSize);
       // Charging: the orb lifts a little and trembles.
       if (ch > 0) {
-        orbit.position.y += 2.4 * ch;
-        if (!reduced) { orbit.position.x += (Math.random() - 0.5) * 0.14 * ch; orbit.position.z += (Math.random() - 0.5) * 0.14 * ch; }
+        orbit.position.y += T.holdRise * ch;
+        if (!reduced) { const sh = 0.14 * T.holdOrbShake * ch; orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
       }
       haloMat.opacity = HALO * T.orbGlow * (1 - away);
       // Where the orb is on screen now, and where it sits before any scrolling. The name and frame follow
@@ -330,7 +359,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       lineMat.uniforms.uBolt.value.set(orbit.position.x, orbit.position.z, landFlash, T.orbFlashReach);
       // The surge: bolts to the water and land, and the beam. A strike lights the land where it lands.
       const waterY = water.levelAt(orbit.position.z);
-      const strike = surge.update(clock, dt, ch * (1 - away), orbit.position, R, waterY, { beam: T.holdBeam, bolts: T.holdBolts }, () => {
+      const strike = surge.update(clock, dt, ch * (1 - away), orbit.position, R, waterY, { beam: T.holdBeam, bolts: T.holdBolts, width: T.holdBeamWidth, start: T.holdBeamStart, glow: T.holdBeamGlow, flicker: T.holdBeamFlicker }, () => {
         const a = Math.random() * Math.PI * 2;
         if (Math.random() < 0.6) {
           const r = R * (1.3 + 1.9 * Math.random());
@@ -340,6 +369,38 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         return strikeAt.set(x, heightAt(x, z) * (1 - k), z);
       });
       if (strike.at && strike.flash * T.holdBolts * 1.5 > landFlash) lineMat.uniforms.uBolt.value.set(strike.at.x, strike.at.z, strike.flash * T.holdBolts * 1.5, 14);
+      // Letting go after a good charge sends a ring of light out across the water and jolts the scene.
+      if (wasHeld && !hold.down && !novaNow && charge > 0.5 && T.holdShock > 0) { addPop(orbit.position.x, orbit.position.z, 6 * T.holdShock); shock = 1; }
+      // The nova: a shell of light races out, every bolt fires, a huge ring runs across the water.
+      if (novaNow && T.holdNova > 0) {
+        surge.burstAll(orbit.position, R, () => {
+          const a = Math.random() * Math.PI * 2, r = R * (1.5 + 4 * Math.random());
+          return strikeAt.set(orbit.position.x + Math.cos(a) * r, water.levelAt(orbit.position.z), orbit.position.z + Math.sin(a) * r * 0.7);
+        });
+        addPop(orbit.position.x, orbit.position.z, 12 * T.holdNova);
+      }
+      surge.novaAt(novaT, orbit.position, R, T.holdNova);
+      if (novaT >= 0) haloMat.opacity += Math.exp(-novaT * 3) * 2.5 * T.holdNova;
+      wasHeld = hold.down;
+      shock = Math.max(0, shock - dt * 2.5);
+      haloMat.opacity += shock * 0.8 * T.holdShock;
+      // The lake boils: strength follows the charge; bubbles swell up and burst over the boiling area.
+      const boil = Math.max(0, (ch - 0.1) / 0.9) * T.holdBoil * (1 - away);
+      const px = canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360));
+      bubbles.update(dt, boil, { amount: T.holdBubbles, size: T.holdBubbleSize, speed: T.holdBoilSpeed, bright: T.holdBubbleShine, drops: T.holdBubbleDrops }, () => {
+        for (let tries = 0; tries < 6; tries++) {
+          const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * T.holdBoilArea * 1.2;
+          const x = orbit.position.x + Math.cos(a) * r, z = orbit.position.z + Math.sin(a) * r;
+          const y = water.levelAt(z);
+          if (Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.35) return bubbleAt.set(x, y, z);
+        }
+        return null;
+      }, (x, z, size) => { if (T.holdBubbleRings > 0) addPop(x, z, size * T.holdBubbleRings); }, px, skyTurn);
+      // What swirls round the orb as it charges (charge.ts).
+      chargeFx.update(dt, ch * (1 - away), orbit.position, R, { style: T.holdFx, amount: T.holdFxAmount, speed: T.holdFxSpeed },
+        (x, z) => Math.max(water.levelAt(z), heightAt(x, z) * (1 - k)), px);
+      for (const pp of pops) if (pp && pp[2] > 0) { pp[2] += dt / (pp[3] > 2 ? 1.6 : 0.7); if (pp[2] >= 1) pp[2] = 0; }
+      if (stage.style.getPropertyValue('--hold') !== (ch * T.holdVignette).toFixed(2)) stage.style.setProperty('--hold', (ch * T.holdVignette).toFixed(2));
       // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
       // into the first pipe on the page. The churning stops as the orb leaves.
       // The box behind the quote, in canvas pixels, so the water can go calm exactly there.
@@ -355,7 +416,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far, calm,
         mirror: [T.orbMirror * (1 - away), R, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
-        boil: [orbit.position.x, orbit.position.z, Math.max(0, (ch - 0.35) / 0.65) * T.holdBoil * T.holdBeam, R * 0.9], skyTurn,
+        boil: [orbit.position.x, orbit.position.z, boil, T.holdBoilArea], boilLook: [T.holdBoilHeight, T.holdBoilSpeed, T.holdBoilSpecks, R * 0.45 * T.holdBeam], pops, skyTurn,
       });
       // The join: once the land is almost flat, the riverbed pipe narrows to exactly the page pipe's width
       // on screen (3.5 px) and takes on its look; the page then draws its own pipe on top from the same spot.

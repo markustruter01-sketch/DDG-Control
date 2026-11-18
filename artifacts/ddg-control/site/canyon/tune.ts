@@ -38,7 +38,35 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdBeam', label: 'Beam into the water', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBolts', label: 'Lightning strikes', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBoil', label: 'Water simmering', min: 0, max: 2, step: 0.05 },
-  { group: 'Hold the orb', key: 'holdZoom', label: 'Camera pulls back and looks down', min: 0, max: 1, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdBuild', label: 'Build-up time (seconds to the nova)', min: 2, max: 20, step: 0.5 },
+  { group: 'Hold the orb', key: 'holdNova', label: 'Nova blast size (0 none)', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdCalm', label: 'Calm-down time after (seconds)', min: 0.5, max: 8, step: 0.25 },
+  { group: 'Hold the orb', key: 'holdFx', label: 'Charge-up effect', min: 0, max: 7, step: 1, names: ['None', 'Streaks pulled in', 'Light gathered from the land', 'Vortex', 'Ground lifting', 'Rings', 'Streaks + rings', 'All of them'] },
+  { group: 'Hold the orb', key: 'holdFxAmount', label: 'Charge-up effect: amount', min: 0, max: 3, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdFxSpeed', label: 'Charge-up effect: speed', min: 0.2, max: 3, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdZoom', label: 'Camera move (0 none ← → 1 all the way)', min: 0, max: 1, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdCamUp', label: 'Camera: how far up', min: 0, max: 20, step: 0.5 },
+  { group: 'Hold the orb', key: 'holdCamBack', label: 'Camera: how far back', min: -10, max: 20, step: 0.5 },
+  { group: 'Hold the orb', key: 'holdCamTilt', label: 'Camera: how much it looks down', min: 0, max: 1, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdRise', label: 'Orb lifts', min: 0, max: 5, step: 0.1 },
+  { group: 'Hold the orb', key: 'holdOrbShake', label: 'Orb shake', min: 0, max: 3, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdScreenShake', label: 'Screen shake', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdGroundShake', label: 'Ground tremble', min: 0, max: 3, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdShock', label: 'Let go: shockwave ring and jolt', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdVignette', label: 'Screen edges darken', min: 0, max: 1, step: 0.05 },
+  { group: 'Hold the beam', key: 'holdBeamWidth', label: 'Width', min: 0.2, max: 3, step: 0.05 },
+  { group: 'Hold the beam', key: 'holdBeamStart', label: 'Starts from (0 orb centre ← → 1 underside)', min: 0, max: 1.2, step: 0.02 },
+  { group: 'Hold the beam', key: 'holdBeamGlow', label: 'Brightness', min: 0, max: 3, step: 0.05 },
+  { group: 'Hold the beam', key: 'holdBeamFlicker', label: 'Flicker', min: 0, max: 2, step: 0.05 },
+  { group: 'Boiling lake', key: 'holdBoilArea', label: 'How much of the lake (radius)', min: 2, max: 120, step: 1 },
+  { group: 'Boiling lake', key: 'holdBoilHeight', label: 'Surface bubbling', min: 0, max: 3, step: 0.05 },
+  { group: 'Boiling lake', key: 'holdBoilSpeed', label: 'Speed', min: 0.2, max: 3, step: 0.05 },
+  { group: 'Boiling lake', key: 'holdBoilSpecks', label: 'White specks', min: 0, max: 2, step: 0.05 },
+  { group: 'Boiling lake', key: 'holdBubbles', label: 'Bubbles: how many', min: 0, max: 3, step: 0.05 },
+  { group: 'Boiling lake', key: 'holdBubbleSize', label: 'Bubbles: size', min: 0.2, max: 4, step: 0.05 },
+  { group: 'Boiling lake', key: 'holdBubbleShine', label: 'Bubbles: shine', min: 0, max: 2, step: 0.05 },
+  { group: 'Boiling lake', key: 'holdBubbleDrops', label: 'Bubbles: droplets when they burst', min: 0, max: 3, step: 0.05 },
+  { group: 'Boiling lake', key: 'holdBubbleRings', label: 'Bubbles: rings when they burst', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdSky', label: 'Sky turning', min: 0, max: 3, step: 0.05 },
   { group: 'Orb extras', key: 'orbBloom', label: 'Bloom (light bleeding out of it)', min: 0, max: 2, step: 0.05 },
   { group: 'Orb extras', key: 'orbGlass', label: 'Glass shell (bends the stars behind it)', min: 0, max: 1, step: 0.05 },
@@ -200,6 +228,9 @@ export const SPECS: Spec[] = [
 export const DEFAULTS: Record<string, number> = {
   introFade: 3, introSpawn: 1.4, introLoop: 0,
   holdOn: 1, holdBeam: 2, holdBolts: 2, holdBoil: 2, holdZoom: 1, holdSky: 3,
+  holdCamUp: 6, holdCamBack: 4, holdCamTilt: 0.45, holdRise: 2.4, holdOrbShake: 1, holdScreenShake: 0.3, holdGroundShake: 0.6, holdShock: 1, holdVignette: 0.4,
+  holdBeamWidth: 1, holdBeamStart: 0.95, holdBeamGlow: 1, holdBeamFlicker: 1,
+  holdBoilArea: 45, holdBoilHeight: 1, holdBoilSpeed: 1, holdBoilSpecks: 1, holdBubbles: 1, holdBubbleSize: 1, holdBubbleShine: 1, holdBubbleRings: 1, holdBubbleDrops: 1, holdBuild: 10, holdNova: 1, holdCalm: 3, holdFx: 6, holdFxAmount: 1, holdFxSpeed: 1,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.15, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
@@ -224,7 +255,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-17'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-19'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);

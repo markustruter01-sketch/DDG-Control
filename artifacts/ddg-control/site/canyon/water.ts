@@ -82,7 +82,9 @@ uniform float uRough, uDetailK, uFoamK, uGlintK, uReflect, uBody, uSilk, uSwirlL
 ${SKY_GLSL}
 uniform float uGlow;
 uniform vec4 uCalm;      // a box on screen (left, bottom, right, top, in canvas pixels) where the water is kept calm
-uniform vec4 uBoil;      // the beam's hit on the water: x, z, how strongly it simmers (0 to 1), radius
+uniform vec4 uBoil;      // the boil: centre x, z (under the orb), strength (0 to 1), how far it spreads (radius)
+uniform vec4 uBoilLook;  // bump height, speed, white specks, size of the bright spot where the beam hits
+uniform vec4 uPops[8];   // bubbles bursting and the release shockwave: x, z, age (0 to 1), size
 uniform vec4 uMirror;    // the orb mirrored in the water: x strength, y the orb's radius, z its spin clock, w the lightning flash
 uniform vec2 uCalmK;     // x: how calm (0 off, 1 no reflections or highlights at all), y: how soft the box's edges are (part of its size)
 uniform float uOpacity;
@@ -133,6 +135,21 @@ float vortex(vec2 q, float d) {
 }
 // Height of the surface detail. Slow swells ride the current, which runs towards +z
 // (the camera); near the orb they are bent round it and the spiral arms are added.
+// A rolling boil: the surface split into jittered cells (Voronoi), each a dome that swells and sinks on its
+// own clock, the way boiling water heaves (the cell method foam and lava artists use).
+float boilHash(vec2 c) { return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453); }
+float boilCells(vec2 p, float t) {
+  vec2 g = floor(p), f = fract(p);
+  float h = 0.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 o = vec2(float(x), float(y)), c = g + o;
+    vec2 r = vec2(boilHash(c), boilHash(c + 7.1));
+    float ph = fract(t * (0.5 + 0.9 * r.x) + r.y);
+    float dome = sin(3.14159 * ph) * smoothstep(0.55 + 0.25 * r.y, 0.0, length(o + r - f));
+    h = max(h, dome);
+  }
+  return h;
+}
 float surface(vec2 p, float detail) {
   vec2 q = p - uOrb;
   float d = length(q), stir = stirAt(d);
@@ -150,10 +167,17 @@ float surface(vec2 p, float detail) {
   h += rough * (0.035 * sin(dot(p, vec2(0.21, 0.43)) - uTime * 1.1) + 0.022 * sin(dot(p, vec2(-0.37, 0.29)) - uTime * 1.45) + 0.014 * sin(dot(p, vec2(0.52, -0.18)) - uTime * 1.9));
   h += detail * (0.009 * snoise(p * 0.9 + vec2(uTime * 0.21, -uTime * 0.33)) + 0.007 * snoise(p * 1.6 + vec2(-uTime * 0.29, -uTime * 0.17) + 7.3));
   if (uVar > 3.5) h += 0.07 * uStir * uSwirlDepth * vortex(q, d);
-  // Simmering where the beam hits: small fast bubbling bumps and rings running out from the centre.
+  // The boil: small fast bumps over the lake (as far as uBoil.w reaches), and rings running out from the beam.
   if (uBoil.z > 0.001) {
-    vec2 bq = p - uBoil.xy; float bd = length(bq), near = exp(-bd * bd / (uBoil.w * uBoil.w));
-    h += uBoil.z * near * (0.07 * snoise(p * 2.6 + vec2(uTime * 3.1, -uTime * 2.7)) + 0.05 * snoise(p * 5.3 - vec2(uTime * 4.3, uTime * 3.7)) + 0.025 * sin(bd * 7.0 - uTime * 14.0));
+    vec2 bq = p - uBoil.xy; float bd = length(bq), near = exp(-bd * bd / (uBoil.w * uBoil.w)), sp = uBoilLook.y;
+    h += uBoil.z * near * uBoilLook.x * (0.09 * boilCells(p * 1.3, uTime * 1.6 * sp) + 0.05 * boilCells(p * 2.9 + 13.0, uTime * 2.3 * sp) + 0.04 * snoise(p * 2.6 + vec2(uTime * 3.1, -uTime * 2.7) * sp) + 0.05 * snoise(p * 5.3 - vec2(uTime * 4.3, uTime * 3.7) * sp) + 0.03 * sin(bd * 7.0 - uTime * 14.0 * sp) * exp(-bd * 0.15));
+  }
+  // Rings from bubbles bursting (and the big one when the orb is let go).
+  for (int i = 0; i < 8; i++) {
+    vec4 pp = uPops[i];
+    if (pp.z <= 0.0 || pp.z >= 1.0) continue;
+    float ring = length(p - pp.xy) - pp.z * pp.w * 6.0;
+    h += 0.05 * min(pp.w, 2.0) * (1.0 - pp.z) * exp(-ring * ring / (0.05 + 0.02 * pp.w));
   }
   h += uVar > 0.5 ? 0.6 * uStir * shapeH(q, d) : stir * (0.42 * swirl(q, d, 3.0, 0.9, 5.0) + 0.05 * swirl(q, d, 7.0, 2.2, 9.0));
   return h;
@@ -223,13 +247,19 @@ void main() {
     churn += uStir * 0.32 * smoothstep(0.45, 0.95, vn) * exp(-dn * dn / 11.0) * (0.5 + lace);
   }
   float foam = clamp((shore + churn) * uFoamK, 0.0, 1.0) * lit;
-  // The beam's hit: a bright spot, and white specks where the water simmers.
+  // The beam's hit: a bright spot; white specks wherever the water boils; the bursting rings catch the light.
   if (uBoil.z > 0.001) {
     float bd = length(vP - uBoil.xy);
-    float spot = exp(-bd * bd / (0.08 * uBoil.w * uBoil.w)), near = exp(-bd * bd / (uBoil.w * uBoil.w));
-    float specks = smoothstep(0.72, 0.95, snoise(vP * 4.5 + vec2(uTime * 5.0, -uTime * 4.0)) * 0.5 + 0.5);
-    col += vec3(0.65, 0.88, 1.0) * uBoil.z * (spot * 1.6 + near * 0.18);
-    foam = max(foam, uBoil.z * near * specks * 0.8);
+    float spot = exp(-bd * bd / max(uBoilLook.w * uBoilLook.w, 0.01)), near = exp(-bd * bd / (uBoil.w * uBoil.w));
+    float specks = smoothstep(0.72, 0.95, snoise(vP * 4.5 + vec2(uTime * 5.0, -uTime * 4.0) * uBoilLook.y) * 0.5 + 0.5);
+    col += vec3(0.65, 0.88, 1.0) * uBoil.z * (spot * 1.6 + near * 0.06);
+    foam = max(foam, uBoil.z * near * specks * 0.8 * uBoilLook.z);
+  }
+  for (int i = 0; i < 8; i++) {
+    vec4 pp = uPops[i];
+    if (pp.z <= 0.0 || pp.z >= 1.0) continue;
+    float ring = length(vP - pp.xy) - pp.z * pp.w * 6.0;
+    col += vec3(0.7, 0.9, 1.0) * (1.0 - pp.z) * exp(-ring * ring / (0.03 + 0.03 * pp.w)) * (pp.w > 2.0 ? 0.9 : 0.35);
   }
   col = mix(col, vec3(0.8, 0.93, 1.0), foam * 0.85);
   // Style 2: cartoon (cel) water. Colours snap to a few bands and foam gets a crisp edge.
@@ -303,7 +333,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   const uniforms = {
     uTime: { value: 0 }, uVar: { value: 0 }, uSwirlR: { value: 1 }, uSwirlDepth: { value: 1 }, uSwirlSpeed: { value: 1 },
     uRough: { value: 1 }, uClear: { value: 0 }, uSwirlLines: { value: 1 }, uSwirlSoft: { value: 1 }, uDetailK: { value: 1 }, uFoamK: { value: 1 }, uGlintK: { value: 1 }, uReflect: { value: 1 }, uBody: { value: 1 }, uSilk: { value: 1 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
-    uBoil: { value: new Vector4(0, 0, 0, 3) }, uSkyTurn: { value: 0 },
+    uBoil: { value: new Vector4(0, 0, 0, 3) }, uBoilLook: { value: new Vector4(1, 1, 1, 1) }, uPops: { value: Array.from({ length: 8 }, () => new Vector4()) }, uSkyTurn: { value: 0 },
     uMirror: { value: new Vector4() }, uCalm: { value: new Vector4() }, uCalmK: { value: new Vector2() },
     uOrb: { value: new Vector2() }, uOrbPos: { value: new Vector3() },
     // The shader writes screen colours directly, so the fog colour is passed as plain 0-1 values.
@@ -336,7 +366,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     /** 1 = water fully shown. */ show: number; fogNear: number; fogFar: number;
     /** The calm box behind the quote: left, bottom, right, top in canvas pixels, how calm (0 to 1), edge softness. */ calm: [number, number, number, number, number, number];
     /** The orb mirrored in the water: strength, orb radius, spin clock, lightning flash. And how much lightning brightens the water. */ mirror: [number, number, number, number]; flash: number;
-    /** The beam's simmer (x, z, strength 0..1, radius) and how far the sky has turned. Optional. */ boil?: [number, number, number, number]; skyTurn?: number;
+    /** The boil (x, z, strength 0..1, radius), its look (height, speed, specks, spot size), bursting rings, and how far the sky has turned. Optional. */ boil?: [number, number, number, number]; boilLook?: [number, number, number, number]; pops?: [number, number, number, number][]; skyTurn?: number;
   };
   const update = (f: Frame) => {
     river.scale.y = Math.max(f.flat, 0.02);
@@ -347,6 +377,8 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     uniforms.uCalm.value.set(f.calm[0], f.calm[1], f.calm[2], f.calm[3]); uniforms.uCalmK.value.set(f.calm[4], f.calm[5]);
     uniforms.uMirror.value.set(f.mirror[0], f.mirror[1], f.mirror[2], f.mirror[3]);
     if (f.boil) uniforms.uBoil.value.set(f.boil[0], f.boil[1], f.boil[2], f.boil[3]); else uniforms.uBoil.value.z = 0;
+    if (f.boilLook) uniforms.uBoilLook.value.set(f.boilLook[0], f.boilLook[1], f.boilLook[2], f.boilLook[3]);
+    for (let i = 0; i < 8; i++) { const pp = f.pops?.[i]; if (pp) uniforms.uPops.value[i]!.set(pp[0], pp[1], pp[2], pp[3]); else uniforms.uPops.value[i]!.z = 0; }
     uniforms.uSkyTurn.value = f.skyTurn ?? 0;
     river.visible = spray.visible = f.show > 0.01;
     if (!river.visible) return;
