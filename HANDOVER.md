@@ -131,3 +131,10 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - Merged by Markus (df9f0a1, 581008c), Replit synced (sync-pr124.txt: build passed), published, status success twice.
 - Live now: best viewed on a computer screen; even phone spacing; camera at load 2x with slider; logo left of name.
 - Preview and main match (apart from the preview-only phone frame and status line). Nothing open.
+
+## 18 Nov 21:30: same on every phone; dent removed (build ddg36)
+- Branch `claude/same-on-all-phones`, PR open, NOT merged, NOT live.
+- Phone zoom --z (Stage.tsx phoneLayout): min(W/393, H/798) / text boost (100 px probe letter). CSS divides the
+  measured tops by --z because zoomed boxes multiply their own lengths.
+- VERIFIED headless (t17.mjs): shares equal at 393x798, 384x740, 320x617; t12.mjs hold works, no dent.
+- NOT VERIFIED: a real Samsung, a phone with text scaling on.
