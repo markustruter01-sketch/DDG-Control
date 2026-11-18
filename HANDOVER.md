@@ -32,7 +32,7 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 
 ## State 18 Nov 18:35 (source: claude/hold-polish, commit "remove the water vortex")
 - Markus asked to undo the vortex look work and remove the vortex completely. Done: no liquid, no vortex sliders.
-- Live files here: index.html -> assets/site-ddg18.js (+ site-ddg18.css) -> assets/Stage-ddg18.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
+- Live files here: index.html -> assets/site-ddg19.js (+ site-ddg19.css) -> assets/Stage-ddg19.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
   from the ddg11 base files (keep those; they are not served).
 - Kept: hold fixes (press works on a slightly scrolled page and jumps to the top; no charge by itself at load),
   a preview-only status line at the bottom left, Hide leaves one small Show button.
@@ -65,3 +65,10 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - Markus's tuner settings: qbColour 0, qbPadX 32, qbPadY 18, plus "slim white frame" (qpFrame 1). Store 36.
 - VERIFIED headless (t7.mjs): white words, black patch, 1 px white frame, padding 32 / 18, no errors.
 - Markus said: merge and publish.
+
+## 18 Nov 19:20: PR #119 merged and published; new settings (build ddg19)
+- Markus said "merge and publish": PR #119 merged (d04f204), Replit synced (report .local/claude_reports/sync-pr119.txt:
+  build passed), publish started (deployment 6c163ac2). Check its result if not recorded below.
+- Then Markus sent new tuner settings (19:07). They are on branch `claude/scene-settings-1907` (new PR, tune.ts only)
+  and in this preview (ddg19). NOT merged, NOT live: wait for Markus's yes.
+- New source work starts from main now, not from claude/hold-polish.
