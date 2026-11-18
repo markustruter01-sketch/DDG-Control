@@ -138,3 +138,10 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
   measured tops by --z because zoomed boxes multiply their own lengths.
 - VERIFIED headless (t17.mjs): shares equal at 393x798, 384x740, 320x617; t12.mjs hold works, no dent.
 - NOT VERIFIED: a real Samsung, a phone with text scaling on.
+
+## 18 Nov 21:40: PR #125 and #126 merged and live
+- PR #125 (same on every phone, dent removed) put a CSS rule above site.css's @import lines; Replit's build warned
+  ("@import must precede all other statements"). Not published. Fixed in PR #126 (rule moved below the imports).
+- Both merged by Markus (e58eb3e, a1d89fb). Replit sync report sync-pr126.txt: build passed, the warning is gone.
+  Published, status success twice, live page loads.
+- Lesson: read every warning in the Replit sync report before publishing. Never put anything above @import in site.css.
