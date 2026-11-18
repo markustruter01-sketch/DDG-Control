@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react';
 import {
   AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, DynamicDrawUsage, Fog, Group,
-  LineSegments, Mesh, ShaderMaterial, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, WebGLRenderer,
+  LineSegments, Mesh, ShaderMaterial, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, Vector4, WebGLRenderer,
 } from 'three';
-import { makeAirOrb } from './airOrb';
+import { makeAirOrb, lightningNow } from './airOrb';
 import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWater } from './water';
+import { makeAura } from './aura';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
 import { makeWords } from './words3d';
@@ -80,11 +81,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     lineGeo.setAttribute('aBase', new BufferAttribute(base, 1));
     const lineMat = new ShaderMaterial({
       transparent: true,
-      uniforms: { uOpacity: { value: 0.34 }, uFogNear: { value: 30 }, uFogFar: { value: 150 } },
-      vertexShader: `attribute float aBase; varying float vWet; varying float vDist;
-        void main() { vWet = step(aBase, 4.62 - 0.01 * position.z); vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
-      fragmentShader: `uniform float uOpacity; uniform float uFogNear; uniform float uFogFar; varying float vWet; varying float vDist;
-        void main() { if (vWet > 0.5) discard; gl_FragColor = vec4(0.42, 0.78, 0.94, uOpacity * (1.0 - smoothstep(uFogNear, uFogFar, vDist))); }`,
+      uniforms: { uOpacity: { value: 0.34 }, uFogNear: { value: 30 }, uFogFar: { value: 150 }, uBolt: { value: new Vector4(0, 0, 0, 1) } },
+      vertexShader: `attribute float aBase; varying float vWet; varying float vDist; varying vec2 vXZ;
+        void main() { vXZ = position.xz; vWet = step(aBase, 4.62 - 0.01 * position.z); vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
+      // uBolt: where the orb is (x, z), how bright the lightning is right now, and how far its light reaches over the land.
+      fragmentShader: `uniform float uOpacity; uniform float uFogNear; uniform float uFogFar; uniform vec4 uBolt; varying float vWet; varying float vDist; varying vec2 vXZ;
+        void main() { if (vWet > 0.5) discard;
+          float lit = uBolt.z * exp(-distance(vXZ, uBolt.xy) / uBolt.w);
+          gl_FragColor = vec4(mix(vec3(0.42, 0.78, 0.94), vec3(0.85, 0.95, 1.0), clamp(lit, 0.0, 1.0) * 0.7), min(uOpacity * (1.0 + 3.0 * lit), 1.0) * (1.0 - smoothstep(uFogNear, uFogFar, vDist))); }`,
     });
     const land = new Mesh(surfGeo, surfMat);
     scene.add(land, new LineSegments(lineGeo, lineMat));
@@ -103,8 +107,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const haloMat = new SpriteMaterial({ map: haloTex, blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: HALO });
     const halo = new Sprite(haloMat); halo.scale.set(10, 10, 1);
     halo.renderOrder = 4; // after the river (1) and before the ball (5), so the ball sits in front of the water
-    orbit.add(halo, air.group);
-    disposables.push(...air.disposables, haloTex, haloMat);
+    const aura = makeAura(ORB_R);
+    orbit.add(halo, aura.group, air.group);
+    disposables.push(...aura.disposables, ...air.disposables, haloTex, haloMat);
 
     // The river on the canyon floor and the splashes the orb throws up from it.
     const water = makeWater({ small, grid: { NX, NZ, W, D, Z0, base }, heightAt, fogColor: 0x0a0d16 });
@@ -234,12 +239,32 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         topEl.style.setProperty('--cn-oy', `${a}px`); topEl.style.setProperty('--cn-or', `${b}px`); topEl.style.setProperty('--cn-dy', `${c}px`);
       }
       if (!reduced) { clock += dt; spinClock += dt * T.orbSpin; }
-      air.update(clock, 1 - away, spinClock, { bands: T.orbStreaks, zap: T.orbSparks, zapRate: T.orbSparkRate });
+      // Lightning is timed here, so the ball, its glow, the water and the land can all flash together.
+      const bolt = lightningNow(clock, T.orbSparkRate);
+      const flash = bolt.flash * T.orbFlashLight * Math.min(T.orbSparks, 1.5) * (1 - away);
+      air.update(clock, 1 - away, spinClock, {
+        bands: T.orbStreaks, zap: T.orbSparks, zapRate: T.orbSparkRate, style: T.orbStyle, hue: T.orbHue, flow: T.orbFlow,
+        gate: bolt.gate, flash: flash * 0.6, depth: T.orbDepth, glass: T.orbGlass, fringe: T.orbFringe, cam: camera.position,
+      });
+      aura.update(clock, 1 - away, { bloom: T.orbBloom, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
+      haloMat.opacity *= 1 + flash;
+      const landFlash = bolt.flash * T.orbFlashLand * (1 - away);
+      lineMat.uniforms.uBolt.value.set(orbit.position.x, orbit.position.z, landFlash, T.orbFlashReach);
       // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
       // into the first pipe on the page. The churning stops as the orb leaves.
+      // The box behind the quote, in canvas pixels, so the water can go calm exactly there.
+      const calm: [number, number, number, number, number, number] = [0, 0, 0, 0, 0, 0];
+      const quoteEl = T.qbCalm > 0 && T.quoteOn && fadeOut > 0.01 ? document.querySelector<HTMLElement>('.cn-quote') : null;
+      if (quoteEl) {
+        const qr = quoteEl.getBoundingClientRect(), cr = canvas.getBoundingClientRect(), sc = canvas.width / Math.max(cr.width, 1);
+        calm[0] = (qr.left - T.qbPadX - cr.left) * sc; calm[2] = (qr.right + T.qbPadX - cr.left) * sc;
+        calm[1] = (cr.bottom - qr.bottom - T.qbPadY) * sc; calm[3] = (cr.bottom - qr.top + T.qbPadY) * sc;
+        calm[4] = T.qbCalm * fadeOut; calm[5] = T.qbFade / 100;
+      }
       water.update({
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
-        flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far,
+        flat: 1 - k, stir: 1 - ease(away * 2.5), show: 1, fogNear: fog.near, fogFar: fog.far, calm,
+        mirror: [T.orbMirror * (1 - away), R, spinClock, flash], flash: landFlash * 0.5,
       });
       // The join: once the land is almost flat, the riverbed pipe narrows to exactly the page pipe's width
       // on screen (3.5 px) and takes on its look; the page then draws its own pipe on top from the same spot.
