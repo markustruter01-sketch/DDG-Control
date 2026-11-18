@@ -208,6 +208,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const flyDir = new Vector3();
     const hold = { down: false, id: -1, x: 0, y: 0, touching: false };
     const rootStyle = document.documentElement.style;
+    // Pressed glass (T.holdDent): a round dent in the "screen" under the finger while the orb is held. It grows
+    // with the charge and follows the finger. Made only when first needed.
+    let dentEl: HTMLDivElement | null = null, dentShow = 0;
+    // Phones that can buzz (Android; iPhones give web pages no way to): the buzz builds with the charge.
+    const canBuzz = typeof navigator.vibrate === 'function';
+    let buzzAt = 0, buzzing = false;
+    const buzz = (ms: number) => { try { navigator.vibrate(ms); } catch { /* not allowed here */ } };
     // The orb can be pressed until the page has scrolled this far (as a part of the scroll that flattens the
     // land). It was 0.06, about 70 px: a small scroll left the orb looking the same but dead to a press.
     const HOLD_REACH = 0.25;
@@ -242,6 +249,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const noScroll = (e: TouchEvent) => { if ((hold.down || hold.touching) && e.cancelable) e.preventDefault(); };
     const touchOff = (e: TouchEvent) => { if (e.touches.length === 0) hold.touching = false; };
     const onMove = (e: PointerEvent) => {
+      if (hold.down && e.pointerId === hold.id) { hold.x = e.clientX; hold.y = e.clientY; } // the dent follows the finger
       // Moving the mouse (or the finger, see noScroll) while holding keeps the charge going.
       if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) ? 'pointer' : '';
     };
@@ -330,6 +338,30 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // After the blast every charge-up effect stops at once (Markus, 18 Nov): what is in the air falls back,
       // nothing new appears, and only the camera, sky, glow and orb settle back over the calm-down time.
       const fxCh = novaT >= 0 ? 0 : ch;
+      // The dent in the glass under the finger.
+      if (T.holdDent > 0 && (hold.down || dentShow > 0.01)) {
+        if (!dentEl) {
+          dentEl = document.createElement('div');
+          dentEl.setAttribute('aria-hidden', 'true');
+          dentEl.style.cssText = 'position:fixed;left:0;top:0;z-index:2147481000;pointer-events:none;border-radius:50%;will-change:transform,opacity;'
+            + 'background:radial-gradient(circle at 50% 46%,rgba(0,0,0,.34) 0%,rgba(0,0,0,.16) 42%,rgba(255,255,255,.07) 68%,rgba(255,255,255,0) 100%);'
+            + 'box-shadow:inset 0 7px 20px rgba(0,0,0,.6),inset 0 -4px 12px rgba(255,255,255,.2),0 0 0 1px rgba(255,255,255,.16),0 0 34px rgba(140,210,255,.18);'
+            + '-webkit-backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25)';
+          document.body.appendChild(dentEl);
+        }
+        dentShow = hold.down ? Math.min(1, dentShow + dt / 0.15) : Math.max(0, dentShow - dt / 0.35);
+        const size = (70 + 110 * ch) * T.holdDent * (0.6 + 0.4 * dentShow);
+        dentEl.style.width = dentEl.style.height = `${size.toFixed(1)}px`;
+        dentEl.style.transform = `translate(${(hold.x - size / 2).toFixed(1)}px, ${(hold.y - size / 2).toFixed(1)}px)`;
+        dentEl.style.opacity = dentShow.toFixed(2);
+      } else if (dentEl && dentEl.style.opacity !== '0') { dentShow = 0; dentEl.style.opacity = '0'; }
+      // The buzz: short pulses about nine times a second, each longer as the charge grows; one long one at the
+      // blast; silence the moment the orb is let go.
+      if (canBuzz && T.holdVibrate > 0 && !reduced) {
+        if (novaNow) { buzz(Math.round(320 * Math.min(1, T.holdVibrate))); buzzing = false; }
+        else if (building) { if (now - buzzAt > 110) { buzzAt = now; buzz(Math.round((4 + 75 * ch * ch) * Math.min(1, T.holdVibrate))); } buzzing = true; }
+        else if (buzzing) { buzzing = false; buzz(0); }
+      }
       // While it charges the words and logos fly off the screen: the page ones by a class (site.css, 0.3 s), the
       // 3D "We build it all." here, sliding off to the left at the same pace. The moment the orb explodes they
       // all fly back (Markus, 18 Nov), while the scene is still settling.
@@ -549,6 +581,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       rootStyle.userSelect = ''; rootStyle.setProperty('-webkit-user-select', ''); rootStyle.setProperty('-webkit-touch-callout', '');
       if (followEl) followEl.style.opacity = '';
       statusEl?.remove();
+      dentEl?.remove();
+      if (buzzing) buzz(0);
       stopResize();
       disposables.forEach((d) => d.dispose());
       renderer.dispose();
