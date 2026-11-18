@@ -210,7 +210,6 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     // Holding the orb: a press that starts on the orb, held until it is let go (or the browser cancels it for a scroll).
     let charge = 0, camHold = 0, skyTurn = 0, fly = 0, flyOn = false;
     const flyDir = new Vector3();
-    let ruleKey = '';
     const hold = { down: false, id: -1, x: 0, y: 0 };
     const orbOnScreen = { x: 0, y: 0, r: 0 };
     const heroEl = document.querySelector<HTMLElement>('.cn-hero');
@@ -295,6 +294,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       if (novaT >= 0) { novaT += dt; if (novaT > Math.max(4, T.holdCalm + 1)) novaT = -1; }
       camHold = building ? Math.min(1, camHold + dt / 2) : Math.max(0, camHold - dt / (novaT >= 0 ? Math.max(1, T.holdCalm) : 1.6));
       const ch = Math.pow(charge, 1.4), cv = ease(camHold) * T.holdZoom;
+      // After the blast every charge-up effect stops at once (Markus, 18 Nov): what is in the air falls back,
+      // nothing new appears, and only the camera, sky, glow and orb settle back over the calm-down time.
+      const fxCh = novaT >= 0 ? 0 : ch;
       // While it charges (and until it has calmed) the words and logos fly off the screen: the page ones by a
       // class (site.css, 0.3 s), the 3D "We build it all." here, sliding off to the left at the same pace.
       const flyWant = T.holdFlyOff > 0.5 && (hold.down || novaT >= 0 || charge > 0.02);
@@ -335,7 +337,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // name and quote stay still while the orb shakes.
       if (ch > 0) {
         orbit.position.y += T.holdRise * ch;
-        if (!reduced) { const sh = 0.14 * T.holdOrbShake * ch * (0.4 + ch) * (1 + ch * ch); /* twice as hard at full charge */ orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
+        if (!reduced) { const sh = 0.14 * T.holdOrbShake * fxCh * (0.4 + fxCh) * (1 + fxCh * fxCh); /* twice as hard at full charge */ orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
       }
       // The dial round the orb: 0 to 100% of the build-up, thin lines, like a speedometer.
       dial.update(charge, hold.down ? 1 : 0, ORB_R);
@@ -364,23 +366,6 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
             const pushNow = parseFloat(topEl.style.getPropertyValue('--sh-push')) || 0;
             const need = Math.max(0, Math.ceil(brandEl.getBoundingClientRect().bottom + 12 - (hintEl.getBoundingClientRect().top - pushNow)));
             if (need !== pushNow) topEl.style.setProperty('--sh-push', `${need}px`);
-          }
-        }
-      }
-      // The line between the name and the hint: as wide as the longer of the two, plus a little each side,
-      // half-way between them. Measured each frame (cheap) and only written when it moves.
-      {
-        const ruleEl = topEl.querySelector<HTMLElement>('.cn-rule'), nameEl = topEl.querySelector<HTMLElement>('.cn-brand > span'), wordsEl = topEl.querySelector<HTMLElement>('.cn-scroll-words');
-        if (ruleEl && nameEl && wordsEl && !flyOn && fly === 0) { // not while they fly off (their boxes move)
-          const a = nameEl.getBoundingClientRect(), b = wordsEl.getBoundingClientRect(), f = (ruleEl.offsetParent as HTMLElement | null)?.getBoundingClientRect();
-          const y = (b.top >= a.bottom ? (a.bottom + b.top) / 2 : (b.bottom + a.top) / 2) + T.ruleShift - (f?.top ?? 0);
-          const w = Math.max(a.width, b.width) + 2 * T.ruleOver, x = (a.left + a.right) / 2 - w / 2 - (f?.left ?? 0);
-          const key = `${T.ruleOn}|${x.toFixed(1)}|${y.toFixed(1)}|${w.toFixed(1)}|${T.ruleThick}|${T.ruleBright}`;
-          if (key !== ruleKey) {
-            ruleKey = key;
-            ruleEl.style.setProperty('--rule-show', T.ruleOn > 0.5 && b.width > 0 ? 'block' : 'none');
-            ruleEl.style.left = `${x}px`; ruleEl.style.top = `${y}px`; ruleEl.style.width = `${w}px`;
-            ruleEl.style.setProperty('--rule-thick', `${T.ruleThick}px`); ruleEl.style.setProperty('--rule-bright', String(T.ruleBright));
           }
         }
       }
@@ -430,7 +415,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       lineMat.uniforms.uBolt.value.set(orbit.position.x, orbit.position.z, landFlash, T.orbFlashReach);
       // The surge: bolts to the water and land. A strike lights the land where it lands.
       const waterY = lvl(orbit.position.z);
-      const strike = surge.update(clock, dt, ch * (1 - away), orbit.position, R, waterY, { bolts: T.holdBolts }, () => {
+      const strike = surge.update(clock, dt, fxCh * (1 - away), orbit.position, R, waterY, { bolts: T.holdBolts }, () => {
         const a = Math.random() * Math.PI * 2;
         if (Math.random() < 0.6) {
           const r = R * (1.3 + 1.9 * Math.random());
@@ -456,7 +441,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       shock = Math.max(0, shock - dt * 2.5);
       haloMat.opacity += shock * 0.8 * T.holdShock;
       // The lake boils: strength follows the charge.
-      const boil = Math.max(0, (ch - 0.1) / 0.9) * T.holdBoil * (1 - away);
+      const boil = Math.max(0, (fxCh - 0.1) / 0.9) * T.holdBoil * (1 - away);
       const px = canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360));
       // What swirls round the orb as it charges (charge.ts).
       if (novaNow) {
@@ -466,10 +451,10 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         liquid.scatter(orbit.position);
       }
       const liquidOn = T.holdFxVortex > 0.5 && T.holdVortexLook === 5;
-      liquid.update(dt, liquidOn ? ch * (1 - away) : 0, orbit.position, R * born,
+      liquid.update(dt, liquidOn ? fxCh * (1 - away) : 0, orbit.position, R * born,
         { amount: T.holdFxAmount, speed: T.holdFxSpeed, size: T.holdVortexSize, reach: T.holdVortexReach, glow: T.holdVortexGlow },
         (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)));
-      chargeFx.update(dt, ch * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5 && T.holdVortexLook !== 5, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed,
+      chargeFx.update(dt, fxCh * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5 && T.holdVortexLook !== 5, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed,
           vortex: { look: T.holdVortexLook, size: T.holdVortexSize, reach: T.holdVortexReach, trail: T.holdVortexTrail, glow: T.holdVortexGlow } },
         (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)),
         (x, z) => { const y = lvl(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; },

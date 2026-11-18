@@ -84,7 +84,7 @@ vec3 viewAt(vec2 uv, float z) {
 }
 void main() {
   vec4 c = texture2D(uTex, vUv);
-  float cover = smoothstep(0.35, 0.65, c.b);
+  float cover = smoothstep(0.12, 0.4, c.b);
   if (cover <= 0.01 || c.r <= 0.0) discard;
   vec3 P = viewAt(vUv, c.r);
   float zr = texture2D(uTex, vUv + vec2(uTexel.x, 0.0)).r, zl = texture2D(uTex, vUv - vec2(uTexel.x, 0.0)).r;
@@ -163,7 +163,7 @@ export function makeLiquid(renderer: WebGLRenderer) {
   const update = (dt: number, p: number, orb: Vector3, radius: number, look: LiquidLook, ground: (x: number, z: number) => number) => {
     if (!ok) return;
     dt = Math.min(dt, 0.05); clock += dt;
-    const R = Math.max(radius, 0.01), sizeK = Math.sqrt(Math.max(0.3, look.size)), reach = look.reach, speed = 0.4 + 0.3 * look.speed;
+    const R = Math.max(radius, 0.01), sizeK = 0.6 + 0.4 * Math.max(0.1, look.size), reach = look.reach, speed = 0.4 + 0.3 * look.speed;
     // The river dips into a funnel under the orb as the water is drawn up.
     funnel.set(orb.x, orb.z, p * R * 0.9 * Math.min(1.5, look.amount / 3 + 0.3), R * (1.8 + reach));
     const dip = (x: number, z: number) => funnel.z * Math.exp(-((x - orb.x) ** 2 + (z - orb.z) ** 2) / (funnel.w * funnel.w));
@@ -180,7 +180,7 @@ export function makeLiquid(renderer: WebGLRenderer) {
       d.r = R * (1.4 + 0.6 * reach) * rnd(0.9, 1.1);
       d.x = orb.x + Math.cos(d.th) * d.r; d.z = orb.z + Math.sin(d.th) * d.r;
       d.y = ground(d.x, d.z) - dip(d.x, d.z) + 0.05;
-      d.size = R * rnd(0.035, 0.07) * sizeK * (Math.random() < 0.08 ? 1.8 : 1);
+      d.size = R * rnd(0.07, 0.13) * sizeK * (Math.random() < 0.08 ? 1.8 : 1);
       d.rise = rnd(0.8, 1.3); d.top = orb.y + R * rnd(1.2, 2.4);
       live++;
     }

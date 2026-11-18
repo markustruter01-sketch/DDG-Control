@@ -44,7 +44,7 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdNova', label: 'Nova blast size (0 none)', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdNovaWave', label: 'Nova: how hard it pushes the water', min: 0, max: 40, step: 0.05 },
   { group: 'Hold the orb', key: 'holdNovaWaveSpeed', label: 'Nova: how fast the push runs out', min: 5, max: 150, step: 1 },
-  { group: 'Hold the orb', key: 'holdCalm', label: 'Calm-down time after (seconds)', min: 0.5, max: 8, step: 0.25 },
+  { group: 'Hold the orb', key: 'holdCalm', label: 'After the blast: seconds until everything has settled', min: 0.5, max: 8, step: 0.25 },
   { group: 'Hold the orb', key: 'holdFxGlobs', label: 'Charge-up: water globules from the lake (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdFxVortex', label: 'Charge-up: vortex of drops (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdVortexLook', label: 'Vortex made of', min: 0, max: 5, step: 1, names: ['Water drops', 'Wind', 'Sparks (electric)', 'Mist', 'Water spout from the lake', 'Liquid water from the river'] },
@@ -195,11 +195,6 @@ export const SPECS: Spec[] = [
   // The business reel
   { group: 'Businesses', key: 'bizLayout', label: 'Layout (0 3D reel, 1 stacked)', min: 0, max: 1, step: 1 },
   // "Scroll down" hint
-  { group: 'Line under the name', key: 'ruleOn', label: 'Show it', min: 0, max: 1, step: 1, names: ['Off', 'On'] },
-  { group: 'Line under the name', key: 'ruleOver', label: 'How far it runs past the words (px)', min: 0, max: 200, step: 2 },
-  { group: 'Line under the name', key: 'ruleThick', label: 'Thickness (px)', min: 0.5, max: 4, step: 0.25 },
-  { group: 'Line under the name', key: 'ruleBright', label: 'Brightness', min: 0.1, max: 1, step: 0.05 },
-  { group: 'Line under the name', key: 'ruleShift', label: 'Move up (−) or down (+) (px)', min: -60, max: 60, step: 1 },
   { group: 'Scroll hint', key: 'shOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Scroll hint', key: 'shText', label: 'Words (leave empty for arrow only)', min: 0, max: 0, step: 0, text: true },
   { group: 'Scroll hint', key: 'shHiWords', label: 'Words in colour (exact words, comma between)', min: 0, max: 0, step: 0, text: true },
@@ -232,16 +227,16 @@ export const SPECS: Spec[] = [
 
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
-  introFade: 3, introStyle: 1, introSpawn: 3, introLoop: 0,
-  holdOn: 1, holdFlyOff: 1, ruleOn: 1, ruleOver: 40, ruleThick: 1, ruleBright: 0.8, ruleShift: 0, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
-  holdCamUp: 5, holdCamBack: 15, holdCamTilt: 0.7, holdRise: 3.5, holdOrbShake: 3, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 1,
-    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 2.5, holdNova: 0.05, holdNovaWave: 5.45, holdNovaWaveSpeed: 75, holdCalm: 6, holdFxGlobs: 0, holdFxVortex: 1, holdVortexLook: 5, holdVortexSize: 3, holdVortexReach: 2.5, holdVortexTrail: 0.25, holdVortexGlow: 0.2, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 3, holdFxSpeed: 3,
+  introFade: 3, introStyle: 2, introSpawn: 1.5, introLoop: 0,
+  holdOn: 1, holdFlyOff: 1, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
+  holdCamUp: 5, holdCamBack: 15, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 6, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 1,
+    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 0.2, holdNovaWave: 10.55, holdNovaWaveSpeed: 75, holdCalm: 3, holdFxGlobs: 0, holdFxVortex: 1, holdVortexLook: 5, holdVortexSize: 0.4, holdVortexReach: 1.5, holdVortexTrail: 0, holdVortexGlow: 0.85, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 0.9, holdFxSpeed: 3,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.15, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
-  waterGlint: 1, waterReflect: 1.4, waterColour: 0.15, waterSheen: 3, sprayAmount: 0, spraySize: 0,
+  waterGlint: 0.35, waterReflect: 0.6, waterColour: 0.7, waterSheen: 1.05, sprayAmount: 0.1, spraySize: 0,
   fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
-  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.7, waterClear: 0.38,
+  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.7, waterClear: 0.18,
   starsEvery: 2.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
   pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   quote: 15, quoteOn: 1, quoteFont: 6, quoteSize: 0.55, quoteWeight: 400, quoteSpacing: 0.09, quoteCaps: 0, quoteAlign: 1, quoteWidth: 42, quoteLift: 7,
@@ -257,10 +252,10 @@ export const DEFAULTS: Record<string, number> = {
 
 export const T: Record<string, number> = { ...DEFAULTS };
 /** Settings that are words, not numbers. */
-export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '', shHiWords: 'Fun' };
+export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for Web-Page or Press & Hold Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-31'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-32'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);

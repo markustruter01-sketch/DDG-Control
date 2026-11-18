@@ -125,8 +125,6 @@ function Home() {
           {/* Fixed to the screen and moved by the 3D stage, so the name, frame and quote stay on the orb. */}
           <div className="cn-follow">
             <h1 className="cn-brand"><img className="cn-logo-white" src="/ddg-logo-white-512.png" alt="" width="512" height="512" /><span>Digital Dynamics<br /><span className="cn-group">Group</span></span><span className="sr-only"> · {HOME.title}</span></h1>
-            {/* A thin white line between the name and the hint, tapering to points (placed by Stage.tsx). */}
-            <div className="cn-rule" aria-hidden="true" />
             <div className="cn-frame" aria-hidden="true"><i /><i /><i /><i /></div>
             <p className="cn-quote"><span className="cn-quote-t">{QUOTES[QUOTE]}</span></p>
             <a className="cn-cta" href="/#start" onClick={(e) => { e.preventDefault(); history.replaceState(null, '', '/#start'); toSection('start', true); }}>{HOME.cta} →</a>
