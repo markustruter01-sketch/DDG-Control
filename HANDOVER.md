@@ -145,3 +145,4 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - Both merged by Markus (e58eb3e, a1d89fb). Replit sync report sync-pr126.txt: build passed, the warning is gone.
   Published, status success twice, live page loads.
 - Lesson: read every warning in the Replit sync report before publishing. Never put anything above @import in site.css.
+- 21:45 (build ddg37): water design 1 (glass) default, branch claude/water-glass, PR open. PR #116 (finance rehearsal) publish started.
