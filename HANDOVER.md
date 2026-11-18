@@ -32,7 +32,7 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 
 ## State 18 Nov 18:35 (source: claude/hold-polish, commit "remove the water vortex")
 - Markus asked to undo the vortex look work and remove the vortex completely. Done: no liquid, no vortex sliders.
-- Live files here: index.html -> assets/site-ddg28.js (+ site-ddg28.css) -> assets/Stage-ddg28.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
+- Live files here: index.html -> assets/site-ddg30.js (+ site-ddg30.css) -> assets/Stage-ddg30.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
   from the ddg11 base files (keep those; they are not served).
 - Kept: hold fixes (press works on a slightly scrolled page and jumps to the top; no charge by itself at load),
   a preview-only status line at the bottom left, Hide leaves one small Show button.
@@ -102,3 +102,7 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - Merged by Markus (c8ad032), Replit synced (sync-pr122.txt: build passed), published, status success.
 - Live now: words return after the settle, no dark edges, dent fades at its edge, buzz starts slow and stops at the blast.
 - Preview (ddg28) and main now match. Nothing open.
+
+## 18 Nov 20:40: "Best viewed on a computer screen" (build ddg30)
+- Branch `claude/best-viewed-on-screen`, PR open, NOT merged, NOT live. God's Eye View and Greenlight only.
+- VERIFIED headless (t13.mjs): note on those two list rows and their pop-ups only; no errors.

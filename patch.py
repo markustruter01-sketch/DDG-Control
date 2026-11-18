@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '28'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '30'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -80,9 +80,17 @@ t = one(t, 'for(const g of(E.shText||"").split(/(\\s+)/))', 'for(const g of(E.sh
 t = one(t, 'shText:"Scroll for Web-Page or Press & Hold Orb for Fun"', 'shText:"Scroll for Web-Page or | Press & Hold Orb for Fun"')
 t = one(t, 'Words (leave empty for arrow only)', 'Words (| starts a new line; empty = arrow only)')
 c = one(c, '.cn-scroll-words{margin-right:calc(-1 * var(--sh-track, .3em))}', '.cn-scroll-words{margin-right:calc(-1 * var(--sh-track, .3em));white-space:pre-line;text-align:center}')
+c = one(c, '.j-tick-link i{font-style:normal}', '.j-tick-link i{font-style:normal}.j-tick-screen{display:block;margin:4px 0 0;font:400 11px/1.4 var(--ng-mono);letter-spacing:.08em;text-transform:uppercase;color:#ffffff8c}.j-pop-go .j-tick-screen{margin-top:10px}')
 open(f'{A}/site-ddg{NEW}.css', 'w', encoding='utf-8').write(c)
 t = one(t, '{group:"Hold the orb",key:"holdVignette",label:"Screen edges darken",min:0,max:1,step:.05},', '{group:"Hold the orb",key:"holdVignette",label:"Screen edges darken",min:0,max:1,step:.05},{group:"Hold the orb",key:"holdDent",label:"Pressed glass: dent under the finger (0 off)",min:0,max:2.5,step:.05},{group:"Hold the orb",key:"holdVibrate",label:"Phone buzz builds with the charge (0 off; Android only)",min:0,max:1,step:.05},')
 t = one(t, 'holdOn:1,', 'holdOn:1,holdDent:1,holdVibrate:1,')
+# "Best viewed on a computer screen" for God's Eye View and Greenlight (Markus, 18 Nov 20:28)
+t = one(t, 'name:"God\u2019s Eye View",href:"https://gods-eye-view.replit.app/",external:!0}', 'name:"God\u2019s Eye View",href:"https://gods-eye-view.replit.app/",external:!0,screen:!0}')
+t = one(t, 'name:"DDG Greenlight",href:"https://ddg-greenlight.replit.app/",external:!0,standards:!0}', 'name:"DDG Greenlight",href:"https://ddg-greenlight.replit.app/",external:!0,screen:!0,standards:!0}')
+t = one(t, 'expand:"Expand",', 'expand:"Expand",screenNote:"Best viewed on a computer screen",')
+t = re.sub(r'(className:"j-expand",onClick:\(\)=>a\(c\),"aria-haspopup":"dialog",children:\[\$\.expand,e\.jsx\("i",\{"aria-hidden":"true",children:"\u2192"\}\)\]\}\))', r'\1,l.screen&&e.jsx("span",{className:"j-tick-screen",children:$.screenNote})', t, count=1); assert 'l.screen&&e.jsx("span"' in t
+t = one(t, 'e.jsx("div",{className:"j-pop-go",children:s.external?', 'e.jsxs("div",{className:"j-pop-go",children:[s.external?')
+t = one(t, 'children:[$.visit,": ",s.name," ",e.jsx("i",{"aria-hidden":"true",children:"\u2192"})]})})]})}),document.body)}', 'children:[$.visit,": ",s.name," ",e.jsx("i",{"aria-hidden":"true",children:"\u2192"})]}),s.screen&&e.jsx("p",{className:"j-tick-screen",children:$.screenNote})]})]})}),document.body)}')
 open(f'{A}/site-ddg{NEW}.js', 'w', encoding='utf-8').write(t)
 h = rd('index.html'); h = one(h, 'site-ddg11.js', f'site-ddg{NEW}.js'); h = one(h, 'site-ddg6.css', f'site-ddg{NEW}.css'); open('index.html', 'w', encoding='utf-8').write(h)
 print('ok')
