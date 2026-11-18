@@ -1,6 +1,18 @@
 import nodemailer from 'nodemailer';
 import { logger } from './logger';
 
+const NAMES = ['EMAIL_SMTP_URL', 'EMAIL_FROM', 'OWNER_EMAIL'] as const;
+/** Last send result since the server started. Times only: never the address, the error text or a secret. */
+const last = { sentAt: null as Date | null, failedAt: null as Date | null };
+const note = (ok: boolean) => { if (ok) last.sentAt = new Date(); else last.failedAt = new Date(); };
+
+/** For Control's Connections panel. Names the missing settings; never shows a value. */
+export function emailStatus() {
+  const missing = NAMES.filter((n) => !process.env[n]);
+  const failedLast = !!last.failedAt && (!last.sentAt || last.failedAt > last.sentAt);
+  return { missing, sentAt: last.sentAt, failedAt: last.failedAt, failedLast };
+}
+
 /** Emails Markus. Off (returns false) until EMAIL_SMTP_URL, EMAIL_FROM and OWNER_EMAIL are set in
  *  Replit Secrets. Never throws: a failed email is logged and the caller carries on. */
 export async function emailOwner(subject: string, text: string, replyTo?: string): Promise<boolean> {
@@ -10,8 +22,10 @@ export async function emailOwner(subject: string, text: string, replyTo?: string
   if (!url || !from || !to) return false;
   try {
     await nodemailer.createTransport(url).sendMail({ from, to, subject, text, replyTo });
+    note(true);
     return true;
   } catch (err) {
+    note(false);
     logger.error({ err: err instanceof Error ? err.message : String(err) }, 'owner email failed');
     return false;
   }
@@ -48,8 +62,10 @@ export async function emailEnquiryReceived(to: string, name: string, lines: stri
 </table></td></tr></table></body></html>`;
   try {
     await nodemailer.createTransport(url).sendMail({ from, to, replyTo: contact, subject: 'We have your enquiry · Digital Dynamics Group', text, html });
+    note(true);
     return true;
   } catch (err) {
+    note(false);
     logger.error({ err: err instanceof Error ? err.message : String(err) }, 'enquiry confirmation email failed');
     return false;
   }

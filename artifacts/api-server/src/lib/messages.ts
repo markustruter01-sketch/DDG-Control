@@ -2,6 +2,7 @@ import { SendMessageBody } from '@workspace/api-zod';
 import { asksTable, botMessagesTable, botPushesTable, db, fleetSnapshotsTable } from '@workspace/db';
 import { and, asc, desc, eq, gt, inArray, isNull, max, or } from 'drizzle-orm';
 import { botKeys } from './bot-keys';
+import { emailStatus } from './email';
 import { getCattleDogCoffeeProfit } from './cdc-store';
 import { getHypestSummary } from './hypest-store';
 import { latestSocialAt } from './social-rows';
@@ -24,7 +25,13 @@ export async function getConnections() {
   ]);
   const fleetAt = fleet[0]?.at ?? null;
   const socialAt = social;
+  const mail = emailStatus();
   const rows = [
+    mail.missing.length
+      ? { key: 'email', label: 'Email', state: 'off', detail: `Enquiry emails are OFF. Missing in Replit Secrets: ${mail.missing.join(', ')}`, as_of: null }
+      : mail.failedLast
+        ? { key: 'email', label: 'Email', state: 'off', detail: 'Settings present, but the last send failed. Check the server log', as_of: iso(mail.failedAt) }
+        : { key: 'email', label: 'Email', state: 'ok', detail: mail.sentAt ? 'Settings present; last email sent' : 'Settings present; nothing sent since the last restart', as_of: iso(mail.sentAt) },
     store.ok
       ? { key: 'coffee', label: 'Coffee shop', state: 'ok', detail: 'Sales and charity read live from the shop', as_of: store.data.generatedAt.toISOString() }
       : { key: 'coffee', label: 'Coffee shop', state: 'off', detail: `Not reachable: ${store.error}`, as_of: null },
