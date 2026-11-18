@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '23'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '25'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -46,6 +46,12 @@ s = one(s, 'scrollY>0&&scrollTo({top:0,behavior:"instant"})}', 'scrollY>0&&scrol
 s = one(s, 'document.addEventListener("selectstart",Wn)', 'document.addEventListener("selectstart",Wn),document.addEventListener("dragstart",Wn),addEventListener("touchmove",__st.ns=e=>{(de.down||de.on)&&e.cancelable&&e.preventDefault()},{passive:!1}),addEventListener("touchend",__st.te=e=>{e.touches.length===0&&(de.on=!1)}),addEventListener("touchcancel",__st.te)')
 s = one(s, 'document.removeEventListener("selectstart",Wn)', 'document.removeEventListener("selectstart",Wn),document.removeEventListener("dragstart",Wn),removeEventListener("touchmove",__st.ns),removeEventListener("touchend",__st.te),removeEventListener("touchcancel",__st.te)')
 s = one(s, 'const St=de.down&&!_t;', '{const s_=de.down?"none":"",r_=document.documentElement.style;r_.userSelect!==s_&&(r_.userSelect=s_,r_.setProperty("-webkit-user-select",s_),r_.setProperty("-webkit-touch-callout",s_))}const St=de.down&&!_t;')
+# pressed-glass dent under the finger, and the phone buzz that builds with the charge
+s = one(s, "const __st={el:null,lp:'none yet',at:0,fps:0,bl:!1};", "const __st={el:null,lp:'none yet',at:0,fps:0,bl:!1,d:null,dk:0,ba:0,bz:!1,buzz(ms){try{navigator.vibrate(ms)}catch{}}};")
+s = one(s, 'hi=Pt=>{Pt.pointerType==="mouse"', 'hi=Pt=>{de.down&&Pt.pointerId===de.id&&(de.x=Pt.clientX,de.y=Pt.clientY);Pt.pointerType==="mouse"')
+s = one(s, '{const fw=nt.holdFlyOff>.5&&!__st.bl&&(de.down||ie>.02);',
+  '{const dn_=nt.holdDent||0;if(dn_>0&&(de.down||__st.dk>.01)){if(!__st.d||!__st.d.isConnected){__st.d=document.createElement("div");__st.d.setAttribute("aria-hidden","true");__st.d.style.cssText="position:fixed;left:0;top:0;z-index:2147481000;pointer-events:none;border-radius:50%;will-change:transform,opacity;background:radial-gradient(circle at 50% 46%,rgba(0,0,0,.34) 0%,rgba(0,0,0,.16) 42%,rgba(255,255,255,.07) 68%,rgba(255,255,255,0) 100%);box-shadow:inset 0 7px 20px rgba(0,0,0,.6),inset 0 -4px 12px rgba(255,255,255,.2),0 0 0 1px rgba(255,255,255,.16),0 0 34px rgba(140,210,255,.18);-webkit-backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25)";document.body.appendChild(__st.d)}__st.dk=de.down?Math.min(1,__st.dk+oe/.15):Math.max(0,__st.dk-oe/.35);const sz_=(70+110*Et)*dn_*(.6+.4*__st.dk);__st.d.style.width=__st.d.style.height=sz_.toFixed(1)+"px";__st.d.style.transform=`translate(${(de.x-sz_/2).toFixed(1)}px, ${(de.y-sz_/2).toFixed(1)}px)`;__st.d.style.opacity=__st.dk.toFixed(2)}else __st.d&&__st.d.style.opacity!=="0"&&(__st.dk=0,__st.d.style.opacity="0");if(typeof navigator.vibrate=="function"&&nt.holdVibrate>0&&!s){const vk_=Math.min(1,nt.holdVibrate);Lt?(__st.buzz(Math.round(320*vk_)),__st.bz=!1):St?(Pt-__st.ba>110&&(__st.ba=Pt,__st.buzz(Math.round((4+75*Et*Et)*vk_))),__st.bz=!0):__st.bz&&(__st.bz=!1,__st.buzz(0))}}{const fw=nt.holdFlyOff>.5&&!__st.bl&&(de.down||ie>.02);')
+s = one(s, 'mn&&(mn.style.opacity=""),', 'mn&&(mn.style.opacity=""),__st.d&&__st.d.remove(),__st.bz&&__st.buzz(0),')
 open(f'{A}/Stage-ddg{NEW}.js', 'w', encoding='utf-8').write(s)
 
 t = rd(f'{A}/site-ddg11.js')
@@ -54,13 +60,15 @@ t, n = re.subn(r'\{group:"Hold the orb",key:"hold(?:FxVortex|Vortex[A-Za-z]*)",[
 t, n = re.subn(r'\s*hold(?:FxVortex|Vortex[A-Za-z]*):\s*[0-9.]+,', '', t); assert n == 6, n
 t = one(t, '.tune.min { bottom: auto; }\n.tune.min .tune-body, .tune.min .tune-foot { display: none; }',
   '.tune.min { bottom: auto; width: auto; background: none; border: 0; box-shadow: none; backdrop-filter: none; }\n.tune.min .tune-body, .tune.min .tune-foot, .tune.min .tune-head b { display: none; }\n.tune.min .tune-head { padding: 0; border: 0; } .tune.min button { opacity: 0.55; }')
-t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-39', t.count('ddg-scene-tune-32'))
+t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-41', t.count('ddg-scene-tune-32'))
 # the quote: a 'White (black words)' colour choice exists; the default stays black with the thin white frame
 t = one(t, '[30,6,10]][r.qbColour]||[0,0,0];', '[30,6,10],[255,255,255]][r.qbColour]||[0,0,0];a.setProperty("--quote-ink",c[0]+c[1]+c[2]>380?"#000":"");')
 t = one(t, 'rgb(${c.map(v=>v+10).join(",")})', 'rgb(${c.map(v=>Math.min(255,v+10)).join(",")})')
 t = one(t, 'max:6,step:1,names:["Black","Charcoal","Midnight","Deep navy","Deep teal","Deep purple","Deep red"]', 'max:7,step:1,names:["Black","Charcoal","Midnight","Deep navy","Deep teal","Deep purple","Deep red","White (black words)"]')
 t = one(t, 'qbPadX:16,', 'qbPadX:32,')  # Markus's settings, 18 Nov 19:01 (black patch, thin white frame)
 t, n = re.subn(r'\bholdNova:\s*[-0-9.]+', 'holdNova:0.05', t); assert n == 1, n  # Markus, 18 Nov 19:37
+# Markus, 18 Nov 19:40: the hold camera pulls out twice as far (back 15 -> 30, up 5 -> 10)
+t = one(t, 'holdCamUp:5,', 'holdCamUp:10,'); t = one(t, 'holdCamBack:15,', 'holdCamBack:30,'); t = one(t, 'label:"Camera: how far back",min:-10,max:20,', 'label:"Camera: how far back",min:-10,max:40,')
 # Markus's settings, 18 Nov 19:07
 for k, v in {'swirlSize': 2.25, 'waterGlint': 2.05, 'waterReflect': 1.1, 'waterColour': 3, 'shSize': 0.95, 'shSpacing': 0.12, 'brandSize': 0.6, 'logoSize': 0.75, 'logoGap': 13, 'brandLift': 17}.items():
     t, n = re.subn(r'\b%s:\s*[-0-9.]+' % k, '%s:%s' % (k, v), t); assert n == 1, (k, n)
@@ -74,6 +82,8 @@ t = one(t, 'shText:"Scroll for Web-Page or Press & Hold Orb for Fun"', 'shText:"
 t = one(t, 'Words (leave empty for arrow only)', 'Words (| starts a new line; empty = arrow only)')
 c = one(c, '.cn-scroll-words{margin-right:calc(-1 * var(--sh-track, .3em))}', '.cn-scroll-words{margin-right:calc(-1 * var(--sh-track, .3em));white-space:pre-line;text-align:center}')
 open(f'{A}/site-ddg{NEW}.css', 'w', encoding='utf-8').write(c)
+t = one(t, '{group:"Hold the orb",key:"holdVignette",label:"Screen edges darken",min:0,max:1,step:.05},', '{group:"Hold the orb",key:"holdVignette",label:"Screen edges darken",min:0,max:1,step:.05},{group:"Hold the orb",key:"holdDent",label:"Pressed glass: dent under the finger (0 off)",min:0,max:2.5,step:.05},{group:"Hold the orb",key:"holdVibrate",label:"Phone buzz builds with the charge (0 off; Android only)",min:0,max:1,step:.05},')
+t = one(t, 'holdOn:1,', 'holdOn:1,holdDent:1,holdVibrate:1,')
 open(f'{A}/site-ddg{NEW}.js', 'w', encoding='utf-8').write(t)
 h = rd('index.html'); h = one(h, 'site-ddg11.js', f'site-ddg{NEW}.js'); h = one(h, 'site-ddg6.css', f'site-ddg{NEW}.css'); open('index.html', 'w', encoding='utf-8').write(h)
 print('ok')

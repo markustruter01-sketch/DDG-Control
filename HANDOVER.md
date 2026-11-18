@@ -32,7 +32,7 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 
 ## State 18 Nov 18:35 (source: claude/hold-polish, commit "remove the water vortex")
 - Markus asked to undo the vortex look work and remove the vortex completely. Done: no liquid, no vortex sliders.
-- Live files here: index.html -> assets/site-ddg23.js (+ site-ddg23.css) -> assets/Stage-ddg23.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
+- Live files here: index.html -> assets/site-ddg25.js (+ site-ddg25.css) -> assets/Stage-ddg25.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
   from the ddg11 base files (keep those; they are not served).
 - Kept: hold fixes (press works on a slightly scrolled page and jumps to the top; no charge by itself at load),
   a preview-only status line at the bottom left, Hide leaves one small Show button.
@@ -81,3 +81,10 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
   through drags, no pointercancel, no scroll, nova fires, hint is two lines, no errors.
 - NOT VERIFIED: a real phone (iOS Safari especially).
 - 19:40: holdNova default 0.05 (Markus), in PR #121 and preview ddg23. Page loads with no errors (t7.mjs).
+
+## 18 Nov 20:00: camera twice as far, pressed-glass dent, phone buzz (build ddg25), all in PR #121 (NOT merged, NOT live)
+- Markus wrote "done" at 19:40 but PR #121 was still open then; do not publish live until it is merged.
+- holdCamBack 30, holdCamUp 10; sliders holdDent (dent under the finger) and holdVibrate (Vibration API).
+- VERIFIED headless with touch (t10.mjs, navigator.vibrate stubbed): dent appears at the press, follows the finger,
+  grows 80 -> 132 px, fades on release; buzz pulses grow 4 ms -> 72 ms, 320 ms at the nova; no errors.
+- NOT VERIFIED: a real phone (buzz cannot work on iPhone: no Vibration API there); how the dent looks to Markus.
