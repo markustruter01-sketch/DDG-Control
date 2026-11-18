@@ -740,7 +740,7 @@ p { margin: 0; }
 .j-gal-zoom { top: 12px; right: 12px; font-size: 18px !important; }
 .j-gal-count { position: absolute; z-index: 2; left: 12px; bottom: 12px; padding: 6px 10px; border-radius: 999px; background: rgba(8,12,18,0.62); backdrop-filter: blur(8px); font: 500 11px/1 var(--ng-mono); letter-spacing: 0.1em; color: #fff; }
 /* The larger view: a box over the page, bigger than the slide but not the whole screen. */
-.j-gal-back { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 4vh 3vw; background: rgba(3,5,9,0.72); backdrop-filter: blur(6px); }
+.j-gal-back { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 4vh 3vw; background: rgba(3,5,9,0.72); backdrop-filter: blur(6px); }
 .j-gal-back > div { width: min(1320px, 92vw, 135vh); }
 .j-gal-big { border-radius: 22px; box-shadow: 0 0 0 1px rgba(255,255,255,0.2), 0 30px 90px rgba(0,0,0,0.6); }
 .j-gal-big img { object-fit: contain; }
@@ -854,3 +854,9 @@ p { margin: 0; }
 .f-table tbody th { font-weight: 500; }
 .f-table td { font-variant-numeric: tabular-nums; }
 .f-table td.neg { color: #ff8a80; }
+/* Screens inside the project pop-up; "coming soon" stays last and greyed (18 Nov). */
+.j-pop-gal { margin-top: 6px; }
+.j-pop-gal .j-gal-cap { color: rgba(255,255,255,0.8); }
+.j-ticks li.soon { opacity: 0.5; }
+.j-ticks li.soon::before { background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3); }
+.j-ticks li.soon::after { border-color: rgba(255,255,255,0.45); }

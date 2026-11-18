@@ -246,8 +246,8 @@ export const ABOUT = {
     { key: 'globe', lead: 'The whole planet, live in 3D.', text: 'Aircraft, ships, satellites, earthquakes and fires, tracked as they happen on one screen.', name: 'God\u2019s Eye View', href: 'https://gods-eye-view.replit.app/', external: true },
     { key: 'finance', lead: 'A trading platform that runs itself.', text: 'Algorithmic bots, Python strategies and a council of three AI models, with hard risk limits that stop it the moment something is wrong.', name: 'DDG Finance', href: '/finance', external: false },
     { key: 'coffee', lead: 'An online store that sells around the clock.', text: 'Real orders, card payments, subscriptions and shipping, all run from one back office.', name: 'Cattle Dog Coffee', href: PUBLIC_SITES.coffee, external: true },
-    { key: 'fitness', lead: 'A personal coach in your pocket.', text: 'A health and fitness app with specialist AI coaches (in development).', name: '', href: null, soon: 'Coming soon' },
     { key: 'greenlight', lead: 'A compliance engine for your code.', text: 'It audits any codebase against published standards (ISO/IEC 27001, OWASP ASVS, NIST SSDF, the Australian Essential Eight and more), fixes the gaps it finds, and hands back a stronger product, ready for your team\u2019s final sign-off.', name: 'DDG Greenlight', href: 'https://ddg-greenlight.replit.app/', external: true, standards: true },
+    { key: 'fitness', lead: 'A personal coach in your pocket.', text: 'A health and fitness app with specialist AI coaches (in development).', name: '', href: null, soon: 'Coming soon' },
   ] as { key: string; lead: string; text: string; name: string; href: string | null; external?: boolean; soon?: string; standards?: boolean }[],
   // Every standard Greenlight checks against (its catalogues, 18 Nov 2026). Names only.
   expand: 'Expand',
@@ -292,6 +292,7 @@ export const ABOUT = {
     },
   } as Record<string, { flowLabel: string; flow: string[]; gate?: number; chips: string[]; chipsLabel: string; note?: string; chartLabel?: string; chart?: [string, number, number][]; total?: [number, number] }>,
   visit: 'Open it',
+  screensLabel: 'Screens',
   close: 'Close',
   standardsLabel: 'See all standards',
   standards: [
