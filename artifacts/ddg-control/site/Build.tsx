@@ -20,7 +20,7 @@ const aud = (n: number) => `$${n.toLocaleString('en-AU')}`;
 const openDate = (iso: string) => new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`));
 
 type Kind = ServiceKey | 'unsure';
-type Sent = { state: 'idle' } | { state: 'sending' } | { state: 'done'; test: boolean } | { state: 'error'; message: string };
+type Sent = { state: 'idle' } | { state: 'sending' } | { state: 'done'; test: boolean; email: string } | { state: 'error'; message: string };
 
 /** The one-page enquiry form: what, what it does, what exists, when and budget, who. */
 export function EnquiryForm() {
@@ -46,7 +46,7 @@ export function EnquiryForm() {
     try {
       const r = await fetch('/api/public/enquiry', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
       const json = await r.json().catch(() => ({}));
-      if (r.ok) return setSent({ state: 'done', test: Boolean(json.test) });
+      if (r.ok) return setSent({ state: 'done', test: Boolean(json.test), email });
       setSent({ state: 'error', message: typeof json.error === 'string' ? json.error : 'Something went wrong. Please try again.' });
     } catch {
       setSent({ state: 'error', message: 'Could not send. Check your connection and try again.' });
@@ -55,9 +55,18 @@ export function EnquiryForm() {
 
   if (sent.state === 'done') {
     return (
-      <div className="s-form glass-plain" role="status">
-        <h3>{sent.test ? 'Test enquiry saved.' : START.done}</h3>
-        {sent.test && <p>It is in Control → Clients, marked Test.</p>}
+      <div className="s-form s-done glass-plain" role="status">
+        <svg className="s-done-tick" width="56" height="56" viewBox="0 0 56 56" fill="none" aria-hidden="true">
+          <circle cx="28" cy="28" r="26" stroke="currentColor" strokeWidth="2" />
+          <path d="M17 29l7.5 7.5L39.5 21" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <h3>{sent.test ? 'Test enquiry saved.' : START.done.title}</h3>
+        {sent.test
+          ? <p>It is in Control → Clients, marked Test.</p>
+          : <>
+              <p>{START.done.reply} <strong>{sent.email}</strong>.</p>
+              <p>{START.done.nothing}</p>
+            </>}
       </div>
     );
   }
