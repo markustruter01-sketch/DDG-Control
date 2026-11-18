@@ -775,3 +775,69 @@ p { margin: 0; }
 @media (max-aspect-ratio: 4/5) {
   .cn-brand { bottom: min(calc(100% - var(--cn-oy) + var(--cn-or) + 2.5vh + var(--brand-lift, 0vh)), calc(100% - 190px)); }
 }
+
+/* Portfolio list: the short line only, with an "Expand" button whose arrow nudges right (18 Nov 2026). */
+.j-ticks li { display: flex; flex-wrap: wrap; align-items: center; column-gap: 14px; row-gap: 4px; }
+.j-ticks li > b { font-weight: 500; }
+.j-ticks li.soon > b { color: var(--ng-text-2); }
+.j-ticks li .j-tick-soon { margin-top: 0; }
+.j-expand { display: inline-flex; align-items: center; gap: 8px; min-height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.35); background: transparent;
+  color: var(--ng-text); font: 500 11px/1 var(--ng-mono); letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.j-expand:hover, .j-expand:focus-visible { border-color: #fff; background: rgba(255,255,255,0.06); }
+.j-expand i { font-style: normal; display: inline-block; animation: j-nudge 1.8s ease-in-out infinite; }
+@keyframes j-nudge { 0%, 55%, 100% { transform: translateX(0); } 70% { transform: translateX(4px); } 85% { transform: translateX(1px); } }
+
+/* The project pop-up: black, white lines, nothing else. */
+.j-pop-back { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 4vh 4vw; background: rgba(0,0,0,0.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: j-fade 0.2s ease-out; }
+.j-pop { position: relative; width: min(760px, 100%); max-height: 92vh; overflow-y: auto; padding: clamp(22px, 3.2vw, 40px); border-radius: 22px; background: #000; border: 1px solid rgba(255,255,255,0.28);
+  color: #fff; box-shadow: 0 30px 80px rgba(0,0,0,0.6); animation: j-rise 0.28s cubic-bezier(.2,.8,.2,1); overscroll-behavior: contain; }
+@keyframes j-fade { from { opacity: 0; } }
+@keyframes j-rise { from { opacity: 0; transform: translateY(12px) scale(0.985); } }
+.j-pop-x { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.3); background: transparent; color: #fff; font-size: 22px; line-height: 1; cursor: pointer; }
+.j-pop-x:hover, .j-pop-x:focus-visible { border-color: #fff; }
+.j-pop-head { display: flex; align-items: center; gap: 16px; padding-right: 44px; }
+.j-pi { flex: none; color: #fff; }
+.j-pop-name { margin: 0 0 4px; font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+.j-pop h3 { margin: 0; font-size: clamp(22px, 2.2vw, 30px); font-weight: 500; line-height: 1.15; }
+.j-pop-text { margin: 16px 0 0; color: rgba(255,255,255,0.78); font-size: 16px; line-height: 1.55; max-width: 60ch; }
+.j-pop-label { margin: 26px 0 10px; font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+.j-flow { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; }
+.j-flow li { display: flex; align-items: center; animation: j-rise 0.4s both; }
+.j-flow li span { display: flex; align-items: center; min-height: 46px; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.4); border-radius: 12px; font-size: 14px; line-height: 1.3; }
+.j-flow li.gate span { border-style: dashed; border-color: #fff; }
+.j-flow li + li::before { content: ''; width: 26px; height: 1px; background: rgba(255,255,255,0.5); margin: 0 2px; position: relative; }
+.j-flow li + li span { position: relative; }
+.j-flow li + li span::before { content: ''; position: absolute; left: -7px; top: 50%; width: 6px; height: 6px; border: solid rgba(255,255,255,0.7); border-width: 1px 1px 0 0; transform: translateY(-50%) rotate(45deg); }
+@media (max-width: 640px) {
+  .j-flow { flex-direction: column; align-items: flex-start; }
+  .j-flow li { flex-direction: column; align-items: flex-start; }
+  .j-flow li + li::before { width: 1px; height: 16px; margin: 2px 0 2px 22px; }
+  .j-flow li + li span::before { display: none; }
+}
+.j-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.j-chips li { padding: 6px 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 999px; font-size: 13px; color: rgba(255,255,255,0.88); }
+.j-pop-note { margin: 18px 0 0; padding-left: 12px; border-left: 1px solid rgba(255,255,255,0.5); color: rgba(255,255,255,0.7); font-size: 14px; line-height: 1.5; }
+.j-bars { margin: 26px 0 0; padding: 18px; border: 1px solid rgba(255,255,255,0.22); border-radius: 16px; }
+.j-bars figcaption { font: 500 11px/1.5 var(--ng-mono); letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+.j-bars-total { display: flex; align-items: baseline; gap: 12px; margin: 10px 0 14px; }
+.j-bars-total span { font-size: 30px; color: rgba(255,255,255,0.45); font-weight: 300; }
+.j-bars-total i { font-style: normal; color: rgba(255,255,255,0.6); }
+.j-bars-total b { font-size: 40px; font-weight: 500; }
+.j-bars-total em { font-style: normal; font: 500 11px/1 var(--ng-mono); letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+.j-bar { display: grid; grid-template-columns: minmax(120px, 1.1fr) 2fr auto; align-items: center; gap: 12px; padding: 6px 0; font-size: 13px; }
+.j-bar-name { color: rgba(255,255,255,0.85); }
+.j-bar-track { position: relative; height: 8px; border-radius: 99px; border: 1px solid rgba(255,255,255,0.28); overflow: hidden; }
+.j-bar-track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; }
+.j-bar-track .now { background: #fff; transform-origin: left; animation: j-grow 0.9s 0.25s cubic-bezier(.2,.8,.2,1) both; }
+.j-bar-track .was { background: rgba(255,255,255,0.3); z-index: 1; }
+@keyframes j-grow { from { transform: scaleX(0); } }
+.j-bar-num { font: 500 12px/1 var(--ng-mono); color: rgba(255,255,255,0.6); white-space: nowrap; }
+.j-bar-num b { color: #fff; }
+@media (max-width: 520px) { .j-bar { grid-template-columns: 1fr auto; } .j-bar-track { grid-column: 1 / -1; grid-row: 2; } }
+.j-pop-shot { margin: 26px 0 0; }
+.j-pop-shot img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.22); }
+.j-pop-shot figcaption { margin-top: 8px; font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.45; }
+.j-pop-go { margin-top: 22px; }
+.j-pop .j-tick-link { border-color: rgba(255,255,255,0.5); color: #fff; min-height: 40px; padding: 0 16px; }
+.j-pop .j-tick-link:hover { background: rgba(255,255,255,0.08); border-color: #fff; }
+@media (prefers-reduced-motion: reduce) { .j-expand i, .j-pop, .j-pop-back, .j-flow li, .j-bar-track .now { animation: none; } }

@@ -189,7 +189,7 @@ export const SPECS: Spec[] = [
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
   orbBloom: 0.75, orbGlass: 0.75, orbDepth: 0, orbFlashLight: 0.05, orbFlashLand: 0.45, orbFlashReach: 12, orbMirror: 0.35, orbRays: 0, orbFringe: 0.55, orbParticles: 0.05,
-  orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.25, orbSize: 0.98, orbHeight: -2, orbGlow: 0,
+  orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.25, orbSize: 1.24, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 1.7, swirlSize: 2.5, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
   waterGlint: 0.5, waterReflect: 1.15, waterColour: 1.2, waterSheen: 3, sprayAmount: 0, spraySize: 0,
   fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
@@ -204,7 +204,7 @@ export const DEFAULTS: Record<string, number> = {
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
   pageClouds: 0, pageCloudOpacity: 0.22, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
   shOn: 1, shArrow: 6, shAnim: 1, shSpeed: 2, shTravel: 10, shLayout: 0, shFont: 2, shSize: 0.9, shSpacing: 0.3, shCaps: 0, shBright: 1, shPlace: 35,
-  brandFont: 3, brandSize: 0.75, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.04, logoSize: 1, logoGap: 14, brandLift: 16.5,
+  brandFont: 3, brandSize: 0.75, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.04, logoSize: 1, logoGap: 14, brandLift: 15,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
@@ -212,7 +212,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll', quoteText: '' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-12'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-13'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);

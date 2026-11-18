@@ -231,13 +231,56 @@ export const ABOUT = {
   // Every claim is checked against the product: the Greenlight standards are its seven catalogues
   // (ddg-greenlight/lib/greenlight-engine/catalogues); it checks and fixes, it does not certify.
   built: [
-    { lead: 'The whole planet, live in 3D.', text: 'Aircraft, ships, satellites, earthquakes and fires, tracked as they happen on one screen.', name: 'God\u2019s Eye View', href: 'https://gods-eye-view.replit.app/', external: true },
-    { lead: 'A trading platform that runs itself.', text: 'Algorithmic bots, Python strategies and a council of three AI models, with hard risk limits that stop it the moment something is wrong.', name: 'DDG Finance', href: '/finance', external: false },
-    { lead: 'An online store that sells around the clock.', text: 'Real orders, card payments, subscriptions and shipping, all run from one back office.', name: 'Cattle Dog Coffee', href: PUBLIC_SITES.coffee, external: true },
-    { lead: 'A personal coach in your pocket.', text: 'A health and fitness app with specialist AI coaches (in development).', name: '', href: null, soon: 'Coming soon' },
-    { lead: 'A compliance engine for your code.', text: 'It audits any codebase against published standards (ISO/IEC 27001, OWASP ASVS, NIST SSDF, the Australian Essential Eight and more), fixes the gaps it finds, and hands back a stronger product, ready for your team\u2019s final sign-off.', name: 'DDG Greenlight', href: 'https://ddg-greenlight.replit.app/', external: true, standards: true },
-  ] as { lead: string; text: string; name: string; href: string | null; external?: boolean; soon?: string; standards?: boolean }[],
+    { key: 'globe', lead: 'The whole planet, live in 3D.', text: 'Aircraft, ships, satellites, earthquakes and fires, tracked as they happen on one screen.', name: 'God\u2019s Eye View', href: 'https://gods-eye-view.replit.app/', external: true },
+    { key: 'finance', lead: 'A trading platform that runs itself.', text: 'Algorithmic bots, Python strategies and a council of three AI models, with hard risk limits that stop it the moment something is wrong.', name: 'DDG Finance', href: '/finance', external: false },
+    { key: 'coffee', lead: 'An online store that sells around the clock.', text: 'Real orders, card payments, subscriptions and shipping, all run from one back office.', name: 'Cattle Dog Coffee', href: PUBLIC_SITES.coffee, external: true },
+    { key: 'fitness', lead: 'A personal coach in your pocket.', text: 'A health and fitness app with specialist AI coaches (in development).', name: '', href: null, soon: 'Coming soon' },
+    { key: 'greenlight', lead: 'A compliance engine for your code.', text: 'It audits any codebase against published standards (ISO/IEC 27001, OWASP ASVS, NIST SSDF, the Australian Essential Eight and more), fixes the gaps it finds, and hands back a stronger product, ready for your team\u2019s final sign-off.', name: 'DDG Greenlight', href: 'https://ddg-greenlight.replit.app/', external: true, standards: true },
+  ] as { key: string; lead: string; text: string; name: string; href: string | null; external?: boolean; soon?: string; standards?: boolean }[],
   // Every standard Greenlight checks against (its catalogues, 18 Nov 2026). Names only.
+  expand: 'Expand',
+  // The pop-up for each project (Markus, 18 Nov 2026): a picture of how it works, a few facts, one
+  // screenshot. Short words only. Every number here is from the product itself (VERIFIED, 18 Nov).
+  more: {
+    globe: {
+      flowLabel: 'How it works',
+      flow: ['Live public feeds', 'One 3D globe', 'Click anything for its details'],
+      chips: ['Aircraft', 'Ships', 'Satellites', 'Earthquakes', 'Fires', 'Traffic cameras'],
+      chipsLabel: 'Tracked live',
+    },
+    finance: {
+      flowLabel: 'How it works',
+      flow: ['Market prices', 'Strategies and three AI models', 'Hard risk limits', 'Broker'],
+      gate: 2,
+      chips: ['Algorithmic bots', 'Python strategies', 'A council of three AI models', 'Never trades crypto'],
+      chipsLabel: 'Built in',
+      note: 'Paper trading now. The public record starts on 1 January 2027, shown live against the S&P 500.',
+    },
+    coffee: {
+      flowLabel: 'How it works',
+      flow: ['Shop', 'Card or subscription', 'Packed and posted', 'Back office'],
+      chips: ['Card payments', 'Subscriptions', 'One back office', 'Charity total counted live'],
+      chipsLabel: 'Built in',
+    },
+    fitness: {
+      flowLabel: 'How it will work',
+      flow: ['You', 'Specialist AI coaches', 'Your plan'],
+      chips: [],
+      chipsLabel: '',
+      note: 'In development. More when it launches.',
+    },
+    greenlight: {
+      flowLabel: 'How it works',
+      flow: ['Your code', 'Checked by code against the standards', 'Fixed in rounds you approve', 'Checked again', 'Your report'],
+      chips: [],
+      chipsLabel: '',
+      chartLabel: 'A real run: God\u2019s Eye View, ready score per standard, before \u2192 after',
+      chart: [['Web app security', 31, 73], ['Security management', 37, 75], ['Secure development', 54, 74], ['Australian government', 42, 80], ['Air-traffic software safety', 61, 75], ['System safety', 35, 76]],
+      total: [43, 76],
+    },
+  } as Record<string, { flowLabel: string; flow: string[]; gate?: number; chips: string[]; chipsLabel: string; note?: string; chartLabel?: string; chart?: [string, number, number][]; total?: [number, number] }>,
+  visit: 'Open it',
+  close: 'Close',
   standardsLabel: 'See all standards',
   standards: [
     'ISO/IEC 27001: information security',
