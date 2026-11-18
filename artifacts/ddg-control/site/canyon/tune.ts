@@ -51,7 +51,7 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdFxSpeed', label: 'Charge-up effect: speed', min: 0.2, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdZoom', label: 'Camera move (0 none ← → 1 all the way)', min: 0, max: 1, step: 0.05 },
   { group: 'Hold the orb', key: 'holdCamUp', label: 'Camera: how far up', min: 0, max: 20, step: 0.5 },
-  { group: 'Hold the orb', key: 'holdCamBack', label: 'Camera: how far back', min: -10, max: 20, step: 0.5 },
+  { group: 'Hold the orb', key: 'holdCamBack', label: 'Camera: how far back', min: -10, max: 40, step: 0.5 },
   { group: 'Hold the orb', key: 'holdCamTilt', label: 'Camera: how much it looks down', min: 0, max: 1, step: 0.05 },
   { group: 'Hold the orb', key: 'holdRise', label: 'Orb lifts', min: 0, max: 5, step: 0.1 },
   { group: 'Hold the orb', key: 'holdOrbShake', label: 'Orb shake', min: 0, max: 6, step: 0.05 },
@@ -59,6 +59,8 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdGroundShake', label: 'Ground tremble', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdShock', label: 'Let go: shockwave ring and jolt', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdVignette', label: 'Screen edges darken', min: 0, max: 1, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdDent', label: 'Pressed glass: dent under the finger (0 off)', min: 0, max: 2.5, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdVibrate', label: 'Phone buzz builds with the charge (0 off; Android only)', min: 0, max: 1, step: 0.05 },
   { group: 'Boiling lake', key: 'holdBoilArea', label: 'How much of the lake (radius)', min: 2, max: 120, step: 1 },
   { group: 'Boiling lake', key: 'holdBoilLift', label: 'Water surface heaves up (real height)', min: 0, max: 3, step: 0.05 },
   { group: 'Boiling lake', key: 'holdBoilHeight', label: 'Surface bubbling', min: 0, max: 3, step: 0.05 },
@@ -190,7 +192,7 @@ export const SPECS: Spec[] = [
   { group: 'Businesses', key: 'bizLayout', label: 'Layout (0 3D reel, 1 stacked)', min: 0, max: 1, step: 1 },
   // "Scroll down" hint
   { group: 'Scroll hint', key: 'shOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
-  { group: 'Scroll hint', key: 'shText', label: 'Words (leave empty for arrow only)', min: 0, max: 0, step: 0, text: true },
+  { group: 'Scroll hint', key: 'shText', label: 'Words (| starts a new line; empty = arrow only)', min: 0, max: 0, step: 0, text: true },
   { group: 'Scroll hint', key: 'shHiWords', label: 'Words in colour (exact words, comma between)', min: 0, max: 0, step: 0, text: true },
   { group: 'Scroll hint', key: 'shHiHue', label: 'Their colour (0 red, 300 magenta)', min: 0, max: 360, step: 5 },
   { group: 'Scroll hint', key: 'shHiSat', label: 'How strong the colour is', min: 0, max: 1, step: 0.05 },
@@ -222,9 +224,9 @@ export const SPECS: Spec[] = [
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane), with his changes of 18 Nov 19:07.
 export const DEFAULTS: Record<string, number> = {
   introFade: 3, introStyle: 2, introSpawn: 1.5, introLoop: 0,
-  holdOn: 1, holdFlyOff: 1, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
-  holdCamUp: 5, holdCamBack: 15, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 6, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 1,
-    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 0.2, holdNovaWave: 10.55, holdNovaWaveSpeed: 75, holdCalm: 3, holdFxGlobs: 0, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 0.9, holdFxSpeed: 3,
+  holdOn: 1, holdDent: 1, holdVibrate: 1, holdFlyOff: 1, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
+  holdCamUp: 10, holdCamBack: 30, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 6, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 1,
+    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 0.05, holdNovaWave: 10.55, holdNovaWaveSpeed: 75, holdCalm: 3, holdFxGlobs: 0, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 0.9, holdFxSpeed: 3,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.25, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
@@ -246,10 +248,10 @@ export const DEFAULTS: Record<string, number> = {
 
 export const T: Record<string, number> = { ...DEFAULTS };
 /** Settings that are words, not numbers. */
-export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for Web-Page or Press & Hold Orb for Fun', quoteText: '', shHiWords: 'Fun' };
+export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for Web-Page or | Press & Hold Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-37'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-41'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -509,7 +511,8 @@ export function applyBrand(): void {
       // Chosen words in colour (built as text nodes, never as HTML).
       const pick = (TX.shHiWords || '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
       w.textContent = '';
-      for (const part of (TX.shText || '').split(/(\s+)/)) {
+      // A "|" in the words starts a new line (site.css keeps line breaks in this box).
+      for (const part of (TX.shText || '').replace(/\s*\|\s*/g, '\n').split(/(\s+)/)) {
         if (pick.includes(part.replace(/[^\p{L}\p{N}]/gu, '').toLowerCase()) && part.trim()) {
           const b = document.createElement('span'); b.className = 'cn-scroll-hi'; b.textContent = part; w.appendChild(b);
         } else w.appendChild(document.createTextNode(part));
