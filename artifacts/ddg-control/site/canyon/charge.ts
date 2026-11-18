@@ -19,7 +19,7 @@ import { SKY_GLSL } from './sky';
 
 const DROPS = 320, ROCKS = 160;
 type P = {
-  x: number; y: number; z: number; vx: number; vy: number; vz: number; age: number; life: number; size: number; seed: number; out: boolean; splash?: boolean;
+  x: number; y: number; z: number; vx: number; vy: number; vz: number; age: number; life: number; size: number; seed: number; out: boolean;
   /** Vortex only: its look, angle round the orb, distance out, height, and the last few places it was (its trail). */
   look?: number; th?: number; r?: number; h?: number; trail?: Float32Array; tn?: number;
 };
@@ -136,19 +136,6 @@ export function makeCharge() {
   const c = new Vector3();
   const rand = (a: number, b: number) => a + Math.random() * (b - a);
   const mk = (x: number, y: number, z: number, life: number, size: number): P => ({ x, y, z, vx: 0, vy: 0, vz: 0, age: 0, life, size, seed: Math.random(), out: false });
-
-  /** The nova's splash: water thrown up all round the orb, falling back as drops (each leaves a ring). */
-  const splash = (orb: Vector3, radius: number, count: number, waterAt: (x: number, z: number) => number | null) => {
-    for (let i = 0; i < count && globs.length < DROPS; i++) {
-      const a = Math.random() * Math.PI * 2, r = radius * rand(0.8, 6);
-      const x = orb.x + Math.cos(a) * r, z = orb.z + Math.sin(a) * r * 0.8, w = waterAt(x, z);
-      if (w === null) continue;
-      const p = mk(x, w, z, rand(1.5, 3), radius * rand(0.03, 0.1));
-      const out = rand(4, 12) * (1.3 - r / (radius * 7));
-      p.vx = Math.cos(a) * out; p.vz = Math.sin(a) * out; p.vy = rand(6, 16); p.out = true; p.splash = true;
-      globs.push(p);
-    }
-  };
 
   /** The nova: everything flies outwards from the orb. */
   const explode = (orb: Vector3, force: number) => {
@@ -286,8 +273,7 @@ export function makeCharge() {
         if (dead) { list.splice(i, 1); continue; }
         // Light-made vortex looks are drawn as glow, not as water drops.
         if (list === swirls && p.look !== undefined && p.look !== 0 && p.look !== 4) { glowOf(p); continue; }
-        // Thrown-up splash water is see-through; the drawn-in water is denser.
-        drawDrop(p, Math.min(1, p.age * 5) * Math.min(1, (p.life - p.age) * 3) * (p.splash ? 0.4 : 1));
+        drawDrop(p, Math.min(1, p.age * 5) * Math.min(1, (p.life - p.age) * 3)));
       }
     }
     drops.count = nd; drops.visible = nd > 0;
@@ -322,5 +308,5 @@ export function makeCharge() {
     rGeo.attributes.position!.needsUpdate = true; rGeo.attributes.aA!.needsUpdate = true;
     rMat.uniforms.uPx!.value = pxScale;
   };
-  return { group, update, explode, splash, disposables: [dGeo, dMat, rGeo, rMat, gGeo, gMat] as { dispose: () => void }[] };
+  return { group, update, explode, disposables: [dGeo, dMat, rGeo, rMat, gGeo, gMat] as { dispose: () => void }[] };
 }

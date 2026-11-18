@@ -129,6 +129,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     let popNext = 0, wasHeld = false, shock = 0, novaT = -1, novaLock = false;
     // After the nova the river level drops (water thrown out) and fills up again over T.holdRefill seconds.
     let drainY = 0;
+    const novaAt = new Vector3(); // where the nova went off (x, z in x, y)
     const lvl = (z: number) => water.levelAt(z) - drainY;
     // The build-up dial: part of the 3D scene, fixed to the orb's centre and facing the camera (dial.ts).
     const dial = makeDial();
@@ -381,14 +382,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       });
       if (strike.at && strike.flash * T.holdBolts * 1.5 > landFlash) lineMat.uniforms.uBolt.value.set(strike.at.x, strike.at.z, strike.flash * T.holdBolts * 1.5, 14);
       // Letting go after a good charge sends a ring of light out across the water and jolts the scene.
-      if (wasHeld && !hold.down && !novaNow && charge > 0.5 && T.holdShock > 0) { addPop(orbit.position.x, orbit.position.z, 6 * T.holdShock); shock = 1; }
+      if (wasHeld && !hold.down && !novaNow && charge > 0.5 && T.holdShock > 0) shock = 1;
       // The nova: a shell of light races out, every bolt fires, a huge ring runs across the water.
       if (novaNow && T.holdNova > 0) {
         surge.burstAll(orbit.position, R, () => {
           const a = Math.random() * Math.PI * 2, r = R * (1.5 + 4 * Math.random());
           return strikeAt.set(orbit.position.x + Math.cos(a) * r, lvl(orbit.position.z), orbit.position.z + Math.sin(a) * r * 0.7);
         });
-        addPop(orbit.position.x, orbit.position.z, 12 * T.holdNova);
       }
       surge.novaAt(novaT, orbit.position, R, T.holdNova);
       if (novaT >= 0) haloMat.opacity += Math.exp(-novaT * 3) * 2.5 * T.holdNova;
@@ -401,16 +401,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // What swirls round the orb as it charges (charge.ts).
       if (novaNow) {
         chargeFx.explode(orbit.position, T.holdNova);
-        chargeFx.splash(orbit.position, R, Math.round(70 * T.holdSplash), (x, z) => { const y = lvl(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; });
-        drainY = T.holdDrain;
+        // The only water effect of the blast is its push on the river (novaWave in water.ts).
+        novaAt.set(orbit.position.x, orbit.position.z, 0);
       }
-      // Refill: quick at first, then easing in, like water running back.
-      if (drainY > 0) drainY = Math.max(0, drainY - dt * (T.holdDrain / Math.max(1, T.holdRefill)) * (0.4 + 1.2 * (drainY / Math.max(0.01, T.holdDrain))));
       chargeFx.update(dt, ch * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed,
           vortex: { look: T.holdVortexLook, size: T.holdVortexSize, reach: T.holdVortexReach, trail: T.holdVortexTrail, glow: T.holdVortexGlow } },
         (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)),
         (x, z) => { const y = lvl(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; },
-        (x, z, size) => addPop(x, z, Math.min(1.5, size)), px, skyTurn);
+        () => {}, px, skyTurn); // no splash rings: the nova's push is the only water effect
       for (const pp of pops) if (pp && pp[2] > 0) { pp[2] += dt / (pp[3] > 2 ? 1.6 : 0.7); if (pp[2] >= 1) pp[2] = 0; }
       if (stage.style.getPropertyValue('--hold') !== (ch * T.holdVignette).toFixed(2)) stage.style.setProperty('--hold', (ch * T.holdVignette).toFixed(2));
       // The river stays as the canyon flattens: seen from above it runs down the middle of the screen
@@ -429,6 +427,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         // The orb's light on the water (its glow, glint and mirror image) follows the orb itself: nothing until it
         // has spawned, so the reflection never appears before the orb does.
         flat: 1 - k, stir: (1 - ease(away * 2.5)) * born, show: 1, fogNear: fog.near, fogFar: fog.far, calm, drop: drainY,
+        nova: [novaAt.x, novaAt.y, novaT, T.holdNovaWave], novaSpeed: T.holdNovaWaveSpeed,
         mirror: [T.orbMirror * (1 - away) * born, R * born, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
         boil: [orbit.position.x, orbit.position.z, boil, T.holdBoilArea], boilLook: [T.holdBoilHeight, T.holdBoilSpeed, T.holdBoilSpecks, T.holdBoilLift], pops, skyTurn,
       });

@@ -49,6 +49,19 @@ float shapeFoam(vec2 q, float d, float lace) { return shapeFoam0(q, d / uSwirlR,
 float swirl(vec2 q, float d, float arms, float wind, float speed) {
   return sin(arms * atan(q.y, q.x + 0.0001) + d * wind - uTime * speed) * smoothstep(1.5, 6.5, d);
 }
+uniform vec4 uNova;      // the nova's push on the water: x, z, seconds since the blast (below 0 = none), height
+uniform float uNovaSpeed; // how fast the ring runs out (units a second)
+// The nova pushes the water: a crest of water heaped up at the ring as it runs outwards, the middle pushed
+// down and filling back in, and a few waves trailing behind the crest. All of it fades as it spreads.
+float novaWave(vec2 p) {
+  if (uNova.z < 0.0 || uNova.w <= 0.0) return 0.0;
+  float t = uNova.z, d = length(p - uNova.xy), front = t * uNovaSpeed;
+  float k = d - front;
+  float crest = exp(-k * k / (2.5 + front * 0.15));
+  float hollow = -0.9 * exp(-d * d / (front * front * 0.3 + 4.0)) * exp(-t * 1.1);
+  float trail = 0.35 * sin(k * 1.3) * exp(k * 0.12) * step(k, 0.0);
+  return uNova.w * (crest + hollow + trail) * exp(-t * 0.55) * smoothstep(0.0, 0.08, t);
+}
 uniform vec4 uBoil;      // the boil: centre x, z (under the orb), strength (0 to 1), how far it spreads (radius)
 uniform vec4 uBoilLook;  // fine bubbling, speed, white specks, how high the surface heaves (real height)
 // A rolling boil: the surface split into jittered cells (Voronoi), each a dome that swells and sinks on its
@@ -91,7 +104,7 @@ void main() {
   float arms = 0.55 * swirl(q, d, 3.0, 0.9, 5.0) + 0.3 * swirl(q, d, 2.0, 0.35, 2.6);
   float swell = 0.05 * sin(p.z * 0.3 + p.x * 0.2 + uTime * 1.6);
   float lift = uVar > 0.5 ? uStir * shapeH(q, d) + swell : dish + stirAt(d) * arms + swell;
-  lift += boilHeave(p.xz); // the boiling lake rises and falls for real
+  lift += boilHeave(p.xz) + novaWave(p.xz); // the boiling lake and the nova's push move the real surface
   p.y += lift;
   vP = p.xz;
   vBed = (aBed + lift) * max(uFlat, 0.45); // the river keeps some depth when the land lies flat, so it stays visible
@@ -176,7 +189,7 @@ float surface(vec2 p, float detail) {
   h += rough * (0.035 * sin(dot(p, vec2(0.21, 0.43)) - uTime * 1.1) + 0.022 * sin(dot(p, vec2(-0.37, 0.29)) - uTime * 1.45) + 0.014 * sin(dot(p, vec2(0.52, -0.18)) - uTime * 1.9));
   h += detail * (0.009 * snoise(p * 0.9 + vec2(uTime * 0.21, -uTime * 0.33)) + 0.007 * snoise(p * 1.6 + vec2(-uTime * 0.29, -uTime * 0.17) + 7.3));
   if (uVar > 3.5) h += 0.07 * uStir * uSwirlDepth * vortex(q, d);
-  h += boilHeave(p);
+  h += boilHeave(p) + novaWave(p);
   // The boil: small fast bumps over the lake (as far as uBoil.w reaches), and rings running out from the beam.
   if (uBoil.z > 0.001) {
     vec2 bq = p - uBoil.xy; float bd = length(bq), near = exp(-bd * bd / (uBoil.w * uBoil.w)), sp = uBoilLook.y;
@@ -354,6 +367,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
   const uniforms = {
     uTime: { value: 0 }, uVar: { value: 0 }, uSwirlR: { value: 1 }, uSwirlDepth: { value: 1 }, uSwirlSpeed: { value: 1 },
     uRough: { value: 1 }, uClear: { value: 0 }, uSwirlLines: { value: 1 }, uSwirlSoft: { value: 1 }, uDetailK: { value: 1 }, uFoamK: { value: 1 }, uGlintK: { value: 1 }, uReflect: { value: 1 }, uBody: { value: 1 }, uSilk: { value: 1 }, uStir: { value: 1 }, uGlow: { value: 1 }, uOpacity: { value: 1 }, uFlat: { value: 1 },
+    uNova: { value: new Vector4(0, 0, -1, 0) }, uNovaSpeed: { value: 22 },
     uBoil: { value: new Vector4(0, 0, 0, 3) }, uBoilLook: { value: new Vector4(1, 1, 1, 1) }, uPops: { value: Array.from({ length: 8 }, () => new Vector4()) }, uSkyTurn: { value: 0 },
     uMirror: { value: new Vector4() }, uCalm: { value: new Vector4() }, uCalmK: { value: new Vector2() },
     uOrb: { value: new Vector2() }, uOrbPos: { value: new Vector3() },
@@ -388,6 +402,7 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     /** The calm box behind the quote: left, bottom, right, top in canvas pixels, how calm (0 to 1), edge softness. */ calm: [number, number, number, number, number, number];
     /** The orb mirrored in the water: strength, orb radius, spin clock, lightning flash. And how much lightning brightens the water. */ mirror: [number, number, number, number]; flash: number;
     /** How far the river level has dropped (after the nova). */ drop?: number;
+    /** The nova's push: x, z, seconds since (below 0 = none), height; and its speed. */ nova?: [number, number, number, number]; novaSpeed?: number;
     /** The boil (x, z, strength 0..1, radius), its look (height, speed, specks, spot size), bursting rings, and how far the sky has turned. Optional. */ boil?: [number, number, number, number]; boilLook?: [number, number, number, number]; pops?: [number, number, number, number][]; skyTurn?: number;
   };
   const update = (f: Frame) => {
@@ -399,6 +414,8 @@ export function makeWater({ small, grid, heightAt, fogColor }: WaterOptions) {
     uniforms.uCalm.value.set(f.calm[0], f.calm[1], f.calm[2], f.calm[3]); uniforms.uCalmK.value.set(f.calm[4], f.calm[5]);
     uniforms.uMirror.value.set(f.mirror[0], f.mirror[1], f.mirror[2], f.mirror[3]);
     if (f.boil) uniforms.uBoil.value.set(f.boil[0], f.boil[1], f.boil[2], f.boil[3]); else uniforms.uBoil.value.z = 0;
+    if (f.nova) uniforms.uNova.value.set(f.nova[0], f.nova[1], f.nova[2], f.nova[3]); else uniforms.uNova.value.z = -1;
+    uniforms.uNovaSpeed.value = f.novaSpeed ?? 22;
     if (f.boilLook) uniforms.uBoilLook.value.set(f.boilLook[0], f.boilLook[1], f.boilLook[2], f.boilLook[3]);
     for (let i = 0; i < 8; i++) { const pp = f.pops?.[i]; if (pp) uniforms.uPops.value[i]!.set(pp[0], pp[1], pp[2], pp[3]); else uniforms.uPops.value[i]!.z = 0; }
     uniforms.uSkyTurn.value = f.skyTurn ?? 0;
