@@ -24,16 +24,19 @@ source on branch `claude/hold-polish` (PR #119, draft). Source of truth = PR #11
   (/opt/npm-tools/node_modules/puppeteer, /usr/bin/google-chrome, swiftshader flags). `node --check` needs
   the file copied to .mjs or it misses syntax errors (this caused a black screen once).
 
-## Testing tools in this folder
-- `sim.mjs`: runs the liquid's drop motion with no browser and prints counts (fast).
-- `t3.mjs TAG W H scrollPx "times"`: holds the orb in headless Chrome under a fake clock and saves pictures.
-  Software drawing is very slow with the liquid (several seconds a frame): allow 5 to 8 minutes a run.
+## READ THIS FIRST: the mistake of 18 Nov 18:05 (build ddg12)
+The scene chunk (Stage-ddgN.js) imports the site chunk BY NAME (`from"./site-ddgN.js"`). In ddg12 the site file was
+renamed but that import was not, so the browser loaded the old site file as a second copy of the whole page:
+two settings panels (Hide looked dead) and two 3D scenes (heavy lag). `patch13.py` now changes that import.
+After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/site-ddg<new>.js index.html` must be 0.
 
-## State 18 Nov 18:10 (source commit afc7c5b on claude/hold-polish)
-- VERIFIED headless: no charge by itself at load (was a negative first time step); press and hold starts;
-  status line shows; liquid runs without error with the scene copy (refraction); early globules look right.
-- NOT VERIFIED: the hold on Markus's own screen; the look of the full vortex (1.4 s to nova) and of the
-  scatter with the new ropes and see-through shading (pictures were still being taken); a scrolled-page press.
-- Next: look at pictures at 2.2 / 2.9 / 3.25 s, tune rope size, brightness and the mound; then Markus's view.
-- Markus asked (18 Nov) for the vortex water to use the river's exact look and for gravity to seem to let go.
-
+## State 18 Nov 18:35 (source: claude/hold-polish, commit "remove the water vortex")
+- Markus asked to undo the vortex look work and remove the vortex completely. Done: no liquid, no vortex sliders.
+- Live files here: index.html -> assets/site-ddg13.js -> assets/Stage-ddg13.js, built by `python3 patch13.py`
+  from the ddg11 base files (keep those; they are not served).
+- Kept: hold fixes (press works on a slightly scrolled page and jumps to the top; no charge by itself at load),
+  a preview-only status line at the bottom left, Hide leaves one small Show button.
+- VERIFIED headless (t4.mjs, fake clock): Hide works; no vortex sliders; press on a page scrolled 150 px starts
+  the hold; charge to nova; one scene only.
+- NOT VERIFIED: anything on Markus's own screen.
+- Testing: `python3 -m http.server 8765` here, then `node t4.mjs` (write output to a log; about 5 minutes).

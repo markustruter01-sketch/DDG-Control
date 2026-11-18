@@ -1,0 +1,47 @@
+"""Build the preview's ddg13 files from the ddg11 base, to match claude/hold-polish:
+hold fixes, status line, NO water vortex (the liquid module is cut out), Hide leaves only a Show button.
+Usage: python3 patch13.py   (run in this folder)"""
+import re
+A = 'assets'
+def rd(p): return open(p, encoding='utf-8').read()
+def one(s, a, b, n=1):
+    assert s.count(a) == n, (a[:70], s.count(a))
+    return s.replace(a, b)
+s = rd(f'{A}/Stage-ddg11.js')
+# the liquid vortex: cut out, with every call to it
+a = s.index('const __LQ=(()=>{'); b = s.index('const __lq={o:null};\n') + len('const __lq={o:null};\n')
+s = s[:a] + "const __st={el:null,lp:'none yet',at:0,fps:0};\n" + s[b:]
+s = one(s, '__lq.o=__LQ.makeLiquid(a),', '')
+s = one(s, ',__lq.o.scatter($.position)),', '),')
+s = one(s, '__lq.o.update(oe,nt.holdFxVortex>.5&&nt.holdVortexLook===5?fxC*(1-Xt):0,$.position,me*ze,{amount:nt.holdFxAmount,speed:nt.holdFxSpeed,size:nt.holdVortexSize,reach:nt.holdVortexReach,glow:nt.holdVortexGlow},(Zt,se)=>Math.max(it(se),zn(Zt,se)*(1-D))),', '')
+s = one(s, 'funnel:__lq.o.funnel,', '')
+# no vortex of any kind round the orb
+s = one(s, 'nt.holdFxVortex>.5&&nt.holdVortexLook!==5', '!1')
+# the status line (preview only)
+s = one(s, 'a.render(d,g),__lq.o.render(g,$.position,me*ze,jt),',
+  'a.render(d,g),(()=>{if(globalThis.__DDG_TUNE__&&Pt-__st.at>250){__st.at=Pt;if(!__st.el||!__st.el.isConnected){__st.el=document.createElement("div");__st.el.style.cssText="position:fixed;left:10px;bottom:8px;z-index:2147482000;font:11px/1.4 ui-monospace,Menlo,monospace;color:#9fd8ff;background:rgba(0,0,0,.6);padding:3px 8px;border-radius:6px;pointer-events:none";document.body.appendChild(__st.el)}__st.el.textContent=`scroll ${Math.round(scrollY)} px · orb: ${de.down?"HELD":_t?"let go first":Te.r>0?"ready to press":"cannot be pressed (page scrolled too far)"} · last press: ${__st.lp} · charge ${Math.round(ie*100)}% · ${Math.round(__st.fps)} frames/s`}})(),')
+assert '__lq' not in s and '__LQ' not in s
+# time step never negative; frames a second
+s = one(s, 'const ee=Pt-wt,oe=Math.min(.05,ee/1e3);', 'const ee=Pt-wt,oe=Math.min(.05,Math.max(0,ee/1e3));ee>0&&ee<1e3&&(__st.fps+=(1e3/ee-__st.fps)*.1);')
+# the press: works on a slightly scrolled page (jumps to the top), and says what happened
+s = one(s, 'on=Pt=>{Pt.button>0||!tr(Pt.clientX,Pt.clientY)||Pt.target?.closest?.("a,button,input,textarea,select,label,.tune")||(de.down=!0,de.id=Pt.pointerId,de.x=Pt.clientX,de.y=Pt.clientY)}',
+  'on=Pt=>{if(Pt.button>0||!tr(Pt.clientX,Pt.clientY)){__st.lp=Pt.button>0?"not the main button":Te.r>0?"missed the orb":"orb not ready";return}if(Pt.target?.closest?.("a,button,input,textarea,select,label,.tune")){__st.lp="on a button or the panel";return}__st.lp="on the orb";de.down=!0,de.id=Pt.pointerId,de.x=Pt.clientX,de.y=Pt.clientY;scrollY>0&&scrollTo({top:0,behavior:"instant"})}')
+s = one(s, 'Qi.style.cursor=tr(Pt.clientX,Pt.clientY)&&scrollY<40?"pointer":""', 'Qi.style.cursor=tr(Pt.clientX,Pt.clientY)?"pointer":""')
+s = one(s, 'Gn=Pt=>{Pt.pointerId===de.id&&(de.down=!1,_t=!1)}', 'Gn=Pt=>{Pt.pointerId===de.id&&(de.down&&Pt.type==="pointercancel"&&(__st.lp="cancelled by the browser"),de.down=!1,_t=!1)}')
+s = one(s, 'de.down&&(H>.08||nt.holdOn<.5)&&(de.down=!1)', 'de.down&&(scrollY>Ce*.1||nt.holdOn<.5)&&(de.down=!1)')
+s = one(s, 'Te.r=H<.06?ke:0', 'Te.r=H<.25?ke:0')
+# IMPORTANT: the scene chunk imports the site chunk by name. If this name is not changed too, the browser loads
+# the OLD site file as a second copy of the whole page (two panels, two 3D scenes: Hide seems dead, and it lags).
+s = one(s, 'from"./site-ddg11.js"', 'from"./site-ddg13.js"')
+open(f'{A}/Stage-ddg13.js', 'w', encoding='utf-8').write(s)
+
+t = rd(f'{A}/site-ddg11.js')
+t = one(t, 'Stage-ddg11.js', 'Stage-ddg13.js', t.count('Stage-ddg11.js'))
+t, n = re.subn(r'\{group:"Hold the orb",key:"hold(?:FxVortex|Vortex[A-Za-z]*)",[^{}]*\},', '', t); assert n == 6, n
+t, n = re.subn(r'\s*hold(?:FxVortex|Vortex[A-Za-z]*):\s*[0-9.]+,', '', t); assert n == 6, n
+t = one(t, '.tune.min { bottom: auto; }\n.tune.min .tune-body, .tune.min .tune-foot { display: none; }',
+  '.tune.min { bottom: auto; width: auto; background: none; border: 0; box-shadow: none; backdrop-filter: none; }\n.tune.min .tune-body, .tune.min .tune-foot, .tune.min .tune-head b { display: none; }\n.tune.min .tune-head { padding: 0; border: 0; } .tune.min button { opacity: 0.55; }')
+t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-34', t.count('ddg-scene-tune-32'))
+open(f'{A}/site-ddg13.js', 'w', encoding='utf-8').write(t)
+h = rd('index.html'); h = one(h, 'site-ddg11.js', 'site-ddg13.js'); open('index.html', 'w', encoding='utf-8').write(h)
+print('ok')
