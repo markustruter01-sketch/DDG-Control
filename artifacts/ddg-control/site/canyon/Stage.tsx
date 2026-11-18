@@ -213,9 +213,6 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const flyDir = new Vector3();
     const hold = { down: false, id: -1, x: 0, y: 0, touching: false };
     const rootStyle = document.documentElement.style;
-    // Pressed glass (T.holdDent): a round dent in the "screen" under the finger while the orb is held. It grows
-    // with the charge and follows the finger. Made only when first needed.
-    let dentEl: HTMLDivElement | null = null, dentShow = 0;
     // Phones that can buzz (Android; iPhones give web pages no way to): the buzz builds with the charge.
     const canBuzz = typeof navigator.vibrate === 'function';
     let buzzAt = 0, buzzing = false;
@@ -254,7 +251,6 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const noScroll = (e: TouchEvent) => { if ((hold.down || hold.touching) && e.cancelable) e.preventDefault(); };
     const touchOff = (e: TouchEvent) => { if (e.touches.length === 0) hold.touching = false; };
     const onMove = (e: PointerEvent) => {
-      if (hold.down && e.pointerId === hold.id) { hold.x = e.clientX; hold.y = e.clientY; } // the dent follows the finger
       // Moving the mouse (or the finger, see noScroll) while holding keeps the charge going.
       if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) ? 'pointer' : '';
     };
@@ -289,7 +285,22 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       nav: topEl.querySelector<HTMLElement>('.s-nav'), brand: topEl.querySelector<HTMLElement>('.cn-brand'),
       hint: topEl.querySelector<HTMLElement>('.cn-scroll'), quote: topEl.querySelector<HTMLElement>('.cn-quote'), cta: topEl.querySelector<HTMLElement>('.cn-cta'),
     };
-    let layAt = -1e9, layKey = '', layOn = false;
+    let layAt = -1e9, layKey = '', layOn = false, layZoom = 0, textBoost = 0, textW = -1;
+    // Same picture on every phone (Markus, 18 Nov 21:06): the words and button are scaled with the screen, the
+    // same way the 3D orb is, against the design screen he approved (iPhone 15/16 page area, 393 x 798). Phones
+    // that enlarge text (font-size or zoom settings, or the browser's own text boost) are measured and undone:
+    // a 100 px letter is drawn once off screen, and anything over 100 px is the phone's enlargement.
+    const DESIGN_W = 393, DESIGN_H = 798;
+    const measureTextBoost = () => {
+      const probe = document.createElement('span');
+      probe.setAttribute('aria-hidden', 'true');
+      probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;font:100px/1 sans-serif;white-space:nowrap';
+      probe.textContent = 'X';
+      document.body.appendChild(probe);
+      const h = probe.getBoundingClientRect().height;
+      probe.remove();
+      return h > 0 ? Math.min(2, Math.max(0.8, h / 100)) : 1;
+    };
     const layCam = new PerspectiveCamera(58, 1, 0.1, 500), layPos = new Vector3();
     const layoutDue = (now: number, p: number) => p < 0.005 && !hold.down && charge === 0 && (introStart() === null || now - layAt > 250);
     const phoneLayout = (R: number) => {
@@ -297,12 +308,15 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const H = stableHeight();
       const on = T.phoneLayout > 0.5 && innerWidth / H < 0.8 && !!(lay.nav && lay.brand && lay.quote && lay.cta);
       if (on !== layOn) { layOn = on; topEl.classList.toggle('cn-lay', on); layKey = ''; }
-      if (!on) { if (autoLift !== null) { autoLift = null; resize(); } return; }
+      if (!on) { if (autoLift !== null) { autoLift = null; resize(); } if (layZoom) { layZoom = 0; topEl.style.removeProperty('--z'); } return; }
+      if (textW !== innerWidth) { textW = innerWidth; textBoost = measureTextBoost(); }
+      const zoom = Math.min(1.6, Math.max(0.6, Math.min(innerWidth / DESIGN_W, innerHeight / DESIGN_H) / textBoost));
+      if (Math.abs(zoom - layZoom) > 0.004) { layZoom = zoom; topEl.style.setProperty('--z', zoom.toFixed(3)); layKey = ''; }
       const top = lay.nav!.getBoundingClientRect().bottom;
       const bottom = lay.cta!.getBoundingClientRect().top - (parseFloat(topEl.style.getPropertyValue('--cn-dy')) || 0);
-      const hB = lay.brand!.offsetHeight;
-      const hH = lay.hint && lay.hint.offsetParent && getComputedStyle(lay.hint).display !== 'none' ? lay.hint.offsetHeight : 0;
-      const padQ = T.quoteOn ? T.qbPadY : 0, hQ = T.quoteOn ? lay.quote!.offsetHeight + 2 * padQ : 0;
+      const hB = lay.brand!.getBoundingClientRect().height; // (rects, not offsetHeight: they include the zoom)
+      const hH = lay.hint && lay.hint.offsetParent && getComputedStyle(lay.hint).display !== 'none' ? lay.hint.getBoundingClientRect().height : 0;
+      const padQ = T.quoteOn ? T.qbPadY * layZoom : 0, hQ = T.quoteOn ? lay.quote!.getBoundingClientRect().height + 2 * padQ : 0;
       // The orb's size on screen, and where it would sit with no shift.
       layCam.fov = camera.fov; layCam.aspect = camera.aspect; layCam.clearViewOffset(); layCam.updateProjectionMatrix();
       layCam.position.set(0, 9, 42); zoomAway(layCam.position, restLook, Math.max(0.5, T.camZoom)); layCam.lookAt(restLook); layCam.updateMatrixWorld();
@@ -387,25 +401,6 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // After the blast every charge-up effect stops at once (Markus, 18 Nov): what is in the air falls back,
       // nothing new appears, and only the camera, sky, glow and orb settle back over the calm-down time.
       const fxCh = novaT >= 0 ? 0 : ch;
-      // The dent in the glass under the finger.
-      if (T.holdDent > 0 && (hold.down || dentShow > 0.01)) {
-        if (!dentEl) {
-          dentEl = document.createElement('div');
-          dentEl.setAttribute('aria-hidden', 'true');
-          dentEl.style.cssText = 'position:fixed;left:0;top:0;z-index:2147481000;pointer-events:none;border-radius:50%;will-change:transform,opacity;'
-            + 'background:radial-gradient(circle at 50% 46%,rgba(0,0,0,.34) 0%,rgba(0,0,0,.16) 42%,rgba(255,255,255,.07) 68%,rgba(255,255,255,0) 100%);'
-            + 'box-shadow:inset 0 7px 20px rgba(0,0,0,.6),inset 0 -4px 12px rgba(255,255,255,.2),0 0 0 1px rgba(255,255,255,.16),0 0 34px rgba(140,210,255,.18);'
-            + '-webkit-backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);'
-            // It fades away towards its edge, so the dent has no hard rim.
-            + '-webkit-mask-image:radial-gradient(circle,#000 30%,rgba(0,0,0,.55) 52%,transparent 72%);mask-image:radial-gradient(circle,#000 30%,rgba(0,0,0,.55) 52%,transparent 72%)';
-          document.body.appendChild(dentEl);
-        }
-        dentShow = hold.down ? Math.min(1, dentShow + dt / 0.15) : Math.max(0, dentShow - dt / 0.35);
-        const size = (70 + 110 * ch) * T.holdDent * (0.6 + 0.4 * dentShow);
-        dentEl.style.width = dentEl.style.height = `${size.toFixed(1)}px`;
-        dentEl.style.transform = `translate(${(hold.x - size / 2).toFixed(1)}px, ${(hold.y - size / 2).toFixed(1)}px)`;
-        dentEl.style.opacity = dentShow.toFixed(2);
-      } else if (dentEl && dentEl.style.opacity !== '0') { dentShow = 0; dentEl.style.opacity = '0'; }
       // The buzz starts slow and builds: at first a faint tick about twice a second, then the ticks come faster
       // and last longer, to a hard rattle at full charge. It stops dead at the blast, and when the orb is let go.
       if (canBuzz && T.holdVibrate > 0 && !reduced) {
@@ -643,7 +638,6 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       rootStyle.userSelect = ''; rootStyle.setProperty('-webkit-user-select', ''); rootStyle.setProperty('-webkit-touch-callout', '');
       if (followEl) followEl.style.opacity = '';
       statusEl?.remove();
-      dentEl?.remove();
       if (buzzing) buzz(0);
       stopResize();
       disposables.forEach((d) => d.dispose());

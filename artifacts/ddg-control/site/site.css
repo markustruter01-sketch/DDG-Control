@@ -1,3 +1,5 @@
+/* Phones must not enlarge the text on their own (Chrome and Samsung text boost); Stage.tsx undoes any that remains. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 /* Public DDG website — Night Glass. Photo on the home hero only; everything else graphite. */
 @import '../src/tokens.css';
 @import '../src/dusk.css';
@@ -783,9 +785,15 @@ p { margin: 0; }
 
 /* Phones: one even layout for the first screen (Stage.tsx, phoneLayout). The scene measures the real sizes and
    sets --lay-brand, --lay-hint and --lay-quote (tops, in px); everything still moves with the orb when scrolling. */
-.cn-top.cn-lay .cn-brand { top: var(--lay-brand); bottom: auto; transform: translateY(var(--cn-dy, 0px)); }
-.cn-top.cn-lay .cn-scroll { top: var(--lay-hint); transform: translateY(var(--cn-dy, 0px)); }
-.cn-top.cn-lay .cn-quote { top: var(--lay-quote); bottom: auto; }
+/* Same on every phone: the menu, name, hint, quote and button are zoomed by --z (Stage.tsx: the screen against
+   the 393 x 798 design, with any text enlargement by the phone undone). A zoomed box multiplies its own lengths
+   by --z too, so the measured places are divided by it. */
+.cn-top.cn-lay .cn-follow { --cta-h: 48px; --cta-gap: 25.5px; } /* the design screen's sizes (6% and 3.2% of 798), zoomed with the rest */
+.cn-top.cn-lay .s-nav, .cn-top.cn-lay .cn-brand, .cn-top.cn-lay .cn-scroll, .cn-top.cn-lay .cn-quote, .cn-top.cn-lay .cn-cta { zoom: var(--z, 1); }
+.cn-top.cn-lay .cn-brand { top: calc(var(--lay-brand) / var(--z, 1)); bottom: auto; transform: translateY(calc(var(--cn-dy, 0px) / var(--z, 1))); }
+.cn-top.cn-lay .cn-scroll { top: calc(var(--lay-hint) / var(--z, 1)); transform: translateY(calc(var(--cn-dy, 0px) / var(--z, 1))); }
+.cn-top.cn-lay .cn-quote { top: calc(var(--lay-quote) / var(--z, 1)); bottom: auto; transform: translateY(calc(var(--cn-dy, 0px) / var(--z, 1))); }
+.cn-top.cn-lay .cn-cta { bottom: calc((var(--cta-gap) + var(--cn-bar) + var(--cn-safe)) / var(--z, 1)); transform: translateY(calc(var(--cn-dy, 0px) / var(--z, 1))); }
 
 /* Portfolio list: the short line only, with an "Expand" button whose arrow nudges right (18 Nov 2026). */
 .j-ticks li { display: flex; flex-wrap: wrap; align-items: center; column-gap: 14px; row-gap: 4px; }
