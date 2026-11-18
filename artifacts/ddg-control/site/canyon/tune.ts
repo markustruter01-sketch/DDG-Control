@@ -32,6 +32,7 @@ export const SPECS: Spec[] = [
   { group: 'Orb', key: 'orbStreaks', label: 'White streaks', min: 0, max: 3, step: 0.05 },
   { group: 'Orb', key: 'orbSparks', label: 'Spark brightness', min: 0, max: 3, step: 0.05 },
   { group: 'Orb', key: 'orbSparkRate', label: 'Spark how often', min: 0, max: 4, step: 0.05 },
+  { group: 'Orb', key: 'camZoom', label: 'Camera: distance from the orb (1 = close, 2 = twice as far)', min: 0.6, max: 4, step: 0.05 },
   { group: 'Orb', key: 'orbSize', label: 'Size', min: 0.4, max: 2, step: 0.02 },
   { group: 'Orb', key: 'orbHeight', label: 'Height above water', min: -3, max: 6, step: 0.1 },
   { group: 'Orb', key: 'orbGlow', label: 'Glow around it', min: 0, max: 2, step: 0.05 },
@@ -95,7 +96,6 @@ export const SPECS: Spec[] = [
   { group: 'Water', key: 'sprayAmount', label: 'Spray amount', min: 0, max: 1, step: 0.05 },
   { group: 'Water', key: 'spraySize', label: 'Spray drop size', min: 0, max: 3, step: 0.05 },
   // Scene
-  { group: 'Scene', key: 'camZoom', label: 'Camera distance at load (1 = as before, 2 = twice as far)', min: 0.6, max: 3, step: 0.05 },
   { group: 'Scene', key: 'fogNear', label: 'Fog starts', min: 0.2, max: 3, step: 0.05 },
   { group: 'Scene', key: 'fogFar', label: 'Fog full', min: 0.3, max: 3, step: 0.05 },
   { group: 'Scene', key: 'fov', label: 'Camera zoom (field of view)', min: 30, max: 90, step: 1 },
@@ -218,6 +218,7 @@ export const SPECS: Spec[] = [
   { group: 'Name and logo', key: 'brandLine', label: 'Gap between the two lines', min: 0.8, max: 2, step: 0.02 },
   { group: 'Name and logo', key: 'logoOn', label: 'Show the logo (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Name and logo', key: 'logoSize', label: 'Logo size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Name and logo', key: 'logoPlace', label: 'Where the logo sits', min: 0, max: 1, step: 1, names: ['Above the name', 'Left of the name'] },
   { group: 'Name and logo', key: 'logoGap', label: 'Gap between logo and name', min: 0, max: 60, step: 1 },
   { group: 'Name and logo', key: 'brandLift', label: 'Move up / down', min: -20, max: 30, step: 0.5 },
   { group: 'Name and logo', key: 'phoneLayout', label: 'Phones: space the first screen evenly by itself (0 off: the sliders above place things)', min: 0, max: 1, step: 1, names: ['Off', 'On'] },
@@ -245,7 +246,7 @@ export const DEFAULTS: Record<string, number> = {
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
   pageClouds: 0, pageCloudOpacity: 0.22, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
   shOn: 1, shArrow: 6, shAnim: 1, shSpeed: 2, shTravel: 10, shLayout: 0, shFont: 2, shSize: 0.95, shSpacing: 0.12, shCaps: 0, shBright: 1, shPlace: 35,
-  brandFont: 3, brandSize: 0.6, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.04, logoSize: 0.75, logoGap: 13, brandLift: 17, phoneLayout: 1,
+  brandFont: 3, brandSize: 0.6, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.04, logoSize: 0.75, logoPlace: 1, logoGap: 13, brandLift: 17, phoneLayout: 1,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
@@ -253,7 +254,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for Web-Page or | Press & Hold Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-44'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-45'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -423,7 +424,7 @@ const ARROWS = [
   '',
 ];
 export function applyBrand(): void {
-  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', 'qpFrame', 'qpBright', 'qpBlue', 'qpGlow', 'qpHi', 'qpAnim', 'qpSpeed', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText + '|' + TX.shHiWords + '|' + T.shHiHue + '|' + T.shHiSat;
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoPlace', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', 'qpFrame', 'qpBright', 'qpBlue', 'qpGlow', 'qpHi', 'qpAnim', 'qpSpeed', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText + '|' + TX.shHiWords + '|' + T.shHiHue + '|' + T.shHiSat;
   // The hint fades away as soon as the visitor starts scrolling.
   const fade = String(Math.max(0, 1 - scrollY / (innerHeight * 0.2)).toFixed(3));
   if (fade !== lastFade) { lastFade = fade; document.documentElement.style.setProperty('--hint-fade', fade); }
@@ -541,5 +542,7 @@ export function applyBrand(): void {
   s.setProperty('--logo-white-show', T.logoOn ? 'block' : 'none');
   s.setProperty('--group-size', String(T.groupSize));
   s.setProperty('--logo-gap', `${T.logoGap}px`);
+  s.setProperty('--brand-dir', T.logoPlace > 0.5 ? 'row' : 'column');
+  s.setProperty('--brand-text', T.logoPlace > 0.5 ? 'left' : 'center');
   s.setProperty('--brand-lift', `${T.brandLift}vh`);
 }
