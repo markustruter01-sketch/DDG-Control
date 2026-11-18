@@ -32,6 +32,7 @@ export const SPECS: Spec[] = [
   { group: 'Orb', key: 'orbStreaks', label: 'White streaks', min: 0, max: 3, step: 0.05 },
   { group: 'Orb', key: 'orbSparks', label: 'Spark brightness', min: 0, max: 3, step: 0.05 },
   { group: 'Orb', key: 'orbSparkRate', label: 'Spark how often', min: 0, max: 4, step: 0.05 },
+  { group: 'Orb', key: 'camZoom', label: 'Camera: distance from the orb (1 = close, 2 = twice as far)', min: 0.6, max: 4, step: 0.05 },
   { group: 'Orb', key: 'orbSize', label: 'Size', min: 0.4, max: 2, step: 0.02 },
   { group: 'Orb', key: 'orbHeight', label: 'Height above water', min: -3, max: 6, step: 0.1 },
   { group: 'Orb', key: 'orbGlow', label: 'Glow around it', min: 0, max: 2, step: 0.05 },
@@ -217,8 +218,10 @@ export const SPECS: Spec[] = [
   { group: 'Name and logo', key: 'brandLine', label: 'Gap between the two lines', min: 0.8, max: 2, step: 0.02 },
   { group: 'Name and logo', key: 'logoOn', label: 'Show the logo (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Name and logo', key: 'logoSize', label: 'Logo size', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Name and logo', key: 'logoPlace', label: 'Where the logo sits', min: 0, max: 1, step: 1, names: ['Above the name', 'Left of the name'] },
   { group: 'Name and logo', key: 'logoGap', label: 'Gap between logo and name', min: 0, max: 60, step: 1 },
   { group: 'Name and logo', key: 'brandLift', label: 'Move up / down', min: -20, max: 30, step: 0.5 },
+  { group: 'Name and logo', key: 'phoneLayout', label: 'Phones: space the first screen evenly by itself (0 off: the sliders above place things)', min: 0, max: 1, step: 1, names: ['Off', 'On'] },
 ];
 
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane), with his changes of 18 Nov 19:07.
@@ -231,7 +234,7 @@ export const DEFAULTS: Record<string, number> = {
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.25, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
   waterGlint: 2.05, waterReflect: 1.1, waterColour: 3, waterSheen: 1.05, sprayAmount: 0.1, spraySize: 0,
-  fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
+  camZoom: 2, fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
   wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.7, waterClear: 0.18,
   starsEvery: 2.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
   pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
@@ -243,7 +246,7 @@ export const DEFAULTS: Record<string, number> = {
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
   pageClouds: 0, pageCloudOpacity: 0.22, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
   shOn: 1, shArrow: 6, shAnim: 1, shSpeed: 2, shTravel: 10, shLayout: 0, shFont: 2, shSize: 0.95, shSpacing: 0.12, shCaps: 0, shBright: 1, shPlace: 35,
-  brandFont: 3, brandSize: 0.6, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.04, logoSize: 0.75, logoGap: 13, brandLift: 17,
+  brandFont: 3, brandSize: 0.6, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.04, logoSize: 0.75, logoPlace: 1, logoGap: 13, brandLift: 17, phoneLayout: 1,
 };
 
 export const T: Record<string, number> = { ...DEFAULTS };
@@ -251,7 +254,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for Web-Page or | Press & Hold Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-42'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-45'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -421,7 +424,7 @@ const ARROWS = [
   '',
 ];
 export function applyBrand(): void {
-  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', 'qpFrame', 'qpBright', 'qpBlue', 'qpGlow', 'qpHi', 'qpAnim', 'qpSpeed', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText + '|' + TX.shHiWords + '|' + T.shHiHue + '|' + T.shHiSat;
+  const key = ['brandFont', 'brandSize', 'brandWeight', 'brandSpacing', 'brandCaps', 'brandLine', 'logoSize', 'logoPlace', 'logoGap', 'brandLift', 'logoOn', 'logoStyle', 'groupSize', 'quote', 'quoteOn', 'quoteFont', 'quoteSize', 'quoteWeight', 'quoteSpacing', 'quoteCaps', 'quoteAlign', 'quoteWidth', 'quoteLift', 'qpFrame', 'qpBright', 'qpBlue', 'qpGlow', 'qpHi', 'qpAnim', 'qpSpeed', ...BG_KEYS, ...HINT_KEYS].map((k) => T[k]).join(',') + TX.shText + '|' + TX.quoteText + '|' + TX.shHiWords + '|' + T.shHiHue + '|' + T.shHiSat;
   // The hint fades away as soon as the visitor starts scrolling.
   const fade = String(Math.max(0, 1 - scrollY / (innerHeight * 0.2)).toFixed(3));
   if (fade !== lastFade) { lastFade = fade; document.documentElement.style.setProperty('--hint-fade', fade); }
@@ -539,5 +542,7 @@ export function applyBrand(): void {
   s.setProperty('--logo-white-show', T.logoOn ? 'block' : 'none');
   s.setProperty('--group-size', String(T.groupSize));
   s.setProperty('--logo-gap', `${T.logoGap}px`);
+  s.setProperty('--brand-dir', T.logoPlace > 0.5 ? 'row' : 'column');
+  s.setProperty('--brand-text', T.logoPlace > 0.5 ? 'left' : 'center');
   s.setProperty('--brand-lift', `${T.brandLift}vh`);
 }

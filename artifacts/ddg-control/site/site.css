@@ -434,7 +434,7 @@ p { margin: 0; }
 .cn-readout b { font-size: 14.5px; font-weight: 500; color: var(--ng-text); }
 /* No transform here: it would cut the logo's screen blend off from the scene behind it. */
 .cn-brand { position: absolute; left: 0; right: 0; width: max-content; margin: 0 auto; bottom: calc(100% - var(--cn-oy) + var(--cn-or) + 2.5vh + var(--brand-lift, 0vh));
-  display: flex; flex-direction: column; align-items: center; gap: var(--logo-gap, 10px); text-align: center;
+  display: flex; flex-direction: var(--brand-dir, column); align-items: center; gap: var(--logo-gap, 10px); text-align: var(--brand-text, center); /* the logo above the name, or to its left (tune.ts: logoPlace) */
   font-family: var(--brand-font, inherit); font-size: calc(clamp(22px, 2.3vw, 38px) * var(--brand-size, 1)); font-weight: var(--brand-weight, 400);
   letter-spacing: var(--brand-track, 0.01em); text-transform: var(--brand-case, none); line-height: var(--brand-line, 1.08); }
 .cn-brand .cn-logo-white { display: var(--logo-white-show, none); }
@@ -780,6 +780,12 @@ p { margin: 0; }
 @media (max-aspect-ratio: 4/5) {
   .cn-brand { bottom: min(calc(100% - var(--cn-oy) + var(--cn-or) + 2.5vh + var(--brand-lift, 0vh)), calc(100% - 190px)); }
 }
+
+/* Phones: one even layout for the first screen (Stage.tsx, phoneLayout). The scene measures the real sizes and
+   sets --lay-brand, --lay-hint and --lay-quote (tops, in px); everything still moves with the orb when scrolling. */
+.cn-top.cn-lay .cn-brand { top: var(--lay-brand); bottom: auto; transform: translateY(var(--cn-dy, 0px)); }
+.cn-top.cn-lay .cn-scroll { top: var(--lay-hint); transform: translateY(var(--cn-dy, 0px)); }
+.cn-top.cn-lay .cn-quote { top: var(--lay-quote); bottom: auto; }
 
 /* Portfolio list: the short line only, with an "Expand" button whose arrow nudges right (18 Nov 2026). */
 .j-ticks li { display: flex; flex-wrap: wrap; align-items: center; column-gap: 14px; row-gap: 4px; }

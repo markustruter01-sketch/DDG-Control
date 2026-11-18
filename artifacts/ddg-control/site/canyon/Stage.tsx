@@ -63,7 +63,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const disposables: { dispose: () => void }[] = [];
 
     // One grid of points, drawn twice: a dark surface (hides lines behind hills) and the lines.
-    const NX = small ? 80 : 110, NZ = small ? 150 : 200, W = 200, D = 380, Z0 = 60;
+    // The land reaches 150 towards the viewer (was 60), so no edge shows with the camera pulled back (camZoom).
+    const NX = small ? 80 : 110, NZ = small ? 186 : 247, W = 200, D = 470, Z0 = 150;
     const count = (NX + 1) * (NZ + 1);
     const base = new Float32Array(count), pos = new Float32Array(count * 3);
     for (let iz = 0, i = 0; iz <= NZ; iz++) for (let ix = 0; ix <= NX; ix++, i++) {
@@ -133,7 +134,11 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     disposables.push(...spawnFx.disposables);
     let spawnPrev = 0, introWaveT = -1, introWave = 0;
     const introWaveAt = new Vector3();
-    const ISO_POS = new Vector3(), ISO_LOOK = new Vector3(), strikeAt = new Vector3();
+    const ISO_POS = new Vector3(), ISO_LOOK = new Vector3(), strikeAt = new Vector3(), zoomShift = new Vector3();
+    /** Pull `pos` back from `at` so it is `zoom` times as far away; returns how far it moved (a shared vector). */
+    const zoomAway = (pos: Vector3, at: Vector3, zoom: number) => {
+      zoomShift.copy(pos).sub(at).multiplyScalar(zoom - 1); pos.add(zoomShift); return zoomShift;
+    };
     const chargeFx = makeCharge();
     scene.add(chargeFx.group);
     disposables.push(...chargeFx.disposables);
@@ -179,12 +184,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     // Tall phone screens: the scene is framed for wide screens, so on a phone the orb sat low, near the quote,
     // with empty sky above. Slide the picture up by part of the screen height (none on wide screens, ~17% on a
     // tall phone). The word positions are worked out from the same camera, so they follow automatically.
-    let liftPx = 0;
+    let liftPx = 0, autoLift: number | null = null; // autoLift: set by the phone layout below, which places the orb itself
     const portraitLift = (W: number, H: number) => Math.min(1, Math.max(0, (H / W - 1.15) / 0.8)) * 0.17 * H;
     const resize = () => {
       const H = stableHeight(); renderer.setSize(innerWidth, H, false); camera.aspect = innerWidth / H;
-      liftPx = portraitLift(innerWidth, H);
-      if (liftPx > 0) camera.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); else camera.clearViewOffset();
+      liftPx = autoLift ?? portraitLift(innerWidth, H);
+      if (liftPx !== 0) camera.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); else camera.clearViewOffset();
       camera.updateProjectionMatrix();
     };
     resize(); const stopResize = onStableResize(resize);
@@ -270,6 +275,51 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     let fontsIn = false, framesDrawn = 0;
     Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 2500))]).then(() => { fontsIn = true; });
     const followEl = topEl.querySelector<HTMLElement>('.cn-follow');
+
+    // ── Phone layout (Markus, 18 Nov): on tall screens the five things on the first screen (name and logo, scroll
+    // hint, orb, quote, button) are spaced evenly between the menu and the bottom of the screen, every load.
+    // Before, each was placed by its own rule (the name from the orb, the hint from the name, the quote from the
+    // button, the orb from the screen's shape), and those moved apart differently depending on when the fonts
+    // came in and on the phone's bars. Now the real sizes are measured and one gap is shared five ways:
+    //   menu | gap | name and logo | gap | hint | gap | orb | gap | quote | gap | button
+    // The orb is moved to its place by shifting the 3D picture (autoLift). site.css (.cn-lay) uses the numbers.
+    // Measured only at rest (top of the page, orb not held): while the cover is up on every frame, then four
+    // times a second, so late fonts or a changed setting are picked up. Wide screens keep the old rules.
+    const lay = {
+      nav: topEl.querySelector<HTMLElement>('.s-nav'), brand: topEl.querySelector<HTMLElement>('.cn-brand'),
+      hint: topEl.querySelector<HTMLElement>('.cn-scroll'), quote: topEl.querySelector<HTMLElement>('.cn-quote'), cta: topEl.querySelector<HTMLElement>('.cn-cta'),
+    };
+    let layAt = -1e9, layKey = '', layOn = false;
+    const layCam = new PerspectiveCamera(58, 1, 0.1, 500), layPos = new Vector3();
+    const layoutDue = (now: number, p: number) => p < 0.005 && !hold.down && charge === 0 && (introStart() === null || now - layAt > 250);
+    const phoneLayout = (R: number) => {
+      layAt = performance.now();
+      const H = stableHeight();
+      const on = T.phoneLayout > 0.5 && innerWidth / H < 0.8 && !!(lay.nav && lay.brand && lay.quote && lay.cta);
+      if (on !== layOn) { layOn = on; topEl.classList.toggle('cn-lay', on); layKey = ''; }
+      if (!on) { if (autoLift !== null) { autoLift = null; resize(); } return; }
+      const top = lay.nav!.getBoundingClientRect().bottom;
+      const bottom = lay.cta!.getBoundingClientRect().top - (parseFloat(topEl.style.getPropertyValue('--cn-dy')) || 0);
+      const hB = lay.brand!.offsetHeight;
+      const hH = lay.hint && lay.hint.offsetParent && getComputedStyle(lay.hint).display !== 'none' ? lay.hint.offsetHeight : 0;
+      const padQ = T.quoteOn ? T.qbPadY : 0, hQ = T.quoteOn ? lay.quote!.offsetHeight + 2 * padQ : 0;
+      // The orb's size on screen, and where it would sit with no shift.
+      layCam.fov = camera.fov; layCam.aspect = camera.aspect; layCam.clearViewOffset(); layCam.updateProjectionMatrix();
+      layCam.position.set(0, 9, 42); zoomAway(layCam.position, restLook, Math.max(0.5, T.camZoom)); layCam.lookAt(restLook); layCam.updateMatrixWorld();
+      const [y0, r0] = onScreen(layCam, layPos.set(0, CORE.y + T.orbHeight, CORE.z), R);
+      const D = 2 * r0, parts = hH > 0 ? 5 : 4;
+      const g = Math.max(6, (bottom - top - hB - hH - D - hQ) / parts);
+      const brandTop = top + g, hintTop = brandTop + hB + g, orbMid = hintTop + hH + (hH > 0 ? g : 0) + D / 2, quoteTop = orbMid + D / 2 + g + padQ;
+      const key = [brandTop, hintTop, quoteTop, orbMid].map((v) => v.toFixed(1)).join('|');
+      if (key === layKey) return;
+      layKey = key;
+      topEl.style.setProperty('--lay-brand', `${brandTop.toFixed(1)}px`);
+      topEl.style.setProperty('--lay-hint', `${hintTop.toFixed(1)}px`);
+      topEl.style.setProperty('--lay-quote', `${quoteTop.toFixed(1)}px`);
+      const lift = y0 - orbMid;
+      if (autoLift === null || Math.abs(lift - autoLift) > 0.5) { autoLift = lift; resize(); }
+      lastAlign = '';
+    };
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
@@ -379,6 +429,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // Where the camera goes while the orb is held: up, back, and tipped to look down (all sliders).
       ISO_POS.set(0, 9 + T.holdCamUp, 42 + T.holdCamBack);
       ISO_LOOK.set(0, 12 - 9 * T.holdCamTilt, 2 + 4 * T.holdCamTilt);
+      // The camera at load is pulled back along its line of sight (T.camZoom: 2 = twice as far; Markus, 18 Nov).
+      // It eases back to the old path as the page scrolls. The hold camera moves by the same amount, and the fog
+      // starts and ends that much further away, so the scene keeps its depth.
+      const zoom = lerp(Math.max(0.5, T.camZoom), 1, ease(p * 1.5));
+      const zoomBy = zoomAway(camera.position, look, zoom);
+      ISO_POS.add(zoomBy);
+      fog.near += zoomBy.length() * Math.sign(zoom - 1); fog.far += zoomBy.length() * Math.sign(zoom - 1);
+      lineMat.uniforms.uFogNear.value = fog.near; lineMat.uniforms.uFogFar.value = fog.far;
       if (cv > 0) { camera.position.lerp(ISO_POS, cv); look.lerp(ISO_LOOK, cv); }
       // Screen shake while charging, and a short jolt when it is let go.
       camera.lookAt(look);
@@ -412,9 +470,10 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // The dial round the orb: 0 to 100% of the build-up, thin lines, like a speedometer.
       dial.update(charge, hold.down ? 1 : 0, ORB_R);
       restCam.fov = camera.fov; restCam.aspect = camera.aspect;
-      if (liftPx > 0) { const H = stableHeight(); restCam.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); } else restCam.clearViewOffset();
+      if (layoutDue(now, p)) phoneLayout(R);
+      if (liftPx !== 0) { const H = stableHeight(); restCam.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); } else restCam.clearViewOffset();
       restCam.updateProjectionMatrix();
-      restCam.position.set(0, 9, 42); restCam.lookAt(restLook); restCam.updateMatrixWorld();
+      restCam.position.set(0, 9, 42); zoomAway(restCam.position, restLook, Math.max(0.5, T.camZoom)); restCam.lookAt(restLook); restCam.updateMatrixWorld();
       pv.set(0, CORE.y + T.orbHeight, CORE.z);
       const [oy0, or0] = onScreen(restCam, pv.clone(), R);
       // The name, frame, quote and hint fade out early, well before the orb has gone.
