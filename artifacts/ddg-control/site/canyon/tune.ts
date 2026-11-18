@@ -46,12 +46,6 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdNovaWaveSpeed', label: 'Nova: how fast the push runs out', min: 5, max: 150, step: 1 },
   { group: 'Hold the orb', key: 'holdCalm', label: 'After the blast: seconds until everything has settled', min: 0.5, max: 8, step: 0.25 },
   { group: 'Hold the orb', key: 'holdFxGlobs', label: 'Charge-up: water globules from the lake (0 off, 1 on)', min: 0, max: 1, step: 1 },
-  { group: 'Hold the orb', key: 'holdFxVortex', label: 'Charge-up: vortex of drops (0 off, 1 on)', min: 0, max: 1, step: 1 },
-  { group: 'Hold the orb', key: 'holdVortexLook', label: 'Vortex made of', min: 0, max: 5, step: 1, names: ['Water drops', 'Wind', 'Sparks (electric)', 'Mist', 'Water spout from the lake', 'Liquid water from the river'] },
-  { group: 'Hold the orb', key: 'holdVortexSize', label: 'Vortex: drop size', min: 0.3, max: 3, step: 0.05 },
-  { group: 'Hold the orb', key: 'holdVortexReach', label: 'Vortex: how wide', min: 0.6, max: 2.5, step: 0.05 },
-  { group: 'Hold the orb', key: 'holdVortexTrail', label: 'Vortex: trail length', min: 0, max: 2, step: 0.05 },
-  { group: 'Hold the orb', key: 'holdVortexGlow', label: 'Vortex: brightness', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdFxGround', label: 'Charge-up: ground lifting (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdFxAmount', label: 'Charge-up effect: amount', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdFxSpeed', label: 'Charge-up effect: speed', min: 0.2, max: 3, step: 0.05 },
@@ -230,7 +224,7 @@ export const DEFAULTS: Record<string, number> = {
   introFade: 3, introStyle: 2, introSpawn: 1.5, introLoop: 0,
   holdOn: 1, holdFlyOff: 1, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
   holdCamUp: 5, holdCamBack: 15, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 6, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 1,
-    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 0.2, holdNovaWave: 10.55, holdNovaWaveSpeed: 75, holdCalm: 3, holdFxGlobs: 0, holdFxVortex: 1, holdVortexLook: 5, holdVortexSize: 1, holdVortexReach: 1.5, holdVortexTrail: 0, holdVortexGlow: 0.85, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 0.9, holdFxSpeed: 3,
+    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 0.2, holdNovaWave: 10.55, holdNovaWaveSpeed: 75, holdCalm: 3, holdFxGlobs: 0, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 0.9, holdFxSpeed: 3,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.15, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
@@ -255,7 +249,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for Web-Page or Press & Hold Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-33'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-34'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -282,8 +276,10 @@ export function mountPanel(): () => void {
 .tune { position: fixed; top: 12px; right: 12px; bottom: 12px; width: 320px; z-index: 2147483600; display: flex; flex-direction: column;
   background: rgba(10,13,20,0.88); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; color: #dfe8f2;
   font: 12px/1.3 ui-sans-serif, system-ui, sans-serif; backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-.tune.min { bottom: auto; }
-.tune.min .tune-body, .tune.min .tune-foot { display: none; }
+/* Hidden: nothing is left but one small "Show" button in the corner. */
+.tune.min { bottom: auto; width: auto; background: none; border: 0; box-shadow: none; backdrop-filter: none; }
+.tune.min .tune-body, .tune.min .tune-foot, .tune.min .tune-head b { display: none; }
+.tune.min .tune-head { padding: 0; border: 0; } .tune.min button { opacity: 0.55; }
 .tune-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .tune-head b { flex: 1; font-weight: 600; font-size: 13px; }
 .tune button { background: rgba(255,255,255,0.08); color: inherit; border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; padding: 6px 9px; font: inherit; cursor: pointer; }

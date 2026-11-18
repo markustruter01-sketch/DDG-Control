@@ -12,7 +12,6 @@ import { makeSurge } from './surge';
 import { makeCharge } from './charge';
 import { makeDial } from './dial';
 import { makeSpawnFx, spawnLook } from './spawn';
-import { makeLiquid } from './liquid';
 import { introStart, revealPage } from '../intro';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
@@ -132,9 +131,6 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const spawnFx = makeSpawnFx();
     scene.add(spawnFx.group);
     disposables.push(...spawnFx.disposables);
-    // The liquid vortex (liquid.ts): water drawn off the river, swirling round the orb as it charges.
-    const liquid = makeLiquid(renderer);
-    disposables.push(...liquid.disposables);
     let spawnPrev = 0, introWaveT = -1, introWave = 0;
     const introWaveAt = new Vector3();
     const ISO_POS = new Vector3(), ISO_LOOK = new Vector3(), strikeAt = new Vector3();
@@ -221,7 +217,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       statusEl.style.cssText = 'position:fixed;left:10px;bottom:8px;z-index:2147482000;font:11px/1.4 ui-monospace,Menlo,monospace;color:#9fd8ff;background:rgba(0,0,0,.6);padding:3px 8px;border-radius:6px;pointer-events:none';
       document.body.appendChild(statusEl);
     }
-    let lastPress = 'none yet', statusAt = 0, fps = 0, liquidErr = '';
+    let lastPress = 'none yet', statusAt = 0, fps = 0;
     const orbOnScreen = { x: 0, y: 0, r: 0 };
     const heroEl = document.querySelector<HTMLElement>('.cn-hero');
     const onOrb = (x: number, y: number) => T.holdOn > 0.5 && orbOnScreen.r > 0 && (x - orbOnScreen.x) ** 2 + (y - orbOnScreen.y) ** 2 <= (orbOnScreen.r * 1.05) ** 2;
@@ -468,20 +464,10 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         chargeFx.explode(orbit.position, T.holdNova);
         // The only water effect of the blast is its push on the river (novaWave in water.ts).
         novaAt.set(orbit.position.x, orbit.position.z, 0);
-        liquid.scatter(orbit.position);
       }
-      const liquidOn = T.holdFxVortex > 0.5 && T.holdVortexLook === 5;
-      // How hard the orb's air presses on the river now, and the dish that makes (the same numbers as water.ts).
-      const stir = (1 - ease(away * 2.5)) * born, silk = T.waterDesign > 3.5;
-      // (If the liquid ever fails on some device it is switched off, and the rest of the scene carries on.)
-      if (!liquidErr) try {
-        liquid.update(dt, liquidOn ? fxCh * (1 - away) : 0, orbit.position, R * born,
-          { amount: T.holdFxAmount, speed: T.holdFxSpeed, size: T.holdVortexSize, reach: T.holdVortexReach, glow: T.holdVortexGlow,
-            bowlDepth: (silk ? 0.65 * T.swirlDepth : 0.9) * stir * (1 - k), bowlR: silk ? 3.6 * T.swirlSize : 6.3 },
-          (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)));
-      } catch (e) { liquidErr = String(e); liquid.funnel.z = 0; }
-      chargeFx.update(dt, fxCh * (1 - away), orbit.position, R, { on: [T.holdFxGlobs > 0.5, T.holdFxVortex > 0.5 && T.holdVortexLook !== 5, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed,
-          vortex: { look: T.holdVortexLook, size: T.holdVortexSize, reach: T.holdVortexReach, trail: T.holdVortexTrail, glow: T.holdVortexGlow } },
+      chargeFx.update(dt, fxCh * (1 - away), orbit.position, R, { // (No vortex round the orb: removed, Markus 18 Nov. charge.ts still has the code for it, switched off here.)
+          on: [T.holdFxGlobs > 0.5, false, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed,
+          vortex: { look: 0, size: 1, reach: 1, trail: 0, glow: 0 } },
         (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)),
         (x, z) => { const y = lvl(z); return Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.3 ? y : null; },
         () => {}, px, skyTurn); // no splash rings: the nova's push is the only water effect
@@ -495,8 +481,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         t: clock, orbX: orbit.position.x, orbY: orbit.position.y, orbZ: orbit.position.z,
         // The orb's light on the water (its glow, glint and mirror image) follows the orb itself: nothing until it
         // has spawned, so the reflection never appears before the orb does.
-        flat: 1 - k, stir, show: 1, fogNear: fog.near, fogFar: fog.far, calm, drop: drainY,
-        funnel: liquid.funnel,
+        flat: 1 - k, stir: (1 - ease(away * 2.5)) * born, show: 1, fogNear: fog.near, fogFar: fog.far, calm, drop: drainY,
         nova: novaT >= 0 ? [novaAt.x, novaAt.y, novaT, T.holdNovaWave] : [introWaveAt.x, introWaveAt.y, introWaveT, introWave * 2.5], novaSpeed: novaT >= 0 ? T.holdNovaWaveSpeed : 30,
         mirror: [T.orbMirror * (1 - away) * born, R * born, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
         boil: [orbit.position.x, orbit.position.z, boil, T.holdBoilArea], boilLook: [T.holdBoilHeight, T.holdBoilSpeed, T.holdBoilSpecks, T.holdBoilLift], pops, skyTurn,
@@ -523,10 +508,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       clouds.update(clock, camera, 1 - k, show, orbit.position);
       stars.update(now, camera, T, k < 0.3);
       renderer.render(scene, camera);
-      if (!liquidErr) try { liquid.render(camera, orbit.position, R * born, skyTurn, (water.river.material as ShaderMaterial).uniforms); } catch (e) { liquidErr = String(e); liquid.funnel.z = 0; renderer.setRenderTarget(null); }
       if (statusEl && now - statusAt > 250) {
         statusAt = now;
-        statusEl.textContent = `scroll ${Math.round(scrollY)} px · orb: ${hold.down ? 'HELD' : novaLock ? 'let go first' : orbOnScreen.r > 0 ? 'ready to press' : 'cannot be pressed (page scrolled too far)'} · last press: ${lastPress} · charge ${Math.round(charge * 100)}% · ${Math.round(fps)} frames/s · water vortex: ${liquidErr ? 'failed: ' + liquidErr.slice(0, 80) : liquid.ok ? 'ok' : 'not supported on this device'}`;
+        statusEl.textContent = `scroll ${Math.round(scrollY)} px · orb: ${hold.down ? 'HELD' : novaLock ? 'let go first' : orbOnScreen.r > 0 ? 'ready to press' : 'cannot be pressed (page scrolled too far)'} · last press: ${lastPress} · charge ${Math.round(charge * 100)}% · ${Math.round(fps)} frames/s`;
       }
       if (++framesDrawn >= 3 && fontsIn) revealPage(T.introFade * 1000);
     };
