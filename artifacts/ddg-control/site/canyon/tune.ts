@@ -34,6 +34,7 @@ export const SPECS: Spec[] = [
   { group: 'Orb', key: 'orbSize', label: 'Size', min: 0.4, max: 2, step: 0.02 },
   { group: 'Orb', key: 'orbHeight', label: 'Height above water', min: -3, max: 6, step: 0.1 },
   { group: 'Orb', key: 'orbGlow', label: 'Glow around it', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdFlyOff', label: 'Words and logos fly off the screen while it charges', min: 0, max: 1, step: 1, names: ['Off', 'On'] },
   { group: 'Hold the orb', key: 'holdOn', label: 'Press and hold the orb (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdBolts', label: 'Lightning strikes', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdSkyStrike', label: 'Full charge: lightning from the top of the screen onto the orb', min: 0, max: 3, step: 0.05 },
@@ -200,6 +201,11 @@ export const SPECS: Spec[] = [
   // The business reel
   { group: 'Businesses', key: 'bizLayout', label: 'Layout (0 3D reel, 1 stacked)', min: 0, max: 1, step: 1 },
   // "Scroll down" hint
+  { group: 'Line under the name', key: 'ruleOn', label: 'Show it', min: 0, max: 1, step: 1, names: ['Off', 'On'] },
+  { group: 'Line under the name', key: 'ruleOver', label: 'How far it runs past the words (px)', min: 0, max: 200, step: 2 },
+  { group: 'Line under the name', key: 'ruleThick', label: 'Thickness (px)', min: 0.5, max: 4, step: 0.25 },
+  { group: 'Line under the name', key: 'ruleBright', label: 'Brightness', min: 0.1, max: 1, step: 0.05 },
+  { group: 'Line under the name', key: 'ruleShift', label: 'Move up (−) or down (+) (px)', min: -60, max: 60, step: 1 },
   { group: 'Scroll hint', key: 'shOn', label: 'Show it (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Scroll hint', key: 'shText', label: 'Words (leave empty for arrow only)', min: 0, max: 0, step: 0, text: true },
   { group: 'Scroll hint', key: 'shHiWords', label: 'Words in colour (exact words, comma between)', min: 0, max: 0, step: 0, text: true },
@@ -233,7 +239,7 @@ export const SPECS: Spec[] = [
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
   introFade: 3, introSpawn: 1.4, introLoop: 0,
-  holdOn: 1, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
+  holdOn: 1, holdFlyOff: 1, ruleOn: 1, ruleOver: 40, ruleThick: 1, ruleBright: 0.8, ruleShift: 0, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
   holdCamUp: 5, holdCamBack: 15, holdCamTilt: 0.7, holdRise: 3.5, holdOrbShake: 3, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 1,
     holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 2.5, holdNova: 0.05, holdNovaWave: 5.45, holdNovaWaveSpeed: 75, holdCalm: 6, holdFxGlobs: 0, holdFxVortex: 1, holdVortexLook: 3, holdVortexSize: 3, holdVortexReach: 2.5, holdVortexTrail: 0.25, holdVortexGlow: 0.2, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 3, holdFxSpeed: 3,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
@@ -260,7 +266,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-27'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-28'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);

@@ -191,7 +191,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     };
     let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
     // Holding the orb: a press that starts on the orb, held until it is let go (or the browser cancels it for a scroll).
-    let charge = 0, camHold = 0, skyTurn = 0;
+    let charge = 0, camHold = 0, skyTurn = 0, fly = 0, flyOn = false;
+    const flyDir = new Vector3();
+    let ruleKey = '';
     const hold = { down: false, id: -1, x: 0, y: 0 };
     const orbOnScreen = { x: 0, y: 0, r: 0 };
     const heroEl = document.querySelector<HTMLElement>('.cn-hero');
@@ -276,6 +278,11 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       if (novaT >= 0) { novaT += dt; if (novaT > Math.max(4, T.holdCalm + 1)) novaT = -1; }
       camHold = building ? Math.min(1, camHold + dt / 2) : Math.max(0, camHold - dt / (novaT >= 0 ? Math.max(1, T.holdCalm) : 1.6));
       const ch = Math.pow(charge, 1.4), cv = ease(camHold) * T.holdZoom;
+      // While it charges (and until it has calmed) the words and logos fly off the screen: the page ones by a
+      // class (site.css, 0.3 s), the 3D "We build it all." here, sliding off to the left at the same pace.
+      const flyWant = T.holdFlyOff > 0.5 && (hold.down || novaT >= 0 || charge > 0.02);
+      if (flyWant !== flyOn) { flyOn = flyWant; topEl.classList.toggle('cn-fly', flyOn); }
+      fly = flyOn ? Math.min(1, fly + dt / 0.3) : Math.max(0, fly - dt / 0.7);
       skyTurn += dt * ease(camHold) * 0.35 * T.holdSky * (1 + 2 * ch); // spins up to 3x faster at full charge
       const camZ = lerp(42, 0, ease(p * 1.2));
       camera.position.set(0, lerp(9, small ? 95 : 70, k), camZ);
@@ -340,6 +347,23 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
             const pushNow = parseFloat(topEl.style.getPropertyValue('--sh-push')) || 0;
             const need = Math.max(0, Math.ceil(brandEl.getBoundingClientRect().bottom + 12 - (hintEl.getBoundingClientRect().top - pushNow)));
             if (need !== pushNow) topEl.style.setProperty('--sh-push', `${need}px`);
+          }
+        }
+      }
+      // The line between the name and the hint: as wide as the longer of the two, plus a little each side,
+      // half-way between them. Measured each frame (cheap) and only written when it moves.
+      {
+        const ruleEl = topEl.querySelector<HTMLElement>('.cn-rule'), nameEl = topEl.querySelector<HTMLElement>('.cn-brand > span'), wordsEl = topEl.querySelector<HTMLElement>('.cn-scroll-words');
+        if (ruleEl && nameEl && wordsEl && !flyOn && fly === 0) { // not while they fly off (their boxes move)
+          const a = nameEl.getBoundingClientRect(), b = wordsEl.getBoundingClientRect(), f = (ruleEl.offsetParent as HTMLElement | null)?.getBoundingClientRect();
+          const y = (b.top >= a.bottom ? (a.bottom + b.top) / 2 : (b.bottom + a.top) / 2) + T.ruleShift - (f?.top ?? 0);
+          const w = Math.max(a.width, b.width) + 2 * T.ruleOver, x = (a.left + a.right) / 2 - w / 2 - (f?.left ?? 0);
+          const key = `${T.ruleOn}|${x.toFixed(1)}|${y.toFixed(1)}|${w.toFixed(1)}|${T.ruleThick}|${T.ruleBright}`;
+          if (key !== ruleKey) {
+            ruleKey = key;
+            ruleEl.style.setProperty('--rule-show', T.ruleOn > 0.5 && b.width > 0 ? 'block' : 'none');
+            ruleEl.style.left = `${x}px`; ruleEl.style.top = `${y}px`; ruleEl.style.width = `${w}px`;
+            ruleEl.style.setProperty('--rule-thick', `${T.ruleThick}px`); ruleEl.style.setProperty('--rule-bright', String(T.ruleBright));
           }
         }
       }
@@ -451,6 +475,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const wz = T.wordsZ;
       words.group.position.set(T.wordsX, ((4.25 - 0.01 * wz) + T.wordsY) * (1 - k) - wordsOut * 2.2, wz);
       words.group.quaternion.copy(camera.quaternion);
+      if (fly > 0) words.group.position.addScaledVector(flyDir.set(1, 0, 0).applyQuaternion(camera.quaternion), -120 * (flyOn ? fly * fly : 1 - (1 - fly) * (1 - fly)));
       words.group.scale.set(T.wordsSize * (small ? 0.72 : 1), T.wordsSize * (small ? 0.72 : 1), T.wordsSize * T.wordsDepth);
       words.mat.uniforms.uOpacity.value = 1 - wordsOut;
       words.mat.uniforms.uBright.value = T.wordsBright; words.refl.uniforms.uBright.value = T.wordsBright;

@@ -527,6 +527,18 @@ p { margin: 0; }
 
 /* The words and frame over the orb fade out early in the scroll (Stage sets --cn-fade). */
 .cn-brand, .cn-frame, .cn-quote { opacity: var(--cn-fade, 1); }
+/* The line between the name and the hint: thin, white, fading and narrowing to a point at each end. */
+.cn-rule { position: absolute; left: 0; top: 0; width: 0; height: var(--rule-thick, 1px); pointer-events: none; display: var(--rule-show, block);
+  opacity: calc(var(--cn-fade, 1) * var(--rule-bright, 0.8)); transform: translateY(-50%);
+  background: linear-gradient(to right, transparent, #fff 25%, #fff 75%, transparent);
+  clip-path: polygon(0 50%, 25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%); }
+/* Press and hold the orb: everything but the orb flies off the screen, left or right, in 0.3 s (Markus,
+   18 Nov), and glides back once the scene has calmed. Stage.tsx puts .cn-fly on .cn-top. */
+.cn-top .s-nav, .cn-brand, .cn-rule, .cn-scroll, .cn-quote, .cn-cta { transition: translate 0.7s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.cn-top.cn-fly .s-nav, .cn-fly .cn-brand, .cn-fly .cn-rule, .cn-fly .cn-scroll, .cn-fly .cn-quote, .cn-fly .cn-cta { transition: translate 0.3s cubic-bezier(0.6, 0, 0.9, 0.4); }
+.cn-top.cn-fly .s-nav, .cn-fly .cn-brand, .cn-fly .cn-quote { translate: -110vw 0; }
+.cn-fly .cn-rule, .cn-fly .cn-scroll, .cn-fly .cn-cta { translate: 110vw 0; }
+@media (prefers-reduced-motion: reduce) { .cn-top .s-nav, .cn-brand, .cn-rule, .cn-scroll, .cn-quote, .cn-cta { transition: none !important; } }
 
 /* ── The home page journey (Journey.tsx). Night glass panels, white-ink drawings. ─────────── */
 :root { --j-accent: var(--ng-ice); }
