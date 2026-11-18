@@ -8,7 +8,7 @@ import { QUOTE_PAGE } from './content';
 const money = (cents: number) => `$${(cents / 100).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const longDate = (ymd: string) => new Date(`${ymd}T00:00:00+10:00`).toLocaleDateString('en-AU', { timeZone: 'Australia/Brisbane', day: 'numeric', month: 'long', year: 'numeric' });
 
-export function QuotePage({ token, Nav, Footer }: { token: string; Nav: () => ReactElement; Footer: () => ReactElement }) {
+export function QuotePage({ token, Nav, Footer }: { token: string; Nav: (props: { home?: boolean }) => ReactElement; Footer: () => ReactElement }) {
   const [quote, setQuote] = useState<PublicQuote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');

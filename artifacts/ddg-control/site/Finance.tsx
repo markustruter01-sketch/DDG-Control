@@ -105,7 +105,7 @@ function Bots({ data }: { data: PublicFinance | null }) {
   );
 }
 
-export function FinancePage({ Nav, Footer }: { Nav: () => ReactElement; Footer: () => ReactElement }) {
+export function FinancePage({ Nav, Footer }: { Nav: (props: { home?: boolean }) => ReactElement; Footer: () => ReactElement }) {
   const { data, failed } = usePublicFinance();
   return (
     <div className="s-plain dusk">
