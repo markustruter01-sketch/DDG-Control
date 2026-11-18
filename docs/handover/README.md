@@ -36,6 +36,18 @@ Entry shape:
 
 ## 5. Log (newest first)
 
+### Wed 18 Nov 2026, 22:00 — Fable 5.2 and Opus 5.5 (evening session, ddg.limited first screen)
+- Orders worked on: ddg.limited first screen and hold-the-orb rounds with Markus; B1.11 runbooks.
+- Done (with PR numbers), all merged by Markus and published live on ddg.limited: #119 hold polish; #120 settings; #121 hold anywhere, two-line hint, buzz, camera; #122 words back after the settle, no dark edges; #123 "best viewed on a computer screen"; #124 even phone spacing, camera 2x, logo left of the name; #125 same proportions on every phone, dent removed; #126 fix (@import order); #116 Finance paper rehearsal (from the morning session).
+- Published live? Yes, each time: Replit sync report in `.local/claude_reports/sync-pr*.txt` (build passed), publish status success, live page loads. The 3D scene itself is not checked on a real phone.
+- Half done: #127 water design 1 (glass) and a camera height slider (open); #128 runbooks B1.11 (open).
+- Preview: claude.ai artifact "ddg.limited — preview" opens as an iPhone 15/16 screen; its files and patch tools are on branch `claude/preview-patched` (read its HANDOVER.md).
+- Lesson: read every warning in the Replit sync report before publishing (#125 put a rule above `@import`; caught by the warning).
+- Waiting on Markus: merge #127 and #128; check the live site on his S23 Ultra; same items as below (heartbeat URLs, kill switch, email secrets).
+- Blocked: this session could not attach `quant-terminal` (access refused), so Part A (Finance) was not worked on.
+- Next order to start: B1.9 GST meter (Control), then B1.12 bot keys.
+
+
 ### Wed 18 Nov 2026, 11:45 — Opus 5.5 (same session as 07:30; Fable 5.2 did the morning site work)
 - Orders worked on: ddg.limited design rounds with Markus; B2.1 coffee gifts; Finance plan Phase 3a.
 - Done (with PR numbers):
