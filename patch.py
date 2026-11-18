@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '44'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '45'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -68,6 +68,17 @@ s = one(s, 'const gn=nu(),re=s||nt.introSpawn<=0?gn===null?0:1:gn===null?0:Math.
         'const gn=nu();gn===null?(__it=0):Pt>=gn&&(__it+=Math.min(.1,Math.max(0,ee/1e3)));const re=s||nt.introSpawn<=0?gn===null?0:1:gn===null?0:Math.min(1,__it/nt.introSpawn);')
 s = one(s, '++br>=3&&Pn&&Oa(nt.introFade*1e3)}',
         'br++,br===2?__wu():br>2&&nu()===null&&(__sd=ee<40?__sd+1:0,++__ws>=12?(__wl>8&&__ps<2&&c<l.length-1&&(c++,__ps++,a.setPixelRatio(Math.min(devicePixelRatio,l[c]??1)),At(),__sd=0),__ws=0,__wl=0):ee>22&&__wl++),br>=3&&Pn&&__sd>=8&&Oa(nt.introFade*1e3)}')
+# sky strike lightning: glowing bolt with leader, pulses, forks, sparks, water ring, soft flash (Markus, 19 Nov 09:21)
+_sg = open('surge.built.js', encoding='utf-8').read()
+_sg = re.sub(r'^import[^;]*;\n', '', _sg, flags=re.M)
+_sg = re.sub(r'^export \{[^}]*\};?\n?', '', _sg, flags=re.M).replace('export function makeSurge', 'function makeSurge')
+assert 'import ' not in _sg.split('\n')[0]
+_sg = 'const __SG=(()=>{const AdditiveBlending=je,BufferAttribute=pe,BufferGeometry=xe,Group=Je,Line=Nc,LineBasicMaterial=Ic,Mesh=ge,Points=ra,PointsMaterial=f0,ShaderMaterial=fe,SphereGeometry=Cn,Vector3=L;\n' + _sg + '\nreturn{makeSurge};})();'
+s = one(s, 'function vg(){const i=new Je,', _sg + 'function vg(){const i=new Je,')
+s = one(s, 'const ct=vg();', 'const ct=__SG.makeSurge();{const __k=ct.skyStrike;ct.skyStrike=(a1,b1,p1)=>{__k(a1,b1,p1),s||_($.position.x,$.position.z,2.2+.4*p1)}}const __fl=document.createElement("div");__fl.setAttribute("aria-hidden","true"),__fl.style.cssText="position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;background:radial-gradient(ellipse at 50% 18%,rgba(225,242,255,.95),rgba(150,195,255,.35) 55%,rgba(120,170,255,0) 85%)",r.appendChild(__fl);')
+s = one(s, '{bolts:nt.holdBolts},', '{bolts:nt.holdBolts,cam:g.position,calm:s},')
+s = one(s, 'di.at&&di.flash*nt.holdBolts*1.5>As&&', '{const __o=(Math.min(s?.1:.2,di.sky*.11)*(1-Xt)).toFixed(3);__fl.style.opacity!==__o&&(__fl.style.opacity=__o)}di.at&&di.flash*nt.holdBolts*1.5>As&&')
+s = one(s, 'cancelAnimationFrame(Mt),', 'cancelAnimationFrame(Mt),__fl.remove(),')
 open(f'{A}/Stage-ddg{NEW}.js', 'w', encoding='utf-8').write(s)
 
 t = rd(f'{A}/site-ddg11.js')
