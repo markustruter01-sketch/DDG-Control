@@ -390,6 +390,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
           return strikeAt.set(orbit.position.x + Math.cos(a) * r, lvl(orbit.position.z), orbit.position.z + Math.sin(a) * r * 0.7);
         });
       }
+      if (novaNow && T.holdSkyStrike > 0) {
+        // From just above the top edge of the screen, a little in front of the camera, down onto the top of the orb.
+        const top = new Vector3((Math.random() - 0.5) * 0.4, 1.25, 0.5).unproject(camera).sub(camera.position).normalize()
+          .multiplyScalar(camera.position.distanceTo(orbit.position) * 0.35).add(camera.position);
+        surge.skyStrike(top, new Vector3(orbit.position.x, orbit.position.y + R, orbit.position.z), T.holdSkyStrike);
+      }
       surge.novaAt(novaT, orbit.position, R, T.holdNova);
       if (novaT >= 0) haloMat.opacity += Math.exp(-novaT * 3) * 2.5 * T.holdNova;
       wasHeld = hold.down;

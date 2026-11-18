@@ -36,11 +36,12 @@ export const SPECS: Spec[] = [
   { group: 'Orb', key: 'orbGlow', label: 'Glow around it', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdOn', label: 'Press and hold the orb (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdBolts', label: 'Lightning strikes', min: 0, max: 2, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdSkyStrike', label: 'Full charge: lightning from the top of the screen onto the orb', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBoil', label: 'Water simmering', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBuild', label: 'Build-up time (seconds to the nova)', min: 2, max: 20, step: 0.5 },
   { group: 'Hold the orb', key: 'holdNova', label: 'Nova blast size (0 none)', min: 0, max: 2, step: 0.05 },
-  { group: 'Hold the orb', key: 'holdNovaWave', label: 'Nova: how hard it pushes the water', min: 0, max: 4, step: 0.05 },
-  { group: 'Hold the orb', key: 'holdNovaWaveSpeed', label: 'Nova: how fast the push runs out', min: 5, max: 60, step: 1 },
+  { group: 'Hold the orb', key: 'holdNovaWave', label: 'Nova: how hard it pushes the water', min: 0, max: 40, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdNovaWaveSpeed', label: 'Nova: how fast the push runs out', min: 5, max: 150, step: 1 },
   { group: 'Hold the orb', key: 'holdCalm', label: 'Calm-down time after (seconds)', min: 0.5, max: 8, step: 0.25 },
   { group: 'Hold the orb', key: 'holdFxGlobs', label: 'Charge-up: water globules from the lake (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdFxVortex', label: 'Charge-up: vortex of drops (0 off, 1 on)', min: 0, max: 1, step: 1 },
@@ -157,6 +158,8 @@ export const SPECS: Spec[] = [
   { group: 'Quote pop', key: 'qpSpeed', label: 'Movement speed (slow ← → fast)', min: 0.3, max: 3, step: 0.05 },
   { group: 'Quote background', key: 'qbCalm', label: 'Calm the water behind it (0 off ← → 1 no reflections)', min: 0, max: 1, step: 0.05 },
   { group: 'Quote background', key: 'qbOn', label: 'Dark frosted patch (0 off, 1 on)', min: 0, max: 1, step: 1 },
+  { group: 'Quote background', key: 'qbGlass', label: 'Look', min: 0, max: 1, step: 1, names: ['Dark patch', 'Frosted glass'] },
+  { group: 'Quote background', key: 'qbFrost', label: 'Glass: how frosted (0 clear ← → 1 fully frosted)', min: 0, max: 1, step: 0.05 },
   { group: 'Quote background', key: 'qbDark', label: 'Darkness', min: 0, max: 1, step: 0.02 },
   { group: 'Quote background', key: 'qbBlur', label: 'Frost (blur behind)', min: 0, max: 40, step: 1 },
   { group: 'Quote background', key: 'qbTint', label: 'Colour (0 black ← → 1 deep blue)', min: 0, max: 1, step: 0.05 },
@@ -230,9 +233,9 @@ export const SPECS: Spec[] = [
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane).
 export const DEFAULTS: Record<string, number> = {
   introFade: 3, introSpawn: 1.4, introLoop: 0,
-  holdOn: 1, holdBolts: 2, holdBoil: 0.3, holdZoom: 1, holdSky: 3,
+  holdOn: 1, holdBolts: 2, holdSkyStrike: 1, holdBoil: 0.35, holdZoom: 1, holdSky: 3,
   holdCamUp: 5, holdCamBack: 15, holdCamTilt: 0.7, holdRise: 3.5, holdOrbShake: 3, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 1, holdVignette: 1,
-    holdBoilArea: 18, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 10, holdNova: 0.15, holdNovaWave: 1.2, holdNovaWaveSpeed: 22, holdCalm: 2, holdFxGlobs: 0, holdFxVortex: 1, holdVortexLook: 3, holdVortexSize: 3, holdVortexReach: 1.85, holdVortexTrail: 0.55, holdVortexGlow: 0.15, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 3, holdFxSpeed: 3,
+    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 4, holdNova: 0.15, holdNovaWave: 9.6, holdNovaWaveSpeed: 60, holdCalm: 4, holdFxGlobs: 0, holdFxVortex: 1, holdVortexLook: 3, holdVortexSize: 3, holdVortexReach: 1.85, holdVortexTrail: 0.55, holdVortexGlow: 0.15, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 3, holdFxSpeed: 3,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.15, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
@@ -243,7 +246,7 @@ export const DEFAULTS: Record<string, number> = {
   pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   quote: 15, quoteOn: 1, quoteFont: 6, quoteSize: 0.55, quoteWeight: 400, quoteSpacing: 0.09, quoteCaps: 0, quoteAlign: 1, quoteWidth: 42, quoteLift: 7,
   qpFrame: 1, qpBright: 1, qpBlue: 0, qpGlow: 0, qpHi: 1, qpAnim: 0, qpSpeed: 1,
-  qbCalm: 0, qbOn: 1, qbDark: 1, qbBlur: 0, qbTint: 0, qbPadX: 16, qbPadY: 12, qbRadius: 120, qbFade: 0,
+  qbCalm: 0, qbOn: 1, qbGlass: 1, qbFrost: 0.8, qbDark: 1, qbBlur: 0, qbTint: 0, qbPadX: 16, qbPadY: 12, qbRadius: 120, qbFade: 0,
   bizLayout: 0,
   baseDark: 1, glowStrength: 0.7, glowHue1: 205, glowHue2: 170, glowSize: 1, glowMove: 0.6, edgeLight: 0.6, accentHue: 195, accentSat: 0.75, accentWords: 1,
   cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
@@ -257,7 +260,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-25'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-26'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
@@ -325,7 +328,8 @@ export function mountPanel(): () => void {
   // Effects switched off (set to 0) are moved to one closed group at the bottom, "Inactive", until turned
   // up again. Only effect groups; choosers and layout settings stay where they are.
   const EFFECT_GROUPS = ['Orb extras', 'Hold the orb', 'Boiling lake'];
-  const inactive = (sp: Spec) => !sp.text && !sp.names && EFFECT_GROUPS.includes(sp.group) && sp.min === 0 && T[sp.key] === 0;
+  const canSleep = (sp: Spec) => !sp.text && !sp.names && EFFECT_GROUPS.includes(sp.group) && sp.min === 0;
+  const inactive = (sp: Spec) => canSleep(sp) && T[sp.key] === 0;
   const ordered = [...SPECS.filter((sp) => !inactive(sp)), ...SPECS.filter(inactive).map((sp) => ({ ...sp, group: 'Inactive (set to 0)', label: `${sp.group}: ${sp.label}` }))];
   for (const s of ordered) {
     if (s.group !== group) {
@@ -350,6 +354,7 @@ export function mountPanel(): () => void {
     const input = l.querySelector('input')!, val = l.querySelector('i')!;
     const show = (v: number) => (s.names ? `${v} · ${s.names[v] ?? ''}` : String(v));
     input.value = String(T[s.key]); val.textContent = show(T[s.key]);
+    input.addEventListener('change', () => { const o = SPECS.find((x) => x.key === s.key)!; if (canSleep(o)) moveSlider(body as HTMLElement, l, o, T[s.key] === 0); });
     input.addEventListener('input', () => { T[s.key] = Number(input.value); val.textContent = show(T[s.key]); changed(); save(); if (s.group === 'Load-in') replaySoon(); });
     inputs[s.key] = [input, val];
     box.appendChild(l);
@@ -385,10 +390,29 @@ export function mountPanel(): () => void {
   return () => { window.clearInterval(loop); window.clearTimeout(replayTimer); root.remove(); css.remove(); };
 }
 
+const INACTIVE = 'Inactive (set to 0)';
+/** Live: a slider let go at 0 moves to "Inactive"; turned up again it goes back to its own group. */
+function moveSlider(body: HTMLElement, l: HTMLElement, s: Spec, off: boolean): void {
+  const want = off ? INACTIVE : s.group;
+  const find = (g: string) => [...body.querySelectorAll('section')].find((x) => x.querySelector('h4')?.textContent === g);
+  const from = l.parentElement;
+  let sec = find(want);
+  if (sec === from) return;
+  if (!sec) {
+    sec = document.createElement('section');
+    sec.innerHTML = `<h4 data-act="fold">${want}</h4>`;
+    const last = find(INACTIVE);
+    if (off || !last) body.appendChild(sec); else body.insertBefore(sec, last);
+  }
+  (l.querySelector('span')!.firstChild as Text).textContent = off ? `${s.group}: ${s.label}` : s.label;
+  sec.appendChild(l);
+  if (from && !from.querySelector('label')) from.remove();
+}
+
 /** Put the name-and-logo settings on the page (CSS variables), loading the chosen web font. */
 let lastBrand = '';
 let lastFade = '';
-const BG_KEYS = ['qbOn', 'qbDark', 'qbBlur', 'qbTint', 'qbPadX', 'qbPadY', 'qbRadius', 'qbFade'];
+const BG_KEYS = ['qbOn', 'qbGlass', 'qbFrost', 'qbDark', 'qbBlur', 'qbTint', 'qbPadX', 'qbPadY', 'qbRadius', 'qbFade'];
 const HINT_KEYS = ['baseDark', 'glowStrength', 'glowHue1', 'glowHue2', 'glowSize', 'edgeLight', 'accentHue', 'accentSat', 'accentWords', 'pipeFluid', 'inkHue', 'inkSat', 'inkLight', 'bizLayout', 'shOn', 'shArrow', 'shAnim', 'shSpeed', 'shTravel', 'shLayout', 'shFont', 'shSize', 'shSpacing', 'shCaps', 'shBright', 'shPlace'];
 /** Arrow drawings for the scroll hint (24 wide, drawn in currentColor). */
 const ARROWS = [
@@ -455,8 +479,19 @@ export function applyBrand(): void {
   // The frosted patch behind the quote.
   const t = T.qbTint;
   s.setProperty('--qb-show', T.qbOn ? 'block' : 'none');
-  s.setProperty('--qb-bg', `rgba(${Math.round(8 * t)},${Math.round(18 * t)},${Math.round(40 * t)},${T.qbDark})`);
-  s.setProperty('--qb-blur', `${T.qbBlur}px`);
+  if (T.qbGlass) {
+    // Frosted glass (Markus, 18 Nov): the scene behind blurred and brightened, a pale milky sheen, a thin lit edge.
+    const f = T.qbFrost;
+    s.setProperty('--qb-bg', `linear-gradient(135deg, rgba(255,255,255,${(0.05 + 0.17 * f).toFixed(3)}), rgba(255,255,255,${(0.02 + 0.07 * f).toFixed(3)})), rgba(6,10,18,${(0.1 + 0.15 * f).toFixed(3)})`);
+    s.setProperty('--qb-blur', `${Math.round(4 + 36 * f)}px`);
+    s.setProperty('--qb-sat', '1.6');
+    s.setProperty('--qb-edge', `inset 0 0 0 1px rgba(255,255,255,${(0.08 + 0.14 * f).toFixed(3)}), inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 40px rgba(0,0,0,0.3)`);
+  } else {
+    s.setProperty('--qb-bg', `rgba(${Math.round(8 * t)},${Math.round(18 * t)},${Math.round(40 * t)},${T.qbDark})`);
+    s.setProperty('--qb-blur', `${T.qbBlur}px`);
+    s.setProperty('--qb-sat', '1');
+    s.setProperty('--qb-edge', 'none');
+  }
   s.setProperty('--qb-padx', `${T.qbPadX}px`);
   s.setProperty('--qb-pady', `${T.qbPadY}px`);
   s.setProperty('--qb-radius', `${T.qbRadius}px`);

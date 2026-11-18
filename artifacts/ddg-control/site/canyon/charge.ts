@@ -273,7 +273,7 @@ export function makeCharge() {
         if (dead) { list.splice(i, 1); continue; }
         // Light-made vortex looks are drawn as glow, not as water drops.
         if (list === swirls && p.look !== undefined && p.look !== 0 && p.look !== 4) { glowOf(p); continue; }
-        drawDrop(p, Math.min(1, p.age * 5) * Math.min(1, (p.life - p.age) * 3)));
+        drawDrop(p, Math.min(1, p.age * 5) * Math.min(1, (p.life - p.age) * 3));
       }
     }
     drops.count = nd; drops.visible = nd > 0;

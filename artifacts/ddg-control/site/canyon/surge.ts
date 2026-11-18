@@ -83,6 +83,34 @@ export function makeSurge() {
     }
   };
 
+  // The sky strike (Markus, 18 Nov): at full charge one big bolt drops from above the top of the screen onto
+  // the top of the orb. The main bolt is drawn three times side by side so it reads thick, plus two forks.
+  const sky = Array.from({ length: 5 }, () => {
+    const pos = new Float32Array(SEG * 3);
+    const geo = new BufferGeometry(); geo.setAttribute('position', new BufferAttribute(pos, 3));
+    const mat = new LineBasicMaterial({ color: 0xeef8ff, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false });
+    const line = new Line(geo, mat); line.frustumCulled = false; line.renderOrder = 8; line.visible = false;
+    group.add(line);
+    return { pos, geo, mat, line };
+  });
+  let skyLife = 9, skyPower = 0;
+  const skyAt = new Vector3(), fork = new Vector3(), forkEnd = new Vector3();
+  /** Fire the sky strike from `top` (just above the screen) to `hit` (the top of the orb). */
+  const skyStrike = (top: Vector3, hit: Vector3, power: number) => {
+    const main = sky[0]!.pos, w = top.distanceTo(hit) * 0.004;
+    jag(top, hit, main, rnd);
+    for (let k = 1; k < 3; k++) for (let i = 0; i < SEG * 3; i++) sky[k]!.pos[i] = main[i]! + (i % 3 === 1 ? 0 : (k === 1 ? w : -w));
+    for (let k = 3; k < 5; k++) {
+      const at = 4 + Math.floor(rnd() * 10);
+      fork.set(main[at * 3]!, main[at * 3 + 1]!, main[at * 3 + 2]!);
+      forkEnd.copy(hit).sub(top).multiplyScalar(0.25 + rnd() * 0.2).add(fork);
+      forkEnd.x += (rnd() - 0.5) * top.distanceTo(hit) * 0.35; forkEnd.z += (rnd() - 0.5) * top.distanceTo(hit) * 0.2;
+      jag(fork, forkEnd, sky[k]!.pos, rnd);
+    }
+    for (const b of sky) b.geo.attributes.position!.needsUpdate = true;
+    skyAt.copy(hit); skyLife = 0; skyPower = power;
+  };
+
   let timer = 0;
   let seed = 1;
   const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
@@ -116,9 +144,13 @@ export function makeSurge() {
       b.mat.opacity = Math.min(1, on * 1.4);
       if (on > flash) { flash = on; at = b.target; }
     }
+    skyLife += dt;
+    const sOn = skyLife < 0.6 ? Math.exp(-skyLife * 4) * (skyLife % 0.09 < 0.05 ? 1 : 0.35) * skyPower : 0;
+    sky.forEach((b, i) => { b.line.visible = sOn > 0.01; b.mat.opacity = Math.min(1, sOn * (i < 3 ? 1.5 : 0.8)); });
+    if (sOn > flash) { flash = Math.min(1.5, sOn); at = skyAt; }
     return { flash, at };
   };
 
-  const disposables: { dispose: () => void }[] = [novaGeo, novaMat, ...bolts.flatMap((b) => [b.geo, b.mat])];
-  return { group, update, novaAt, burstAll, disposables };
+  const disposables: { dispose: () => void }[] = [novaGeo, novaMat, ...bolts.flatMap((b) => [b.geo, b.mat]), ...sky.flatMap((b) => [b.geo, b.mat])];
+  return { group, update, novaAt, burstAll, skyStrike, disposables };
 }

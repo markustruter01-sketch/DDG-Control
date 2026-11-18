@@ -370,7 +370,7 @@ p { margin: 0; }
 /* Dark frosted glass behind the quote. Its edges fade out on all sides, so it melts into the scene. */
 .cn-quote::before { content: ''; position: absolute; z-index: -1; display: var(--qb-show, block); pointer-events: none;
   inset: calc(-1 * var(--qb-pady, 34px)) calc(-1 * var(--qb-padx, 70px)); border-radius: var(--qb-radius, 40px);
-  background: var(--qb-bg, rgba(2,4,8,0.45)); -webkit-backdrop-filter: blur(var(--qb-blur, 14px)); backdrop-filter: blur(var(--qb-blur, 14px));
+  background: var(--qb-bg, rgba(2,4,8,0.45)); -webkit-backdrop-filter: blur(var(--qb-blur, 14px)) saturate(var(--qb-sat, 1)); backdrop-filter: blur(var(--qb-blur, 14px)) saturate(var(--qb-sat, 1)); box-shadow: var(--qb-edge, none);
   --f: var(--qb-fade, 26%);
   -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent), linear-gradient(to bottom, transparent, #000 var(--f), #000 calc(100% - var(--f)), transparent);
   -webkit-mask-composite: source-in;
