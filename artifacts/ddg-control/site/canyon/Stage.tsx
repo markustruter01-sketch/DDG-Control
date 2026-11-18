@@ -204,7 +204,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     };
     let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
     // Holding the orb: a press that starts on the orb, held until it is let go (or the browser cancels it for a scroll).
-    let charge = 0, camHold = 0, skyTurn = 0, fly = 0, flyOn = false, blasted = false;
+    let charge = 0, camHold = 0, skyTurn = 0, fly = 0, flyOn = false;
     const flyDir = new Vector3();
     const hold = { down: false, id: -1, x: 0, y: 0, touching: false };
     const rootStyle = document.documentElement.style;
@@ -330,8 +330,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const building = hold.down && !novaLock;
       charge = building ? Math.min(1, charge + dt / Math.max(1, T.holdBuild)) : Math.max(0, charge - dt / (novaT >= 0 ? Math.max(0.5, T.holdCalm) : 1.2));
       let novaNow = false;
-      if (building && charge >= 1) { novaNow = true; novaLock = true; hold.down = false; novaT = 0; shock = 1.6; blasted = true; }
-      else if (building) blasted = false; // a fresh hold: the words leave again
+      if (building && charge >= 1) { novaNow = true; novaLock = true; hold.down = false; novaT = 0; shock = 1.6; }
       if (novaT >= 0) { novaT += dt; if (novaT > Math.max(4, T.holdCalm + 1)) novaT = -1; }
       camHold = building ? Math.min(1, camHold + dt / 2) : Math.max(0, camHold - dt / (novaT >= 0 ? Math.max(1, T.holdCalm) : 1.6));
       const ch = Math.pow(charge, 1.4), cv = ease(camHold) * T.holdZoom;
@@ -363,9 +362,10 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         else if (buzzing) { buzzing = false; buzz(0); }
       }
       // While it charges the words and logos fly off the screen: the page ones by a class (site.css, 0.3 s), the
-      // 3D "We build it all." here, sliding off to the left at the same pace. The moment the orb explodes they
-      // all fly back (Markus, 18 Nov), while the scene is still settling.
-      const flyWant = T.holdFlyOff > 0.5 && !blasted && (hold.down || charge > 0.02);
+      // 3D "We build it all." here, sliding off to the left at the same pace. After the blast they stay away while
+      // the scene settles, and fly back at the end of the settle time (T.holdCalm; Markus, 18 Nov 19:57): the
+      // charge runs down over exactly that time, so they return as it reaches nothing.
+      const flyWant = T.holdFlyOff > 0.5 && (hold.down || charge > 0.02);
       if (flyWant !== flyOn) { flyOn = flyWant; topEl.classList.toggle('cn-fly', flyOn); }
       fly = flyOn ? Math.min(1, fly + dt / 0.3) : Math.max(0, fly - dt / 0.7);
       skyTurn += dt * ease(camHold) * 0.35 * T.holdSky * (1 + 2 * ch); // spins up to 3x faster at full charge
@@ -466,8 +466,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       spawnPrev = spawn;
       if (introWaveT >= 0) { introWaveT += dt; if (introWaveT > 4) introWaveT = -1; }
       spawnFx.update(T.introStyle, spawn, clock, orbit.position, R, camera, canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)));
-      // (After the blast the words are shown at once, not faded in with the camera's return.)
-      if (followEl) followEl.style.opacity = String(Math.min(1, Math.max(0, (spawn - 0.7) / 0.3)) * (blasted ? 1 : 1 - ease(camHold)));
+      if (followEl) followEl.style.opacity = String(Math.min(1, Math.max(0, (spawn - 0.7) / 0.3)) * (1 - ease(camHold)));
       haloMat.opacity += 0.5 * ch * (1 - away);
       // Lightning is timed here, so the ball, its glow, the water and the land can all flash together.
       const bolt = lightningNow(clock, T.orbSparkRate);
