@@ -100,24 +100,24 @@ void main() {
   vec3 sky = skyColor(normalize(vec3(r.x, abs(r.y) + 0.02, r.z))) * 2.5;
   // The orb is the light: shining on the water, a hot highlight, and light glowing through the thinner water.
   vec3 L = uOrb - P; float dist = length(L); L /= dist;
-  float att = 1.0 / (1.0 + dist * dist / (uOrbR * uOrbR * 6.0));
-  vec3 lightCol = vec3(0.45, 0.75, 1.0) * (0.6 + uGlow);
+  float att = 1.0 / (1.0 + dist * dist / (uOrbR * uOrbR * 12.0));
+  vec3 lightCol = vec3(0.45, 0.75, 1.0) * (0.9 + uGlow);
   float diff = max(dot(n, L), 0.0);
   float spec = pow(max(dot(reflect(-L, n), v), 0.0), 90.0);
   float through = pow(max(dot(-L, v), 0.0), 3.0);
-  vec3 body = vec3(0.008, 0.04, 0.08) + lightCol * (0.25 * diff + 0.55 * through + 0.12) * att;
+  vec3 body = vec3(0.02, 0.08, 0.14) + lightCol * (0.35 * diff + 0.7 * through + 0.25) * att;
   vec3 col = mix(body, sky, fres) + lightCol * spec * 2.5 * att + vec3(0.75, 0.9, 1.0) * spec * 0.35;
-  gl_FragColor = vec4(col, cover * 0.95 * uFade);
+  gl_FragColor = vec4(col, cover * mix(0.6, 0.95, fres) * uFade); // see-through where you look straight in
 }`;
 
 type Drop = { on: boolean; free: boolean; strand: number; th: number; r: number; x: number; y: number; z: number; vx: number; vy: number; vz: number; size: number; rise: number; top: number };
 export type LiquidLook = { amount: number; speed: number; size: number; reach: number; glow: number };
 
-const STRANDS = 7;
+const STRANDS = 5;
 
 export function makeLiquid(renderer: WebGLRenderer) {
   const small = typeof innerWidth === 'number' && innerWidth < 700;
-  const N = small ? 700 : 1600;
+  const N = small ? 350 : 700;
   // Needs a float target to keep distances; without one (rare), the liquid simply stays off.
   const ok = renderer.extensions.has('EXT_color_buffer_float') || renderer.extensions.has('EXT_color_buffer_half_float');
 
@@ -176,12 +176,12 @@ export function makeLiquid(renderer: WebGLRenderer) {
       emitDebt -= 1;
       const k = Math.floor(Math.random() * STRANDS);
       d.on = true; d.free = false; d.strand = k;
-      d.th = strandAt(k) + rnd(-0.3, 0.3);
-      d.r = R * (1.6 + 1.1 * reach) * rnd(0.85, 1.2);
+      d.th = strandAt(k) + rnd(-0.12, 0.12);
+      d.r = R * (1.4 + 0.6 * reach) * rnd(0.9, 1.1);
       d.x = orb.x + Math.cos(d.th) * d.r; d.z = orb.z + Math.sin(d.th) * d.r;
       d.y = ground(d.x, d.z) - dip(d.x, d.z) + 0.05;
-      d.size = R * rnd(0.05, 0.11) * sizeK * (Math.random() < 0.1 ? 1.9 : 1);
-      d.rise = rnd(0.6, 1.4); d.top = orb.y + R * rnd(0.9, 1.9);
+      d.size = R * rnd(0.035, 0.07) * sizeK * (Math.random() < 0.08 ? 1.8 : 1);
+      d.rise = rnd(0.8, 1.3); d.top = orb.y + R * rnd(1.2, 2.4);
       live++;
     }
     for (let i = 0; i < N; i++) {
@@ -192,11 +192,11 @@ export function makeLiquid(renderer: WebGLRenderer) {
           d.free = true; d.vx = -Math.sin(d.th) * d.r * 1.5; d.vz = Math.cos(d.th) * d.r * 1.5; d.vy = 0;
         } else {
           // Round and up: faster and tighter as the charge grows; each strand weaves in and out.
-          const rt = R * (1.25 + 0.55 * reach * (1 - 0.45 * p)) + Math.sin(clock * 1.3 + d.strand * 1.7) * R * 0.25;
+          const rt = R * (1.2 + 0.35 * reach * (1 - 0.4 * p)) + Math.sin(clock * 1.3 + d.strand * 1.7) * R * 0.25;
           const w = speed * (0.7 + 2.2 * p) * Math.pow((R * 2.2) / Math.max(d.r, R), 0.8);
           d.th += w * dt;
           d.r += (rt - d.r) * Math.min(1, dt * (0.8 + 1.5 * p));
-          d.y += R * d.rise * (0.25 + 0.9 * p) * speed * dt;
+          d.y += R * d.rise * (0.5 + 1.3 * p) * speed * dt;
           d.x = orb.x + Math.cos(d.th) * d.r; d.z = orb.z + Math.sin(d.th) * d.r;
           d.y += Math.sin(clock * 3 + d.th * 2) * R * 0.15 * dt;
           if (d.y > d.top) { // flung off the top, out and down
