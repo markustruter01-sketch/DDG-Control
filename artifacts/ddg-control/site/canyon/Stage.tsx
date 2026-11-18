@@ -11,6 +11,7 @@ import { makeAura } from './aura';
 import { makeSurge } from './surge';
 import { makeCharge } from './charge';
 import { makeDial } from './dial';
+import { makeSpawnFx, spawnLook } from './spawn';
 import { introStart, revealPage } from '../intro';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
@@ -120,6 +121,18 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const surge = makeSurge();
     scene.add(surge.group);
     disposables.push(...surge.disposables);
+    /** A big bolt from just above the top edge of the screen (a little in front of the camera) onto the top of the orb. */
+    const strikeFromSky = (power: number, R: number) => {
+      const top = new Vector3((Math.random() - 0.5) * 0.4, 1.25, 0.5).unproject(camera).sub(camera.position).normalize()
+        .multiplyScalar(camera.position.distanceTo(orbit.position) * 0.35).add(camera.position);
+      surge.skyStrike(top, new Vector3(orbit.position.x, orbit.position.y + R, orbit.position.z), power);
+    };
+    // The orb's load-in looks (spawn.ts): the portal, the spark, the motes.
+    const spawnFx = makeSpawnFx();
+    scene.add(spawnFx.group);
+    disposables.push(...spawnFx.disposables);
+    let spawnPrev = 0, introWaveT = -1, introWave = 0;
+    const introWaveAt = new Vector3();
     const ISO_POS = new Vector3(), ISO_LOOK = new Vector3(), strikeAt = new Vector3();
     const chargeFx = makeCharge();
     scene.add(chargeFx.group);
@@ -372,14 +385,32 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // swelling out of it (a little past full size, then settling), a bright pulse, then the words.
       const t0 = introStart();
       const spawn = reduced || T.introSpawn <= 0 ? (t0 === null ? 0 : 1) : t0 === null ? 0 : Math.min(1, Math.max(0, (now - t0) / (T.introSpawn * 1000)));
-      const seed = ease(spawn / 0.22);
-      const swell = spawn <= 0.15 ? 0 : Math.min(1, (spawn - 0.15) / 0.6);
-      const body = swell >= 1 ? 1 : 1 + 2.2 * Math.pow(swell - 1, 3) + 1.2 * Math.pow(swell - 1, 2); // ease out, slightly past 1
-      const pulse = Math.exp(-Math.pow((spawn - 0.78) / 0.07, 2));
-      const born = Math.max(0.001, body);
-      orbit.scale.multiplyScalar(born);
-      haloMat.opacity = Math.max(haloMat.opacity, (seed * (1 - swell) * 0.95 + pulse * 0.6) * (1 - away));
-      halo.scale.setScalar(10 * (0.35 + 0.65 * seed) * (1 + pulse * 0.5));
+      const arrive = spawnLook(T.introStyle, spawn, R);
+      let born: number;
+      if (arrive.classic) {
+        const seed = ease(spawn / 0.22);
+        const swell = spawn <= 0.15 ? 0 : Math.min(1, (spawn - 0.15) / 0.6);
+        const body = swell >= 1 ? 1 : 1 + 2.2 * Math.pow(swell - 1, 3) + 1.2 * Math.pow(swell - 1, 2); // ease out, slightly past 1
+        const pulse = Math.exp(-Math.pow((spawn - 0.78) / 0.07, 2));
+        born = Math.max(0.001, body);
+        orbit.scale.multiplyScalar(born);
+        haloMat.opacity = Math.max(haloMat.opacity, (seed * (1 - swell) * 0.95 + pulse * 0.6) * (1 - away));
+        halo.scale.setScalar(10 * (0.35 + 0.65 * seed) * (1 + pulse * 0.5));
+      } else {
+        born = Math.max(0.001, arrive.scale);
+        orbit.scale.multiplyScalar(born);
+        orbit.position.y -= arrive.lift;
+        haloMat.opacity = Math.max(haloMat.opacity * Math.min(1, arrive.scale), arrive.halo * (1 - away));
+        halo.scale.setScalar(10 * arrive.haloSize);
+      }
+      // One-off moments of the load-in: the push on the water and the strike from the sky.
+      const passed = (at: number) => at >= 0 && spawnPrev < at && spawn >= at;
+      if (spawn < spawnPrev) introWaveT = -1; // replayed
+      if (passed(arrive.waveAt)) { introWaveT = 0; introWave = arrive.wave; introWaveAt.set(orbit.position.x, orbit.position.z, 0); }
+      if (passed(arrive.strikeAt)) strikeFromSky(1, R);
+      spawnPrev = spawn;
+      if (introWaveT >= 0) { introWaveT += dt; if (introWaveT > 4) introWaveT = -1; }
+      spawnFx.update(T.introStyle, spawn, clock, orbit.position, R, camera, canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)));
       if (followEl) followEl.style.opacity = String(Math.min(1, Math.max(0, (spawn - 0.7) / 0.3)) * (1 - ease(camHold)));
       haloMat.opacity += 0.5 * ch * (1 - away);
       // Lightning is timed here, so the ball, its glow, the water and the land can all flash together.
@@ -414,12 +445,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
           return strikeAt.set(orbit.position.x + Math.cos(a) * r, lvl(orbit.position.z), orbit.position.z + Math.sin(a) * r * 0.7);
         });
       }
-      if (novaNow && T.holdSkyStrike > 0) {
-        // From just above the top edge of the screen, a little in front of the camera, down onto the top of the orb.
-        const top = new Vector3((Math.random() - 0.5) * 0.4, 1.25, 0.5).unproject(camera).sub(camera.position).normalize()
-          .multiplyScalar(camera.position.distanceTo(orbit.position) * 0.35).add(camera.position);
-        surge.skyStrike(top, new Vector3(orbit.position.x, orbit.position.y + R, orbit.position.z), T.holdSkyStrike);
-      }
+      if (novaNow && T.holdSkyStrike > 0) strikeFromSky(T.holdSkyStrike, R);
       surge.novaAt(novaT, orbit.position, R, T.holdNova);
       if (novaT >= 0) haloMat.opacity += Math.exp(-novaT * 3) * 2.5 * T.holdNova;
       wasHeld = hold.down;
@@ -450,7 +476,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         // The orb's light on the water (its glow, glint and mirror image) follows the orb itself: nothing until it
         // has spawned, so the reflection never appears before the orb does.
         flat: 1 - k, stir: (1 - ease(away * 2.5)) * born, show: 1, fogNear: fog.near, fogFar: fog.far, calm, drop: drainY,
-        nova: [novaAt.x, novaAt.y, novaT, T.holdNovaWave], novaSpeed: T.holdNovaWaveSpeed,
+        nova: novaT >= 0 ? [novaAt.x, novaAt.y, novaT, T.holdNovaWave] : [introWaveAt.x, introWaveAt.y, introWaveT, introWave * 2.5], novaSpeed: novaT >= 0 ? T.holdNovaWaveSpeed : 30,
         mirror: [T.orbMirror * (1 - away) * born, R * born, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
         boil: [orbit.position.x, orbit.position.z, boil, T.holdBoilArea], boilLook: [T.holdBoilHeight, T.holdBoilSpeed, T.holdBoilSpecks, T.holdBoilLift], pops, skyTurn,
       });
