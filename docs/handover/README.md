@@ -36,6 +36,16 @@ Entry shape:
 
 ## 5. Log (newest first)
 
+### Thu 19 Nov 2026, 08:40 — Fable 5.2 plans, Opus 5.5 codes (Markus's rule from 19 Nov: Fable plans, Opus builds; tell him when to switch)
+- Orders worked on: audit 19 Nov step 1 (enquiry email), orb on computers, thank-you panel.
+- Done, merged and published live: #128 runbooks + handover; #132 audit + mobile plan; #133 Control → Ops → Connections shows an "Email" row (missing setting names, last sent, last failed; in memory only); #134 orb height set from its bottom edge, so the bigger computer orb no longer sinks into the water (phones unchanged).
+- Published live? Yes, twice: Replit sync report `.local/claude_reports/sync-pr134.txt` (build passed; only "large file" warnings), publish status success, live page loads (WebFetch). Second publish only picked up new email secrets. Orb not checked on a real computer.
+- Email: VERIFIED all three secrets are set (names only, from the sync report). Not working yet: Markus first had `%40` in EMAIL_FROM and OWNER_EMAIL (wrong; only inside the URL) and the URL was the bare app password. Both explained; still UNKNOWN if it works. Markus parked email: enquiries are saved and shown in Control → Clients and Needs you, and Heimdall is told. That never depended on email.
+- This PR: the form's thank-you message no longer says "we have emailed you". New panel: tick, "Thank you. We have your enquiry.", "We'll be in touch with you shortly at <their email>.", "You don't need to do anything else." No time promise (Markus). Email only, no phone field (Markus).
+- Preview: build ddg43 on `claude/preview-patched` (tests `t21.mjs` orb, `t22.mjs` thank-you).
+- Waiting on Markus: merge this PR; heartbeat URLs; quant-terminal access; yes to open the God's Eye View and Greenlight repos.
+- Next: Fable plans (1) phone front ends for God's Eye View and Greenlight (Markus: maybe landscape-only on phones), (2) a new "Designs" section on ddg.limited: up to 10 carousel windows, each a scrollable mini-browser showing a made-up company's site (water bottles with 3D, sports, law firm, tradie, two online stores, children's learning). Markus wants both before the site is promoted. Then the founding price (B0.1).
+
 ### Wed 18 Nov 2026, 22:00 — Fable 5.2 and Opus 5.5 (evening session, ddg.limited first screen)
 - Orders worked on: ddg.limited first screen and hold-the-orb rounds with Markus; B1.11 runbooks.
 - Done (with PR numbers), all merged by Markus and published live on ddg.limited: #119 hold polish; #120 settings; #121 hold anywhere, two-line hint, buzz, camera; #122 words back after the settle, no dark edges; #123 "best viewed on a computer screen"; #124 even phone spacing, camera 2x, logo left of the name; #125 same proportions on every phone, dent removed; #126 fix (@import order); #116 Finance paper rehearsal (from the morning session).
