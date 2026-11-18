@@ -170,7 +170,7 @@ float surface(vec2 p, float detail) {
   // The boil: small fast bumps over the lake (as far as uBoil.w reaches), and rings running out from the beam.
   if (uBoil.z > 0.001) {
     vec2 bq = p - uBoil.xy; float bd = length(bq), near = exp(-bd * bd / (uBoil.w * uBoil.w)), sp = uBoilLook.y;
-    h += uBoil.z * near * uBoilLook.x * (0.09 * boilCells(p * 1.3, uTime * 1.6 * sp) + 0.05 * boilCells(p * 2.9 + 13.0, uTime * 2.3 * sp) + 0.04 * snoise(p * 2.6 + vec2(uTime * 3.1, -uTime * 2.7) * sp) + 0.05 * snoise(p * 5.3 - vec2(uTime * 4.3, uTime * 3.7) * sp) + 0.03 * sin(bd * 7.0 - uTime * 14.0 * sp) * exp(-bd * 0.15));
+    h += uBoil.z * near * uBoilLook.x * (0.09 * boilCells(p * 1.3, uTime * 1.6 * sp) + 0.05 * detail * boilCells(p * 2.9 + 13.0, uTime * 2.3 * sp) + 0.04 * snoise(p * 2.6 + vec2(uTime * 3.1, -uTime * 2.7) * sp) + 0.05 * detail * snoise(p * 5.3 - vec2(uTime * 4.3, uTime * 3.7) * sp) + 0.03 * sin(bd * 7.0 - uTime * 14.0 * sp) * exp(-bd * 0.15));
   }
   // Rings from bubbles bursting (and the big one when the orb is let go).
   for (int i = 0; i < 8; i++) {

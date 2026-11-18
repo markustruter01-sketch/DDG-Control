@@ -59,9 +59,12 @@ void main() {
   float thick = 0.35 + 0.5 * bnoise(vObj * 2.5 + vec3(0.0, uTime * 0.4, vSeed * 9.0)) - 0.25 * (1.0 - vFade);
   vec3 film = 0.5 + 0.5 * cos(6.283 * (thick * 2.2 + facing * 0.6 + vec3(0.0, 0.33, 0.67)));
   float spec = pow(max(dot(r, normalize(vec3(-0.4, 0.8, 0.45))), 0.0), 60.0);
-  vec3 col = sky * fres + film * fres * 0.55 + vec3(1.0) * spec * 1.5 + vec3(0.8, 0.95, 1.0) * edge;
-  float a = clamp(fres * 0.9 + spec + edge + 0.03, 0.0, 1.0) * uBright * min(1.0, vFade * 3.0);
-  gl_FragColor = vec4(col * a, a);
+  // Thick, sludgy skin: the lake's own dark blue, mirroring the sky at the edges, a faint sheen and a highlight.
+  vec3 skin = mix(vec3(0.01, 0.05, 0.1), vec3(0.05, 0.16, 0.28), pow(1.0 - facing, 1.5));
+  vec3 col = mix(skin, sky, fres) + film * fres * 0.3 + vec3(1.0) * spec * 1.5 + vec3(0.8, 0.95, 1.0) * edge;
+  float a = clamp(0.55 + fres * 0.5 + spec + edge, 0.0, 1.0) * min(1.0, vFade * 3.0);
+  col *= uBright;
+  gl_FragColor = vec4(col, a);
 }`;
 
 const DROP_VERT = /* glsl */ `
@@ -72,7 +75,7 @@ void main() {
   vLife = aLife;
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
-  gl_PointSize = aLife > 0.0 ? uPx * 0.05 / max(-mv.z, 0.1) : 0.0;
+  gl_PointSize = aLife > 0.0 ? uPx * 0.12 / max(-mv.z, 0.1) : 0.0;
 }`;
 const DROP_FRAG = /* glsl */ `
 varying float vLife;
@@ -93,7 +96,7 @@ export function makeBubbles() {
   geo.setAttribute('aFade', fade); geo.setAttribute('aSeed', seeds); geo.setAttribute('aPop', popA);
   const mat = new ShaderMaterial({
     uniforms: { uBright: { value: 1 }, uTime: { value: 0 }, uSkyTurn: { value: 0 } },
-    vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, premultipliedAlpha: true,
+    vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false,
   });
   const mesh = new InstancedMesh(geo, mat, MAX);
   mesh.frustumCulled = false; mesh.renderOrder = 2; mesh.count = 0;
@@ -120,16 +123,17 @@ export function makeBubbles() {
   const update = (dt: number, strength: number, look: { amount: number; size: number; speed: number; bright: number; drops: number },
     place: () => Vector3 | null, onPop: (x: number, z: number, size: number) => void, pxScale: number, skyTurn: number) => {
     time += dt;
-    owed += dt * strength * look.amount * 90;
+    owed += dt * strength * look.amount * 14; // big, slow sludge bubbles: fewer of them
     let tries = 0;
     while (owed >= 1 && live.length < MAX && tries++ < 40) {
       const at = place();
       if (!at) continue;
       // Mixed sizes, mostly small; never right on top of another bubble.
-      const size = look.size * (0.06 + 0.3 * Math.random() ** 2.5);
+      // Big, almost cartoon-sized domes (ten times the first version), mixed sizes, mostly medium.
+      const size = look.size * (0.6 + 2.6 * Math.random() ** 1.8);
       if (live.some((b) => (b.x - at.x) ** 2 + (b.z - at.z) ** 2 < (b.size + size) ** 2)) continue;
       owed -= 1;
-      live.push({ x: at.x, y: at.y, z: at.z, size, age: 0, life: (0.6 + Math.random() * 1.2 + size * 2) / look.speed, seed: Math.random(), popped: false });
+      live.push({ x: at.x, y: at.y, z: at.z, size, age: 0, life: (1.4 + Math.random() * 1.6 + size * 0.6) / look.speed, seed: Math.random(), popped: false });
     }
     if (owed > 5) owed = 5;
     let n = 0;
@@ -142,9 +146,9 @@ export function makeBubbles() {
       const burst = Math.max(0, (t - 0.84) / 0.16);
       if (burst > 0 && !b.popped) {
         b.popped = true; onPop(b.x, b.z, b.size);
-        const k = Math.round(look.drops * (2 + b.size * 30));
+        const k = Math.round(look.drops * Math.min(16, 4 + b.size * 4));
         for (let j = 0; j < k && flying.length < DROPS; j++) {
-          const a = Math.random() * Math.PI * 2, sp = (0.6 + Math.random()) * (0.8 + b.size * 6);
+          const a = Math.random() * Math.PI * 2, sp = (0.6 + Math.random()) * (1.5 + b.size * 1.6);
           flying.push({ x: b.x, y: b.y + b.size * 0.4, z: b.z, vx: Math.cos(a) * sp * 0.35, vy: sp * (1 + Math.random()), vz: Math.sin(a) * sp * 0.35, age: 0, life: 0.35 + Math.random() * 0.35 });
         }
       }

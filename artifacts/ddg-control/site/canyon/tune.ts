@@ -230,7 +230,7 @@ export const DEFAULTS: Record<string, number> = {
   holdOn: 1, holdBeam: 2, holdBolts: 2, holdBoil: 2, holdZoom: 1, holdSky: 3,
   holdCamUp: 6, holdCamBack: 4, holdCamTilt: 0.45, holdRise: 2.4, holdOrbShake: 1, holdScreenShake: 0.3, holdGroundShake: 0.6, holdShock: 1, holdVignette: 0.4,
   holdBeamWidth: 1, holdBeamStart: 0.95, holdBeamGlow: 1, holdBeamFlicker: 1,
-  holdBoilArea: 45, holdBoilHeight: 1, holdBoilSpeed: 1, holdBoilSpecks: 1, holdBubbles: 1, holdBubbleSize: 1, holdBubbleShine: 1, holdBubbleRings: 1, holdBubbleDrops: 1, holdBuild: 10, holdNova: 1, holdCalm: 3, holdFx: 5, holdFxAmount: 1, holdFxSpeed: 1,
+  holdBoilArea: 45, holdBoilHeight: 1, holdBoilSpeed: 1, holdBoilSpecks: 0.35, holdBubbles: 1, holdBubbleSize: 1, holdBubbleShine: 1, holdBubbleRings: 1, holdBubbleDrops: 1, holdBuild: 10, holdNova: 1, holdCalm: 3, holdFx: 5, holdFxAmount: 1, holdFxSpeed: 1,
   orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 1.16, orbHeight: -2, orbGlow: 0,
   waterDesign: 4, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.15, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
@@ -255,7 +255,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for WebPage or Press Orb for Fun', quoteText: '' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-20'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-21'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);

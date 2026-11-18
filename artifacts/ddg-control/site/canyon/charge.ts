@@ -23,9 +23,10 @@ type P = { x: number; y: number; z: number; vx: number; vy: number; vz: number; 
 
 const DROP_VERT = /* glsl */ `
 attribute float aFade;
-varying vec3 vWN; varying vec3 vWP; varying float vFade;
+attribute float aMix;
+varying vec3 vWN; varying vec3 vWP; varying float vFade; varying float vMix;
 void main() {
-  vFade = aFade;
+  vFade = aFade; vMix = aMix;
   vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.0);
   vWP = wp.xyz;
   vWN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * normal);
@@ -33,7 +34,7 @@ void main() {
 }`;
 const DROP_FRAG = /* glsl */ `
 uniform float uGlow;
-varying vec3 vWN; varying vec3 vWP; varying float vFade;
+varying vec3 vWN; varying vec3 vWP; varying float vFade; varying float vMix;
 ${SKY_GLSL}
 void main() {
   vec3 n = normalize(vWN), v = normalize(cameraPosition - vWP);
@@ -41,11 +42,14 @@ void main() {
   float fres = 0.04 + 0.96 * pow(1.0 - facing, 4.0);
   vec3 r = reflect(-v, n);
   vec3 sky = skyColor(normalize(vec3(r.x, abs(r.y) + 0.02, r.z))) * 2.5;
-  // The body: deep blue in the middle (looking through more water), lighter towards the rim, lit by the orb.
-  vec3 body = mix(vec3(0.05, 0.25, 0.55), vec3(0.2, 0.55, 0.95), pow(1.0 - facing, 1.5)) * (0.55 + uGlow);
-  float spec = pow(max(dot(r, normalize(vec3(-0.35, 0.85, 0.4))), 0.0), 80.0);
-  vec3 col = mix(body, sky + vec3(0.25, 0.45, 0.7) * 0.4, fres) + vec3(1.0) * spec * 1.6;
-  gl_FragColor = vec4(col, (0.82 + 0.18 * fres) * vFade);
+  // Leaving the lake it is lake water: near-black blue, mostly mirroring the sky. As it nears the orb it takes
+  // on the orb's colour and light: bright blue, glowing from inside, white at the core (vMix 0 -> 1).
+  vec3 lake = mix(vec3(0.006, 0.035, 0.08), vec3(0.03, 0.12, 0.2), pow(1.0 - facing, 2.0));
+  vec3 orb = mix(vec3(0.86, 0.97, 1.0), vec3(0.2, 0.55, 1.0), pow(1.0 - facing, 1.2)) * (1.0 + 0.6 * uGlow);
+  vec3 body = mix(lake, orb, vMix);
+  float spec = pow(max(dot(r, normalize(vec3(-0.35, 0.85, 0.4))), 0.0), 90.0);
+  vec3 col = mix(body, sky * (1.0 - 0.6 * vMix) + vec3(0.3, 0.6, 1.0) * 0.3 * vMix, fres * (1.0 - 0.5 * vMix)) + vec3(1.0) * spec * 1.4;
+  gl_FragColor = vec4(col, (0.85 + 0.15 * fres) * vFade);
 }`;
 const LINE_VERT = /* glsl */ `
 attribute float aA;
@@ -53,7 +57,7 @@ varying float vA;
 void main() { vA = aA; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const LINE_FRAG = /* glsl */ `
 varying float vA;
-void main() { gl_FragColor = vec4(vec3(0.3, 0.65, 1.0) * vA, 1.0); }`;
+void main() { gl_FragColor = vec4(vec3(0.45, 0.75, 1.0) * vA * 0.6, 1.0); }`;
 const ROCK_VERT = /* glsl */ `
 attribute float aA;
 uniform float uPx;
@@ -77,7 +81,8 @@ export function makeCharge() {
   // Water globules: an instanced sphere, stretched and turned along each drop's travel.
   const dGeo = new SphereGeometry(1, 16, 12);
   const dFade = new InstancedBufferAttribute(new Float32Array(DROPS), 1);
-  dGeo.setAttribute('aFade', dFade);
+  const dMix = new InstancedBufferAttribute(new Float32Array(DROPS), 1);
+  dGeo.setAttribute('aFade', dFade); dGeo.setAttribute('aMix', dMix);
   const dMat = new ShaderMaterial({
     uniforms: { uGlow: { value: 0 }, uSkyTurn: { value: 0 } },
     vertexShader: DROP_VERT, fragmentShader: DROP_FRAG, transparent: true, depthWrite: true,
@@ -141,7 +146,7 @@ export function makeCharge() {
         for (let t = 0; t < 5; t++) {
           const r = radius * rand(1.6, 7), x = c.x + Math.cos(a + t) * r, z = c.z + Math.sin(a + t) * r * 0.8, w = waterAt(x, z);
           if (w === null) continue;
-          const p = mk(x, w - 0.1, z, rand(2.5, 4), radius * rand(0.025, 0.07));
+          const p = mk(x, w - 0.1, z, rand(2.5, 4), radius * rand(0.035, 0.09));
           p.vy = rand(0.8, 1.8); globs.push(p); onSplash(x, z, p.size * 6); break;
         }
       } else if (kind === 2 && swirls.length < DROPS * 0.3) {
@@ -175,7 +180,9 @@ export function makeCharge() {
       const stretch = 1 + Math.min(2.5, v * 0.12); // faster = longer, as real drops do
       scl.set(p.size / Math.sqrt(stretch), p.size * stretch, p.size / Math.sqrt(stretch));
       m.compose(pos.set(p.x, p.y, p.z), q, scl);
-      drops.setMatrixAt(nd, m); dFade.setX(nd, fade); nd++;
+      // How far along from the lake to the orb: 0 at the water, 1 at the orb's skin.
+      const d = Math.hypot(c.x - p.x, c.y - p.y, c.z - p.z);
+      drops.setMatrixAt(nd, m); dFade.setX(nd, fade); dMix.setX(nd, Math.min(1, Math.max(0, (radius * 4 - d) / (radius * 3)))); nd++;
     };
     for (const list of [globs, swirls]) {
       for (let i = list.length - 1; i >= 0; i--) {
@@ -205,7 +212,7 @@ export function makeCharge() {
       }
     }
     drops.count = nd; drops.visible = nd > 0;
-    drops.instanceMatrix.needsUpdate = true; dFade.needsUpdate = true;
+    drops.instanceMatrix.needsUpdate = true; dFade.needsUpdate = true; dMix.needsUpdate = true;
     dMat.uniforms.uGlow!.value = power; dMat.uniforms.uSkyTurn!.value = skyTurn;
 
     // Streaks: pulled in fast, with a trail; flung out at the nova.

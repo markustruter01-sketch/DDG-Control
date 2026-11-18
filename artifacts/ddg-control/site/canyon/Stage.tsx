@@ -143,11 +143,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     document.body.appendChild(dial);
     const dFill = dial.querySelector<SVGCircleElement>('.d-fill')!, dTip = dial.querySelector<SVGCircleElement>('.d-tip')!, dPct = dial.querySelector<SVGTextElement>('.d-pct')!;
     let dialShown = 0, lastPct = -1;
-    const dialUpdate = (x: number, y: number, r: number, v: number, want: number) => {
+    const dialUpdate = (x: number, y: number, r: number, v: number, want: number, shake: string) => {
       dialShown += (want - dialShown) * 0.12;
       const size = r * 2 * 1.42;
       dial.style.opacity = dialShown.toFixed(3);
-      dial.style.transform = `translate(${(x - size / 2).toFixed(1)}px, ${(y - size / 2).toFixed(1)}px)`;
+      // The same shake as the 3D picture, so it stays locked to the orb.
+      dial.style.transform = `${shake} translate(${(x - size / 2).toFixed(1)}px, ${(y - size / 2).toFixed(1)}px)`;
       dial.style.width = dial.style.height = `${size.toFixed(1)}px`;
       const pct = Math.round(v * 100);
       if (pct !== lastPct) {
@@ -311,7 +312,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // Screen shake: the 3D picture itself is moved a few pixels (the words on the page are not), growing
       // with the charge, plus a hard jolt at the nova.
       const jolt = reduced ? 0 : T.holdScreenShake * ch * ch * 7 + shock * T.holdShock * 12;
-      const shakeCss = jolt > 0.05 ? `translate(${((Math.random() - 0.5) * jolt).toFixed(1)}px, ${((Math.random() - 0.5) * jolt).toFixed(1)}px) scale(${(1 + jolt / 300).toFixed(4)})` : '';
+      const shakeCss = jolt > 0.05 ? `translate(${((Math.random() - 0.5) * jolt).toFixed(1)}px, ${((Math.random() - 0.5) * jolt).toFixed(1)}px)` : '';
       if (canvas.style.transform !== shakeCss) canvas.style.transform = shakeCss;
       // The ground trembles.
       const tremble = reduced ? 0 : (T.holdGroundShake * ease(charge) + shock * T.holdShock * 0.6) * 0.12 * Math.sin(clock * 47) * Math.sin(clock * 31 + 1);
@@ -336,7 +337,10 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         if (!reduced) { const sh = 0.14 * T.holdOrbShake * ch * (0.4 + ch); orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
       }
       // The dial round the orb: 0 to 100% of the build-up, thin lines, like a speedometer.
-      dialUpdate(innerWidth / 2, oy, orR, charge, hold.down ? 1 : 0);
+      // Re-measured after the lift and shake, so the dial sits exactly round the orb wherever the camera is.
+      pv.copy(orbit.position).project(camera);
+      const dialR = onScreen(camera, orbit.position, R)[1];
+      dialUpdate(((pv.x + 1) / 2) * innerWidth, ((1 - pv.y) / 2) * stableHeight(), dialR, charge, hold.down ? 1 : 0, canvas.style.transform);
       restCam.fov = camera.fov; restCam.aspect = camera.aspect;
       if (liftPx > 0) { const H = stableHeight(); restCam.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); } else restCam.clearViewOffset();
       restCam.updateProjectionMatrix();
@@ -429,7 +433,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
           if (Math.abs(x) < 40 && z < 55 && y - heightAt(x, z) > 0.35) return bubbleAt.set(x, y, z);
         }
         return null;
-      }, (x, z, size) => { if (T.holdBubbleRings > 0) addPop(x, z, size * T.holdBubbleRings); }, px, skyTurn);
+      }, (x, z, size) => { if (T.holdBubbleRings > 0) addPop(x, z, Math.min(2, size * 0.5) * T.holdBubbleRings); }, px, skyTurn);
       // What swirls round the orb as it charges (charge.ts).
       if (novaNow) chargeFx.explode(orbit.position, T.holdNova);
       chargeFx.update(dt, ch * (1 - away), orbit.position, R, { style: T.holdFx, amount: T.holdFxAmount, speed: T.holdFxSpeed },
