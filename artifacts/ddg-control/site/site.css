@@ -688,6 +688,9 @@ p { margin: 0; }
 .j-tick-link { min-height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(108,199,240,0.45); color: var(--ng-ice, #6cc7f0); text-decoration: none; transition: background 0.2s, border-color 0.2s; }
 .j-tick-link:hover { background: rgba(108,199,240,0.12); border-color: rgba(108,199,240,0.9); }
 .j-tick-link i { font-style: normal; }
+/* "Best viewed on a computer screen" under the big 3D products. */
+.j-tick-screen { display: block; margin: 4px 0 0; font: 400 11px/1.4 var(--ng-mono); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+.j-pop-go .j-tick-screen { margin-top: 10px; }
 .j-tick-soon { color: var(--ng-text-3); opacity: 0.75; }
 
 /* About header: our logo and name top-left, "Our portfolio" top-middle (Markus, 18 Nov 2026). */
