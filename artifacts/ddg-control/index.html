@@ -16,6 +16,8 @@
     <meta name="twitter:image" content="https://ddg.limited/og-image.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#07080b" />
+    <!-- The page starts black and fades in once the scene is ready (site/intro.ts), so nothing half-built shows. -->
+    <style>html,body{background:#07080b}#intro-cover{position:fixed;inset:0;z-index:2147483000;background:#000;pointer-events:none}</style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
@@ -32,6 +34,7 @@
     </script>
   </head>
   <body>
+    <div id="intro-cover" aria-hidden="true"></div>
     <div id="root"></div>
     <!-- Plain words for search engines and visitors without JavaScript. The app above draws the real page. -->
     <noscript>

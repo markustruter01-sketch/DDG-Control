@@ -8,6 +8,8 @@ import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWater } from './water';
 import { makeAura } from './aura';
+import { mountPageBuild } from './pagebuild';
+import { introStart, revealPage } from '../intro';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
 import { makeWords } from './words3d';
@@ -164,6 +166,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       return [((1 - pv.y) / 2) * H, (r / (d * Math.tan((cam.fov * Math.PI) / 360))) * (H / 2)];
     };
     let shownK = -1, smoothY = scrollY, last = performance.now(), raf = 0, clock = 0;
+    // The load-in: wait for the fonts and a few drawn frames (so every word has found its place), then fade
+    // the black cover away; the orb spawns after that (introStart).
+    let fontsIn = false, framesDrawn = 0;
+    Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 2500))]).then(() => { fontsIn = true; });
+    const followEl = topEl.querySelector<HTMLElement>('.cn-follow');
+    // The page building itself at the bottom of the screen as the visitor scrolls (pagebuild.ts).
+    const pageBuild = mountPageBuild();
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const raw = now - last;
@@ -188,6 +197,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const top = fadeEl ? fadeEl.getBoundingClientRect().top : vh;
       const show = Math.min(1, Math.max(0, (top - vh * 0.3) / (vh * 0.55)));
       stage.style.opacity = String(show);
+      if (show <= 0 && fontsIn) revealPage(T.introFade * 1000); // opened part-way down the page: nothing 3D to wait for
       if (show <= 0) { document.documentElement.style.setProperty('--pipe-join', '1'); topEl.style.setProperty('--cn-fade', '0'); topEl.style.setProperty('--cn-pe', 'none'); lastAlign = ''; return; }
 
       // 0 → 1 over the hero and the room after it: the canyon settles into a flat grid seen from above.
@@ -251,6 +261,19 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         }
       }
       if (!reduced) { clock += dt; spinClock += dt * T.orbSpin; }
+      // The orb's spawn, over T.introSpawn seconds once the cover has faded: a point of light, the ball
+      // swelling out of it (a little past full size, then settling), a bright pulse, then the words.
+      const t0 = introStart();
+      const spawn = reduced || T.introSpawn <= 0 ? (t0 === null ? 0 : 1) : t0 === null ? 0 : Math.min(1, Math.max(0, (now - t0) / (T.introSpawn * 1000)));
+      const seed = ease(spawn / 0.22);
+      const swell = spawn <= 0.15 ? 0 : Math.min(1, (spawn - 0.15) / 0.6);
+      const body = swell >= 1 ? 1 : 1 + 2.2 * Math.pow(swell - 1, 3) + 1.2 * Math.pow(swell - 1, 2); // ease out, slightly past 1
+      const pulse = Math.exp(-Math.pow((spawn - 0.78) / 0.07, 2));
+      const born = Math.max(0.001, body);
+      orbit.scale.multiplyScalar(born);
+      haloMat.opacity = Math.max(haloMat.opacity, (seed * (1 - swell) * 0.95 + pulse * 0.6) * (1 - away));
+      halo.scale.setScalar(10 * (0.35 + 0.65 * seed) * (1 + pulse * 0.5));
+      if (followEl) followEl.style.opacity = String(Math.min(1, Math.max(0, (spawn - 0.7) / 0.3)));
       // Lightning is timed here, so the ball, its glow, the water and the land can all flash together.
       const bolt = lightningNow(clock, T.orbSparkRate);
       const flash = bolt.flash * T.orbFlashLight * Math.min(T.orbSparks, 1.5) * (1 - away);
@@ -299,11 +322,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       clouds.update(clock, camera, 1 - k, show, orbit.position);
       stars.update(now, camera, T, k < 0.3);
       renderer.render(scene, camera);
+      if (++framesDrawn >= 3 && fontsIn) revealPage(T.introFade * 1000);
     };
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
       unmountPanel?.();
+      pageBuild.dispose();
+      if (followEl) followEl.style.opacity = '';
       stopResize();
       disposables.forEach((d) => d.dispose());
       renderer.dispose();
