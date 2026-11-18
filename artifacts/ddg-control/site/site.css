@@ -4,6 +4,13 @@
 /* (Must stay below the @import lines: an @import after any rule is ignored by the browser.) */
 /* Phones must not enlarge the text on their own (Chrome and Samsung text boost); Stage.tsx undoes any that remains. */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* Night Glass scroll bar (Markus, 18 Nov): a thin ice-blue line on no track, brighter when touched.
+   Firefox and newer Chrome use the two standard lines; Safari and older Chrome use the ::-webkit lines. */
+html { scrollbar-width: thin; scrollbar-color: rgba(108, 199, 240, 0.32) transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(108, 199, 240, 0.3); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(108, 199, 240, 0.6); }
 
 * { box-sizing: border-box; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
