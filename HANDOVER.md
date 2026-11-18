@@ -27,12 +27,12 @@ source on branch `claude/hold-polish` (PR #119, draft). Source of truth = PR #11
 ## READ THIS FIRST: the mistake of 18 Nov 18:05 (build ddg12)
 The scene chunk (Stage-ddgN.js) imports the site chunk BY NAME (`from"./site-ddgN.js"`). In ddg12 the site file was
 renamed but that import was not, so the browser loaded the old site file as a second copy of the whole page:
-two settings panels (Hide looked dead) and two 3D scenes (heavy lag). `patch13.py` now changes that import.
+two settings panels (Hide looked dead) and two 3D scenes (heavy lag). `patch.py` now changes that import.
 After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/site-ddg<new>.js index.html` must be 0.
 
 ## State 18 Nov 18:35 (source: claude/hold-polish, commit "remove the water vortex")
 - Markus asked to undo the vortex look work and remove the vortex completely. Done: no liquid, no vortex sliders.
-- Live files here: index.html -> assets/site-ddg13.js -> assets/Stage-ddg13.js, built by `python3 patch13.py`
+- Live files here: index.html -> assets/site-ddg14.js -> assets/Stage-ddg14.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
   from the ddg11 base files (keep those; they are not served).
 - Kept: hold fixes (press works on a slightly scrolled page and jumps to the top; no charge by itself at load),
   a preview-only status line at the bottom left, Hide leaves one small Show button.
@@ -40,3 +40,9 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
   the hold; charge to nova; one scene only.
 - NOT VERIFIED: anything on Markus's own screen.
 - Testing: `python3 -m http.server 8765` here, then `node t4.mjs` (write output to a log; about 5 minutes).
+
+## 18 Nov 18:45: nova wave less uniform (build ddg14)
+- water.ts `novaWave`: uneven front, crest height, chop, uneven trailing waves. Same text patched here (nova_glsl.py).
+- VERIFIED headless (t5.mjs): shader compiles, no page errors, the crest is visibly uneven 0.5 s after the nova.
+- NOT VERIFIED: how it looks in motion on Markus's screen. If too much or too little, the numbers to change are
+  0.09 (front), 0.4 / 0.25 (crest height), 0.3 (chop), 1.1 / 0.6 (bend) in `novaWave`.

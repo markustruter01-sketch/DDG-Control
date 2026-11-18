@@ -1,8 +1,10 @@
-"""Build the preview's ddg13 files from the ddg11 base, to match claude/hold-polish:
+"""Build the preview's ddgNEW files from the ddg11 base, to match claude/hold-polish:
 hold fixes, status line, NO water vortex (the liquid module is cut out), Hide leaves only a Show button.
 Usage: python3 patch13.py   (run in this folder)"""
 import re
+from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
+NEW = '14'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -32,16 +34,17 @@ s = one(s, 'de.down&&(H>.08||nt.holdOn<.5)&&(de.down=!1)', 'de.down&&(scrollY>Ce
 s = one(s, 'Te.r=H<.06?ke:0', 'Te.r=H<.25?ke:0')
 # IMPORTANT: the scene chunk imports the site chunk by name. If this name is not changed too, the browser loads
 # the OLD site file as a second copy of the whole page (two panels, two 3D scenes: Hide seems dead, and it lags).
-s = one(s, 'from"./site-ddg11.js"', 'from"./site-ddg13.js"')
-open(f'{A}/Stage-ddg13.js', 'w', encoding='utf-8').write(s)
+s = one(s, 'from"./site-ddg11.js"', f'from"./site-ddg{NEW}.js"')
+s = one(s, NOVA_OLD, NOVA_NEW)  # the nova's push on the water, less uniform
+open(f'{A}/Stage-ddg{NEW}.js', 'w', encoding='utf-8').write(s)
 
 t = rd(f'{A}/site-ddg11.js')
-t = one(t, 'Stage-ddg11.js', 'Stage-ddg13.js', t.count('Stage-ddg11.js'))
+t = one(t, 'Stage-ddg11.js', f'Stage-ddg{NEW}.js', t.count('Stage-ddg11.js'))
 t, n = re.subn(r'\{group:"Hold the orb",key:"hold(?:FxVortex|Vortex[A-Za-z]*)",[^{}]*\},', '', t); assert n == 6, n
 t, n = re.subn(r'\s*hold(?:FxVortex|Vortex[A-Za-z]*):\s*[0-9.]+,', '', t); assert n == 6, n
 t = one(t, '.tune.min { bottom: auto; }\n.tune.min .tune-body, .tune.min .tune-foot { display: none; }',
   '.tune.min { bottom: auto; width: auto; background: none; border: 0; box-shadow: none; backdrop-filter: none; }\n.tune.min .tune-body, .tune.min .tune-foot, .tune.min .tune-head b { display: none; }\n.tune.min .tune-head { padding: 0; border: 0; } .tune.min button { opacity: 0.55; }')
 t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-34', t.count('ddg-scene-tune-32'))
-open(f'{A}/site-ddg13.js', 'w', encoding='utf-8').write(t)
-h = rd('index.html'); h = one(h, 'site-ddg11.js', 'site-ddg13.js'); open('index.html', 'w', encoding='utf-8').write(h)
+open(f'{A}/site-ddg{NEW}.js', 'w', encoding='utf-8').write(t)
+h = rd('index.html'); h = one(h, 'site-ddg11.js', f'site-ddg{NEW}.js'); open('index.html', 'w', encoding='utf-8').write(h)
 print('ok')
