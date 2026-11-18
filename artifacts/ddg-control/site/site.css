@@ -1,8 +1,9 @@
-/* Phones must not enlarge the text on their own (Chrome and Samsung text boost); Stage.tsx undoes any that remains. */
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 /* Public DDG website — Night Glass. Photo on the home hero only; everything else graphite. */
 @import '../src/tokens.css';
 @import '../src/dusk.css';
+/* (Must stay below the @import lines: an @import after any rule is ignored by the browser.) */
+/* Phones must not enlarge the text on their own (Chrome and Samsung text boost); Stage.tsx undoes any that remains. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 * { box-sizing: border-box; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
