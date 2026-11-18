@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '41'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '42'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -58,6 +58,9 @@ s = one(s, 'const mn=Yt.querySelector(".cn-follow"),', 'const mn=Yt.querySelecto
 s = one(s, 'if(rt.update(ie,de.down?1:0,et),bt.fov=g.fov,bt.aspect=g.aspect,Vt>0){', 'if(rt.update(ie,de.down?1:0,et),H<.005&&!de.down&&ie===0&&(nu()===null||performance.now()-__st.ya>250)&&__ly(me),bt.fov=g.fov,bt.aspect=g.aspect,Vt!==0){')
 s = one(s, 'bt.position.set(0,9,42),bt.lookAt($t)', 'bt.position.set(0,9,42).sub($t).multiplyScalar(Math.max(.5,nt.camZoom)).add($t),bt.position.y+=nt.camUp||0,bt.lookAt($t)')
 s = one(s, 'It.set(0,12-9*nt.holdCamTilt,2+4*nt.holdCamTilt),', 'It.set(0,12-9*nt.holdCamTilt,2+4*nt.holdCamTilt),(()=>{const zm=jn(Math.max(.5,nt.camZoom),1,Ze(H*1.5)),sh=g.position.clone().sub(Ot).multiplyScalar(zm-1);g.position.add(sh),Ct.add(sh),g.position.y+=(nt.camUp||0)*(1-Ze(H*1.5)),Ct.y+=nt.camUp||0;const ex=sh.length()*Math.sign(zm-1);dt.near+=ex,dt.far+=ex,z.uniforms.uFogNear.value=dt.near,z.uniforms.uFogFar.value=dt.far})(),')
+# orb height from its bottom edge, so the bigger computer orb no longer sinks into the water (Markus, 19 Nov 06:36)
+s = one(s, '$.position.set(0,B.y+nt.orbHeight+Xt*26,B.z-Xt*10),$.scale.setScalar((o?1.44:2.19)*nt.orbSize),',
+        '$.position.set(0,B.y+nt.orbHeight+et*((o?1.44:2.19)*nt.orbSize-2.88)+Xt*26,B.z-Xt*10),$.scale.setScalar((o?1.44:2.19)*nt.orbSize),')
 open(f'{A}/Stage-ddg{NEW}.js', 'w', encoding='utf-8').write(s)
 
 t = rd(f'{A}/site-ddg11.js')
