@@ -450,8 +450,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
 
       // The core drifts up and away as the canyon flattens.
       const away = ease((p - 0.1) / 0.5);
-      orbit.position.set(0, CORE.y + T.orbHeight + away * 26, CORE.z - away * 10);
-      orbit.scale.setScalar((small ? 1.44 : 2.19) * T.orbSize);
+      // "Height above water" sets the orb's BOTTOM edge, not its centre (Markus 19 Nov). Computers draw the orb
+      // larger than phones, so with one centre height it sank into the water there. The lift is measured from
+      // the phone orb at the default size (1.44 x 2), so phones look exactly as before.
+      const orbScale = (small ? 1.44 : 2.19) * T.orbSize;
+      orbit.position.set(0, CORE.y + T.orbHeight + ORB_R * (orbScale - 1.44 * 2) + away * 26, CORE.z - away * 10);
+      orbit.scale.setScalar(orbScale);
       haloMat.opacity = HALO * T.orbGlow * (1 - away);
       // Where the orb is on screen now, and where it sits before any scrolling. The name and frame follow
       // it exactly; the quote and the scroll hint move by the same amount as the orb's lower edge.
