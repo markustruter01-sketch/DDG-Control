@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '30'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '32'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -50,6 +50,14 @@ s = one(s, 'hi=Pt=>{Pt.pointerType==="mouse"', 'hi=Pt=>{de.down&&Pt.pointerId===
 s = one(s, '{const fw=nt.holdFlyOff>.5&&(de.down||ie>.02);',
   '{const dn_=nt.holdDent||0;if(dn_>0&&(de.down||__st.dk>.01)){if(!__st.d||!__st.d.isConnected){__st.d=document.createElement("div");__st.d.setAttribute("aria-hidden","true");__st.d.style.cssText="position:fixed;left:0;top:0;z-index:2147481000;pointer-events:none;border-radius:50%;will-change:transform,opacity;background:radial-gradient(circle at 50% 46%,rgba(0,0,0,.34) 0%,rgba(0,0,0,.16) 42%,rgba(255,255,255,.07) 68%,rgba(255,255,255,0) 100%);box-shadow:inset 0 7px 20px rgba(0,0,0,.6),inset 0 -4px 12px rgba(255,255,255,.2),0 0 0 1px rgba(255,255,255,.16),0 0 34px rgba(140,210,255,.18);-webkit-backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);backdrop-filter:blur(2.5px) brightness(.82) saturate(1.25);-webkit-mask-image:radial-gradient(circle,#000 30%,rgba(0,0,0,.55) 52%,transparent 72%);mask-image:radial-gradient(circle,#000 30%,rgba(0,0,0,.55) 52%,transparent 72%)";document.body.appendChild(__st.d)}__st.dk=de.down?Math.min(1,__st.dk+oe/.15):Math.max(0,__st.dk-oe/.35);const sz_=(70+110*Et)*dn_*(.6+.4*__st.dk);__st.d.style.width=__st.d.style.height=sz_.toFixed(1)+"px";__st.d.style.transform=`translate(${(de.x-sz_/2).toFixed(1)}px, ${(de.y-sz_/2).toFixed(1)}px)`;__st.d.style.opacity=__st.dk.toFixed(2)}else __st.d&&__st.d.style.opacity!=="0"&&(__st.dk=0,__st.d.style.opacity="0");if(typeof navigator.vibrate=="function"&&nt.holdVibrate>0&&!s){const vk_=Math.min(1,nt.holdVibrate);St&&!Lt?(Pt-__st.ba>480-410*Et&&(__st.ba=Pt,__st.buzz(Math.round((6+44*Et)*vk_))),__st.bz=!0):(__st.bz||Lt)&&(__st.bz=!1,__st.buzz(0))}}{const fw=nt.holdFlyOff>.5&&(de.down||ie>.02);')
 s = one(s, 'mn&&(mn.style.opacity=""),', 'mn&&(mn.style.opacity=""),__st.d&&__st.d.remove(),__st.bz&&__st.buzz(0),')
+# phone layout: five things spaced evenly on tall screens, measured (Markus, 18 Nov 20:33); camera at load twice as far (20:35)
+s = one(s, "dk:0,ba:0,bz:!1,", "dk:0,ba:0,bz:!1,al:null,yk:'',yo:!1,ya:-1e9,yc:null,")
+s = one(s, 'm=o?80:110,h=o?150:200,T=200,M=380,y=60,', 'm=o?80:110,h=o?186:247,T=200,M=470,y=150,')
+s = one(s, 'Vt=ft(innerWidth,Pt),Vt>0?g.setViewOffset', 'Vt=__st.al??ft(innerWidth,Pt),Vt!==0?g.setViewOffset')
+s = one(s, 'const mn=Yt.querySelector(".cn-follow"),', 'const mn=Yt.querySelector(".cn-follow"),__ly=me=>{__st.ya=performance.now();const E=Ni(),nv=Yt.querySelector(".s-nav"),br=Yt.querySelector(".cn-brand"),hn=Yt.querySelector(".cn-scroll"),qt=Yt.querySelector(".cn-quote"),ct=Yt.querySelector(".cn-cta"),lon=(nt.phoneLayout??1)>.5&&innerWidth/E<.8&&!!(nv&&br&&qt&&ct);if(lon!==__st.yo&&(__st.yo=lon,Yt.classList.toggle("cn-lay",lon),__st.yk=""),!lon){__st.al!==null&&(__st.al=null,At());return}const tp=nv.getBoundingClientRect().bottom,bm=ct.getBoundingClientRect().top-(parseFloat(Yt.style.getPropertyValue("--cn-dy"))||0),hB=br.offsetHeight,hH=hn&&hn.offsetParent&&getComputedStyle(hn).display!=="none"?hn.offsetHeight:0,pq=nt.quoteOn?nt.qbPadY:0,hQ=nt.quoteOn?qt.offsetHeight+2*pq:0,lc=__st.yc||(__st.yc=new Xe(58,1,.1,500));lc.fov=g.fov,lc.aspect=g.aspect,lc.clearViewOffset(),lc.updateProjectionMatrix(),lc.position.set(0,9,42).sub($t).multiplyScalar(Math.max(.5,nt.camZoom)).add($t),lc.lookAt($t),lc.updateMatrixWorld();const[y0,r0]=xt(lc,new L(0,B.y+nt.orbHeight,B.z),me),D2=2*r0,pr=hH>0?5:4,gp=Math.max(6,(bm-tp-hB-hH-D2-hQ)/pr),b0=tp+gp,h0=b0+hB+gp,om=h0+hH+(hH>0?gp:0)+D2/2,q0=om+D2/2+gp+pq,ky=[b0,h0,q0,om].map(v=>v.toFixed(1)).join("|");if(ky===__st.yk)return;__st.yk=ky,Yt.style.setProperty("--lay-brand",b0.toFixed(1)+"px"),Yt.style.setProperty("--lay-hint",h0.toFixed(1)+"px"),Yt.style.setProperty("--lay-quote",q0.toFixed(1)+"px");const lf=y0-om;(__st.al===null||Math.abs(lf-__st.al)>.5)&&(__st.al=lf,At()),N=""},')
+s = one(s, 'if(rt.update(ie,de.down?1:0,et),bt.fov=g.fov,bt.aspect=g.aspect,Vt>0){', 'if(rt.update(ie,de.down?1:0,et),H<.005&&!de.down&&ie===0&&(nu()===null||performance.now()-__st.ya>250)&&__ly(me),bt.fov=g.fov,bt.aspect=g.aspect,Vt!==0){')
+s = one(s, 'bt.position.set(0,9,42),bt.lookAt($t)', 'bt.position.set(0,9,42).sub($t).multiplyScalar(Math.max(.5,nt.camZoom)).add($t),bt.lookAt($t)')
+s = one(s, 'It.set(0,12-9*nt.holdCamTilt,2+4*nt.holdCamTilt),', 'It.set(0,12-9*nt.holdCamTilt,2+4*nt.holdCamTilt),(()=>{const zm=jn(Math.max(.5,nt.camZoom),1,Ze(H*1.5)),sh=g.position.clone().sub(Ot).multiplyScalar(zm-1);g.position.add(sh),Ct.add(sh);const ex=sh.length()*Math.sign(zm-1);dt.near+=ex,dt.far+=ex,z.uniforms.uFogNear.value=dt.near,z.uniforms.uFogFar.value=dt.far})(),')
 open(f'{A}/Stage-ddg{NEW}.js', 'w', encoding='utf-8').write(s)
 
 t = rd(f'{A}/site-ddg11.js')
@@ -58,7 +66,7 @@ t, n = re.subn(r'\{group:"Hold the orb",key:"hold(?:FxVortex|Vortex[A-Za-z]*)",[
 t, n = re.subn(r'\s*hold(?:FxVortex|Vortex[A-Za-z]*):\s*[0-9.]+,', '', t); assert n == 6, n
 t = one(t, '.tune.min { bottom: auto; }\n.tune.min .tune-body, .tune.min .tune-foot { display: none; }',
   '.tune.min { bottom: auto; width: auto; background: none; border: 0; box-shadow: none; backdrop-filter: none; }\n.tune.min .tune-body, .tune.min .tune-foot, .tune.min .tune-head b { display: none; }\n.tune.min .tune-head { padding: 0; border: 0; } .tune.min button { opacity: 0.55; }')
-t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-42', t.count('ddg-scene-tune-32'))
+t = one(t, 'ddg-scene-tune-32', 'ddg-scene-tune-44', t.count('ddg-scene-tune-32'))
 # the quote: a 'White (black words)' colour choice exists; the default stays black with the thin white frame
 t = one(t, '[30,6,10]][r.qbColour]||[0,0,0];', '[30,6,10],[255,255,255]][r.qbColour]||[0,0,0];a.setProperty("--quote-ink",c[0]+c[1]+c[2]>380?"#000":"");')
 t = one(t, 'rgb(${c.map(v=>v+10).join(",")})', 'rgb(${c.map(v=>Math.min(255,v+10)).join(",")})')
@@ -81,6 +89,7 @@ t = one(t, 'shText:"Scroll for Web-Page or Press & Hold Orb for Fun"', 'shText:"
 t = one(t, 'Words (leave empty for arrow only)', 'Words (| starts a new line; empty = arrow only)')
 c = one(c, '.cn-scroll-words{margin-right:calc(-1 * var(--sh-track, .3em))}', '.cn-scroll-words{margin-right:calc(-1 * var(--sh-track, .3em));white-space:pre-line;text-align:center}')
 c = one(c, '.j-tick-link i{font-style:normal}', '.j-tick-link i{font-style:normal}.j-tick-screen{display:block;margin:4px 0 0;font:400 11px/1.4 var(--ng-mono);letter-spacing:.08em;text-transform:uppercase;color:#ffffff8c}.j-pop-go .j-tick-screen{margin-top:10px}')
+c = one(c, '.j-ticks li{display:flex', '.cn-top.cn-lay .cn-brand{top:var(--lay-brand);bottom:auto;transform:translateY(var(--cn-dy, 0px))}.cn-top.cn-lay .cn-scroll{top:var(--lay-hint);transform:translateY(var(--cn-dy, 0px))}.cn-top.cn-lay .cn-quote{top:var(--lay-quote);bottom:auto}.j-ticks li{display:flex')
 open(f'{A}/site-ddg{NEW}.css', 'w', encoding='utf-8').write(c)
 t = one(t, '{group:"Hold the orb",key:"holdVignette",label:"Screen edges darken",min:0,max:1,step:.05},', '{group:"Hold the orb",key:"holdVignette",label:"Screen edges darken",min:0,max:1,step:.05},{group:"Hold the orb",key:"holdDent",label:"Pressed glass: dent under the finger (0 off)",min:0,max:2.5,step:.05},{group:"Hold the orb",key:"holdVibrate",label:"Phone buzz builds with the charge (0 off; Android only)",min:0,max:1,step:.05},')
 t = one(t, 'holdOn:1,', 'holdOn:1,holdDent:1,holdVibrate:1,')
@@ -91,6 +100,9 @@ t = one(t, 'expand:"Expand",', 'expand:"Expand",screenNote:"Best viewed on a com
 t = re.sub(r'(className:"j-expand",onClick:\(\)=>a\(c\),"aria-haspopup":"dialog",children:\[\$\.expand,e\.jsx\("i",\{"aria-hidden":"true",children:"\u2192"\}\)\]\}\))', r'\1,l.screen&&e.jsx("span",{className:"j-tick-screen",children:$.screenNote})', t, count=1); assert 'l.screen&&e.jsx("span"' in t
 t = one(t, 'e.jsx("div",{className:"j-pop-go",children:s.external?', 'e.jsxs("div",{className:"j-pop-go",children:[s.external?')
 t = one(t, 'children:[$.visit,": ",s.name," ",e.jsx("i",{"aria-hidden":"true",children:"\u2192"})]})})]})}),document.body)}', 'children:[$.visit,": ",s.name," ",e.jsx("i",{"aria-hidden":"true",children:"\u2192"})]}),s.screen&&e.jsx("p",{className:"j-tick-screen",children:$.screenNote})]})]})}),document.body)}')
+t = one(t, 'fogNear:.2,fogFar:.6,', 'camZoom:2,phoneLayout:1,fogNear:.2,fogFar:.6,')
+t = one(t, '{group:"Scene",key:"fogNear"', '{group:"Scene",key:"camZoom",label:"Camera distance at load (1 = as before, 2 = twice as far)",min:.6,max:3,step:.05},{group:"Scene",key:"fogNear"')
+t = re.sub(r'(\{group:"Name and logo",key:"brandLift"[^}]*\})', r'\1,{group:"Name and logo",key:"phoneLayout",label:"Phones: space the first screen evenly by itself (0 off: the sliders place things)",min:0,max:1,step:1,names:["Off","On"]}', t, count=1); assert '"phoneLayout",label' in t
 open(f'{A}/site-ddg{NEW}.js', 'w', encoding='utf-8').write(t)
 h = rd('index.html'); h = one(h, 'site-ddg11.js', f'site-ddg{NEW}.js'); h = one(h, 'site-ddg6.css', f'site-ddg{NEW}.css'); open('index.html', 'w', encoding='utf-8').write(h)
 print('ok')
