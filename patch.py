@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '14'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '15'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))

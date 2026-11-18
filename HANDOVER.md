@@ -32,7 +32,7 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 
 ## State 18 Nov 18:35 (source: claude/hold-polish, commit "remove the water vortex")
 - Markus asked to undo the vortex look work and remove the vortex completely. Done: no liquid, no vortex sliders.
-- Live files here: index.html -> assets/site-ddg14.js -> assets/Stage-ddg14.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
+- Live files here: index.html -> assets/site-ddg15.js -> assets/Stage-ddg15.js, built by `python3 patch.py` (set NEW in it; nova wave text is in nova_glsl.py)
   from the ddg11 base files (keep those; they are not served).
 - Kept: hold fixes (press works on a slightly scrolled page and jumps to the top; no charge by itself at load),
   a preview-only status line at the bottom left, Hide leaves one small Show button.
@@ -46,3 +46,10 @@ After any rename, check: `grep -c "ddg<old>" assets/Stage-ddg<new>.js assets/sit
 - VERIFIED headless (t5.mjs): shader compiles, no page errors, the crest is visibly uneven 0.5 s after the nova.
 - NOT VERIFIED: how it looks in motion on Markus's screen. If too much or too little, the numbers to change are
   0.09 (front), 0.4 / 0.25 (crest height), 0.3 (chop), 1.1 / 0.6 (bend) in `novaWave`.
+
+## 18 Nov 19:00: nova wave made smooth (build ddg15)
+- Markus: ddg14 was jagged, too many spikes. Cause: fast chop, high harmonics round the ring, and a jump at the
+  front in the trailing waves. Now only slow changes: broad drifting high/low patches (`tall`), a wider crest,
+  a second lower swell at 0.55 of the front, longer trailing waves that start smoothly.
+- VERIFIED headless (t5.mjs): compiles, no page errors, smooth uneven crest in a still 0.5 s after the nova.
+- NOT VERIFIED: the look in motion on Markus's screen.
