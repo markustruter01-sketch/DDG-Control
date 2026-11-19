@@ -177,6 +177,8 @@ p { margin: 0; }
 .s-price .s-found { font-style: normal; font-size: 13px; font-weight: 500; color: var(--ng-ice); }
 .s-kits { margin: 0 0 34px; }
 .s-kits h3 { margin: 6px 0 4px; font-weight: 300; font-size: 26px; color: var(--ng-text); }
+.s-kit-intro { margin: 8px 0 0; max-width: 46em; color: var(--ng-text-2); font-size: 16px; }
+.s-kit .s-kit-who { color: var(--ng-text); font-size: 14px; }
 .s-kit-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; }
 .s-kit { display: flex; flex-direction: column; gap: 8px; padding: 20px; border-radius: 16px; }
 .s-kit h4 { margin: 0; font-size: 18px; font-weight: 500; color: var(--ng-text); }

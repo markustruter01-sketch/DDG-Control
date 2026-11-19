@@ -98,16 +98,18 @@ export const FOUNDING = {
 export const foundingPrice = (n: number) => Math.floor((n * (1 - FOUNDING.off)) / 5) * 5;
 /** Ready-made kits (growth plan B2.2, Markus 19 Nov: cover base costs, keep monthly fees low).
  * Monthly fee covers hosting, updates and fixes. Ordered through the written form (kit pre-picked). */
-export type Kit = { key: string; name: string; kind: ServiceKey; line: string; from: string; setup: number; monthly: number; note?: string };
+export type Kit = { key: string; name: string; kind: ServiceKey; line: string; who: string; from: string; setup: number; monthly: number; note?: string };
 export const KITS: Kit[] = [
-  { key: 'shop', name: 'Shop kit', kind: 'store', line: 'An online store with card payments, subscriptions, postage rules, sales and an admin screen.', from: 'Built from Cattle Dog Coffee', setup: 2950, monthly: 79 },
-  { key: 'control', name: 'Control room kit', kind: 'platform', line: 'One private screen for your sales, socials and to-dos, with a daily AI summary.', from: 'Built from DDG Control', setup: 1500, monthly: 49 },
-  { key: 'desk', name: 'Front desk kit', kind: 'ai', line: 'An AI helper that answers enquiries, books and follows up, in writing.', from: 'Built from our own AI team', setup: 1500, monthly: 129, note: 'Up to 500 conversations a month' },
+  { key: 'shop', name: 'Shop kit', kind: 'store', line: 'Your own online shop. Customers pay by card, can subscribe, and you see every order in one place.', who: 'Good for makers and small shops. For example, a bakery taking cake orders, or a candle maker posting across Australia.', from: 'Built from Cattle Dog Coffee', setup: 2950, monthly: 79 },
+  { key: 'control', name: 'Control room kit', kind: 'platform', line: 'One private page that shows your sales, social media and to-do list, with a short summary written for you each morning.', who: 'Good for owners juggling a few things who want to see everything at a glance.', from: 'Built from DDG Control', setup: 1500, monthly: 49 },
+  { key: 'desk', name: 'Front desk kit', kind: 'ai', line: 'An assistant that replies to customer messages for you, day and night, books jobs and follows up.', who: 'Good for trades, clinics and salons that miss messages while they are busy working.', from: 'Built from our own AI team', setup: 1500, monthly: 129, note: 'Up to 500 conversations a month' },
 ];
 export const KITS_TEXT = {
   eyebrow: 'Ready-made kits',
-  title: 'Fixed price. Set up in about two weeks.',
-  line: 'Proven systems we run ourselves, set up for your business. The monthly fee covers hosting, updates and fixes. Cancel any time after three months.',
+  title: 'What is a kit?',
+  line: 'A kit is something we have already built and use in our own businesses. Instead of building yours from scratch, we set up a copy for you with your name, logo and details. That is why it costs less and is ready in about two weeks.',
+  how: 'You pay once to set it up. After that, a small monthly fee keeps it online, up to date and fixed if anything breaks. Cancel any time after three months.',
+  choose: 'Pick a kit if one fits what you need. If you need something different, see the custom builds below.',
   order: 'Order this kit',
 };
 export const PRICE_BASIS = 'How we compared: our ranges are about 25% below the 2026 Australian price ranges published by What\u2019s The Damage, WP Creative, Expeed and Flowtivity.';
