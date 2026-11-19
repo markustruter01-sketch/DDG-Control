@@ -11,6 +11,7 @@ import { drawPipes, fillPipes } from './canyon/wires';
 import { mountPageClouds } from './canyon/cloudPaint';
 import { CHARITY, COMPANY, CONTACT, HOME, PRIVACY, START, QUOTES } from './content';
 import { About, Showcase } from './Journey';
+import { watchSections } from './visits';
 
 // The 3D first screen is loaded on its own, so the page's words never wait for it.
 const Stage = lazy(() => import('./canyon/Stage'));
@@ -108,6 +109,8 @@ function Home() {
   const pipes = usePipes();
   // Soft clouds behind the page, seen blurred through the glass panels.
   useEffect(() => mountPageClouds(), []);
+  // Visitor counting: one view, then which sections people reach (no cookies).
+  useEffect(() => watchSections({ about: 'reach:portfolio', build: 'reach:build', start: 'reach:start' }), []);
   // Opened at a section (/#build from another page): go there once the page is drawn.
   useEffect(() => {
     const id = window.location.hash.slice(1);

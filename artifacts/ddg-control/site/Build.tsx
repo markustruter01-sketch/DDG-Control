@@ -1,6 +1,7 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import type { PublicSummary } from '@workspace/api-client-react';
-import { BUILD_FORM, BUILD_STEPS, CARE, FOUNDING, PRICE_BASIS, SERVICES, START, foundingPrice, type ServiceKey } from './content';
+import { BUILD_FORM, BUILD_STEPS, CARE, FOUNDING, KITS, KITS_TEXT, PRICE_BASIS, SERVICES, START, foundingPrice, type ServiceKey } from './content';
+import { hit } from './visits';
 
 // DDG Build: we build platforms for other businesses. Shown as a teaser until the server says
 // it is open (SERVICES_OPEN_ON on the server). ?preview=build shows the full section; the server
@@ -25,6 +26,12 @@ type Sent = { state: 'idle' } | { state: 'sending' } | { state: 'done'; test: bo
 /** The one-page enquiry form: what, what it does, what exists, when and budget, who. */
 export function EnquiryForm() {
   const [kind, setKind] = useState<Kind | null>(null);
+  const [kit, setKit] = useState<string | null>(null);
+  useEffect(() => {
+    const on = (e: Event) => { const d = (e as CustomEvent<{ kind: Kind; kit: string }>).detail; setKind(d.kind); setKit(d.kit); };
+    addEventListener('ddg-kit', on);
+    return () => removeEventListener('ddg-kit', on);
+  }, []);
   const [hasNow, setHasNow] = useState('');
   const [timing, setTiming] = useState('');
   const [budget, setBudget] = useState('');
@@ -40,13 +47,13 @@ export function EnquiryForm() {
     }
     setSent({ state: 'sending' });
     const body = {
-      kind, features: [], has_now: hasNow, timing, budget, name, email,
+      kind, features: kit ? [kit] : [], has_now: hasNow, timing, budget, name, email,
       about: String(form.get('about') ?? '').trim() || undefined, fax: String(form.get('fax') ?? ''),
     };
     try {
       const r = await fetch('/api/public/enquiry', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
       const json = await r.json().catch(() => ({}));
-      if (r.ok) return setSent({ state: 'done', test: Boolean(json.test), email });
+      if (r.ok) { if (!json.test) hit('form:sent'); return setSent({ state: 'done', test: Boolean(json.test), email }); }
       setSent({ state: 'error', message: typeof json.error === 'string' ? json.error : 'Something went wrong. Please try again.' });
     } catch {
       setSent({ state: 'error', message: 'Could not send. Check your connection and try again.' });
@@ -75,9 +82,10 @@ export function EnquiryForm() {
     <form className="s-form glass-plain" onSubmit={submit} noValidate>
       <fieldset>
         <legend><span>1</span> What do you want built?</legend>
+        {kit && <p className="s-kit-pick">{kit} <button type="button" onClick={() => setKit(null)} aria-label={`Remove ${kit}`}>×</button></p>}
         <div className="s-chips">
           {BUILD_FORM.kinds.map((k) => (
-            <label key={k.key} className="s-chip"><input type="radio" name="kind" checked={kind === k.key} onChange={() => setKind(k.key)} />{k.label}</label>
+            <label key={k.key} className="s-chip"><input type="radio" name="kind" checked={kind === k.key} onChange={() => { setKind(k.key); setKit(null); }} />{k.label}</label>
           ))}
         </div>
       </fieldset>
@@ -143,6 +151,22 @@ export function Build({ summary }: { summary: PublicSummary | null }) {
       ) : (
         <>
           {!open && <p className="s-preview" role="note">Preview. Opens {openDate(opensOn)}; until then only a logged-in owner can send a test enquiry.</p>}
+          <div className="s-kits" aria-labelledby="kits-title">
+            <p className="s-eyebrow">{KITS_TEXT.eyebrow}</p>
+            <h3 id="kits-title">{KITS_TEXT.title}</h3>
+            <p className="s-note">{KITS_TEXT.line}</p>
+            <div className="s-kit-row">
+              {KITS.map((k) => (
+                <article key={k.key} className="s-kit glass-plain">
+                  <h4>{k.name}</h4>
+                  <p>{k.line}</p>
+                  <p className="s-note">{k.from}</p>
+                  <p className="s-price"><b>{aud(k.setup)} set-up</b><span>+ {aud(k.monthly)} a month{k.note ? ` · ${k.note}` : ''}</span><em className="s-found">{FOUNDING.line.replace(': from', ':')} {aud(foundingPrice(k.setup))} set-up</em></p>
+                  <button type="button" className="s-btn" onClick={() => { hit(`kit:${k.key}`); dispatchEvent(new CustomEvent('ddg-kit', { detail: { kind: k.kind, kit: k.name } })); document.getElementById('start')?.scrollIntoView({ behavior: 'smooth' }); }}>{KITS_TEXT.order} →</button>
+                </article>
+              ))}
+            </div>
+          </div>
           <p className="s-founding" role="note"><b>{FOUNDING.banner}</b><span>{FOUNDING.sub}</span></p>
           <div className="s-services">
             {SERVICES.map((s) => (
