@@ -88,6 +88,14 @@ export const SERVICES: Service[] = [
   { key: 'ai', name: 'AI assistant or automation', line: 'An AI that answers, books, reads documents or runs a task for you.', from: 3750, to: 26250,
     proof: 'Like the bots that run DDG every day', features: ['Answers customers', 'Books appointments', 'Reads documents', 'Connects to your apps (Xero, CRM…)', 'Writes reports', 'Runs on a schedule'] },
 ];
+/** Founding offer (Markus 19 Nov): the first five clients get 15% off the listed "from" price, rounded down to $5. */
+export const FOUNDING = {
+  off: 0.15,
+  banner: 'Founding offer: our first five clients pay 15% less.',
+  sub: 'The offer closes when five clients have signed.',
+  line: 'First five clients: from',
+};
+export const foundingPrice = (n: number) => Math.floor((n * (1 - FOUNDING.off)) / 5) * 5;
 export const PRICE_BASIS = 'How we compared: our ranges are about 25% below the 2026 Australian price ranges published by What\u2019s The Damage, WP Creative, Expeed and Flowtivity.';
 export const CARE = 'Care plans from $40 a month for a website and $225 a month for an app. Extra work $110–$185 an hour.';
 

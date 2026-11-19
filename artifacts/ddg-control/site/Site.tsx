@@ -11,7 +11,6 @@ import { drawPipes, fillPipes } from './canyon/wires';
 import { mountPageClouds } from './canyon/cloudPaint';
 import { CHARITY, COMPANY, CONTACT, HOME, PRIVACY, START, QUOTES } from './content';
 import { About, Showcase } from './Journey';
-import { Designs } from './Designs';
 
 // The 3D first screen is loaded on its own, so the page's words never wait for it.
 const Stage = lazy(() => import('./canyon/Stage'));
@@ -57,7 +56,6 @@ function Nav({ home = false }: { home?: boolean }) {
       <Link href="/" className="s-brand" aria-label="Digital Dynamics Group home"><img src={LOGO} alt="" loading="lazy" /><b><span className="s-brand-full">Digital Dynamics Group</span><span className="s-brand-short">DDG</span></b></Link>
       <nav aria-label="Site">
         <a href="/#about" onClick={section('about')}>Portfolio</a>
-        <a href="/#designs" onClick={section('designs')}>Designs</a>
         <Link href="/finance">Finance</Link>
         <a href="/#build" onClick={section('build')}>Prices</a>
         <a href="/#charity" onClick={section('charity')}>Charity</a>
@@ -141,7 +139,7 @@ function Home() {
         <main className="s-main j-main">
           <About onSee={() => toSection('build', true)} onQuote={() => toSection('start', true)} />
           <Showcase />
-          <Designs />
+          {/* Designs section hidden until Markus approves the designs (19 Nov). */}
           <section id="charity" className="j-give" data-pipe aria-label={CHARITY.label}>
             <p className="j-give-sum"><b>{dollars(raised)}</b><span>{CHARITY.label}</span></p>
             <p className="j-give-line">{CHARITY.body}</p>
