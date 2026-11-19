@@ -121,7 +121,7 @@ export const LIVE: Record<LiveKey, { name: string; eyebrow: string; line: string
   finance: {
     name: 'DDG Finance', eyebrow: 'Live · built by DDG',
     line: 'Our own trading platform: automated strategies on paper-money accounts, watched by hard risk limits. This is its real dashboard, with the controls taken off.',
-    address: 'ddg.limited/live/finance', src: '/live-finance/',
+    address: 'ddg.limited/live/finance', src: '/live-finance/index.html',
     note: 'Paper money. Numbers update after each US market close.',
   },
 };
