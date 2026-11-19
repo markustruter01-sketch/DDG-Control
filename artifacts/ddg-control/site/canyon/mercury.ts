@@ -72,12 +72,12 @@ void main() {
 
 type Mode = 'rest' | 'drag' | 'fly' | 'return';
 
-export function makeMercury(R: number) {
+export function makeMercury(R: number, small = false) {
   const uniforms = {
     uVel: { value: new Vector3() }, uWob: { value: new Vector4() }, uPoke: { value: new Vector4(0, 0, 1, 0) },
     uR: { value: R }, uShow: { value: 1 }, uSkyTurn: { value: 0 },
   };
-  const geo = new IcosahedronGeometry(1, 24); // about 11,500 triangles: smooth enough for the stretch and dents
+  const geo = new IcosahedronGeometry(1, small ? 16 : 24); // about 11,500 triangles (5,800 on phones): smooth enough for the stretch and dents
   const mat = new ShaderMaterial({ uniforms, vertexShader: VERT, fragmentShader: FRAG });
   const ball = new Mesh(geo, mat); ball.renderOrder = 5; ball.frustumCulled = false;
   const group = new Group(); group.add(ball);

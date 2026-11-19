@@ -83,7 +83,8 @@ void main() {
 }`;
 
 export function makeWorld(small: boolean, fogColor: number) {
-  const fine = small ? 9 : 6, coarse = small ? 60 : 40, inside = 40;
+  // Fewer points than first built (19 Nov speed pass): about 40% less work at load, same look through the fog.
+  const fine = small ? 12 : 8, coarse = small ? 75 : 50, inside = 40;
   const xs = axis(-2600, 2600, -INNER.x, INNER.x, fine, coarse, inside);
   const zs = axis(-3000, 1500, INNER.zFar, INNER.zNear, fine, coarse, inside);
   const nx = xs.length, nz = zs.length;
