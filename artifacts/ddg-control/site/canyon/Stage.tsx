@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import {
   AdditiveBlending, BufferAttribute, BufferGeometry, CanvasTexture, DoubleSide, DynamicDrawUsage, Fog, Group,
-  LineSegments, Mesh, ShaderMaterial, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, Vector4, WebGLRenderer,
+  LineSegments, Mesh, type Object3D, ShaderMaterial, MeshBasicMaterial, PerspectiveCamera, Scene, Sprite, SpriteMaterial, SRGBColorSpace, Vector3, Vector4, WebGLRenderer,
 } from 'three';
 import { makeAirOrb, lightningNow } from './airOrb';
 import { makeSky } from './sky';
@@ -275,6 +275,19 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     // the black cover away; the orb spawns after that (introStart).
     let fontsIn = false, framesDrawn = 0;
     let glitch = 0, glitchAt = -1, glitchSeed = 0, glitchShift = 0;
+    // Smooth load-in on slow computers (Markus, 19 Nov: "laggy, jumps and skips"). Three parts:
+    // 1. warmUp: every effect (spark, bolts, nova, spawn looks) is prepared behind the black cover, so nothing
+    //    stalls the first time it appears; 2. the cover lifts only once 8 frames in a row came quickly, and a
+    //    slow computer gets a lower sharpness before the reveal, not after; 3. the spawn runs on its own clock that
+    //    moves by each frame's step, so a slow frame plays on from where it was instead of jumping ahead.
+    // intro.ts still shows the page after 4 s whatever happens.
+    let steady = 0, warmSampled = 0, warmSlow = 0, preSteps = 0, introT = 0;
+    const warmUp = () => {
+      const hidden: Object3D[] = [];
+      scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
+      try { renderer.compile(scene, camera); renderer.render(scene, camera); } catch { /* best effort */ }
+      for (const o of hidden) o.visible = false;
+    };
     Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 2500))]).then(() => { fontsIn = true; });
     const followEl = topEl.querySelector<HTMLElement>('.cn-follow');
 
@@ -526,7 +539,9 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // The orb's spawn, over T.introSpawn seconds once the cover has faded: a point of light, the ball
       // swelling out of it (a little past full size, then settling), a bright pulse, then the words.
       const t0 = introStart();
-      const spawn = reduced || T.introSpawn <= 0 ? (t0 === null ? 0 : 1) : t0 === null ? 0 : Math.min(1, Math.max(0, (now - t0) / (T.introSpawn * 1000)));
+      // Each frame moves the spawn on by at most 0.1 s: a normal frame plays in real time, a stall slows it instead of skipping.
+      if (t0 === null) introT = 0; else if (now >= t0) introT += Math.min(0.1, Math.max(0, raw / 1000));
+      const spawn = reduced || T.introSpawn <= 0 ? (t0 === null ? 0 : 1) : t0 === null ? 0 : Math.min(1, introT / T.introSpawn);
       const arrive = spawnLook(T.introStyle, spawn, R);
       let born: number;
       if (arrive.classic) {
@@ -656,7 +671,19 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         statusAt = now;
         statusEl.textContent = `scroll ${Math.round(scrollY)} px · orb: ${hold.down ? 'HELD' : novaLock ? 'let go first' : orbOnScreen.r > 0 ? 'ready to press' : 'cannot be pressed (page scrolled too far)'} · last press: ${lastPress} · charge ${Math.round(charge * 100)}% · ${Math.round(fps)} frames/s`;
       }
-      if (++framesDrawn >= 3 && fontsIn) revealPage(T.introFade * 1000);
+      framesDrawn++;
+      if (framesDrawn === 2) warmUp(); // after one real frame, so everything has been placed once
+      else if (framesDrawn > 2 && introStart() === null) {
+        steady = raw < 40 ? steady + 1 : 0;
+        // A slow computer: lower the sharpness before anyone sees the scene (at most two steps).
+        if (++warmSampled >= 12) {
+          if (warmSlow > 8 && preSteps < 2 && ratioStep < ratios.length - 1) {
+            ratioStep++; preSteps++; renderer.setPixelRatio(Math.min(devicePixelRatio, ratios[ratioStep] ?? 1)); resize(); steady = 0;
+          }
+          warmSampled = 0; warmSlow = 0;
+        } else if (raw > 22) warmSlow++;
+      }
+      if (framesDrawn >= 3 && fontsIn && steady >= 8) revealPage(T.introFade * 1000);
     };
     raf = requestAnimationFrame(frame);
     return () => {
