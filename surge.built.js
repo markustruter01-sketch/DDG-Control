@@ -91,35 +91,19 @@ const NOVA_FX_FRAG = (
   `
 uniform float uT; uniform float uA; uniform float uCalm;
 varying vec2 vUv;
-float ring(float r, float at, float w) { return exp(-pow((r - at) / w, 2.0)); }
+float wave(float r, float at, float w) {
+  float d = r - at;
+  return d > 0.0 ? exp(-pow(d / w, 2.0)) : exp(-pow(d / (w * 4.0), 2.0)) * 0.55 + exp(-pow(d / w, 2.0)) * 0.45;
+}
 void main() {
   vec2 p = (vUv - 0.5) * 2.0;
   float r = length(p);
   if (r > 1.0) discard;
-  float ang = atan(p.y, p.x);
-  float r1 = 0.97 * (1.0 - exp(-uT * 3.0)), r2 = 0.97 * (1.0 - exp(-uT * 1.5));
-  float w1 = 0.01 + 0.025 * uT, w2 = 0.016 + 0.035 * uT;
-  float f1 = exp(-uT * 2.0) * smoothstep(0.0, 0.03, uT), f2 = exp(-uT * 1.3) * smoothstep(0.05, 0.12, uT);
-  vec3 col = vec3(ring(r, r1 * 0.975, w1), ring(r, r1, w1), ring(r, r1 * 1.025, w1)) * f1 * 1.6;
-  col += (1.0 - uCalm) * vec3(ring(r, r2 * 0.97, w2), ring(r, r2, w2), ring(r, r2 * 1.03, w2)) * f2 * 0.9;
-  if (uCalm < 0.5) {
-    float band = smoothstep(r1, r1 - 0.1, r) * smoothstep(r1 - 0.3, r1 - 0.1, r);
-    col += vec3(0.55, 0.78, 1.0) * band * 0.16 * f1;
-    float rays = pow(0.5 + 0.5 * sin(ang * 23.0 + 2.0 * sin(ang * 7.0)), 8.0) * pow(0.5 + 0.5 * sin(ang * 11.0 + 1.3), 3.0);
-    float len = smoothstep(0.02, 0.12, r) * (1.0 - smoothstep(r1 * 0.75, r1 * 1.02, r));
-    col += vec3(0.85, 0.94, 1.0) * rays * len * exp(-uT * 2.6) * 1.4;
-  }
-  gl_FragColor = vec4(col * uA, 1.0);
-}`
-);
-const NOVA_CORE_FRAG = (
-  /* glsl */
-  `
-uniform float uAlpha;
-varying vec3 vN; varying vec3 vV; varying float vY;
-void main() {
-  float facing = abs(dot(normalize(vN), normalize(vV)));
-  gl_FragColor = vec4(vec3(1.0, 0.98, 0.95) * pow(facing, 1.5) * uAlpha, 1.0);
+  float r1 = 0.97 * (1.0 - exp(-uT * 3.0)), r2 = 0.97 * (1.0 - exp(-uT * 1.6));
+  float w1 = 0.008 + 0.02 * uT, w2 = 0.012 + 0.03 * uT;
+  float f1 = exp(-uT * 2.2) * smoothstep(0.0, 0.03, uT), f2 = exp(-uT * 1.5) * smoothstep(0.08, 0.16, uT);
+  float k = wave(r, r1, w1) * f1 * 1.5 + (1.0 - uCalm) * wave(r, r2, w2) * f2 * 0.7;
+  gl_FragColor = vec4(vec3(0.78, 0.9, 1.0) * k * uA, 1.0);
 }`
 );
 function makeSurge() {
@@ -150,23 +134,6 @@ function makeSurge() {
   fx.visible = false;
   fx.frustumCulled = false;
   group.add(fx);
-  const coreMat = new ShaderMaterial({ uniforms: { uAlpha: { value: 0 } }, vertexShader: BEAM_VERT, fragmentShader: NOVA_CORE_FRAG, transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending });
-  const core = new Mesh(novaGeo, coreMat);
-  core.renderOrder = 9;
-  core.visible = false;
-  core.frustumCulled = false;
-  group.add(core);
-  const EMB = 140;
-  const embPos = new Float32Array(EMB * 3), embVel = new Float32Array(EMB * 3);
-  const embGeo = new BufferGeometry();
-  embGeo.setAttribute("position", new BufferAttribute(embPos, 3));
-  const embMat = new PointsMaterial({ color: 13625855, size: 0.22, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false });
-  const embers = new Points(embGeo, embMat);
-  embers.frustumCulled = false;
-  embers.renderOrder = 8;
-  embers.visible = false;
-  group.add(embers);
-  let lastNovaT = -1;
   const novaAt = (t, orb, radius, size, camQ, calm = false) => {
     const live = t >= 0 && size > 0;
     const k = Math.sqrt(Math.min(3, size / 0.05));
@@ -185,42 +152,6 @@ function makeSurge() {
       fxMat.uniforms.uA.value = Math.min(1.5, 0.6 + 0.4 * k) * (calm ? 0.5 : 1);
       fxMat.uniforms.uCalm.value = calm ? 1 : 0;
     }
-    core.visible = live && t < 0.45 && !calm;
-    if (core.visible) {
-      const sc = t < 0.07 ? 1.25 - 0.75 * (t / 0.07) : 0.5 + 3.2 * (t - 0.07);
-      core.position.copy(orb);
-      core.scale.setScalar(radius * sc);
-      coreMat.uniforms.uAlpha.value = t < 0.07 ? 0.6 + 2.5 * (t / 0.07) : 3.1 * Math.exp(-(t - 0.07) * 9);
-    }
-    if (live && !calm && lastNovaT < 0) {
-      for (let i = 0; i < EMB; i++) {
-        const a = rnd() * Math.PI * 2, b = Math.acos(2 * rnd() - 1), sp = radius * (1.5 + 4 * rnd()) * k;
-        const dx = Math.sin(b) * Math.cos(a), dy = Math.cos(b), dz = Math.sin(b) * Math.sin(a);
-        embPos[i * 3] = orb.x + dx * radius;
-        embPos[i * 3 + 1] = orb.y + dy * radius;
-        embPos[i * 3 + 2] = orb.z + dz * radius;
-        embVel[i * 3] = dx * sp;
-        embVel[i * 3 + 1] = dy * sp * 0.6 + radius * 0.8;
-        embVel[i * 3 + 2] = dz * sp;
-      }
-      embMat.size = radius * 0.06;
-    }
-    const step = live && lastNovaT >= 0 ? Math.max(0, Math.min(0.1, t - lastNovaT)) : 0;
-    embers.visible = live && !calm && t < 2.2;
-    if (embers.visible && step > 0) {
-      const drag = Math.exp(-step * 2.2);
-      for (let i = 0; i < EMB; i++) {
-        embVel[i * 3] = embVel[i * 3] * drag;
-        embVel[i * 3 + 2] = embVel[i * 3 + 2] * drag;
-        embVel[i * 3 + 1] = embVel[i * 3 + 1] * drag + radius * 0.9 * step;
-        embPos[i * 3] = embPos[i * 3] + embVel[i * 3] * step;
-        embPos[i * 3 + 1] = embPos[i * 3 + 1] + embVel[i * 3 + 1] * step;
-        embPos[i * 3 + 2] = embPos[i * 3 + 2] + embVel[i * 3 + 2] * step;
-      }
-      embGeo.attributes.position.needsUpdate = true;
-    }
-    embMat.opacity = embers.visible ? Math.min(1, t * 8) * Math.max(0, 1 - t / 2.2) * (0.75 + 0.25 * Math.sin(t * 40)) : 0;
-    lastNovaT = live ? t : -1;
   };
   const burstAll = (orb, radius, pick) => {
     for (const b of bolts) {
@@ -418,7 +349,7 @@ function makeSurge() {
     }
     return { flash, at, sky: skyNow.main };
   };
-  const disposables = [novaGeo, novaMat, fxGeo, fxMat, coreMat, embGeo, embMat, ...bolts.flatMap((b) => [b.geo, b.mat]), ...[skyMain, ...skyForks].flatMap((b) => [b.geo, b.mat]), sparkGeo, sparkMat];
+  const disposables = [novaGeo, novaMat, fxGeo, fxMat, ...bolts.flatMap((b) => [b.geo, b.mat]), ...[skyMain, ...skyForks].flatMap((b) => [b.geo, b.mat]), sparkGeo, sparkMat];
   return { group, update, novaAt, burstAll, skyStrike, disposables };
 }
 export {
