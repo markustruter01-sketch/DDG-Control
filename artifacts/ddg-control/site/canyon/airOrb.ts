@@ -22,7 +22,7 @@ void main() {
   if (uGlitch > 0.0) {
     float band = floor((vObj.y + 1.0) * 7.0);
     float h = fract(sin(band * 91.7 + uGlitchSeed * 13.3) * 43758.5453);
-    pos.x += (h - 0.5) * 2.0 * step(0.4, h) * uGlitch * 0.5 * length(position);
+    pos.x += (h - 0.5) * 2.0 * step(0.4, h) * uGlitch * 0.85 * length(position);
   }
   vWN = mat3(modelMatrix) * normal;
   vWP = (modelMatrix * vec4(pos, 1.0)).xyz;
