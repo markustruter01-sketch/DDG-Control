@@ -490,7 +490,7 @@ p { margin: 0; }
 .cn-clouds { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100lvh; z-index: 0; pointer-events: none; }
 /* The page below slides up over the first screen as one sheet with a long feathered top edge,
    so the night scene melts into the page colour instead of ending on a hard line. */
-.cn-page::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 55vh; pointer-events: none;
+.cn-page::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 14vh; pointer-events: none; /* was 55vh: with the shorter gap after the first screen (10vh) it lay over the quote and dimmed it (Markus, 19 Nov) */
   background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--site-base, var(--ng-graphite)) 35%, transparent) 40%, color-mix(in srgb, var(--site-base, var(--ng-graphite)) 80%, transparent) 75%, var(--site-base, var(--ng-graphite)) 100%); }
 .cn-page > section, .cn-page > main { position: relative; z-index: 1; }
 .cn-work { padding-top: clamp(110px, 16vh, 170px); }

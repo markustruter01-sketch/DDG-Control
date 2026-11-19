@@ -96,7 +96,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       vertexShader: `attribute float aBase; uniform vec4 uPull; uniform float uPullY; varying float vWet; varying float vDist; varying vec2 vXZ;
         void main() { vXZ = position.xz; vWet = step(aBase, 4.62 - 0.01 * position.z);
           vec3 p = position; vec2 d = uPull.xy - p.xz; float f = uPull.z * exp(-length(d) / uPull.w);
-          p.xz += d * f * 0.85; p.y += (uPullY - p.y) * f * 0.55;
+          f = min(f, 0.97); p.xz += d * f * 0.9; p.y += (uPullY - p.y) * f * 0.8;
           vec4 mv = modelViewMatrix * vec4(p, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
       // uBolt: where the orb is (x, z), how bright the lightning is right now, and how far its light reaches over the land.
       fragmentShader: `uniform float uOpacity; uniform float uFogNear; uniform float uFogFar; uniform vec4 uBolt; varying float vWet; varying float vDist; varying vec2 vXZ;
@@ -656,13 +656,18 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       aura.update(clock, (1 - away) * born, { bloom: T.orbBloom + ch, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
       haloMat.opacity *= 1 + flash;
       // The black hole: spins up with the charge and bends the land's lines in towards it.
-      blackHole.update(clock, dt, ch, (shownMode === 1 ? 1 : 0) * (1 - away) * born, camera.quaternion);
-      lineMat.uniforms.uPull.value.set(orbit.position.x, orbit.position.z, shownMode === 1 && !reduced ? ease(ch) * (novaT >= 0 ? Math.max(0, 1 - novaT * 3) : 1) : 0, 26 + 30 * ch);
+      blackHole.update(clock, dt, ch, (shownMode === 1 ? 1 : 0) * (1 - away) * born, camera.quaternion, canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)));
+      // 50% stronger and further-reaching than first built (Markus, 19 Nov).
+      lineMat.uniforms.uPull.value.set(orbit.position.x, orbit.position.z, shownMode === 1 && !reduced ? 1.5 * ease(ch) * (novaT >= 0 ? Math.max(0, 1 - novaT * 3) : 1) : 0, 39 + 45 * ch);
       lineMat.uniforms.uPullY.value = orbit.position.y;
       // The mercury: its own little physics (mercury.ts); the orb's spot is its home.
       const mercOn = shownMode === 2;
       if (mercOn || mercury.busy()) {
-        const off = mercury.step(dt);
+        // Its floor: the river or the land under it, whichever is higher, plus its own radius.
+        const mR = ORB_R * orbit.scale.x, hx = orbit.position.x, hy = orbit.position.y, hz = orbit.position.z;
+        const mFloor = (ox: number, oz: number) => Math.max(lvl(hz + oz), heightAt(hx + ox, hz + oz) * (1 - k)) + mR * 0.85 - hy;
+        const mLift = Math.max(0, mFloor(0, 0)); // its home may sit a touch low: home always counts as clear
+        const off = mercury.step(dt, (ox, oz) => mFloor(ox, oz) - mLift);
         mercury.group.position.copy(off).divideScalar(Math.max(1e-3, orbit.scale.x));
         let poke: Vector3 | null = null;
         if (mercId >= 0) { camera.getWorldDirection(pokeDir); poke = pokeDir.multiplyScalar(-1); }
