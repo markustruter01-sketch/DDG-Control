@@ -127,7 +127,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const top = new Vector3((Math.random() - 0.5) * 0.4, 1.25, 0.5).unproject(camera).sub(camera.position).normalize()
         .multiplyScalar(camera.position.distanceTo(orbit.position) * 0.35).add(camera.position);
       surge.skyStrike(top, new Vector3(orbit.position.x, orbit.position.y + R, orbit.position.z), power);
+      if (!reduced) addPop(orbit.position.x, orbit.position.z, 2.2 + 0.4 * power); // a ring races out across the water
     };
+    // A brief pale flash over the whole scene when the sky strike lands (never a white-out).
+    const skyFlashEl = document.createElement('div');
+    skyFlashEl.setAttribute('aria-hidden', 'true');
+    skyFlashEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;background:radial-gradient(ellipse at 50% 18%,rgba(225,242,255,.95),rgba(150,195,255,.35) 55%,rgba(120,170,255,0) 85%)';
+    stage.appendChild(skyFlashEl);
     // The orb's load-in looks (spawn.ts): the portal, the spark, the motes.
     const spawnFx = makeSpawnFx();
     scene.add(spawnFx.group);
@@ -561,7 +567,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       lineMat.uniforms.uBolt.value.set(orbit.position.x, orbit.position.z, landFlash, T.orbFlashReach);
       // The surge: bolts to the water and land. A strike lights the land where it lands.
       const waterY = lvl(orbit.position.z);
-      const strike = surge.update(clock, dt, fxCh * (1 - away), orbit.position, R, waterY, { bolts: T.holdBolts }, () => {
+      const strike = surge.update(clock, dt, fxCh * (1 - away), orbit.position, R, waterY, { bolts: T.holdBolts, cam: camera.position, calm: reduced }, () => {
         const a = Math.random() * Math.PI * 2;
         if (Math.random() < 0.6) {
           const r = R * (1.3 + 1.9 * Math.random());
@@ -570,6 +576,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         const x = (Math.random() < 0.5 ? -1 : 1) * (14 + 24 * Math.random()), z = orbit.position.z - 25 + 35 * Math.random();
         return strikeAt.set(x, heightAt(x, z) * (1 - k), z);
       });
+      const skyFlashOp = (Math.min(reduced ? 0.1 : 0.2, strike.sky * 0.11) * (1 - away)).toFixed(3);
+      if (skyFlashEl.style.opacity !== skyFlashOp) skyFlashEl.style.opacity = skyFlashOp;
       if (strike.at && strike.flash * T.holdBolts * 1.5 > landFlash) lineMat.uniforms.uBolt.value.set(strike.at.x, strike.at.z, strike.flash * T.holdBolts * 1.5, 14);
       // Letting go after a good charge sends a ring of light out across the water and jolts the scene.
       if (wasHeld && !hold.down && !novaNow && charge > 0.5 && T.holdShock > 0) shock = 1;
@@ -659,6 +667,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
+      skyFlashEl.remove();
       unmountPanel?.();
       removeEventListener('pointerdown', onDown, true);
       removeEventListener('pointermove', onMove);
