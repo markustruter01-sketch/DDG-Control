@@ -7,7 +7,6 @@ import { makeAirOrb, lightningNow } from './airOrb';
 import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWorld } from './world';
-import { makeBlackHole } from './blackHole';
 import { makeMercury } from './mercury';
 import { makeWater } from './water';
 import { makeAura } from './aura';
@@ -34,6 +33,8 @@ import { onStableResize, stableHeight } from './viewport';
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const ease = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+/** The orbs the visitor can pick (arrows or a swipe). */
+const ORB_COUNT = 2, MERCURY = 1;
 
 function glowTexture(rgb: string) {
   const c = document.createElement('canvas'); c.width = c.height = 128;
@@ -91,13 +92,10 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     lineGeo.setAttribute('aBase', new BufferAttribute(base, 1));
     const lineMat = new ShaderMaterial({
       transparent: true,
-      uniforms: { uOpacity: { value: 0.34 }, uFogNear: { value: 30 }, uFogFar: { value: 150 }, uBolt: { value: new Vector4(0, 0, 0, 1) }, uPull: { value: new Vector4(0, 0, 0, 40) }, uPullY: { value: 10 } },
-      // uPull: the black hole bends the lines in towards it (orb x, z, strength 0..1, reach).
-      vertexShader: `attribute float aBase; uniform vec4 uPull; uniform float uPullY; varying float vWet; varying float vDist; varying vec2 vXZ;
+      uniforms: { uOpacity: { value: 0.34 }, uFogNear: { value: 30 }, uFogFar: { value: 150 }, uBolt: { value: new Vector4(0, 0, 0, 1) } },
+      vertexShader: `attribute float aBase; varying float vWet; varying float vDist; varying vec2 vXZ;
         void main() { vXZ = position.xz; vWet = step(aBase, 4.62 - 0.01 * position.z);
-          vec3 p = position; vec2 d = uPull.xy - p.xz; float f = uPull.z * exp(-length(d) / uPull.w);
-          f = min(f, 0.97); p.xz += d * f * 0.9; p.y += (uPullY - p.y) * f * 0.8;
-          vec4 mv = modelViewMatrix * vec4(p, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
+          vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
       // uBolt: where the orb is (x, z), how bright the lightning is right now, and how far its light reaches over the land.
       fragmentShader: `uniform float uOpacity; uniform float uFogNear; uniform float uFogFar; uniform vec4 uBolt; varying float vWet; varying float vDist; varying vec2 vXZ;
         void main() { if (vWet > 0.5) discard;
@@ -128,12 +126,11 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     halo.renderOrder = 4; // after the river (1) and before the ball (5), so the ball sits in front of the water
     const aura = makeAura(ORB_R);
     orbit.add(halo, aura.group, air.group);
-    // The other two orbs (Markus, 19 Nov): swipe or use the arrows to pick. 0 = the blue air orb,
-    // 1 = the black hole (press and hold), 2 = the mercury (grab, drag, flick).
-    const blackHole = makeBlackHole(ORB_R);
+    // The other orbs (Markus, 19-20 Nov): swipe or use the arrows to pick. 0 = the blue air orb (press and hold),
+    // 1 = the mercury (grab, drag, flick). The black hole was tried and removed (20 Nov).
     const mercury = makeMercury(ORB_R, small);
-    orbit.add(blackHole.group, mercury.group);
-    disposables.push(...blackHole.disposables, ...mercury.disposables);
+    orbit.add(mercury.group);
+    disposables.push(...mercury.disposables);
     disposables.push(...aura.disposables, ...air.disposables, haloTex, haloMat);
 
     // Press and hold the orb: lightning to the water and land, and the nova (surge.ts).
@@ -270,7 +267,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     /** Pick an orb (wraps round). Not while one is busy: charging, calming, or the mercury still moving. */
     const pickOrb = (m: number) => {
       if (hold.down || charge > 0.01 || camHold > 0.01 || novaT >= 0 || mercury.busy() || swapK < 1) return;
-      orbMode = ((m % 3) + 3) % 3; if (orbMode !== shownMode) swapK = 0;
+      orbMode = ((m % ORB_COUNT) + ORB_COUNT) % ORB_COUNT; if (orbMode !== shownMode) swapK = 0;
     };
     // Two small arrows beside the orb.
     const pickEl = document.createElement('div');
@@ -285,13 +282,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       if (e.button === 0 && e.isPrimary && !onOrb(e.clientX, e.clientY) && scrollY < innerHeight * 0.1
         && !(e.target as Element | null)?.closest?.('a,button,input,textarea,select,label,.tune')) swipe = { id: e.pointerId, x: e.clientX, y: e.clientY };
       // The mercury: grab it (no charge, no camera move).
-      if (e.button === 0 && shownMode === 2 && swapK >= 1 && onOrb(e.clientX, e.clientY) && !(e.target as Element | null)?.closest?.('a,button,.tune')) {
+      if (e.button === 0 && shownMode === MERCURY && swapK >= 1 && onOrb(e.clientX, e.clientY) && !(e.target as Element | null)?.closest?.('a,button,.tune')) {
         mercId = e.pointerId; hold.touching = true; lastPress = 'grabbed the mercury';
-        mercury.grab(worldAt(e.clientX, e.clientY), orbit.position, performance.now());
+        mercury.grab(worldAt(e.clientX, e.clientY), orbit.position, e.timeStamp);
         try { (e.target as Element | null)?.setPointerCapture?.(e.pointerId); } catch { /* not every element can */ }
         return;
       }
-      if (swapK < 1 || shownMode === 2) return;
+      if (swapK < 1 || shownMode === MERCURY) return;
       if (e.button > 0 || !onOrb(e.clientX, e.clientY)) { lastPress = e.button > 0 ? 'not the main button' : orbOnScreen.r > 0 ? 'missed the orb' : 'orb not ready'; return; }
       if ((e.target as Element | null)?.closest?.('a,button,input,textarea,select,label,.tune')) { lastPress = 'on a button or the panel'; return; }
       lastPress = 'on the orb';
@@ -311,13 +308,14 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const noScroll = (e: TouchEvent) => { if ((hold.down || hold.touching) && e.cancelable) e.preventDefault(); };
     const touchOff = (e: TouchEvent) => { if (e.touches.length === 0) hold.touching = false; };
     const onMove = (e: PointerEvent) => {
-      if (e.pointerId === mercId) mercury.drag(worldAt(e.clientX, e.clientY), orbit.position, performance.now());
+      // Event times (not the time we get round to them), so a flick reads true even when frames are slow.
+      if (e.pointerId === mercId) mercury.drag(worldAt(e.clientX, e.clientY), orbit.position, e.timeStamp);
       // Moving the mouse (or the finger, see noScroll) while holding keeps the charge going.
       if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) ? 'pointer' : '';
     };
     // After the nova the orb needs a fresh press: letting go unlocks it.
     const onUp = (e: PointerEvent) => {
-      if (e.pointerId === mercId) { mercury.release(performance.now()); mercId = -1; hold.touching = false; }
+      if (e.pointerId === mercId) { mercury.release(e.timeStamp); mercId = -1; hold.touching = false; }
       if (swipe && e.pointerId === swipe.id && e.type === 'pointerup') {
         const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
         if (Math.abs(dx) > 60 && Math.abs(dx) > 2 * Math.abs(dy)) pickOrb(orbMode + (dx < 0 ? 1 : -1));
@@ -663,13 +661,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       });
       aura.update(clock, (1 - away) * born, { bloom: T.orbBloom + ch, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
       haloMat.opacity *= 1 + flash;
-      // The black hole: spins up with the charge and bends the land's lines in towards it.
-      blackHole.update(clock, dt, ch, (shownMode === 1 ? 1 : 0) * (1 - away) * born, camera.quaternion, canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)));
-      // 50% stronger and further-reaching than first built (Markus, 19 Nov).
-      lineMat.uniforms.uPull.value.set(orbit.position.x, orbit.position.z, shownMode === 1 && !reduced ? 1.5 * ease(ch) * (novaT >= 0 ? Math.max(0, 1 - novaT * 3) : 1) : 0, 39 + 45 * ch);
-      lineMat.uniforms.uPullY.value = orbit.position.y;
       // The mercury: its own little physics (mercury.ts); the orb's spot is its home.
-      const mercOn = shownMode === 2;
+      const mercOn = shownMode === MERCURY;
       if (mercOn || mercury.busy()) {
         // Its floor: the river or the land under it, whichever is higher, plus its own radius.
         const mR = ORB_R * orbit.scale.x, hx = orbit.position.x, hy = orbit.position.y, hz = orbit.position.z;

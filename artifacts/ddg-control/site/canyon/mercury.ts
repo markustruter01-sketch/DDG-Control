@@ -84,10 +84,11 @@ export function makeMercury(R: number, small = false) {
 
   const pos = new Vector3(), vel = new Vector3(), target = new Vector3(), prevVel = new Vector3(), acc = new Vector3();
   const hist: { t: number; p: Vector3 }[] = [];
-  let mode: Mode = 'rest', back = 0, poke = 0;
+  let mode: Mode = 'rest', back = 0, poke = 0, flyT = 0, grounded = false;
   const wob = { a: 0, av: 0, b: 0, bv: 0, ripple: 0 };
-  const MAX = 34; // never further than this from home (world units)
-  const THROW = 16; // a flick reaches at most this far, then it turns straight round (Markus, 19 Nov)
+  const MAX = 40; // never further than this from home (world units)
+  const THROW = 32; // a flick reaches at most this far (Markus: twice as far, 20 Nov), easing to a stop near the end
+  const GRAVITY = 26; // in flight it falls, so it arcs down onto the land and the river and bounces
 
   /** Pointer down on the blob: `at` is the pointer on the plane through home that faces the camera (world). */
   const grab = (at: Vector3, home: Vector3, now: number) => {
@@ -104,7 +105,7 @@ export function makeMercury(R: number, small = false) {
     const first = hist[0], last = hist[hist.length - 1];
     const dtS = first && last ? Math.max(0.016, (last.t - first.t) / 1000) : 1;
     const flick = first && last && now - last.t < 120 ? last.p.clone().sub(first.p).divideScalar(dtS) : new Vector3();
-    if (flick.length() > 9) { vel.copy(flick).multiplyScalar(1.15); mode = 'fly'; }
+    if (flick.length() > 9) { vel.copy(flick).multiplyScalar(1.35); mode = 'fly'; flyT = 0; }
     else mode = 'rest';
     poke = 0;
   };
@@ -123,12 +124,22 @@ export function makeMercury(R: number, small = false) {
       acc.copy(target).sub(pos).multiplyScalar(220).addScaledVector(vel, -24);
       vel.addScaledVector(acc, dt);
     } else if (mode === 'fly') {
-      vel.multiplyScalar(Math.exp(-2.6 * dt)); // drag slows it down
-      if (pos.length() >= THROW || vel.length() < 0.6) { mode = 'return'; back = 0; vel.set(0, 0, 0); }
+      // Air drag, plus a soft brake that grows as it nears the furthest point, so it eases to a stop there
+      // instead of hitting a wall (Markus, 20 Nov).
+      const near = Math.min(1, Math.max(0, (pos.length() - THROW * 0.55) / (THROW * 0.45)));
+      vel.multiplyScalar(Math.exp(-(1.6 + 9 * near * near) * dt));
+      vel.y -= GRAVITY * dt;
+      if (pos.length() >= THROW) pos.setLength(THROW);
+      flyT += dt;
+      // Turn round once it has come to rest on the ground, or has eased to a stop at its furthest point, or after
+      // a while. (Not at the top of its arc, where it is only still for a moment.)
+      const flat = Math.hypot(vel.x, vel.z) + Math.abs(vel.y) * 0.3;
+      if ((grounded && flat < 1.5 && flyT > 0.4) || (near > 0.97 && flat < 2) || flyT > 3.2) { mode = 'return'; back = 0; vel.multiplyScalar(0.3); }
     } else if (mode === 'return') {
       // The magnet: slow at first, faster and faster, straight home.
       back += dt;
-      const speed = 1.5 + 9 * back + 40 * back * back;
+      // The magnet: starts gently, then faster and faster.
+      const speed = 0.8 + 6 * back + 34 * back * back;
       const d = pos.length();
       if (d < speed * dt * 1.2 || d < 0.08) {
         // Snap home: the speed it arrived with becomes one big wobble.
@@ -144,6 +155,7 @@ export function makeMercury(R: number, small = false) {
     pos.addScaledVector(vel, dt);
     // The land and the river: no sinking in. A steep step (a canyon wall) bounces it back sideways; flat
     // ground bounces it up (or it just rests there while dragged). Each bounce kicks the wobble.
+    grounded = false;
     if (floor) {
       const f = floor(pos.x, pos.z);
       if (pos.y < f) {
@@ -154,9 +166,11 @@ export function makeMercury(R: number, small = false) {
         const g = floor(pos.x, pos.z);
         if (pos.y < g) {
           const hit = -vel.y;
-          pos.y = g;
-          if (vel.y < 0) vel.y = mode === 'drag' ? 0 : -vel.y * 0.5;
-          if (hit > 2) { wob.av += -hit * 0.25; wob.ripple = 1; }
+          pos.y = g; grounded = true;
+          if (vel.y < 0) vel.y = mode === 'drag' ? 0 : -vel.y * 0.62;
+          if (mode !== 'drag') { const fr = Math.exp(-3 * dt); vel.x *= fr; vel.z *= fr; } // it skids a little
+          // A visible squash on every real bounce (the harder, the flatter), then it jiggles back.
+          if (hit > 1.5) { wob.av += -Math.min(hit, 30) * 0.32; wob.ripple = 1; }
         }
       }
     }
