@@ -31,9 +31,10 @@ void main() {
   float g = bhF(vec2(swirl * 2.2, u * 9.0 - uSpin * 0.4)) * 0.75 + bhF(vec2(swirl * 7.0, u * 30.0)) * 0.35;
   float heat = (1.0 - u) * 0.85 + g * 0.35;
   // Doppler: the side coming towards the camera is brighter.
-  float dop = 0.65 + 0.55 * sin(a + 1.57);
+  float dop = 0.85 + 0.25 * cos(a);
   float edge = smoothstep(0.0, 0.06, u) * (1.0 - smoothstep(0.6, 1.0, u));
-  float k = edge * (0.45 + 1.1 * g) * dop * (1.1 + 1.4 * uPower) * uShow;
+  float k = edge * (0.35 + 0.9 * g) * dop * (0.85 + 1.4 * uPower) * uShow;
+  k += exp(-u / 0.05) * 0.5 * uShow; // a thin white-hot inner edge
   gl_FragColor = vec4(bhHeat(clamp(heat, 0.0, 1.0)) * k, k);
 }`;
 
@@ -51,9 +52,9 @@ void main() {
   // The far side of the disk, bent over the top and under the bottom: a band hugging the hole, thick at the
   // top and bottom, thinning to nothing at the sides.
   float side = abs(sin(a));
-  float band = exp(-pow((r - h * (1.22 + 0.1 * side)) / (h * (0.06 + 0.16 * side)), 2.0)) * smoothstep(0.15, 0.7, side);
+  float band = exp(-pow((r - h * (1.25 + 0.12 * side)) / (h * (0.07 + 0.2 * side)), 2.0)) * smoothstep(0.1, 0.6, side) * (vP.y > 0.0 ? 1.0 : 0.55);
   float g = bhF(vec2(a * 3.0 + uSpin * 0.8, r * 4.0));
-  float k = (ring + band * (0.9 + 1.2 * g)) * (1.0 + 1.0 * uPower);
+  float k = (ring + band * (0.7 + 0.9 * g)) * (0.75 + 1.2 * uPower);
   // Soft glow round it all.
   k += exp(-max(0.0, r - h) / (h * 0.5)) * 0.18 * (0.5 + uPower);
   if (r < h * 1.0) k *= smoothstep(h * 0.96, h * 1.0, r); // nothing in front of the black
@@ -63,7 +64,7 @@ void main() {
 
 export function makeBlackHole(R: number) {
   const group = new Group();
-  const HOLE = R * 0.46, IN = R * 0.62, OUT = R * 2.4;
+  const HOLE = R * 0.46, IN = R * 0.6, OUT = R * 2.0;
   const holeGeo = new SphereGeometry(HOLE, 32, 24);
   const holeMat = new MeshBasicMaterial({ color: 0x000000 });
   const hole = new Mesh(holeGeo, holeMat); hole.renderOrder = 4; // drawn first: the disk's near side passes in front, its far side is hidden behind

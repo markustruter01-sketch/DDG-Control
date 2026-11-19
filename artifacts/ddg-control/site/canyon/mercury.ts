@@ -53,15 +53,20 @@ varying vec3 vN; varying vec3 vW;
 void main() {
   vec3 v = normalize(vW - cameraPosition), n = normalize(vN);
   vec3 r = reflect(v, n);
-  // Mirror of the night sky above; the dark land and the bluish river below the horizon.
-  vec3 env = skyColor(normalize(vec3(r.x, abs(r.y), r.z))) * 2.6;
-  vec3 below = mix(vec3(0.02, 0.03, 0.05), vec3(0.10, 0.18, 0.30), smoothstep(-0.05, -0.6, r.y));
-  env = r.y > 0.0 ? env : below;
-  // Mercury: grey-silver, very reflective at grazing angles, with a soft bright sheen from the sky.
-  float fres = pow(1.0 - max(0.0, dot(-v, n)), 4.0);
-  vec3 col = env * (0.75 + 0.6 * fres) + vec3(0.62, 0.68, 0.78) * 0.10;
-  float sheen = pow(max(0.0, dot(r, normalize(vec3(-0.35, 0.85, 0.25)))), 60.0);
-  col += vec3(0.9, 0.95, 1.0) * sheen * 1.6 + vec3(0.25, 0.4, 0.6) * fres * 0.35;
+  // Polished metal (Markus, 19 Nov: "more metallic"): a near-perfect mirror of the night sky, a bright
+  // horizon line wrapping round it (the classic chrome look), dark ground below, and sharp highlights.
+  float up = r.y;
+  vec3 env = skyColor(normalize(vec3(r.x, abs(r.y), r.z))) * 3.2;
+  env += vec3(0.75, 0.8, 0.88) * exp(-pow((up - 0.04) / 0.07, 2.0)) * 0.9;           // the horizon band
+  vec3 below = mix(vec3(0.09, 0.11, 0.15), vec3(0.04, 0.05, 0.07), smoothstep(0.0, -0.6, up));
+  below += vec3(0.3, 0.48, 0.75) * exp(-pow((up + 0.3) / 0.16, 2.0)) * 0.7;        // the lit river below
+  env = up > 0.0 ? env : below;
+  float fres = pow(1.0 - max(0.0, dot(-v, n)), 5.0);
+  vec3 metal = vec3(0.86, 0.88, 0.92);                                                  // silver
+  vec3 col = env * mix(metal, vec3(1.0), fres);
+  float spec = pow(max(0.0, dot(r, normalize(vec3(-0.35, 0.85, 0.25)))), 180.0) * 5.0
+             + pow(max(0.0, dot(r, normalize(vec3(0.6, 0.35, 0.7)))), 90.0) * 1.2;
+  col += vec3(1.0) * spec;
   gl_FragColor = vec4(col * uShow, 1.0);
 }`;
 
@@ -148,7 +153,8 @@ export function makeMercury(R: number) {
     clock += dt;
     // The stretch uses the speed, scaled to this ball's size.
     uniforms.uVel.value.copy(vel).multiplyScalar(0.045 / Math.max(0.5, R));
-    uniforms.uWob.value.set(wob.a, wob.b, Math.min(1, wob.ripple), clock);
+    // A slow breathing ripple even at rest, so it always reads as liquid.
+    uniforms.uWob.value.set(wob.a + 0.012 * Math.sin(clock * 1.7), wob.b + 0.01 * Math.sin(clock * 1.3 + 1), Math.min(1, wob.ripple + 0.35), clock);
     if (pokeDir) uniforms.uPoke.value.set(pokeDir.x, pokeDir.y, pokeDir.z, poke);
     else uniforms.uPoke.value.w = Math.max(0, uniforms.uPoke.value.w - dt * 4);
     uniforms.uShow.value = show; uniforms.uSkyTurn.value = skyTurn;
