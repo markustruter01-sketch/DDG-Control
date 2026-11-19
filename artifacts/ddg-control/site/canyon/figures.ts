@@ -52,6 +52,21 @@ function walkPose(ph: number, go: number, t: number): P3[] {
   ];
 }
 
+/**
+ * Floating (Markus, 19 Nov): still a firm body, not a rag doll. Upright, arms out a little and waving, legs pedalling
+ * slowly as if falling through the air. Relative to the hip; `ph` keeps the two figures out of step.
+ */
+function floatPose(t: number, ph: number): P3[] {
+  const a = t * 2.1 + ph, b = t * 1.7 + ph;
+  return [
+    [0, 0, 0], [0, 0.27, 0.02], [0.01 * Math.sin(a * 0.5), 0.42, 0.04],
+    [0.17, 0.19 + 0.04 * Math.sin(a), 0.03], [0.3, 0.25 + 0.08 * Math.sin(a + 0.8), 0.07],
+    [-0.17, 0.19 + 0.04 * Math.sin(a + 2), 0.03], [-0.3, 0.25 + 0.08 * Math.sin(a + 2.8), 0.07],
+    [0.08, -0.19, 0.07 + 0.08 * Math.sin(b)], [0.09, -0.4 + 0.07 * Math.max(0, Math.sin(b)), 0.02 + 0.13 * Math.sin(b - 0.9)],
+    [-0.08, -0.19, 0.07 + 0.08 * Math.sin(b + Math.PI)], [-0.09, -0.4 + 0.07 * Math.max(0, Math.sin(b + Math.PI)), 0.02 + 0.13 * Math.sin(b + Math.PI - 0.9)],
+  ];
+}
+
 // The figures' look: white, lit from above, a cool rim, blue light from the laptop screen and from the orb.
 const VERT = /* glsl */ `
 varying vec3 vN; varying vec3 vW;
@@ -108,6 +123,9 @@ type Fig = {
   home: Vector3; yaw: number;
   // Walker: where on his beat he is (0..1 along zA to zB), which way, his stride, and a pause at each end.
   zA: number; zB: number; s: number; dir: number; ph: number; stop: number; turn: number;
+  // Floating as one firm body: where its hip is, how fast it moves, how it is turned and turning, and the pose it
+  // had when it lifted off (blended into the floating pose).
+  c: Vector3; vel: Vector3; rot: Quaternion; ang: Vector3; base: P3[]; blend: number; fph: number;
 };
 
 export function makeFigures() {
@@ -144,9 +162,10 @@ export function makeFigures() {
     coder, p: Array.from({ length: N }, () => new Vector3()), o: Array.from({ length: N }, () => new Vector3()),
     len: BONES.map(() => 0.2), from: Array.from({ length: N }, () => new Vector3()),
     mode: 'gone', timer: 0, home: new Vector3(), yaw: 0, zA: 0, zB: 0, s: 0.5, dir: 1, ph: 0, stop: 0, turn: 0,
+    c: new Vector3(), vel: new Vector3(), rot: new Quaternion(), ang: new Vector3(), base: [], blend: 0, fph: coder ? 0 : 2.3,
   });
   const figs = [mk(true), mk(false)];
-  let S = 1, placed = false, lastSide = -1, lastSize = -1, needPlace = true;
+  let S = 1, placed = false, lastSide = -1, lastSize = -1, lastFov = -1, lastAspect = -1, needPlace = true;
   const onResize = () => { needPlace = true; };
   addEventListener('resize', onResize);
 
@@ -171,12 +190,13 @@ export function makeFigures() {
    * "I can't see the stick men on the phone"). If no spot is inside, the one nearest the middle is used.
    */
   const place = (f: FigureFrame) => {
-    S = 0.55 * f.R * f.size;
+    const baseS = 0.55 * f.R * f.size;
+    S = baseS;
     f.cam.updateMatrixWorld();
     const side = f.side > 0.5 ? 1 : -1, cam = f.cam.position;
     const spot = (sd: number, h: number, from: number) => {
       let best = from, bestOff = 99;
-      for (let t = from; t <= 0.97; t += 0.03) {
+      for (let t = from; t <= 2.4; t += 0.04) { // past the orb too: far away the banks close in towards the middle
         const z = cam.z + (f.orb.z - cam.z) * t, x = bankX(z, sd, f), o = offCentre(x, f.land(x, z) + h * S, z, f.cam);
         if (o < 0.72) return t;
         if (o < bestOff) { bestOff = o; best = t; }
@@ -184,13 +204,15 @@ export function makeFigures() {
       return best;
     };
     const t = spot(side, 0.3, 0.5);
+    const tm = spot(-side, 0.5, t + 0.06);
+    // Further away they would look smaller, so they are made bigger by the same amount.
+    S = baseS * Math.max(1, Math.max(t, tm));
     const zc = cam.z + (f.orb.z - cam.z) * t, xc = bankX(zc, side, f);
     const c = figs[0]!;
     c.home.set(xc, f.land(xc, zc), zc);
     c.yaw = Math.atan2(-side, 1) * 0.75; // turned towards the river and the camera
     // The Walker's beat on the other bank: its middle found the same way, then shortened until both ends are inside.
     const wk = figs[1]!;
-    const tm = spot(-side, 0.5, Math.min(0.97, t + 0.06));
     const zm = cam.z + (f.orb.z - cam.z) * tm;
     let half = 2.2 * f.R;
     for (; half > 0.3 * f.R; half *= 0.8) {
@@ -198,7 +220,7 @@ export function makeFigures() {
       if (offCentre(xa, f.land(xa, a) + 0.5 * S, a, f.cam) < 0.78 && offCentre(xb, f.land(xb, b) + 0.5 * S, b, f.cam) < 0.78) break;
     }
     wk.zA = zm - half; wk.zB = zm + half; wk.home.set(bankX(zm, -side, f), 0, zm);
-    placed = true; needPlace = false; lastSide = f.side; lastSize = f.size;
+    placed = true; needPlace = false; lastSide = f.side; lastSize = f.size; lastFov = f.cam.fov; lastAspect = f.cam.aspect;
   };
 
   /** The figure's calm pose, in the world, written into `out`. */
@@ -222,37 +244,42 @@ export function makeFigures() {
     outQ.setFromAxisAngle(up, g.yaw);
   };
 
-  /** One rag-doll step: gravity that fades with the charge, the orb's pull, the bones, the ground and the orb's skin. */
-  const physics = (g: Fig, f: FigureFrame, dt: number, thrown: boolean) => {
-    const ch = f.charge, G = 9 * S;
-    const grav = thrown ? -G * 0.6 : -G * (1 - 1.3 * ch);
-    const pullK = thrown ? 0 : f.pull * Math.pow(ch, 1.6) * S * 7;
-    const damp = Math.pow(thrown ? 0.995 : 0.975, dt * 60);
-    for (let i = 0; i < N; i++) {
-      const p = g.p[i]!, o = g.o[i]!;
-      v.copy(p).sub(o).multiplyScalar(damp);
-      w.copy(f.orb).sub(p); const d = Math.max(0.001, w.length()); w.divideScalar(d);
-      const near = 1 + 3 * Math.min(1, Math.max(0, 1 - (d - f.R) / (6 * f.R))); // pulled harder the closer it gets
-      const ax = w.x * pullK * near + (-w.z) * pullK * 0.25, az = w.z * pullK * near + w.x * pullK * 0.25;
-      const ay = grav + w.y * pullK * near;
-      o.copy(p);
-      p.x += v.x + ax * dt * dt; p.y += v.y + ay * dt * dt; p.z += v.z + az * dt * dt;
+  const qi = new Quaternion();
+  /** Lift off: the body keeps its shape; it is turned as it stands, and blends from that pose into the float. */
+  const startFloat = (g: Fig) => {
+    g.c.copy(g.p[0]!); g.vel.set(0, 0, 0); g.blend = 0;
+    const yaw = g.coder ? g.yaw : (g.dir > 0 ? 0 : Math.PI) + g.turn;
+    g.rot.setFromAxisAngle(up, yaw); qi.copy(g.rot).invert();
+    g.base = g.p.map((p) => { v.copy(p).sub(g.c).applyQuaternion(qi).divideScalar(S); return [v.x, v.y, v.z] as P3; });
+    g.ang.set(rnd() - 0.5, (rnd() - 0.5) * 0.6, rnd() - 0.5).normalize().multiplyScalar(0.5);
+  };
+  /**
+   * One floating step: the body rises (faster as the charge grows), the orb pulls it in (harder the closer it is),
+   * and it turns slowly. Thrown (the nova): no lift, no pull, just flying out and spinning.
+   */
+  const floatStep = (g: Fig, f: FigureFrame, dt: number, thrown: boolean) => {
+    const ch = f.charge;
+    w.copy(f.orb).sub(g.c); const d = Math.max(0.001, w.length()); w.divideScalar(d);
+    const near = 1 + 3 * Math.min(1, Math.max(0, 1 - (d - f.R) / (6 * f.R)));
+    const pullK = thrown ? 0 : f.pull * Math.pow(ch, 1.6) * S * 7 * near;
+    const lift = thrown ? -5 * S : S * (0.5 + 2.4 * ch);
+    g.vel.multiplyScalar(Math.pow(thrown ? 0.995 : 0.97, dt * 60));
+    g.vel.x += (w.x * pullK - w.z * pullK * 0.25) * dt;
+    g.vel.y += (lift + w.y * pullK) * dt;
+    g.vel.z += (w.z * pullK + w.x * pullK * 0.25) * dt;
+    g.c.addScaledVector(g.vel, dt);
+    if (!thrown) {
+      w.copy(g.c).sub(f.orb); const dd = w.length(), skin = f.R * 1.25;
+      if (dd < skin) { w.divideScalar(Math.max(dd, 1e-4)); g.c.copy(f.orb).addScaledVector(w, skin); const inward = g.vel.dot(w); if (inward < 0) g.vel.addScaledVector(w, -inward); }
     }
-    for (let it = 0; it < 4; it++) {
-      BONES.forEach(([a, b], k) => {
-        const pa = g.p[a]!, pb = g.p[b]!;
-        v.copy(pb).sub(pa); const d = Math.max(1e-5, v.length()), diff = (d - g.len[k]!) / d * 0.5;
-        pa.addScaledVector(v, diff); pb.addScaledVector(v, -diff);
-      });
-    }
+    const spin = thrown ? 1 : 0.3 + 1.1 * ch;
+    if (g.ang.lengthSq() > 1e-8) { q.setFromAxisAngle(v.copy(g.ang).normalize(), g.ang.length() * spin * dt); g.rot.premultiply(q); }
+    g.blend = Math.min(1, g.blend + dt / 0.8);
+    const k = ease(g.blend), fp = floatPose(f.t, g.fph);
     for (let i = 0; i < N; i++) {
-      const p = g.p[i]!;
-      if (!thrown) {
-        w.copy(p).sub(f.orb); const d = w.length();
-        if (d < f.R * 1.08) p.copy(f.orb).addScaledVector(w, (f.R * 1.08) / Math.max(d, 1e-4));
-      }
-      const floor = Math.max(f.land(p.x, p.z), f.water(p.z));
-      if (p.y < floor) { p.y = floor; const o = g.o[i]!; o.x += (p.x - o.x) * 0.3; o.z += (p.z - o.z) * 0.3; }
+      const b0 = g.base[i] ?? fp[i]!, b1 = fp[i]!;
+      v.set(b0[0] + (b1[0] - b0[0]) * k, b0[1] + (b1[1] - b0[1]) * k, b0[2] + (b1[2] - b0[2]) * k).multiplyScalar(S).applyQuaternion(g.rot).add(g.c);
+      g.p[i]!.copy(v);
     }
   };
   const lapPhysics = (f: FigureFrame, dt: number, thrown: boolean) => {
@@ -262,7 +289,7 @@ export function makeFigures() {
     const pullK = thrown ? 0 : f.pull * Math.pow(ch, 1.6) * S * 7 * (1 + 3 * Math.min(1, Math.max(0, 1 - (d - f.R) / (6 * f.R))));
     lapO.copy(lapP);
     lapP.x += v.x + w.x * pullK * dt * dt; lapP.z += v.z + w.z * pullK * dt * dt;
-    lapP.y += v.y + ((thrown ? -G * 0.6 : -G * (1 - 1.4 * ch)) + w.y * pullK) * dt * dt;
+    lapP.y += v.y + ((thrown ? -G * 0.6 : S * (0.6 + 2.4 * ch)) + w.y * pullK) * dt * dt;
     if (!thrown) { w.copy(lapP).sub(f.orb); const dd = w.length(); if (dd < f.R * 1.08) lapP.copy(f.orb).addScaledVector(w, (f.R * 1.08) / Math.max(dd, 1e-4)); }
     const floor = Math.max(f.land(lapP.x, lapP.z), f.water(lapP.z));
     if (lapP.y < floor) lapP.y = floor;
@@ -282,7 +309,7 @@ export function makeFigures() {
   const update = (f: FigureFrame) => {
     group.visible = f.on && f.fade > 0.01;
     if (!f.on) { for (const g of figs) g.mode = 'gone'; placed = false; return; }
-    if (f.side !== lastSide || f.size !== lastSize) needPlace = true;
+    if (f.side !== lastSide || f.size !== lastSize || f.cam.fov !== lastFov || f.cam.aspect !== lastAspect) needPlace = true;
     if (needPlace && f.calmView && figs.every((g) => g.mode === 'gone' || g.mode === 'pose')) place(f);
     if (!placed) { group.visible = false; return; }
     const dt = Math.min(f.dt, 1 / 30);
@@ -303,18 +330,19 @@ export function makeFigures() {
       }
       // Calm → rag doll when the orb starts charging (not for reduced motion).
       if (g.mode === 'pose' && f.charge > 0.03 && f.building && !f.reduced) {
-        g.mode = 'free';
-        BONES.forEach(([a, b], k) => { g.len[k] = g.p[a]!.distanceTo(g.p[b]!); });
+        g.mode = 'free'; startFloat(g);
         if (g.coder) { lapO.copy(lapP); lapSpin.set(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(1.2); }
       }
       if (g.mode === 'free') {
         if (f.nova) {
-          g.mode = 'thrown'; g.timer = 0; throwOut(g.p, g.o, f);
+          g.mode = 'thrown'; g.timer = 0;
+          v.copy(g.c).sub(f.orb); v.y = Math.max(v.y, 0) + v.length() * 0.35; v.normalize();
+          g.vel.copy(v).multiplyScalar((26 + 8 * rnd()) * S); g.ang.set(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).normalize().multiplyScalar(5);
           if (g.coder) { throwOut([lapP], [lapO], f); lapSpin.multiplyScalar(6); }
         } else if (f.charge <= 0.001) { g.mode = 'return'; g.timer = 0; g.from.forEach((p, i) => p.copy(g.p[i]!)); if (g.coder) { lapFrom.copy(lapP); lapQFrom.copy(lapQ); } }
-        else { physics(g, f, dt, false); if (g.coder) lapPhysics(f, dt, false); }
+        else { floatStep(g, f, dt, false); if (g.coder) lapPhysics(f, dt, false); }
       } else if (g.mode === 'thrown') {
-        physics(g, f, dt, true); if (g.coder) lapPhysics(f, dt, true);
+        floatStep(g, f, dt, true); if (g.coder) lapPhysics(f, dt, true);
         if (g.timer > 1.6) g.mode = 'gone';
       } else if (g.mode === 'gone') {
         if (f.settled) { g.mode = 'drop'; g.timer = g.coder ? 0 : -0.25; g.s = 0.5; g.stop = 0; g.turn = 0; }
@@ -325,7 +353,7 @@ export function makeFigures() {
         for (let i = 0; i < N; i++) g.p[i]!.lerpVectors(g.from[i]!, g.o[i]!, k).y += lift;
         if (g.coder) { lapHome(g, f, lapO, q); lapP.lerpVectors(lapFrom, lapO, k); lapQ.slerpQuaternions(lapQFrom, q, k); }
         if (g.timer >= 1.1) g.mode = 'pose';
-        if (f.building && f.charge > 0.03) { g.mode = 'free'; BONES.forEach(([a, b], kk) => { g.len[kk] = g.p[a]!.distanceTo(g.p[b]!); }); g.o.forEach((o, i) => o.copy(g.p[i]!)); }
+        if (f.building && f.charge > 0.03) { g.mode = 'free'; startFloat(g); }
       }
       if (g.mode === 'drop' || g.mode === 'pose') {
         // Drop in from above after the blast (and at load), land with a small bounce, carry on.
