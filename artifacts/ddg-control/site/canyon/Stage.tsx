@@ -611,13 +611,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         });
       }
       if (novaNow && T.holdSkyStrike > 0) strikeFromSky(T.holdSkyStrike, R);
-      surge.novaAt(novaT, orbit.position, R, T.holdNova);
+      surge.novaAt(novaT, orbit.position, R, T.holdNova, camera.quaternion, reduced);
       figures.update({
         dt, t: clock, orb: orbit.position, R, charge, building, nova: novaNow,
         settled: spawn >= 1 && charge < 0.02 && novaT < 0 && !hold.down,
         calmView: p < 0.01 && camHold === 0 && charge === 0 && spawn >= 1, cam: camera,
         land: (x, z) => heightAt(x, z) * (1 - k), water: lvl,
-        on: T.figOn > 0.5, size: T.figSize, side: T.figSide, pull: T.figPull, walk: T.figWalk, reduced, fade: 1 - away,
+        on: T.figOn > 0.5, size: T.figSize * (small ? 1.4 : 1), side: T.figSide, pull: T.figPull, walk: T.figWalk, reduced, fade: 1 - away,
       });
       if (novaT >= 0) haloMat.opacity += Math.exp(-novaT * 3) * 2.5 * T.holdNova;
       wasHeld = hold.down;
