@@ -232,16 +232,16 @@ export const SPECS: Spec[] = [
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane), with his changes of 18 Nov 19:07.
 export const DEFAULTS: Record<string, number> = {
   introFade: 3, introStyle: 2, introSpawn: 1.5, introLoop: 0,
-  holdGlitch: 1,
-  holdOn: 1, holdVibrate: 1, holdFlyOff: 1, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
-  holdCamUp: 10, holdCamBack: 30, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 6, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 2, holdVignette: 0,
-    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 0.05, holdNovaWave: 10.55, holdNovaWaveSpeed: 75, holdCalm: 2.5, holdFxGlobs: 0, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 3, holdFxSpeed: 3,
-  orbBloom: 0.15, orbGlass: 0.65, orbDepth: 0.55, orbFlashLight: 0.2, orbFlashLand: 0.2, orbFlashReach: 12, orbMirror: 1.5, orbRays: 0, orbFringe: 0.25, orbParticles: 0.05,
-  orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 2, orbHeight: -1.6, orbGlow: 0,
-  waterDesign: 1, waterTexture: 4, waterRipples: 0.55, swirlSize: 2.25, swirlDepth: 3, swirlSpeed: 3, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
-  waterGlint: 2.05, waterReflect: 1.1, waterColour: 3, waterSheen: 1.05, sprayAmount: 0.1, spraySize: 0,
-  camZoom: 2, camUp: 10, fogNear: 0.2, fogFar: 0.6, fov: 63, gridLines: 0.5,
-  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.7, waterClear: 0.82,
+  holdGlitch: 2,
+  holdOn: 1, holdVibrate: 1, holdFlyOff: 1, holdBolts: 2, holdSkyStrike: 2.25, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
+  holdCamUp: 13.5, holdCamBack: 30, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 6, holdScreenShake: 2, holdGroundShake: 3, holdShock: 2, holdVignette: 0,
+    holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 5, holdNova: 0.5, holdNovaWave: 25.7, holdNovaWaveSpeed: 123, holdCalm: 2, holdFxGlobs: 0, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 3, holdFxSpeed: 3,
+  orbBloom: 0.45, orbGlass: 0.65, orbDepth: 0.8, orbFlashLight: 0.1, orbFlashLand: 0.25, orbFlashReach: 75, orbMirror: 1.5, orbRays: 0, orbFringe: 1.5, orbParticles: 0.4,
+  orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 2, orbHeight: -1.6, orbGlow: 1,
+  waterDesign: 0, waterTexture: 1.15, waterRipples: 0.45, swirlSize: 0.3, swirlDepth: 1.45, swirlSpeed: 2.5, swirlLines: 2.55, swirlSoft: 3, waterFoam: 0,
+  waterGlint: 3, waterReflect: 2.8, waterColour: 3, waterSheen: 1.95, sprayAmount: 0.1, spraySize: 0,
+  camZoom: 2, camUp: 10, fogNear: 0.2, fogFar: 0.95, fov: 49, gridLines: 0.5,
+  wordsOn: 0, starsOn: 1, logoOn: 1, logoStyle: 1, groupSize: 0.7, waterClear: 1,
   starsEvery: 2.5, starsLength: 1.4, starsSpeed: 2, starsBright: 0.3, starsWidth: 0.65, starsSteep: 1.05,
   pipeOn: 0, pipeFluid: 1, inkHue: 140, inkSat: 0, inkLight: 1, inkSpeed: 4, inkThick: 0.3, pipeRadius: 4, pipeLift: -0.45, pipeGlass: 2.3, pipeRim: 0.15, pipeGlow: 0.7, dataCount: 1, dataSize: 2.65, dataSpeed: 5, dataBright: 2.4, dataColour: 2, wordsFont: 10, wordsSize: 0.7, wordsDepth: 1.25, wordsZ: 26.5, wordsX: 0, wordsY: 0, wordsBright: 1, wordsReflect: 0.04, wordsFade: 0.3,
   quote: 15, quoteOn: 1, quoteFont: 6, quoteSize: 0.72, quoteWeight: 400, quoteSpacing: 0.09, quoteCaps: 0, quoteAlign: 1, quoteWidth: 42, quoteLift: 7,
@@ -249,7 +249,7 @@ export const DEFAULTS: Record<string, number> = {
   qbColour: 0, qbPadX: 32, qbPadY: 12, qbRadius: 120,
   bizLayout: 0,
   baseDark: 1, glowStrength: 0.7, glowHue1: 205, glowHue2: 170, glowSize: 1, glowMove: 0.6, edgeLight: 0.6, accentHue: 195, accentSat: 0.75, accentWords: 1,
-  cloudsOn: 0, cloudCount: 0.68, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
+  cloudsOn: 0, cloudCount: 0.92, cloudOpacity: 0.54, cloudSize: 2.75, cloudFlat: 0.9, cloudHeight: 0.9, cloudSpread: 0.45, cloudDrift: 2.95, cloudOrbPush: 1.5, cloudOrbRadius: 2.35, cloudTint: 0.85,
   pageClouds: 0, pageCloudOpacity: 0.22, pageCloudSize: 1.35, pageCloudDepth: 0.35, pageCloudDrift: 0.6, pageCloudBlur: 6,
   shOn: 1, shArrow: 6, shAnim: 1, shSpeed: 2, shTravel: 10, shLayout: 0, shFont: 2, shSize: 1.15, shSpacing: 0.12, shCaps: 0, shBright: 1, shPlace: 35,
   brandFont: 3, brandSize: 1, brandWeight: 100, brandSpacing: -0.01, brandCaps: 1, brandLine: 1.04, logoSize: 0.95, logoPlace: 1, logoGap: 13, brandLift: 17, phoneLayout: 1,
@@ -260,7 +260,7 @@ export const T: Record<string, number> = { ...DEFAULTS };
 export const TEXT_DEFAULTS: Record<string, string> = { shText: 'Scroll for Web-Page or | Press & Hold Orb for Fun', quoteText: '', shHiWords: 'Fun' };
 export const TX: Record<string, string> = { ...TEXT_DEFAULTS };
 
-const STORE = 'ddg-scene-tune-52'; // new name, so old saved slider positions don't override these defaults
+const STORE = 'ddg-scene-tune-53'; // new name, so old saved slider positions don't override these defaults
 /** The fluid's colour (white ink by default), 0-1 RGB: white mixed towards a pure hue, times brightness. */
 export function fluidRGB(k: Record<string, number> = T): [number, number, number] {
   const h = (k.inkHue ?? 200) / 60, x = 1 - Math.abs((h % 2) - 1);
