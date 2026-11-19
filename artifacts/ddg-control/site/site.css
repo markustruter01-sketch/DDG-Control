@@ -476,7 +476,7 @@ p { margin: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* On the home page the name sits over the orb, so the top bar shows only the links. */
 .s-nav-home .s-brand { visibility: hidden; }
-.cn-room { height: 35vh; } /* was 90vh: the audit found two screens with nothing to read */
+.cn-room { height: 10vh; } /* was 90vh, then 35vh: the audit found a near-empty second screen (Markus, 19 Nov) */
 @media (max-width: 760px) {
   .cn-top { --cn-or: 11vh; }
   .cn-tag { left: 50%; transform: translateX(-50%); top: calc(var(--cn-oy) - var(--cn-or) - 26px); }
@@ -496,7 +496,7 @@ p { margin: 0; }
 .cn-work { padding-top: clamp(110px, 16vh, 170px); }
 .cn-head { width: max-content; max-width: calc(100% - 2 * var(--s-gutter)); margin: 0 auto clamp(28px, 4vh, 48px); text-align: center; }
 .cn-head h2 { margin-top: 12px; font-size: clamp(26px, 3vw, 44px); }
-.cn-page .s-main { gap: clamp(96px, 13vh, 130px); padding-top: clamp(96px, 13vh, 130px); }
+.cn-page .s-main { gap: clamp(96px, 13vh, 130px); padding-top: clamp(32px, 5vh, 56px); }
 /* A pipe: thin dark glass with blue water inside. */
 .cn-pipes { position: absolute; left: 0; top: 0; width: 100%; z-index: 2; pointer-events: none; overflow: visible; }
 .cn-pipes path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
