@@ -174,29 +174,38 @@ function makeFigures() {
     for (let x = 0.5; x < 45; x += 0.25) if (f.land(side * x, z) > wl + 0.15 * S) return side * (x + 0.5 * S);
     return side * 8;
   };
-  const onScreen = (x, y, z, cam) => {
+  const offCentre = (x, y, z, cam) => {
     v.set(x, y, z).project(cam);
-    return Math.abs(v.x) < 0.8 && v.y > -0.4 && v.y < 0.55 && v.z < 1;
+    return v.z < 1 && v.y > -0.4 && v.y < 0.55 ? Math.abs(v.x) : 9;
   };
   const place = (f) => {
     S = 0.55 * f.R * f.size;
     f.cam.updateMatrixWorld();
     const side = f.side > 0.5 ? 1 : -1, cam = f.cam.position;
-    let t = 0.5;
-    for (; t < 0.86; t += 0.05) {
-      const z = cam.z + (f.orb.z - cam.z) * t, x = bankX(z, side, f);
-      if (onScreen(x, f.land(x, z) + 0.3 * S, z, f.cam)) break;
-    }
-    const zc = cam.z + (f.orb.z - cam.z) * Math.min(t, 0.85), xc = bankX(zc, side, f);
+    const spot = (sd, h, from) => {
+      let best = from, bestOff = 99;
+      for (let t2 = from; t2 <= 0.97; t2 += 0.03) {
+        const z = cam.z + (f.orb.z - cam.z) * t2, x = bankX(z, sd, f), o = offCentre(x, f.land(x, z) + h * S, z, f.cam);
+        if (o < 0.72) return t2;
+        if (o < bestOff) {
+          bestOff = o;
+          best = t2;
+        }
+      }
+      return best;
+    };
+    const t = spot(side, 0.3, 0.5);
+    const zc = cam.z + (f.orb.z - cam.z) * t, xc = bankX(zc, side, f);
     const c = figs[0];
     c.home.set(xc, f.land(xc, zc), zc);
     c.yaw = Math.atan2(-side, 1) * 0.75;
     const wk = figs[1];
-    const zm = cam.z + (f.orb.z - cam.z) * Math.min(0.85, t + 0.1);
+    const tm = spot(-side, 0.5, Math.min(0.97, t + 0.06));
+    const zm = cam.z + (f.orb.z - cam.z) * tm;
     let half = 2.2 * f.R;
-    for (; half > 0.4 * f.R; half *= 0.8) {
+    for (; half > 0.3 * f.R; half *= 0.8) {
       const a = zm - half, b = zm + half, xa = bankX(a, -side, f), xb = bankX(b, -side, f);
-      if (onScreen(xa, f.land(xa, a) + 0.5 * S, a, f.cam) && onScreen(xb, f.land(xb, b) + 0.5 * S, b, f.cam)) break;
+      if (offCentre(xa, f.land(xa, a) + 0.5 * S, a, f.cam) < 0.78 && offCentre(xb, f.land(xb, b) + 0.5 * S, b, f.cam) < 0.78) break;
     }
     wk.zA = zm - half;
     wk.zB = zm + half;
