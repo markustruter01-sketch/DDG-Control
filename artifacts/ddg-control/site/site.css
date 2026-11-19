@@ -968,3 +968,12 @@ p { margin: 0; }
 .lv-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0; color: var(--ng-text-3); font-size: 14px; }
 .lv-foot span { margin-right: auto; }
 @media (max-width: 700px) { .lv-main { padding: 84px 10px 32px; } .lv-win iframe { height: 78vh; min-height: 480px; } }
+
+/* The orb picker (Stage.tsx): two arrows either side of the orb. Swiping across the sky works too. */
+.cn-pick { position: fixed; inset: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+.cn-pick button { position: absolute; top: var(--py, 50vh); width: 44px; height: 44px; margin-top: -22px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.28); background: rgba(10,14,24,0.45); backdrop-filter: blur(6px); color: #fff;
+  font: 300 26px/1 var(--ng-sans, system-ui); display: grid; place-items: center; padding: 0 0 3px; cursor: pointer; pointer-events: auto; }
+.cn-pick button:first-child { left: calc(var(--px, 50vw) - var(--pr, 60px) - 62px); }
+.cn-pick button:last-child { left: calc(var(--px, 50vw) + var(--pr, 60px) + 18px); }
+.cn-pick button:hover { background: rgba(255,255,255,0.14); }

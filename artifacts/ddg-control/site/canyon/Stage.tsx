@@ -7,6 +7,8 @@ import { makeAirOrb, lightningNow } from './airOrb';
 import { makeSky } from './sky';
 import { heightAt } from './landscapes';
 import { makeWorld } from './world';
+import { makeBlackHole } from './blackHole';
+import { makeMercury } from './mercury';
 import { makeWater } from './water';
 import { makeAura } from './aura';
 import { makeSurge } from './surge';
@@ -89,9 +91,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     lineGeo.setAttribute('aBase', new BufferAttribute(base, 1));
     const lineMat = new ShaderMaterial({
       transparent: true,
-      uniforms: { uOpacity: { value: 0.34 }, uFogNear: { value: 30 }, uFogFar: { value: 150 }, uBolt: { value: new Vector4(0, 0, 0, 1) } },
-      vertexShader: `attribute float aBase; varying float vWet; varying float vDist; varying vec2 vXZ;
-        void main() { vXZ = position.xz; vWet = step(aBase, 4.62 - 0.01 * position.z); vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
+      uniforms: { uOpacity: { value: 0.34 }, uFogNear: { value: 30 }, uFogFar: { value: 150 }, uBolt: { value: new Vector4(0, 0, 0, 1) }, uPull: { value: new Vector4(0, 0, 0, 40) }, uPullY: { value: 10 } },
+      // uPull: the black hole bends the lines in towards it (orb x, z, strength 0..1, reach).
+      vertexShader: `attribute float aBase; uniform vec4 uPull; uniform float uPullY; varying float vWet; varying float vDist; varying vec2 vXZ;
+        void main() { vXZ = position.xz; vWet = step(aBase, 4.62 - 0.01 * position.z);
+          vec3 p = position; vec2 d = uPull.xy - p.xz; float f = uPull.z * exp(-length(d) / uPull.w);
+          p.xz += d * f * 0.85; p.y += (uPullY - p.y) * f * 0.55;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
       // uBolt: where the orb is (x, z), how bright the lightning is right now, and how far its light reaches over the land.
       fragmentShader: `uniform float uOpacity; uniform float uFogNear; uniform float uFogFar; uniform vec4 uBolt; varying float vWet; varying float vDist; varying vec2 vXZ;
         void main() { if (vWet > 0.5) discard;
@@ -122,6 +128,12 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     halo.renderOrder = 4; // after the river (1) and before the ball (5), so the ball sits in front of the water
     const aura = makeAura(ORB_R);
     orbit.add(halo, aura.group, air.group);
+    // The other two orbs (Markus, 19 Nov): swipe or use the arrows to pick. 0 = the blue air orb,
+    // 1 = the black hole (press and hold), 2 = the mercury (grab, drag, flick).
+    const blackHole = makeBlackHole(ORB_R);
+    const mercury = makeMercury(ORB_R);
+    orbit.add(blackHole.group, mercury.group);
+    disposables.push(...blackHole.disposables, ...mercury.disposables);
     disposables.push(...aura.disposables, ...air.disposables, haloTex, haloMat);
 
     // Press and hold the orb: lightning to the water and land, and the nova (surge.ts).
@@ -224,6 +236,18 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     let charge = 0, camHold = 0, skyTurn = 0, fly = 0, flyOn = false;
     const flyDir = new Vector3();
     const hold = { down: false, id: -1, x: 0, y: 0, touching: false };
+    // Which orb: `orbMode` is the one picked, `shownMode` the one drawn (it changes halfway through the swap).
+    let orbMode = 0, shownMode = 0, swapK = 1, mercId = -1;
+    let swipe: { id: number; x: number; y: number } | null = null;
+    const mercAt = new Vector3(), mercRay = new Vector3(), mercN = new Vector3(), pokeDir = new Vector3();
+    /** Where the pointer is on the flat sheet through the orb's home that faces the camera. */
+    const worldAt = (cx: number, cy: number) => {
+      const r = canvas.getBoundingClientRect();
+      mercRay.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1, 0.5).unproject(camera).sub(camera.position).normalize();
+      camera.getWorldDirection(mercN);
+      const t = mercAt.copy(orbit.position).sub(camera.position).dot(mercN) / Math.max(1e-4, mercRay.dot(mercN));
+      return mercAt.copy(camera.position).addScaledVector(mercRay, t);
+    };
     const rootStyle = document.documentElement.style;
     // Phones that can buzz (Android; iPhones give web pages no way to): the buzz builds with the charge.
     const canBuzz = typeof navigator.vibrate === 'function';
@@ -243,7 +267,31 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const orbOnScreen = { x: 0, y: 0, r: 0 };
     const heroEl = document.querySelector<HTMLElement>('.cn-hero');
     const onOrb = (x: number, y: number) => T.holdOn > 0.5 && orbOnScreen.r > 0 && (x - orbOnScreen.x) ** 2 + (y - orbOnScreen.y) ** 2 <= (orbOnScreen.r * 1.05) ** 2;
+    /** Pick an orb (wraps round). Not while one is busy: charging, calming, or the mercury still moving. */
+    const pickOrb = (m: number) => {
+      if (hold.down || charge > 0.01 || camHold > 0.01 || novaT >= 0 || mercury.busy() || swapK < 1) return;
+      orbMode = ((m % 3) + 3) % 3; if (orbMode !== shownMode) swapK = 0;
+    };
+    // Two small arrows beside the orb.
+    const pickEl = document.createElement('div');
+    pickEl.className = 'cn-pick';
+    pickEl.innerHTML = '<button type="button" aria-label="Previous orb">‹</button><button type="button" aria-label="Next orb">›</button>';
+    const [prevBtn, nextBtn] = Array.from(pickEl.querySelectorAll('button'));
+    prevBtn!.addEventListener('click', () => pickOrb(orbMode - 1));
+    nextBtn!.addEventListener('click', () => pickOrb(orbMode + 1));
+    topEl.appendChild(pickEl);
     const onDown = (e: PointerEvent) => {
+      // A sideways swipe across the first screen (not on the orb) picks the next orb.
+      if (e.button === 0 && e.isPrimary && !onOrb(e.clientX, e.clientY) && scrollY < innerHeight * 0.1
+        && !(e.target as Element | null)?.closest?.('a,button,input,textarea,select,label,.tune')) swipe = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      // The mercury: grab it (no charge, no camera move).
+      if (e.button === 0 && shownMode === 2 && swapK >= 1 && onOrb(e.clientX, e.clientY) && !(e.target as Element | null)?.closest?.('a,button,.tune')) {
+        mercId = e.pointerId; hold.touching = true; lastPress = 'grabbed the mercury';
+        mercury.grab(worldAt(e.clientX, e.clientY), orbit.position, performance.now());
+        try { (e.target as Element | null)?.setPointerCapture?.(e.pointerId); } catch { /* not every element can */ }
+        return;
+      }
+      if (swapK < 1 || shownMode === 2) return;
       if (e.button > 0 || !onOrb(e.clientX, e.clientY)) { lastPress = e.button > 0 ? 'not the main button' : orbOnScreen.r > 0 ? 'missed the orb' : 'orb not ready'; return; }
       if ((e.target as Element | null)?.closest?.('a,button,input,textarea,select,label,.tune')) { lastPress = 'on a button or the panel'; return; }
       lastPress = 'on the orb';
@@ -263,11 +311,19 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const noScroll = (e: TouchEvent) => { if ((hold.down || hold.touching) && e.cancelable) e.preventDefault(); };
     const touchOff = (e: TouchEvent) => { if (e.touches.length === 0) hold.touching = false; };
     const onMove = (e: PointerEvent) => {
+      if (e.pointerId === mercId) mercury.drag(worldAt(e.clientX, e.clientY), orbit.position, performance.now());
       // Moving the mouse (or the finger, see noScroll) while holding keeps the charge going.
       if (e.pointerType === 'mouse' && heroEl) heroEl.style.cursor = onOrb(e.clientX, e.clientY) ? 'pointer' : '';
     };
     // After the nova the orb needs a fresh press: letting go unlocks it.
-    const onUp = (e: PointerEvent) => { if (e.pointerId === hold.id) { if (hold.down && e.type === 'pointercancel') lastPress = 'cancelled by the browser'; hold.down = false; hold.touching = false; novaLock = false; } };
+    const onUp = (e: PointerEvent) => {
+      if (e.pointerId === mercId) { mercury.release(performance.now()); mercId = -1; hold.touching = false; }
+      if (swipe && e.pointerId === swipe.id && e.type === 'pointerup') {
+        const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+        if (Math.abs(dx) > 60 && Math.abs(dx) > 2 * Math.abs(dy)) pickOrb(orbMode + (dx < 0 ? 1 : -1));
+      }
+      if (swipe && e.pointerId === swipe.id) swipe = null;
+      if (e.pointerId === hold.id) { if (hold.down && e.type === 'pointercancel') lastPress = 'cancelled by the browser'; hold.down = false; hold.touching = false; novaLock = false; } };
     const noMenu = (e: Event) => { if (hold.down) e.preventDefault(); };
     addEventListener('pointerdown', onDown, true);
     addEventListener('pointermove', onMove, { passive: true });
@@ -403,7 +459,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const show = Math.min(1, Math.max(0, (top - vh * 0.3) / (vh * 0.55)));
       stage.style.opacity = String(show);
       if (show <= 0 && fontsIn) revealPage(T.introFade * 1000); // opened part-way down the page: nothing 3D to wait for
-      if (show <= 0) { document.documentElement.style.setProperty('--pipe-join', '1'); topEl.style.setProperty('--cn-fade', '0'); topEl.style.setProperty('--cn-pe', 'none'); lastAlign = ''; return; }
+      if (show <= 0) { pickEl.style.opacity = '0'; pickEl.style.pointerEvents = 'none'; document.documentElement.style.setProperty('--pipe-join', '1'); topEl.style.setProperty('--cn-fade', '0'); topEl.style.setProperty('--cn-pe', 'none'); lastAlign = ''; return; }
 
       // 0 → 1 over the hero and the room after it: the canyon settles into a flat grid seen from above.
       const p = Math.min(1, Math.max(0, smoothY / (vh * 1.35)));
@@ -498,6 +554,11 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const orbScale = (small ? 1.44 : 2.19) * T.orbSize;
       orbit.position.set(0, CORE.y + T.orbHeight + ORB_R * (orbScale - 1.44 * 2) + away * 26, CORE.z - away * 10);
       orbit.scale.setScalar(orbScale);
+      // Swapping orbs: the old one shrinks away, the new one pops up (0.45 s).
+      if (swapK < 1) { swapK = Math.min(1, swapK + dt / 0.45); if (swapK >= 0.5 && shownMode !== orbMode) shownMode = orbMode; }
+      const pop = swapK < 1 ? ease(Math.abs(1 - 2 * swapK)) : 1;
+      air.group.visible = aura.group.visible = halo.visible = shownMode === 0;
+      const blue = shownMode === 0 ? 1 : 0;
       haloMat.opacity = HALO * T.orbGlow * (1 - away);
       // Where the orb is on screen now, and where it sits before any scrolling. The name and frame follow
       // it exactly; the quote and the scroll hint move by the same amount as the orb's lower edge.
@@ -518,6 +579,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         const endK = 1 + 3.5 * Math.pow(Math.min(1, Math.max(0, (charge - 0.8) / 0.2)), 2);
         if (!reduced) { const sh = 0.14 * T.holdOrbShake * fxCh * (0.4 + fxCh) * (1 + fxCh * fxCh) * endK; orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
       }
+      if (pop < 1) orbit.scale.multiplyScalar(Math.max(0.001, pop));
       // The dial round the orb: 0 to 100% of the build-up, thin lines, like a speedometer.
       dial.update(charge, hold.down ? 1 : 0, ORB_R);
       restCam.fov = camera.fov; restCam.aspect = camera.aspect;
@@ -586,18 +648,41 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       haloMat.opacity += 0.5 * ch * (1 - away);
       // Lightning is timed here, so the ball, its glow, the water and the land can all flash together.
       const bolt = lightningNow(clock, T.orbSparkRate);
-      const flash = bolt.flash * T.orbFlashLight * Math.min(T.orbSparks, 1.5) * (1 - away);
+      const flash = bolt.flash * T.orbFlashLight * Math.min(T.orbSparks, 1.5) * (1 - away) * blue;
       air.update(clock, 1 - away, spinClock, {
         bands: T.orbStreaks, zap: T.orbSparks * (1 + ch), zapRate: T.orbSparkRate * (1 + 3 * ch), style: T.orbStyle, hue: T.orbHue, flow: T.orbFlow,
         gate: bolt.gate, flash: flash * 0.6, glitch: 0, glitchSeed: 0, depth: T.orbDepth, glass: T.orbGlass, fringe: T.orbFringe, cam: camera.position,
       });
       aura.update(clock, (1 - away) * born, { bloom: T.orbBloom + ch, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
       haloMat.opacity *= 1 + flash;
-      const landFlash = bolt.flash * T.orbFlashLand * (1 - away);
+      // The black hole: spins up with the charge and bends the land's lines in towards it.
+      blackHole.update(clock, dt, ch, (shownMode === 1 ? 1 : 0) * (1 - away) * born, camera.quaternion);
+      lineMat.uniforms.uPull.value.set(orbit.position.x, orbit.position.z, shownMode === 1 && !reduced ? ease(ch) * (novaT >= 0 ? Math.max(0, 1 - novaT * 3) : 1) : 0, 26 + 30 * ch);
+      lineMat.uniforms.uPullY.value = orbit.position.y;
+      // The mercury: its own little physics (mercury.ts); the orb's spot is its home.
+      const mercOn = shownMode === 2;
+      if (mercOn || mercury.busy()) {
+        const off = mercury.step(dt);
+        mercury.group.position.copy(off).divideScalar(Math.max(1e-3, orbit.scale.x));
+        let poke: Vector3 | null = null;
+        if (mercId >= 0) { camera.getWorldDirection(pokeDir); poke = pokeDir.multiplyScalar(-1); }
+        mercury.update(dt, (mercOn ? 1 : 0) * (1 - away) * born, poke, skyTurn);
+      } else mercury.update(dt, 0, null, skyTurn);
+      // The orb arrows sit either side of the orb at rest, hidden while it is busy.
+      {
+        const busyOrb = hold.down || charge > 0.01 || camHold > 0.05 || novaT >= 0 || mercury.busy();
+        const op = (fadeOut * born * (busyOrb ? 0 : 1) * (orbOnScreen.r > 0 ? 1 : 0)).toFixed(2);
+        if (pickEl.style.opacity !== op) pickEl.style.opacity = op;
+        pickEl.style.pointerEvents = +op > 0.5 ? '' : 'none';
+        pickEl.style.setProperty('--px', `${orbOnScreen.x.toFixed(0)}px`);
+        pickEl.style.setProperty('--py', `${orbOnScreen.y.toFixed(0)}px`);
+        pickEl.style.setProperty('--pr', `${Math.max(40, orbOnScreen.r).toFixed(0)}px`);
+      }
+      const landFlash = bolt.flash * T.orbFlashLand * (1 - away) * blue;
       lineMat.uniforms.uBolt.value.set(orbit.position.x, orbit.position.z, landFlash, T.orbFlashReach);
       // The surge: bolts to the water and land. A strike lights the land where it lands.
       const waterY = lvl(orbit.position.z);
-      const strike = surge.update(clock, dt, fxCh * (1 - away), orbit.position, R, waterY, { bolts: T.holdBolts, cam: camera.position, calm: reduced }, () => {
+      const strike = surge.update(clock, dt, fxCh * (1 - away) * blue, orbit.position, R, waterY, { bolts: T.holdBolts * blue, cam: camera.position, calm: reduced }, () => {
         const a = Math.random() * Math.PI * 2;
         if (Math.random() < 0.6) {
           const r = R * (1.3 + 1.9 * Math.random());
@@ -612,28 +697,28 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // Letting go after a good charge sends a ring of light out across the water and jolts the scene.
       if (wasHeld && !hold.down && !novaNow && charge > 0.5 && T.holdShock > 0) shock = 1;
       // The nova: a shell of light races out, every bolt fires, a huge ring runs across the water.
-      if (novaNow && T.holdNova > 0) {
+      if (novaNow && T.holdNova > 0 && blue) {
         surge.burstAll(orbit.position, R, () => {
           const a = Math.random() * Math.PI * 2, r = R * (1.5 + 4 * Math.random());
           return strikeAt.set(orbit.position.x + Math.cos(a) * r, lvl(orbit.position.z), orbit.position.z + Math.sin(a) * r * 0.7);
         });
       }
-      if (novaNow && T.holdSkyStrike > 0) strikeFromSky(T.holdSkyStrike, R);
+      if (novaNow && T.holdSkyStrike > 0 && blue) strikeFromSky(T.holdSkyStrike, R);
       surge.novaAt(novaT, orbit.position, R, T.holdNova, camera.quaternion, reduced);
       if (novaT >= 0) haloMat.opacity += Math.exp(-novaT * 3) * 2.5 * T.holdNova;
       wasHeld = hold.down;
       shock = Math.max(0, shock - dt * 2.5);
       haloMat.opacity += shock * 0.8 * T.holdShock;
       // The lake boils: strength follows the charge.
-      const boil = Math.max(0, (fxCh - 0.1) / 0.9) * T.holdBoil * (1 - away);
+      const boil = Math.max(0, (fxCh - 0.1) / 0.9) * T.holdBoil * (1 - away) * blue;
       const px = canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360));
       // What swirls round the orb as it charges (charge.ts).
       if (novaNow) {
-        chargeFx.explode(orbit.position, T.holdNova);
+        if (blue) chargeFx.explode(orbit.position, T.holdNova);
         // The only water effect of the blast is its push on the river (novaWave in water.ts).
         novaAt.set(orbit.position.x, orbit.position.z, 0);
       }
-      chargeFx.update(dt, fxCh * (1 - away), orbit.position, R, { // (No vortex round the orb: removed, Markus 18 Nov. charge.ts still has the code for it, switched off here.)
+      chargeFx.update(dt, fxCh * (1 - away) * blue, orbit.position, R, { // (No vortex round the orb: removed, Markus 18 Nov. charge.ts still has the code for it, switched off here.)
           on: [T.holdFxGlobs > 0.5, false, T.holdFxGround > 0.5], amount: T.holdFxAmount, speed: T.holdFxSpeed,
           vortex: { look: 0, size: 1, reach: 1, trail: 0, glow: 0 } },
         (x, z) => Math.max(lvl(z), heightAt(x, z) * (1 - k)),
@@ -651,7 +736,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         // has spawned, so the reflection never appears before the orb does.
         flat: 1 - k, stir: (1 - ease(away * 2.5)) * born, show: 1, fogNear: fog.near, fogFar: fog.far, calm, drop: drainY,
         nova: novaT >= 0 ? [novaAt.x, novaAt.y, novaT, T.holdNovaWave] : [introWaveAt.x, introWaveAt.y, introWaveT, introWave * 2.5], novaSpeed: novaT >= 0 ? T.holdNovaWaveSpeed : 30,
-        mirror: [T.orbMirror * (1 - away) * born, R * born, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
+        mirror: [T.orbMirror * (1 - away) * born * blue, R * born, spinClock, flash], flash: landFlash * 0.5 + strike.flash * 0.35 * T.holdBolts,
         boil: [orbit.position.x, orbit.position.z, boil, T.holdBoilArea], boilLook: [T.holdBoilHeight, T.holdBoilSpeed, T.holdBoilSpecks, T.holdBoilLift], pops, skyTurn,
       });
       // The join: once the land is almost flat, the riverbed pipe narrows to exactly the page pipe's width
@@ -700,6 +785,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       skyFlashEl.remove();
       unmountPanel?.();
       removeEventListener('pointerdown', onDown, true);
+      pickEl.remove();
       removeEventListener('pointermove', onMove);
       removeEventListener('pointerup', onUp);
       removeEventListener('pointercancel', onUp);
