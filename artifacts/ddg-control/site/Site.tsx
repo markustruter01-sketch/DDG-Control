@@ -5,7 +5,7 @@ import { Link, Route, Router, Switch, useLocation } from 'wouter';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import { SOCIALS, type Platform } from '@/lib/public-info';
 import { Build, EnquiryForm } from './Build';
-import { FinancePage } from './Finance';
+import { LivePage } from './Live';
 import { QuotePage } from './Quote';
 import { drawPipes, fillPipes } from './canyon/wires';
 import { mountPageClouds } from './canyon/cloudPaint';
@@ -267,7 +267,9 @@ export function Site() {
       <Route path="/" component={Home} />
       <Route path="/start" component={Start} />
       <Route path="/privacy" component={Privacy} />
-      <Route path="/finance">{() => <FinancePage Nav={Nav} Footer={Footer} />}</Route>
+      {/* The Finance menu link opens the live dashboard (display only). */}
+      <Route path="/finance">{() => <LivePage which="finance" Nav={Nav} Footer={Footer} />}</Route>
+      <Route path="/live/finance">{() => <LivePage which="finance" Nav={Nav} Footer={Footer} />}</Route>
       <Route path="/quote/:token">{(params) => <QuotePage token={params.token} Nav={Nav} Footer={Footer} />}</Route>
       <Route component={NotFound} />
     </Switch>

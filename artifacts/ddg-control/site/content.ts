@@ -115,6 +115,17 @@ export const KITS_TEXT = {
 export const PRICE_BASIS = 'How we compared: our ranges are about 25% below the 2026 Australian price ranges published by What\u2019s The Damage, WP Creative, Expeed and Flowtivity.';
 export const CARE = 'Care plans from $40 a month for a website and $225 a month for an app. Extra work $110–$185 an hour.';
 
+/** Our platforms, live and display only (ddg.limited/live/<key>, Markus 19 Nov). */
+export type LiveKey = 'finance';
+export const LIVE: Record<LiveKey, { name: string; eyebrow: string; line: string; address: string; src: string; note: string }> = {
+  finance: {
+    name: 'DDG Finance', eyebrow: 'Live · built by DDG',
+    line: 'Our own trading platform: automated strategies on paper-money accounts, watched by hard risk limits. This is its real dashboard, with the controls taken off.',
+    address: 'ddg.limited/live/finance', src: '/live-finance/',
+    note: 'Paper money. Numbers update after each US market close.',
+  },
+};
+
 export const BUILD_STEPS = [
   { title: 'Tell us', line: 'Five quick questions on one page.' },
   { title: 'Scope in writing', line: 'We agree by email exactly what gets built.' },
@@ -269,7 +280,7 @@ export const ABOUT = {
   // (ddg-greenlight/lib/greenlight-engine/catalogues); it checks and fixes, it does not certify.
   built: [
     { key: 'globe', lead: 'The whole planet, live in 3D.', text: 'Aircraft, ships, satellites, earthquakes and fires, tracked as they happen on one screen.', name: 'God\u2019s Eye View', href: 'https://gods-eye-view.replit.app/', external: true, screen: true },
-    { key: 'finance', lead: 'A trading platform that runs itself.', text: 'Algorithmic bots, Python strategies and a council of three AI models, with hard risk limits that stop it the moment something is wrong.', name: 'DDG Finance', href: '/finance', external: false },
+    { key: 'finance', lead: 'A trading platform that runs itself.', text: 'Algorithmic bots, Python strategies and a council of three AI models, with hard risk limits that stop it the moment something is wrong.', name: 'DDG Finance', href: '/live/finance', external: false },
     { key: 'coffee', lead: 'An online store that sells around the clock.', text: 'Real orders, card payments, subscriptions and shipping, all run from one back office.', name: 'Cattle Dog Coffee', href: PUBLIC_SITES.coffee, external: true },
     { key: 'greenlight', lead: 'A compliance engine for your code.', text: 'It audits any codebase against published standards (ISO/IEC 27001, OWASP ASVS, NIST SSDF, the Australian Essential Eight and more), fixes the gaps it finds, and hands back a stronger product, ready for your team\u2019s final sign-off.', name: 'DDG Greenlight', href: 'https://ddg-greenlight.replit.app/', external: true, screen: true, standards: true },
     { key: 'fitness', lead: 'A personal coach in your pocket.', text: 'A health and fitness app with specialist AI coaches (in development).', name: '', href: null, soon: 'Coming soon' },

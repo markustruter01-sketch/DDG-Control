@@ -24,6 +24,11 @@ publicDir = "artifacts/ddg-control/dist/public"
 from = "/ctl-3gv376wpguby/*"
 to = "/ctl-3gv376wpguby/index.html"
 
+# The DDG Finance showcase (display only), shown inside ddg.limited/live/finance.
+[[services.production.rewrites]]
+from = "/live-finance/*"
+to = "/live-finance/index.html"
+
 [[services.production.rewrites]]
 from = "/*"
 to = "/index.html"

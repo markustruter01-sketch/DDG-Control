@@ -68,6 +68,8 @@ export default defineConfig({
       input: {
         site: path.resolve(import.meta.dirname, 'index.html'),
         control: path.resolve(import.meta.dirname, CONTROL_DIR, 'index.html'),
+        // DDG Finance showcase (ddg.limited/live/finance shows it in a window): the real dashboard, display only.
+        liveFinance: path.resolve(import.meta.dirname, 'live-finance', 'index.html'),
       },
     },
   },
