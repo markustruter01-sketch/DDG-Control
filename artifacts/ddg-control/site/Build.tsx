@@ -154,18 +154,21 @@ export function Build({ summary }: { summary: PublicSummary | null }) {
           <div className="s-kits" aria-labelledby="kits-title">
             <p className="s-eyebrow">{KITS_TEXT.eyebrow}</p>
             <h3 id="kits-title">{KITS_TEXT.title}</h3>
-            <p className="s-note">{KITS_TEXT.line}</p>
+            <p className="s-kit-intro">{KITS_TEXT.line}</p>
+            <p className="s-kit-intro">{KITS_TEXT.how}</p>
             <div className="s-kit-row">
               {KITS.map((k) => (
                 <article key={k.key} className="s-kit glass-plain">
                   <h4>{k.name}</h4>
                   <p>{k.line}</p>
+                  <p className="s-kit-who">{k.who}</p>
                   <p className="s-note">{k.from}</p>
                   <p className="s-price"><b>{aud(k.setup)} set-up</b><span>+ {aud(k.monthly)} a month{k.note ? ` · ${k.note}` : ''}</span><em className="s-found">{FOUNDING.line.replace(': from', ':')} {aud(foundingPrice(k.setup))} set-up</em></p>
                   <button type="button" className="s-btn" onClick={() => { hit(`kit:${k.key}`); dispatchEvent(new CustomEvent('ddg-kit', { detail: { kind: k.kind, kit: k.name } })); document.getElementById('start')?.scrollIntoView({ behavior: 'smooth' }); }}>{KITS_TEXT.order} →</button>
                 </article>
               ))}
             </div>
+            <p className="s-note">{KITS_TEXT.choose}</p>
           </div>
           <p className="s-founding" role="note"><b>{FOUNDING.banner}</b><span>{FOUNDING.sub}</span></p>
           <div className="s-services">
