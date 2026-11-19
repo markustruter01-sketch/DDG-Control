@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Still Point Physio: concept design by DDG</title>
+<style>
+  :root { --sage: #7fa38a; --deep: #2f4a3c; --mist: #eef4ef; --sand: #f6efe4; --ink: #22302a; --soft: #5f6f66; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--mist); color: var(--ink); font: 400 17px/1.6 "Avenir Next", "Segoe UI", system-ui, sans-serif; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 6vw; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: .02em; color: var(--deep); }
+  .logo i { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--sage); position: relative; }
+  .logo i::after { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: var(--sage); }
+  .book { padding: 12px 22px; border-radius: 999px; background: var(--deep); color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; }
+  .hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 5vw; align-items: center; padding: 6vh 6vw 10vh; }
+  h1 { font-size: clamp(40px, 5.4vw, 80px); line-height: 1.04; font-weight: 500; color: var(--deep); margin: 0 0 20px; letter-spacing: -.02em; }
+  .lede { font-size: 20px; color: var(--soft); max-width: 28em; margin: 0 0 28px; }
+  .breathe { display: flex; align-items: center; gap: 18px; color: var(--soft); font-size: 15px; }
+  .ring { width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle, var(--sage) 0 40%, rgba(127,163,138,.25) 41% 100%); animation: br 8s ease-in-out infinite; }
+  @keyframes br { 0%, 100% { transform: scale(.7); } 45%, 55% { transform: scale(1.05); } }
+  .bodycard { background: #fff; border-radius: 36px; padding: 28px; box-shadow: 0 30px 70px -40px rgba(47,74,60,.45); display: grid; grid-template-columns: 1fr 1.1fr; gap: 22px; align-items: center; }
+  .body svg { width: 100%; max-height: 420px; }
+  .zone { fill: rgba(127,163,138,.18); stroke: var(--sage); stroke-width: 2; cursor: pointer; transition: fill .2s; }
+  .zone:hover, .zone[aria-pressed="true"] { fill: var(--sage); }
+  .zone:focus-visible { outline: none; stroke: var(--deep); stroke-width: 4; }
+  .info h3 { margin: 0 0 6px; font-size: 24px; font-weight: 600; color: var(--deep); }
+  .info p { margin: 0 0 16px; color: var(--soft); font-size: 16px; }
+  .info .hint { font-size: 14px; color: var(--sage); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .slots { display: flex; flex-wrap: wrap; gap: 8px; }
+  .slots button { border: 2px solid var(--sage); background: none; border-radius: 999px; padding: 10px 14px; font: inherit; font-size: 14px; color: var(--deep); cursor: pointer; }
+  .slots button[aria-pressed="true"] { background: var(--deep); border-color: var(--deep); color: #fff; }
+  .soft { background: var(--sand); border-radius: 50px 50px 0 0; padding: 10vh 6vw; }
+  h2 { font-size: clamp(30px, 3.8vw, 52px); font-weight: 500; color: var(--deep); margin: 0 0 30px; letter-spacing: -.01em; }
+  .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .pill { background: #fff; border-radius: 28px; padding: 28px; }
+  .pill b { display: block; font-size: 20px; color: var(--deep); margin-bottom: 6px; font-weight: 600; }
+  .pill p { margin: 0; color: var(--soft); font-size: 16px; }
+  footer { background: var(--sand); padding: 30px 6vw 90px; font-size: 14px; color: var(--soft); display: flex; justify-content: space-between; }
+  .concept { position: fixed; left: 12px; bottom: 12px; z-index: 9; padding: 6px 12px; border-radius: 999px; background: rgba(47,74,60,.9); color: #fff; font: 500 11px/1.3 system-ui, sans-serif; }
+  @media (max-width: 860px) { .hero, .bodycard, .three { grid-template-columns: 1fr; } .body svg { max-height: 300px; } }
+  @media (prefers-reduced-motion: reduce) { .ring { animation: none; } }
+</style>
+</head>
+<body>
+<header><span class="logo"><i></i>Still Point</span><a class="book" href="#book">Book a visit</a></header>
+<section class="hero">
+  <div>
+    <h1>Move without thinking about it again.</h1>
+    <p class="lede">Hands-on physiotherapy for backs, necks, knees and shoulders. Tap where it hurts to see how we help.</p>
+    <div class="breathe"><span class="ring" aria-hidden="true"></span>Breathe in as it grows, out as it shrinks.</div>
+  </div>
+  <div class="bodycard" id="book">
+    <div class="body">
+      <svg viewBox="0 0 200 400" role="group" aria-label="Body: choose where it hurts">
+        <g fill="none" stroke="#c9d6cd" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="100" cy="42" r="26"/><path d="M100 70v150M100 92 50 180M100 92l50 88M100 220l-34 150M100 220l34 150"/>
+        </g>
+        <circle class="zone" tabindex="0" role="button" aria-pressed="false" data-z="neck" cx="100" cy="82" r="14"/>
+        <circle class="zone" tabindex="0" role="button" aria-pressed="false" data-z="shoulder" cx="72" cy="104" r="16"/>
+        <circle class="zone" tabindex="0" role="button" aria-pressed="false" data-z="back" cx="100" cy="176" r="20"/>
+        <circle class="zone" tabindex="0" role="button" aria-pressed="false" data-z="knee" cx="83" cy="296" r="16"/>
+        <circle class="zone" tabindex="0" role="button" aria-pressed="false" data-z="ankle" cx="125" cy="356" r="14"/>
+      </svg>
+    </div>
+    <div class="info">
+      <span class="hint" id="hint">Tap a circle</span>
+      <h3 id="zt">Where does it hurt?</h3>
+      <p id="zp">Choose a spot on the body and we will show the usual treatment and the next free times.</p>
+      <div class="slots" id="slots" role="group" aria-label="Times"></div>
+    </div>
+  </div>
+</section>
+<section class="soft">
+  <h2>What a visit is like</h2>
+  <div class="three">
+    <div class="pill"><b>We listen first</b><p>Twenty minutes on how it started and what makes it worse.</p></div>
+    <div class="pill"><b>Hands-on care</b><p>Treatment on the day, not just a sheet of exercises.</p></div>
+    <div class="pill"><b>A plan you can keep</b><p>Three to five exercises, with videos on your phone.</p></div>
+  </div>
+</section>
+<footer><span>Still Point Physio · a made-up clinic</span><span>General information only, not medical advice.</span></footer>
+<div class="concept">Concept design by DDG · not a real business</div>
+<script>
+  const Z = {
+    neck: ['Neck', 'Stiffness from desks and phones. Gentle joint work and posture changes you will actually keep.'],
+    shoulder: ['Shoulder', 'Pain reaching overhead or sleeping on that side. Movement testing, then strength work.'],
+    back: ['Lower back', 'The most common reason people visit. Calm it down first, then build it back up.'],
+    knee: ['Knee', 'Running, stairs or squatting. We check how you move from the hip down.'],
+    ankle: ['Ankle', 'Sprains that keep coming back. Balance and strength so it stops rolling.'],
+  };
+  const times = ['Tue 8:00', 'Tue 12:30', 'Wed 17:15', 'Thu 9:45', 'Sat 10:00'];
+  const slots = document.getElementById('slots');
+  const pick = (el) => {
+    document.querySelectorAll('.zone').forEach((z) => z.setAttribute('aria-pressed', String(z === el)));
+    const [t, p] = Z[el.dataset.z]; zt.textContent = t; zp.textContent = p; hint.textContent = 'Next free times (example)';
+    slots.innerHTML = ''; times.forEach((tm) => { const b = document.createElement('button'); b.textContent = tm; b.setAttribute('aria-pressed', 'false'); b.onclick = () => { slots.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); hint.textContent = `${tm} held for you (concept only)`; }; slots.append(b); });
+  };
+  document.querySelectorAll('.zone').forEach((z) => { z.addEventListener('click', () => pick(z)); z.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(z); } }); });
+</script>
+</body>
+</html>

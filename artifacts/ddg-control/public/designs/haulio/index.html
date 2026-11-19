@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Haulio: concept design by DDG</title>
+<style>
+  :root { --bg: #0b0f17; --tile: #121826; --line: #1f2840; --txt: #e6ecf7; --mut: #8892a8; --a: #5b8cff; --b: #2ee6a6; --c: #ffb347; --d: #ff5c7a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt); font: 400 15px/1.45 Inter, "Segoe UI", system-ui, sans-serif; }
+  .num { font-variant-numeric: tabular-nums; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 16px 3vw; border-bottom: 1px solid var(--line); }
+  .logo { font-weight: 700; letter-spacing: .02em; display: flex; gap: 10px; align-items: center; }
+  .logo i { width: 22px; height: 22px; border-radius: 6px; background: conic-gradient(var(--a), var(--b), var(--a)); }
+  .live { display: flex; align-items: center; gap: 8px; color: var(--mut); font-size: 13px; }
+  .live b { width: 8px; height: 8px; border-radius: 50%; background: var(--b); box-shadow: 0 0 0 0 rgba(46,230,166,.6); animation: ping 1.6s infinite; }
+  @keyframes ping { 70% { box-shadow: 0 0 0 10px rgba(46,230,166,0); } }
+  main { padding: 2.4vw 3vw 80px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+  .t { background: var(--tile); border: 1px solid var(--line); border-radius: 18px; padding: 18px; position: relative; overflow: hidden; }
+  .t h3 { margin: 0 0 12px; font-size: 13px; color: var(--mut); font-weight: 500; letter-spacing: .02em; }
+  .k { grid-column: span 3; }
+  .k .v { font-size: 34px; font-weight: 600; letter-spacing: -.02em; }
+  .k .d { font-size: 13px; color: var(--b); }
+  .k .d.dn { color: var(--d); }
+  .spark { position: absolute; right: 0; bottom: 0; width: 55%; height: 44px; opacity: .8; }
+  .map { grid-column: span 8; grid-row: span 2; min-height: 380px; }
+  .map svg { width: 100%; height: calc(100% - 26px); }
+  .route { fill: none; stroke: var(--line); stroke-width: 3; }
+  .route.on { stroke: var(--a); stroke-dasharray: 6 8; animation: dash 1.5s linear infinite; }
+  @keyframes dash { to { stroke-dashoffset: -28; } }
+  .hub { fill: var(--txt); } .hubt { fill: var(--mut); font-size: 15px; }
+  .truck { fill: var(--b); filter: drop-shadow(0 0 6px var(--b)); }
+  .side { grid-column: span 4; }
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.03); }
+  .row small { color: var(--mut); grid-column: 1; }
+  .bar { grid-column: 1 / -1; height: 5px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--a), var(--b)); transition: width 1s; }
+  .chip { font-size: 12px; padding: 3px 8px; border-radius: 99px; background: rgba(46,230,166,.12); color: var(--b); }
+  .chip.late { background: rgba(255,92,122,.12); color: var(--d); }
+  .chart { grid-column: span 8; }
+  .chart svg { width: 100%; height: 170px; }
+  .donut { grid-column: span 4; display: flex; flex-direction: column; }
+  .donut svg { width: 150px; height: 150px; margin: 6px auto; }
+  .leg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 13px; color: var(--mut); }
+  .leg span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; background: var(--c1); }
+  .concept { position: fixed; left: 12px; bottom: 12px; z-index: 9; padding: 6px 12px; border-radius: 999px; background: rgba(91,140,255,.9); color: #fff; font: 500 11px/1.3 system-ui, sans-serif; }
+  @media (max-width: 900px) { .k { grid-column: span 6; } .map, .side, .chart, .donut { grid-column: span 12; } .map { min-height: 300px; } }
+  @media (prefers-reduced-motion: reduce) { .route.on, .live b { animation: none; } }
+</style>
+</head>
+<body>
+<header><span class="logo"><i></i>Haulio</span><span class="live"><b></b>Live · example data</span></header>
+<main>
+  <div class="t k"><h3>Deliveries today</h3><div class="v num" id="k1">1,284</div><div class="d">▲ 6.2% vs last Thu</div><svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#5b8cff" stroke-width="2" points="0,30 15,26 30,28 45,18 60,20 75,12 100,8"/></svg></div>
+  <div class="t k"><h3>On time</h3><div class="v num" id="k2">96.4%</div><div class="d">▲ 1.1 pts</div><svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#2ee6a6" stroke-width="2" points="0,20 15,22 30,16 45,18 60,12 75,14 100,9"/></svg></div>
+  <div class="t k"><h3>Trucks on the road</h3><div class="v num" id="k3">42</div><div class="d">of 48</div><svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#ffb347" stroke-width="2" points="0,26 15,20 30,22 45,14 60,16 75,18 100,12"/></svg></div>
+  <div class="t k"><h3>Fuel per 100 km</h3><div class="v num">28.1 L</div><div class="d dn">▲ 0.4 L</div><svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="#ff5c7a" stroke-width="2" points="0,22 15,24 30,20 45,22 60,18 75,20 100,16"/></svg></div>
+  <div class="t map"><h3>Live network</h3>
+    <svg viewBox="0 0 800 400" id="map" aria-label="Map of routes between five hubs, with trucks moving along them">
+      <g id="routes"></g><g id="hubs"></g><g id="trucks"></g>
+    </svg>
+  </div>
+  <div class="t side"><h3>Next arrivals</h3><div class="list" id="list"></div></div>
+  <div class="t chart"><h3>Parcels per hour</h3><svg viewBox="0 0 600 170" preserveAspectRatio="none" id="bars"></svg></div>
+  <div class="t donut"><h3>Load by type</h3>
+    <svg viewBox="0 0 42 42" aria-hidden="true"><circle cx="21" cy="21" r="15.9" fill="none" stroke="#1f2840" stroke-width="6"/><g id="ring"></g></svg>
+    <div class="leg" id="leg"></div>
+  </div>
+</main>
+<div class="concept">Concept design by DDG · not a real business</div>
+<script>
+  const NS = 'http://www.w3.org/2000/svg', mk = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+  const hubs = { Brisbane: [560, 150], 'Gold Coast': [690, 320], Toowoomba: [110, 170], Sunshine: [600, 40], Ipswich: [330, 260] };
+  const lanes = [['Brisbane', 'Gold Coast'], ['Brisbane', 'Toowoomba'], ['Brisbane', 'Sunshine'], ['Toowoomba', 'Ipswich'], ['Ipswich', 'Gold Coast'], ['Ipswich', 'Brisbane']];
+  const paths = lanes.map(([a, b], i) => { const [x1, y1] = hubs[a], [x2, y2] = hubs[b], mx = (x1 + x2) / 2 + (i % 2 ? 40 : -40), my = (y1 + y2) / 2 - 30; const p = mk('path', { d: `M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`, class: 'route on' }); routes.append(p); return p; });
+  const hubsG = document.getElementById('hubs');
+  for (const [n, [x, y]] of Object.entries(hubs)) { hubsG.append(mk('circle', { cx: x, cy: y, r: 16, fill: 'rgba(91,140,255,.15)' })); hubsG.append(mk('circle', { cx: x, cy: y, r: 7, class: 'hub' })); const t = mk('text', { x: x + 10, y: y - 10, class: 'hubt' }); t.textContent = n; hubsG.append(t); }
+  const trucks = paths.flatMap((p, i) => [0, .5].map((o) => { const c = mk('rect', { width: 16, height: 9, rx: 2, class: 'truck' }); document.getElementById('trucks').append(c); return { p, o: o + i * .13, c }; }));
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const move = (t) => { trucks.forEach((k) => { const L = k.p.getTotalLength(), s = ((t / 9000 + k.o) % 1) * L, a = k.p.getPointAtLength(s), b = k.p.getPointAtLength(Math.min(L, s + 1)); k.c.setAttribute('transform', `translate(${a.x - 8} ${a.y - 4.5}) rotate(${Math.atan2(b.y - a.y, b.x - a.x) * 57.3} 8 4.5)`); }); if (!reduce) requestAnimationFrame(move); };
+  requestAnimationFrame(move);
+  const arr = [['TRK-12 · Gold Coast', 'Parcels 214', 82, 'On time'], ['TRK-07 · Toowoomba', 'Pallets 18', 64, 'On time'], ['TRK-31 · Ipswich', 'Parcels 96', 45, '+12 min'], ['TRK-04 · Sunshine', 'Parcels 151', 91, 'On time']];
+  arr.forEach(([a, b, w, s]) => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<span>${a}</span><span class="chip ${s.startsWith('+') ? 'late' : ''}">${s}</span><small>${b}</small><div class="bar"><i style="width:${w}%"></i></div>`; list.append(r); });
+  const hrs = [40, 52, 61, 78, 96, 120, 134, 128, 140, 118, 104, 88, 70, 64, 56, 48];
+  const drawBars = () => { bars.innerHTML = ''; const max = 160, w = 600 / hrs.length; hrs.forEach((v, i) => { const h = (v / max) * 150; bars.append(mk('rect', { x: i * w + 4, y: 165 - h, width: w - 8, height: h, rx: 4, fill: i === 8 ? '#2ee6a6' : '#26355a' })); }); };
+  drawBars();
+  const parts = [['Parcels', 46, '#5b8cff'], ['Pallets', 28, '#2ee6a6'], ['Cold', 16, '#ffb347'], ['Bulky', 10, '#ff5c7a']];
+  let acc = 25; parts.forEach(([n, v, c]) => { ring.append(mk('circle', { cx: 21, cy: 21, r: 15.9, fill: 'none', stroke: c, 'stroke-width': 6, 'stroke-dasharray': `${v} ${100 - v}`, 'stroke-dashoffset': acc })); acc -= v; const s = document.createElement('span'); s.style.setProperty('--c1', c); s.textContent = `${n} ${v}%`; leg.append(s); });
+  // Numbers tick like a live board.
+  let del = 1284; setInterval(() => { if (Math.random() < .6) { del += 1; k1.textContent = del.toLocaleString('en-AU'); } hrs.push(hrs.shift()); drawBars(); }, 1800);
+</script>
+</body>
+</html>

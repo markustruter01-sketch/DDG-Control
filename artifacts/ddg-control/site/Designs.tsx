@@ -10,6 +10,13 @@ const DESIGNS = [
   { slug: 'tarn', name: 'Tarn', kind: 'Water bottle brand', host: 'tarn.example', bg: 'linear-gradient(140deg,#f4fbfd 0%,#bfe9f3 55%,#3ab8d6 100%)', ink: '#0d2a3a' },
   { slug: 'brightside', name: 'Brightside Electrical', kind: 'Electrician and solar', host: 'brightside.example', bg: 'linear-gradient(140deg,#111 0%,#111 55%,#ffd21f 100%)', ink: '#ffd21f' },
   { slug: 'wobble', name: 'Wobble Academy', kind: "Children's learning", host: 'wobble.example', bg: 'linear-gradient(140deg,#8fd3ff 0%,#fffaf0 60%,#ffd23f 100%)', ink: '#253046' },
+  { slug: 'hartwell', name: 'Hartwell & Vance', kind: 'Law firm', host: 'hartwellvance.example', bg: 'linear-gradient(140deg,#f6f1e7 0%,#f6f1e7 50%,#14213d 100%)', ink: '#14213d' },
+  { slug: 'kickform', name: 'KICKFORM', kind: 'Sneaker store', host: 'kickform.example', bg: 'linear-gradient(140deg,#c6ff00 0%,#f2f0e9 55%,#ff2e88 100%)', ink: '#0a0a0a' },
+  { slug: 'stillpoint', name: 'Still Point', kind: 'Physio clinic', host: 'stillpoint.example', bg: 'linear-gradient(140deg,#eef4ef 0%,#eef4ef 50%,#7fa38a 100%)', ink: '#2f4a3c' },
+  { slug: 'haulio', name: 'Haulio', kind: 'Freight dashboard', host: 'app.haulio.example', bg: 'linear-gradient(140deg,#0b0f17 0%,#121826 55%,#5b8cff 100%)', ink: '#e6ecf7' },
+  { slug: 'mossmilk', name: 'Moss & Milk', kind: 'Skincare store', host: 'mossandmilk.example', bg: 'linear-gradient(140deg,#f3ede4 0%,#e7d8c4 55%,#5d6b48 100%)', ink: '#2b2620' },
+  { slug: 'voltage', name: 'Voltage', kind: 'Gym and classes', host: 'voltage.example', bg: 'linear-gradient(140deg,#07070a 0%,#07070a 55%,#39ff88 100%)', ink: '#39ff88' },
+  { slug: 'ember', name: 'Ember & Ash', kind: 'Restaurant', host: 'emberandash.example', bg: 'linear-gradient(140deg,#17110d 0%,#2a1a10 55%,#ff7a2f 100%)', ink: '#f1e6d6' },
 ];
 
 export function Designs() {

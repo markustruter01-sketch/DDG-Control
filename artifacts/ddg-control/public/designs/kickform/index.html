@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>KICKFORM: concept design by DDG</title>
+<style>
+  :root { --acid: #c6ff00; --hot: #ff2e88; --ink: #0a0a0a; --paper: #f2f0e9; --shoe: #ff2e88; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 500 16px/1.4 "Helvetica Neue", Arial, system-ui, sans-serif; overflow-x: hidden; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; text-transform: uppercase; letter-spacing: .04em; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 14px 4vw; border-bottom: 3px solid var(--ink); background: var(--acid); position: sticky; top: 0; z-index: 5; }
+  .logo { font-size: 26px; font-weight: 900; letter-spacing: -.04em; font-style: italic; }
+  .bag { font-size: 14px; border: 3px solid var(--ink); padding: 8px 14px; background: #fff; }
+  .marquee { overflow: hidden; border-bottom: 3px solid var(--ink); background: var(--ink); color: var(--acid); white-space: nowrap; }
+  .marquee div { display: inline-block; padding: 10px 0; animation: run 22s linear infinite; font-size: 15px; }
+  @keyframes run { to { transform: translateX(-50%); } }
+  .hero { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 3px solid var(--ink); min-height: 82vh; }
+  .left { padding: 5vh 4vw; border-right: 3px solid var(--ink); display: flex; flex-direction: column; justify-content: space-between; }
+  h1 { font-size: clamp(64px, 11vw, 190px); line-height: .8; margin: 0; font-weight: 900; letter-spacing: -.06em; text-transform: uppercase; }
+  h1 span { display: block; }
+  h1 .o { -webkit-text-stroke: 3px var(--ink); color: transparent; }
+  .drop { display: flex; gap: 10px; margin-top: 30px; }
+  .drop div { border: 3px solid var(--ink); background: #fff; padding: 10px 12px; text-align: center; min-width: 74px; }
+  .drop b { display: block; font-size: 34px; font-weight: 900; }
+  .right { position: relative; display: grid; place-items: center; background: var(--paper); overflow: hidden; transition: background .4s; }
+  .right::before { content: "K/01"; position: absolute; font-size: 32vw; font-weight: 900; color: rgba(0,0,0,.05); letter-spacing: -.06em; }
+  .shoe { width: 90%; max-width: 620px; position: relative; transform: rotate(-12deg); transition: transform .2s; filter: drop-shadow(14px 18px 0 var(--ink)); }
+  .swatch { position: absolute; right: 4vw; bottom: 4vh; display: flex; gap: 10px; }
+  .swatch button { width: 46px; height: 46px; border: 3px solid var(--ink); cursor: pointer; padding: 0; }
+  .swatch button[aria-pressed="true"] { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .buy { display: inline-flex; align-items: center; gap: 14px; margin-top: 24px; padding: 18px 28px; background: var(--ink); color: var(--acid); border: 0; font: 900 20px/1 "Helvetica Neue", Arial, sans-serif; text-transform: uppercase; cursor: pointer; transition: transform .15s; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .card { border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink); padding: 18px; position: relative; overflow: hidden; }
+  .card:nth-child(4n) { border-right: 0; }
+  .card svg { width: 100%; height: 150px; transform: rotate(-8deg); transition: transform .35s cubic-bezier(.3,1.6,.6,1); }
+  .card:hover svg { transform: rotate(4deg) scale(1.08) translateY(-6px); }
+  .card .t { display: flex; justify-content: space-between; margin-top: 8px; }
+  .tag { position: absolute; top: 12px; left: 12px; background: var(--hot); color: #fff; padding: 4px 8px; font-size: 12px; }
+  .big { padding: 8vh 4vw; font-size: clamp(40px, 7vw, 120px); font-weight: 900; line-height: .9; letter-spacing: -.05em; text-transform: uppercase; border-bottom: 3px solid var(--ink); }
+  .big em { font-style: normal; background: var(--hot); color: #fff; padding: 0 .1em; }
+  footer { padding: 30px 4vw 90px; display: flex; justify-content: space-between; font-size: 13px; }
+  .concept { position: fixed; left: 12px; bottom: 12px; z-index: 9; padding: 6px 12px; border-radius: 999px; background: var(--ink); color: #fff; font: 500 11px/1.3 system-ui, sans-serif; }
+  @media (max-width: 760px) {
+    .hero { grid-template-columns: 1fr; } .left { border-right: 0; border-bottom: 3px solid var(--ink); }
+    .right { min-height: 52vh; } .grid { grid-template-columns: 1fr 1fr; }
+    .card:nth-child(2n) { border-right: 0; } .card:nth-child(4n) { border-right: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .marquee div { animation: none; } }
+</style>
+</head>
+<body>
+<header><span class="logo">KICKFORM</span><span class="bag mono" id="bag">Bag (0)</span></header>
+<div class="marquee mono" aria-hidden="true"><div>Drop 01 · Runner K1 · Recycled knit upper · Free returns · Drop 01 · Runner K1 · Recycled knit upper · Free returns · Drop 01 · Runner K1 · Recycled knit upper · Free returns · Drop 01 · Runner K1 · Recycled knit upper · Free returns · </div></div>
+<section class="hero">
+  <div class="left">
+    <h1><span>Run</span><span class="o">Loud.</span></h1>
+    <div>
+      <p class="mono">Runner K1 · drop closes in</p>
+      <div class="drop mono" aria-live="off"><div><b id="dd">02</b>days</div><div><b id="hh">11</b>hrs</div><div><b id="mm">47</b>min</div><div><b id="ss">09</b>sec</div></div>
+      <button class="buy" id="buy">Add to bag <span>→</span></button>
+    </div>
+  </div>
+  <div class="right" id="stage">
+    <svg class="shoe" id="shoe" viewBox="0 0 600 300" role="img" aria-label="Runner K1 sneaker">
+      <path d="M40 210 Q36 150 90 140 L210 120 Q250 60 330 70 Q380 78 400 120 L520 150 Q575 165 570 205 Z" fill="var(--shoe)" stroke="#0a0a0a" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M30 205 L575 205 Q585 240 550 250 L60 250 Q25 245 30 205 Z" fill="#fff" stroke="#0a0a0a" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M60 228 H550" stroke="#0a0a0a" stroke-width="4" stroke-dasharray="14 10"/>
+      <path d="M230 120 L270 160 M260 105 L300 150 M290 92 L330 140" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
+      <path d="M420 135 Q470 175 520 160" fill="none" stroke="#0a0a0a" stroke-width="6"/>
+      <path d="M120 170 Q200 150 260 190 Q330 225 420 180" fill="none" stroke="#c6ff00" stroke-width="16" stroke-linecap="round"/>
+      <circle cx="350" cy="92" r="10" fill="#0a0a0a"/>
+    </svg>
+    <div class="swatch" role="group" aria-label="Colourway">
+      <button aria-pressed="true" aria-label="Hot pink" data-c="#ff2e88" data-bg="#f2f0e9" style="background:#ff2e88"></button>
+      <button aria-pressed="false" aria-label="Volt" data-c="#c6ff00" data-bg="#1a1a1a" style="background:#c6ff00"></button>
+      <button aria-pressed="false" aria-label="Cobalt" data-c="#2f5bff" data-bg="#ffe14d" style="background:#2f5bff"></button>
+    </div>
+  </div>
+</section>
+<div class="grid" id="grid"></div>
+<div class="big">Made for <em>streets</em>, not shelves.</div>
+<footer class="mono"><span>KICKFORM · a made-up brand</span><span>[Price] · free returns</span></footer>
+<div class="concept">Concept design by DDG · not a real business</div>
+<script>
+  const shoe = document.getElementById('shoe'), stage = document.getElementById('stage');
+  document.querySelectorAll('.swatch button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.swatch button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    document.documentElement.style.setProperty('--shoe', b.dataset.c); stage.style.background = b.dataset.bg;
+  }));
+  // The shoe leans towards the pointer.
+  stage.addEventListener('pointermove', (e) => { const r = stage.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; shoe.style.transform = `rotate(${-12 + x * 14}deg) translate(${x * 20}px, ${y * 16}px)`; });
+  stage.addEventListener('pointerleave', () => { shoe.style.transform = ''; });
+  // A magnetic button.
+  const buy = document.getElementById('buy'); let n = 0;
+  buy.addEventListener('pointermove', (e) => { const r = buy.getBoundingClientRect(); buy.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * .25}px, ${(e.clientY - r.top - r.height / 2) * .35}px)`; });
+  buy.addEventListener('pointerleave', () => { buy.style.transform = ''; });
+  buy.addEventListener('click', () => { n++; document.getElementById('bag').textContent = `Bag (${n})`; });
+  // Countdown (made up: always about two and a half days away).
+  const end = Date.now() + ((2 * 24 + 11) * 3600 + 47 * 60) * 1000, pad = (v) => String(v).padStart(2, '0');
+  const tick = () => { let s = Math.max(0, Math.floor((end - Date.now()) / 1000)); dd.textContent = pad(Math.floor(s / 86400)); s %= 86400; hh.textContent = pad(Math.floor(s / 3600)); s %= 3600; mm.textContent = pad(Math.floor(s / 60)); ss.textContent = pad(s % 60); };
+  setInterval(tick, 1000); tick();
+  const cols = [['K1 Runner', '#ff2e88'], ['K1 Volt', '#c6ff00'], ['K2 Court', '#2f5bff'], ['K2 Bone', '#e8e2d0'], ['K3 Trail', '#ff7a1a'], ['K3 Shadow', '#3a3a3a'], ['K1 Mint', '#7dffcf'], ['K2 Grape', '#8a4dff']];
+  const grid = document.getElementById('grid');
+  cols.forEach(([name, c], i) => {
+    const d = document.createElement('div'); d.className = 'card';
+    d.innerHTML = `${i < 2 ? '<span class="tag mono">New</span>' : ''}<svg viewBox="0 0 600 300" aria-hidden="true"><path d="M40 210 Q36 150 90 140 L210 120 Q250 60 330 70 Q380 78 400 120 L520 150 Q575 165 570 205 Z" fill="${c}" stroke="#0a0a0a" stroke-width="8"/><path d="M30 205 L575 205 Q585 240 550 250 L60 250 Q25 245 30 205 Z" fill="#fff" stroke="#0a0a0a" stroke-width="8"/></svg><div class="t mono"><span>${name}</span><span>[$]</span></div>`;
+    grid.append(d);
+  });
+</script>
+</body>
+</html>
