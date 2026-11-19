@@ -40,6 +40,12 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdFlyOff', label: 'Words and logos fly off the screen while it charges', min: 0, max: 1, step: 1, names: ['Off', 'On'] },
   { group: 'Hold the orb', key: 'holdOn', label: 'Press and hold the orb (0 off, 1 on)', min: 0, max: 1, step: 1 },
   { group: 'Hold the orb', key: 'holdBolts', label: 'Lightning strikes', min: 0, max: 2, step: 0.05 },
+  { group: 'Stick figures', key: 'figOn', label: 'Two stick figures by the river', min: 0, max: 1, step: 1, names: ['Off', 'On'] },
+  { group: 'Stick figures', key: 'figSize', label: 'Size (1 = a standing figure about a quarter of the orb across)', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Stick figures', key: 'figSide', label: 'Which bank the Coder sits on', min: 0, max: 1, step: 1, names: ['Left', 'Right'] },
+  { group: 'Stick figures', key: 'figPull', label: 'How hard the orb pulls them in while it charges', min: 0, max: 3, step: 0.05 },
+  { group: 'Stick figures', key: 'figWalk', label: 'Walker: walking speed', min: 0, max: 3, step: 0.05 },
+  { group: 'Hold the orb', key: 'holdGlitch', label: 'Glitch twice just before the blast (0 off)', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdSkyStrike', label: 'Full charge: lightning from the top of the screen onto the orb', min: 0, max: 3, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBoil', label: 'Water simmering', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdBuild', label: 'Build-up time (seconds to the nova)', min: 2, max: 20, step: 0.5 },
@@ -231,6 +237,7 @@ export const SPECS: Spec[] = [
 // Markus's settings from the tuner, 17 Nov 2026 (final round, 15:17 Brisbane), with his changes of 18 Nov 19:07.
 export const DEFAULTS: Record<string, number> = {
   introFade: 3, introStyle: 2, introSpawn: 1.5, introLoop: 0,
+  figOn: 1, figSize: 1, figSide: 1, figPull: 1, figWalk: 1, holdGlitch: 1,
   holdOn: 1, holdVibrate: 1, holdFlyOff: 1, holdBolts: 2, holdSkyStrike: 3, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
   holdCamUp: 10, holdCamBack: 30, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 6, holdScreenShake: 2, holdGroundShake: 2.5, holdShock: 2, holdVignette: 0,
     holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 3, holdNova: 0.05, holdNovaWave: 10.55, holdNovaWaveSpeed: 75, holdCalm: 2.5, holdFxGlobs: 0, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 3, holdFxSpeed: 3,

@@ -12,6 +12,7 @@ import { makeSurge } from './surge';
 import { makeCharge } from './charge';
 import { makeDial } from './dial';
 import { makeSpawnFx, spawnLook } from './spawn';
+import { makeFigures } from './figures';
 import { introStart, revealPage } from '../intro';
 import { T, tuneOn, mountPanel, applyBrand } from './tune';
 import { makeClouds3D } from './clouds';
@@ -139,6 +140,10 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const zoomAway = (pos: Vector3, at: Vector3, zoom: number) => {
       zoomShift.copy(pos).sub(at).multiplyScalar(zoom - 1); pos.add(zoomShift); return zoomShift;
     };
+    // Two stick figures by the river (figures.ts): the Coder on one bank, the Walker on the other.
+    const figures = makeFigures();
+    scene.add(figures.group);
+    disposables.push(...figures.disposables);
     const chargeFx = makeCharge();
     scene.add(chargeFx.group);
     disposables.push(...chargeFx.disposables);
@@ -269,6 +274,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     // The load-in: wait for the fonts and a few drawn frames (so every word has found its place), then fade
     // the black cover away; the orb spawns after that (introStart).
     let fontsIn = false, framesDrawn = 0;
+    let glitch = 0, glitchAt = -1, glitchSeed = 0, glitchShift = 0;
     Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 2500))]).then(() => { fontsIn = true; });
     const followEl = topEl.querySelector<HTMLElement>('.cn-follow');
 
@@ -467,8 +473,24 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // name and quote stay still while the orb shakes.
       if (ch > 0) {
         orbit.position.y += T.holdRise * ch;
-        if (!reduced) { const sh = 0.14 * T.holdOrbShake * fxCh * (0.4 + fxCh) * (1 + fxCh * fxCh); /* twice as hard at full charge */ orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
+        // The shake is gentle for most of the build-up, then rattles hard in the last fifth (Markus, 19 Nov).
+        const endK = 1 + 3.5 * Math.pow(Math.min(1, Math.max(0, (charge - 0.8) / 0.2)), 2);
+        if (!reduced) { const sh = 0.14 * T.holdOrbShake * fxCh * (0.4 + fxCh) * (1 + fxCh * fxCh) * endK; orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
       }
+      // Two glitches in the last half second before the blast (Markus, 19 Nov): slices tear sideways with a red and
+      // blue split; the second is stronger, blinks the orb out for a moment and knocks it sideways.
+      glitch = 0;
+      if (building && !reduced && T.holdGlitch > 0) {
+        const toNova = (1 - charge) * Math.max(1, T.holdBuild);
+        if (toNova < 0.42 && toNova > 0.32) glitch = 0.65;
+        else if (toNova < 0.17 && toNova > 0.02) glitch = 1;
+        glitch *= T.holdGlitch;
+        if (glitch > 0) {
+          if (clock - glitchAt > 0.035) { glitchAt = clock; glitchSeed = Math.random() * 100; glitchShift = (Math.random() - 0.5) * R * 0.35 * glitch; }
+          orbit.position.x += glitchShift;
+        }
+        orbit.visible = !(toNova < 0.11 && toNova > 0.075);
+      } else orbit.visible = true;
       // The dial round the orb: 0 to 100% of the build-up, thin lines, like a speedometer.
       dial.update(charge, hold.down ? 1 : 0, ORB_R);
       restCam.fov = camera.fov; restCam.aspect = camera.aspect;
@@ -538,7 +560,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const flash = bolt.flash * T.orbFlashLight * Math.min(T.orbSparks, 1.5) * (1 - away);
       air.update(clock, 1 - away, spinClock, {
         bands: T.orbStreaks, zap: T.orbSparks * (1 + ch), zapRate: T.orbSparkRate * (1 + 3 * ch), style: T.orbStyle, hue: T.orbHue, flow: T.orbFlow,
-        gate: bolt.gate, flash: flash * 0.6, depth: T.orbDepth, glass: T.orbGlass, fringe: T.orbFringe, cam: camera.position,
+        gate: bolt.gate, flash: flash * 0.6, glitch, glitchSeed, depth: T.orbDepth, glass: T.orbGlass, fringe: T.orbFringe, cam: camera.position,
       });
       aura.update(clock, (1 - away) * born, { bloom: T.orbBloom + ch, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
       haloMat.opacity *= 1 + flash;
@@ -567,6 +589,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       }
       if (novaNow && T.holdSkyStrike > 0) strikeFromSky(T.holdSkyStrike, R);
       surge.novaAt(novaT, orbit.position, R, T.holdNova);
+      figures.update({
+        dt, t: clock, orb: orbit.position, R, charge, building, nova: novaNow,
+        settled: spawn >= 1 && charge < 0.02 && novaT < 0 && !hold.down,
+        calmView: p < 0.01 && camHold === 0 && charge === 0 && spawn >= 1, cam: camera,
+        land: (x, z) => heightAt(x, z) * (1 - k), water: lvl,
+        on: T.figOn > 0.5, size: T.figSize, side: T.figSide, pull: T.figPull, walk: T.figWalk, reduced, fade: 1 - away,
+      });
       if (novaT >= 0) haloMat.opacity += Math.exp(-novaT * 3) * 2.5 * T.holdNova;
       wasHeld = hold.down;
       shock = Math.max(0, shock - dt * 2.5);
