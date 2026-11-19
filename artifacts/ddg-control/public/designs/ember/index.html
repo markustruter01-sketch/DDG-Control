@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Ember &amp; Ash: concept design by DDG</title>
+<style>
+  :root { --bg: #17110d; --char: #221812; --ember: #ff7a2f; --gold: #e9c27a; --txt: #f1e6d6; --mut: #a8977f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt); font: 400 17px/1.6 "Avenir Next", "Segoe UI", system-ui, sans-serif; }
+  .serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 22px 6vw; }
+  .logo { font-size: 24px; letter-spacing: .06em; }
+  .logo i { color: var(--ember); font-style: normal; }
+  .reserve { padding: 12px 22px; border-radius: 999px; background: var(--ember); color: #1a0f08; text-decoration: none; font-weight: 600; font-size: 15px; }
+  .hero { position: relative; min-height: 86vh; display: grid; place-items: center; text-align: center; padding: 0 6vw; overflow: hidden; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .glow { position: absolute; left: 50%; bottom: -20vh; width: 90vw; height: 60vh; transform: translateX(-50%); background: radial-gradient(ellipse at 50% 100%, rgba(255,122,47,.45), transparent 65%); animation: flick 3s ease-in-out infinite; }
+  @keyframes flick { 30% { opacity: .82; } 55% { opacity: 1; } 70% { opacity: .9; } }
+  .hero-in { position: relative; }
+  .eyebrow { font-size: 13px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); }
+  h1 { font-size: clamp(54px, 9vw, 150px); line-height: .92; margin: 18px 0 20px; font-weight: 400; }
+  h1 em { color: var(--ember); }
+  .lede { color: var(--mut); max-width: 30em; margin: 0 auto; }
+  section { padding: 10vh 6vw; }
+  h2 { font-size: clamp(36px, 4.6vw, 70px); font-weight: 400; margin: 0 0 26px; }
+  .tabs, .diet { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tabs button, .diet button { padding: 10px 18px; border-radius: 999px; border: 1px solid #4a3a2c; background: none; color: var(--mut); font: inherit; font-size: 15px; cursor: pointer; }
+  .tabs button[aria-pressed="true"] { background: var(--txt); color: var(--bg); border-color: var(--txt); }
+  .diet button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+  .menu { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 6vw; margin-top: 26px; }
+  .dish { display: grid; grid-template-columns: 1fr auto; gap: 2px 14px; padding: 16px 0; border-bottom: 1px dashed #4a3a2c; transition: opacity .3s; }
+  .dish b { font-size: 21px; font-weight: 400; }
+  .dish .pr { color: var(--gold); }
+  .dish small { color: var(--mut); grid-column: 1 / -1; }
+  .dish .tags { color: var(--ember); font-size: 12px; letter-spacing: .1em; }
+  .dish.off { opacity: .18; }
+  .book { background: var(--char); border-radius: 40px; margin: 0 6vw 10vh; padding: 8vh 5vw; display: grid; grid-template-columns: 1fr 1.2fr; gap: 5vw; }
+  .pick { display: flex; flex-direction: column; gap: 22px; }
+  .pick label { display: block; font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips button { min-width: 48px; padding: 12px 14px; border-radius: 14px; border: 1px solid #4a3a2c; background: none; color: var(--txt); font: inherit; cursor: pointer; }
+  .chips button[aria-pressed="true"] { background: var(--ember); border-color: var(--ember); color: #1a0f08; }
+  .sum { font-size: 22px; } .sum b { color: var(--ember); font-weight: 400; }
+  footer { padding: 30px 6vw 90px; display: flex; justify-content: space-between; color: var(--mut); font-size: 14px; }
+  .concept { position: fixed; left: 12px; bottom: 12px; z-index: 9; padding: 6px 12px; border-radius: 999px; background: rgba(255,122,47,.92); color: #1a0f08; font: 600 11px/1.3 system-ui, sans-serif; }
+  @media (max-width: 800px) { .menu, .book { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .glow { animation: none; } }
+</style>
+</head>
+<body>
+<header><span class="logo serif">Ember <i>&amp;</i> Ash</span><a class="reserve" href="#book">Book a table</a></header>
+<section class="hero">
+  <div class="glow" aria-hidden="true"></div>
+  <canvas id="sparks" aria-hidden="true"></canvas>
+  <div class="hero-in">
+    <span class="eyebrow">Wood-fired kitchen</span>
+    <h1 class="serif">Cooked over <em>fire</em>,<br>eaten slowly.</h1>
+    <p class="lede">Everything on the menu meets the flames. Share plates, a long table, and a fire you can see from every seat.</p>
+  </div>
+</section>
+<section>
+  <h2 class="serif">The menu</h2>
+  <div class="tabs" role="group" aria-label="Course"></div>
+  <div class="diet" role="group" aria-label="Diet filter"><button aria-pressed="false" data-d="V">Vegetarian</button><button aria-pressed="false" data-d="GF">Gluten free</button></div>
+  <div class="menu" id="menu"></div>
+</section>
+<div class="book" id="book">
+  <div><h2 class="serif">Book a table</h2><p style="color:var(--mut)">Choose your party and a time. This is a concept, so nothing is booked.</p></div>
+  <div class="pick">
+    <div><label>Guests</label><div class="chips" id="guests"></div></div>
+    <div><label>Time</label><div class="chips" id="times"></div></div>
+    <p class="sum serif" id="sum" aria-live="polite">Pick guests and a time.</p>
+  </div>
+</div>
+<footer><span>Ember &amp; Ash · a made-up restaurant</span><span>[Address] · [Hours]</span></footer>
+<div class="concept">Concept design by DDG · not a real business</div>
+<script>
+  const M = {
+    Small: [['Charred leek, smoked butter', 'Leeks blackened then peeled', '[$]', 'V GF'], ['Flatbread from the oven', 'Whipped garlic, burnt honey', '[$]', 'V'], ['Ember oysters', 'Finger lime, seaweed salt', '[$]', 'GF'], ['Hot coal beets', 'Labneh, dukkah', '[$]', 'V GF']],
+    Large: [['Half chicken over ironbark', 'Pickled chilli, toum', '[$]', 'GF'], ['Whole flounder', 'Brown butter, capers', '[$]', 'GF'], ['Fire-roast pumpkin', 'Miso, pepitas', '[$]', 'V GF'], ['Lamb shoulder, 8 hours', 'Pomegranate, herbs', '[$]', 'GF']],
+    Sweet: [['Smoked chocolate tart', 'Crème fraîche', '[$]', 'V'], ['Grilled peaches', 'Bay leaf ice cream', '[$]', 'V GF']],
+  };
+  let course = 'Small'; const diets = new Set();
+  const tabs = document.querySelector('.tabs'), menu = document.getElementById('menu');
+  const render = () => { [...tabs.children].forEach((b) => b.setAttribute('aria-pressed', String(b.textContent === course))); menu.innerHTML = ''; M[course].forEach(([n, d, p, t]) => { const tags = t.split(' '), ok = [...diets].every((x) => tags.includes(x)); const el = document.createElement('div'); el.className = 'dish' + (ok ? '' : ' off'); el.innerHTML = `<b class="serif">${n}</b><span class="pr">${p}</span><small>${d}</small><span class="tags">${t.replace(' ', ' · ')}</span>`; menu.append(el); }); };
+  Object.keys(M).forEach((c) => { const b = document.createElement('button'); b.textContent = c; b.onclick = () => { course = c; render(); }; tabs.append(b); });
+  document.querySelectorAll('.diet button').forEach((b) => b.onclick = () => { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); on ? diets.add(b.dataset.d) : diets.delete(b.dataset.d); render(); });
+  render();
+  let g = null, tm = null;
+  const sum = () => { document.getElementById('sum').innerHTML = g && tm ? `A table for <b>${g}</b> at <b>${tm}</b>. See you by the fire.` : 'Pick guests and a time.'; };
+  const chips = (el, vals, set) => vals.forEach((v) => { const b = document.createElement('button'); b.textContent = v; b.setAttribute('aria-pressed', 'false'); b.onclick = () => { el.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); set(v); sum(); }; el.append(b); });
+  chips(document.getElementById('guests'), ['1', '2', '3', '4', '5', '6+'], (v) => g = v);
+  chips(document.getElementById('times'), ['5:30', '6:00', '6:45', '7:30', '8:15', '9:00'], (v) => tm = v);
+  // Sparks rising from the fire.
+  const cv = document.getElementById('sparks'), ctx = cv.getContext('2d'), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const P = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), v: .0015 + Math.random() * .003, s: Math.random() * 2 + .6, w: Math.random() * 6 }));
+  const draw = (t) => { const w = cv.width = cv.clientWidth, h = cv.height = cv.clientHeight; ctx.clearRect(0, 0, w, h); P.forEach((p) => { if (!reduce) { p.y -= p.v; if (p.y < -.05) { p.y = 1.05; p.x = Math.random(); } } const x = (p.x + Math.sin(t / 900 + p.w) * .01) * w, y = p.y * h, a = Math.min(1, p.y * 1.4); ctx.fillStyle = `rgba(255,${120 + Math.round(p.s * 30)},50,${a})`; ctx.beginPath(); ctx.arc(x, y, p.s, 0, 7); ctx.fill(); }); if (!reduce) requestAnimationFrame(draw); };
+  requestAnimationFrame(draw);
+</script>
+</body>
+</html>

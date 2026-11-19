@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>VOLTAGE: concept design by DDG</title>
+<style>
+  :root { --bg: #07070a; --n1: #39ff88; --n2: #ff3df0; --txt: #f2f2f7; --mut: #8b8b99; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt); font: 500 16px/1.5 "Helvetica Neue", Arial, system-ui, sans-serif; overflow-x: hidden; }
+  .x { font-family: Impact, "Arial Black", "Helvetica Neue", sans-serif; text-transform: uppercase; letter-spacing: .01em; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 18px 5vw; position: sticky; top: 0; z-index: 5; background: rgba(7,7,10,.8); backdrop-filter: blur(8px); }
+  .logo { font-size: 28px; color: var(--n1); text-shadow: 0 0 18px rgba(57,255,136,.6); }
+  .join { padding: 12px 20px; border: 2px solid var(--n2); color: var(--n2); text-decoration: none; font-size: 16px; box-shadow: 0 0 22px -6px var(--n2), inset 0 0 22px -10px var(--n2); }
+  .hero { min-height: 88vh; display: flex; flex-direction: column; justify-content: center; padding: 0 5vw; position: relative; }
+  h1 { font-size: clamp(70px, 15vw, 260px); line-height: .82; margin: 0; }
+  h1 .l { display: block; will-change: transform; }
+  h1 .g { color: transparent; -webkit-text-stroke: 2px var(--n1); text-shadow: 0 0 30px rgba(57,255,136,.35); }
+  .pulse { width: 100%; height: 120px; margin-top: 4vh; }
+  .pulse path { fill: none; stroke: var(--n2); stroke-width: 3; filter: drop-shadow(0 0 8px var(--n2)); stroke-dasharray: 1400; stroke-dashoffset: 1400; animation: beat 2.4s linear infinite; }
+  @keyframes beat { to { stroke-dashoffset: 0; } }
+  .bpm { position: absolute; right: 5vw; bottom: 8vh; text-align: right; color: var(--mut); }
+  .bpm b { display: block; font-size: 64px; color: var(--n2); line-height: 1; }
+  section { padding: 10vh 5vw; }
+  h2 { font-size: clamp(44px, 7vw, 110px); line-height: .9; margin: 0 0 30px; }
+  .days { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .days button { padding: 10px 16px; background: none; border: 2px solid #2a2a33; color: var(--mut); font: inherit; font-size: 15px; cursor: pointer; }
+  .days button[aria-pressed="true"] { border-color: var(--n1); color: var(--bg); background: var(--n1); box-shadow: 0 0 24px -4px var(--n1); }
+  .tt { display: grid; gap: 10px; }
+  .cls { display: grid; grid-template-columns: 90px 1fr auto auto; gap: 18px; align-items: center; padding: 18px 20px; border: 1px solid #22222b; background: linear-gradient(90deg, rgba(255,61,240,.06), transparent 40%); transition: border-color .2s, transform .2s; }
+  .cls:hover { border-color: var(--n2); transform: translateX(6px); }
+  .cls .time { font-size: 26px; color: var(--n1); }
+  .cls .name { font-size: 24px; }
+  .cls .lvl { font-size: 13px; color: var(--mut); }
+  .meter { width: 90px; height: 6px; background: #22222b; } .meter i { display: block; height: 100%; background: var(--n2); box-shadow: 0 0 10px var(--n2); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid #22222b; }
+  .stats div { padding: 40px 0; border-right: 1px solid #22222b; text-align: center; }
+  .stats div:last-child { border-right: 0; }
+  .stats b { display: block; font-size: clamp(50px, 7vw, 100px); line-height: 1; color: var(--txt); }
+  .stats span { color: var(--mut); }
+  footer { padding: 30px 5vw 90px; display: flex; justify-content: space-between; color: var(--mut); font-size: 13px; }
+  .concept { position: fixed; left: 12px; bottom: 12px; z-index: 9; padding: 6px 12px; border-radius: 999px; background: rgba(57,255,136,.9); color: #000; font: 600 11px/1.3 system-ui, sans-serif; }
+  @media (max-width: 760px) { .cls { grid-template-columns: 70px 1fr; } .cls .meter, .cls .lvl { display: none; } .stats { grid-template-columns: 1fr; } .stats div { border-right: 0; border-bottom: 1px solid #22222b; } .bpm { position: static; text-align: left; margin-top: 20px; } }
+  @media (prefers-reduced-motion: reduce) { .pulse path { animation: none; stroke-dashoffset: 0; } }
+</style>
+</head>
+<body>
+<header><span class="logo x">Voltage</span><a class="join x" href="#classes">Free first class</a></header>
+<section class="hero">
+  <h1 class="x"><span class="l" data-s="-1">Train</span><span class="l g" data-s="1">After</span><span class="l" data-s="-0.6">Dark.</span></h1>
+  <svg class="pulse" viewBox="0 0 1400 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 60 H380 L410 60 L430 20 L455 100 L480 10 L505 60 H900 L930 60 L950 25 L975 98 L1000 14 L1025 60 H1400"/></svg>
+  <div class="bpm x"><b id="bpm">128</b>bpm in the room right now (example)</div>
+</section>
+<section id="classes">
+  <h2 class="x">This week</h2>
+  <div class="days x" role="group" aria-label="Day"></div>
+  <div class="tt" id="tt"></div>
+</section>
+<section>
+  <div class="stats x"><div><b>24/7</b><span>open, every day</span></div><div><b>[40]+</b><span>classes a week</span></div><div><b>[6]</b><span>coaches</span></div></div>
+</section>
+<footer class="x"><span>Voltage · a made-up gym</span><span>[Price] a week</span></footer>
+<div class="concept">Concept design by DDG · not a real business</div>
+<script>
+  const D = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const C = { Mon: [['05:30', 'Ignite HIIT', 5], ['12:15', 'Lunch Lift', 3], ['18:30', 'Boxing', 4], ['20:00', 'Neon Ride', 4]], Tue: [['06:00', 'Strength Lab', 4], ['18:00', 'Mobility', 1], ['19:30', 'Ignite HIIT', 5]], Wed: [['05:30', 'Neon Ride', 4], ['12:15', 'Core 30', 2], ['18:30', 'Boxing', 4]], Thu: [['06:00', 'Strength Lab', 4], ['18:00', 'Yoga Flow', 1], ['19:30', 'Ignite HIIT', 5]], Fri: [['05:30', 'Ignite HIIT', 5], ['17:30', 'Friday Burn', 5]], Sat: [['08:00', 'Team WOD', 4], ['10:00', 'Mobility', 1]], Sun: [['09:00', 'Recovery', 1]] };
+  const days = document.querySelector('.days'), tt = document.getElementById('tt');
+  const show = (d) => { [...days.children].forEach((b) => b.setAttribute('aria-pressed', String(b.textContent === d))); tt.innerHTML = ''; C[d].forEach(([t, n, l]) => { const r = document.createElement('div'); r.className = 'cls'; r.innerHTML = `<span class="time x">${t}</span><span class="name x">${n}</span><span class="lvl">Intensity</span><span class="meter"><i style="width:${l * 20}%"></i></span>`; tt.append(r); }); };
+  D.forEach((d) => { const b = document.createElement('button'); b.textContent = d; b.onclick = () => show(d); days.append(b); });
+  show('Mon');
+  // The headline lines slide apart with scroll speed.
+  const lines = [...document.querySelectorAll('h1 .l')], reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let last = scrollY, v = 0;
+  const loop = () => { const dy = scrollY - last; last = scrollY; v += (dy - v) * .15; lines.forEach((l) => l.style.transform = reduce ? '' : `translateX(${v * 6 * l.dataset.s + scrollY * .25 * l.dataset.s}px) skewX(${-v * .6}deg)`); requestAnimationFrame(loop); };
+  loop();
+  setInterval(() => { bpm.textContent = String(120 + Math.round(Math.random() * 18)); }, 1400);
+</script>
+</body>
+</html>
