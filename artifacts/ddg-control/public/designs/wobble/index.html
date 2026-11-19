@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Wobble Academy: concept design by DDG</title>
+<style>
+  :root { --sky: #8fd3ff; --sun: #ffd23f; --coral: #ff6b6b; --grass: #57c785; --ink: #253046; --cream: #fffaf0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--cream); color: var(--ink); font: 600 18px/1.5 ui-rounded, "Arial Rounded MT Bold", "Nunito", "Varela Round", system-ui, sans-serif; overflow-x: hidden; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 18px 5vw; }
+  .logo { font-size: 26px; display: flex; gap: 2px; }
+  .logo span:nth-child(5n+1) { color: var(--coral); } .logo span:nth-child(5n+2) { color: #3aa6e8; } .logo span:nth-child(5n+3) { color: #e8a400; } .logo span:nth-child(5n+4) { color: var(--grass); } .logo span:nth-child(5n) { color: #9b6bff; }
+  .btn { display: inline-block; padding: 14px 26px; border-radius: 999px; background: var(--coral); color: #fff; text-decoration: none; box-shadow: 0 6px 0 #d94f4f; font-size: 18px; }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #d94f4f; }
+  .hero { position: relative; display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; gap: 4vw; padding: 6vh 5vw 14vh; background: var(--sky); border-radius: 0 0 50% 50% / 0 0 8vw 8vw; overflow: hidden; }
+  .cloud { position: absolute; width: 140px; height: 50px; background: #fff; border-radius: 50px; opacity: .9; animation: drift 40s linear infinite; }
+  .cloud::before, .cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
+  .cloud::before { width: 70px; height: 70px; left: 20px; top: -34px; } .cloud::after { width: 50px; height: 50px; left: 70px; top: -22px; }
+  @keyframes drift { from { transform: translateX(-200px); } to { transform: translateX(110vw); } }
+  h1 { font-size: clamp(44px, 6.4vw, 92px); line-height: .98; margin: 0 0 18px; position: relative; }
+  h1 .w { display: inline-block; animation: bob 3s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-8px) rotate(-2deg); } }
+  .hero p { font-size: 21px; max-width: 22em; margin: 0 0 26px; position: relative; }
+  .critter { width: 100%; max-width: 420px; justify-self: center; position: relative; }
+  .blocks { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; padding: 9vh 5vw 4vh; }
+  .blk { width: 92px; height: 92px; border: 0; border-radius: 22px; font: inherit; font-size: 50px; color: #fff; cursor: pointer; box-shadow: 0 8px 0 rgba(0,0,0,.15); transition: transform .15s; }
+  .blk.pop { animation: pop .5s; }
+  @keyframes pop { 30% { transform: translateY(-26px) rotate(-8deg) scale(1.1); } 60% { transform: translateY(4px) scale(.95, 1.05); } }
+  .say { text-align: center; min-height: 32px; font-size: 22px; color: var(--ink); }
+  h2 { font-size: clamp(34px, 4.4vw, 60px); text-align: center; margin: 9vh 0 4vh; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding: 0 5vw; }
+  .card { perspective: 900px; height: 260px; cursor: pointer; border: 0; background: none; padding: 0; font: inherit; color: inherit; }
+  .in { position: relative; width: 100%; height: 100%; transition: transform .6s; transform-style: preserve-3d; }
+  .card[aria-pressed="true"] .in { transform: rotateY(180deg); }
+  .f, .b { position: absolute; inset: 0; border-radius: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; backface-visibility: hidden; padding: 24px; text-align: center; }
+  .f { font-size: 32px; color: #fff; } .f svg { width: 90px; height: 90px; margin-bottom: 10px; }
+  .b { background: #fff; transform: rotateY(180deg); font-size: 19px; box-shadow: inset 0 0 0 4px currentColor; }
+  .parents { margin: 12vh 5vw 0; padding: 7vh 6vw; border-radius: 36px; background: #fff; display: grid; grid-template-columns: 1fr 1fr; gap: 4vw; font-weight: 400; color: #4b5568; }
+  .parents h3 { font-size: 32px; margin: 0 0 12px; color: var(--ink); font-weight: 600; }
+  .parents ul { margin: 0; padding-left: 22px; } .parents li { margin: 8px 0; }
+  footer { padding: 60px 5vw 90px; text-align: center; font-size: 15px; color: #6b7487; }
+  .concept { position: fixed; left: 12px; bottom: 12px; z-index: 9; padding: 6px 12px; border-radius: 999px; background: rgba(37,48,70,.85); color: #fff; font: 500 11px/1.3 system-ui, sans-serif; }
+  @media (max-width: 760px) {
+    .hero { grid-template-columns: 1fr; text-align: center; } .hero p { margin-left: auto; margin-right: auto; }
+    .critter { max-width: 260px; order: -1; }
+    .blk { width: 70px; height: 70px; font-size: 38px; }
+    .cards, .parents { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <span class="logo" aria-label="Wobble Academy"><span>W</span><span>o</span><span>b</span><span>b</span><span>l</span><span>e</span></span>
+  <a class="btn" href="#parents">Try it free</a>
+</header>
+<section class="hero">
+  <div class="cloud" style="top:12%;animation-delay:-8s"></div><div class="cloud" style="top:58%;animation-delay:-26s;transform:scale(.7)"></div>
+  <div>
+    <h1><span class="w">Little</span> <span class="w" style="animation-delay:.3s">minds,</span><br><span class="w" style="animation-delay:.6s">big</span> <span class="w" style="animation-delay:.9s">wobbles.</span></h1>
+    <p>Letters, numbers and nature games for ages 3 to 6. Short, bright, and made for little fingers.</p>
+    <a class="btn" href="#play">Start playing</a>
+  </div>
+  <svg class="critter" viewBox="0 0 300 300" role="img" aria-label="Pip the owl waving">
+    <ellipse cx="150" cy="280" rx="90" ry="12" fill="#000" opacity=".1"/>
+    <path d="M70 120 Q60 40 110 60 Q150 20 190 60 Q240 40 230 120 Q250 260 150 268 Q50 260 70 120Z" fill="#ff9f5a"/>
+    <path d="M110 170 Q150 140 190 170 Q195 240 150 250 Q105 240 110 170Z" fill="#ffe0b8"/>
+    <g id="wing"><path d="M232 150 Q275 120 268 80 Q250 110 228 120Z" fill="#e8823e"><animateTransform attributeName="transform" type="rotate" values="0 232 150; -18 232 150; 0 232 150" dur="1.4s" repeatCount="indefinite"/></path></g>
+    <path d="M68 150 Q40 175 52 210 Q66 185 76 178Z" fill="#e8823e"/>
+    <circle cx="118" cy="112" r="30" fill="#fff"/><circle cx="182" cy="112" r="30" fill="#fff"/>
+    <circle class="eye" cx="118" cy="112" r="13" fill="#253046"/><circle class="eye" cx="182" cy="112" r="13" fill="#253046"/>
+    <path d="M140 140 L160 140 L150 156Z" fill="#ffd23f"/>
+    <path d="M128 262 l-8 14 M150 266 v14 M172 262 l8 14" stroke="#e8823e" stroke-width="7" stroke-linecap="round"/>
+  </svg>
+</section>
+<div class="blocks" id="play" role="group" aria-label="Letter blocks">
+  <button class="blk" style="background:#ff6b6b" data-say="A is for apple">A</button>
+  <button class="blk" style="background:#3aa6e8" data-say="B is for bubble">B</button>
+  <button class="blk" style="background:#ffbf1f" data-say="C is for cloud">C</button>
+  <button class="blk" style="background:#57c785" data-say="D is for duck">D</button>
+  <button class="blk" style="background:#9b6bff" data-say="E is for egg">E</button>
+</div>
+<p class="say" id="say" aria-live="polite">Tap a block!</p>
+<h2>Pick a world</h2>
+<div class="cards">
+  <button class="card" aria-pressed="false"><div class="in"><div class="f" style="background:#ff6b6b"><svg viewBox="0 0 90 90" aria-hidden="true"><text x="45" y="64" font-size="58" text-anchor="middle" fill="#fff" font-family="inherit">Aa</text></svg>Letters</div><div class="b" style="color:#ff6b6b">Sing-along sounds, tracing with a finger, and first words.</div></div></button>
+  <button class="card" aria-pressed="false"><div class="in"><div class="f" style="background:#3aa6e8"><svg viewBox="0 0 90 90" aria-hidden="true"><text x="45" y="64" font-size="58" text-anchor="middle" fill="#fff" font-family="inherit">123</text></svg>Numbers</div><div class="b" style="color:#3aa6e8">Counting games, shapes, and a bit of sharing maths.</div></div></button>
+  <button class="card" aria-pressed="false"><div class="in"><div class="f" style="background:#57c785"><svg viewBox="0 0 90 90" aria-hidden="true"><path d="M45 78V40M45 52c-14 0-22-10-22-24 14 0 22 10 22 24zM45 44c12 0 20-9 20-21-12 0-20 9-20 21z" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg>Nature</div><div class="b" style="color:#57c785">Bugs, birds and weather, with games you can take outside.</div></div></button>
+</div>
+<section class="parents" id="parents">
+  <div><h3>For parents</h3><p>Short sessions, no ads, and a weekly note on what your child explored.</p></div>
+  <ul><li>[Number] games across three worlds</li><li>Screen-time limits you set</li><li>[Price] a month after a free week</li></ul>
+</section>
+<footer>Wobble Academy · a made-up brand</footer>
+<div class="concept">Concept design by DDG · not a real business</div>
+<script>
+  const say = document.getElementById('say');
+  document.querySelectorAll('.blk').forEach((b) => b.addEventListener('click', () => {
+    b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); say.textContent = b.dataset.say;
+  }));
+  document.querySelectorAll('.card').forEach((c) => c.addEventListener('click', () => c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true'))));
+  const eyes = [...document.querySelectorAll('.eye')], svg = document.querySelector('.critter');
+  addEventListener('pointermove', (e) => {
+    const r = svg.getBoundingClientRect();
+    eyes.forEach((el, i) => {
+      const cx = r.left + r.width * (i ? 182 : 118) / 300, cy = r.top + r.height * 112 / 300;
+      const a = Math.atan2(e.clientY - cy, e.clientX - cx), d = Math.min(10, Math.hypot(e.clientX - cx, e.clientY - cy) / 20);
+      el.setAttribute('cx', String((i ? 182 : 118) + Math.cos(a) * d)); el.setAttribute('cy', String(112 + Math.sin(a) * d));
+    });
+  });
+</script>
+</body>
+</html>
