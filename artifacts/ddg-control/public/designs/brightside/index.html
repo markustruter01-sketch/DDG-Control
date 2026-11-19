@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Brightside Electrical: concept design by DDG</title>
+<style>
+  :root { --y: #ffd21f; --ink: #111111; --paper: #f6f4ee; --mid: #6b6b6b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 400 17px/1.5 "Helvetica Neue", Arial, system-ui, sans-serif; background: #0b0b0b; color: #8a8a8a; transition: background .5s, color .5s; }
+  body.on { background: var(--paper); color: var(--ink); }
+  .cond { font-family: "Arial Narrow", "Helvetica Neue Condensed", "Roboto Condensed", Impact, sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: -.01em; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 18px 5vw; border-bottom: 3px solid currentColor; }
+  .mark { display: flex; align-items: center; gap: 10px; font-size: 22px; }
+  .mark i { width: 30px; height: 30px; background: var(--y); clip-path: polygon(55% 0, 10% 58%, 45% 58%, 35% 100%, 90% 38%, 55% 38%); }
+  .call { padding: 12px 20px; background: var(--y); color: var(--ink); text-decoration: none; font-size: 16px; }
+  .hero { display: grid; grid-template-columns: 1.3fr 1fr; gap: 4vw; align-items: center; padding: 8vh 5vw 10vh; }
+  h1 { font-size: clamp(56px, 9vw, 150px); line-height: .86; margin: 0 0 22px; }
+  h1 em { font-style: normal; color: var(--y); }
+  body:not(.on) h1, body:not(.on) h2 { color: #3a3a3a; }
+  body:not(.on) h1 em { color: #4a4320; }
+  .lede { font-size: 20px; max-width: 26em; margin: 0 0 28px; }
+  .switchbox { display: grid; place-items: center; gap: 16px; }
+  .plate { width: 190px; height: 290px; border-radius: 22px; background: #1d1d1d; border: 3px solid #2c2c2c; display: grid; place-items: center; transition: background .5s, border-color .5s; }
+  body.on .plate { background: #fff; border-color: #ddd; box-shadow: 0 30px 60px -30px rgba(0,0,0,.35); }
+  .toggle { width: 86px; height: 150px; border-radius: 14px; border: 0; cursor: pointer; background: linear-gradient(#2a2a2a 50%, #3a3a3a 50%); box-shadow: inset 0 -8px 0 #000; transition: all .25s; }
+  body.on .toggle { background: linear-gradient(var(--y) 50%, #e8bd00 50%); box-shadow: inset 0 8px 0 #c79f00; }
+  .hint { font-size: 14px; letter-spacing: .12em; }
+  .bulb { width: 70px; height: 70px; border-radius: 50%; background: #222; transition: all .5s; }
+  body.on .bulb { background: var(--y); box-shadow: 0 0 60px 20px rgba(255,210,31,.55); }
+  .tape { height: 22px; background: repeating-linear-gradient(-45deg, var(--y) 0 22px, var(--ink) 22px 44px); }
+  section { padding: 9vh 5vw; }
+  h2 { font-size: clamp(40px, 5.6vw, 84px); line-height: .9; margin: 0 0 30px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 3px solid currentColor; }
+  .svc { padding: 28px 24px 34px; border-right: 3px solid currentColor; }
+  .svc:last-child { border-right: 0; }
+  .svc svg { width: 46px; height: 46px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .svc b { display: block; font-size: 26px; margin: 14px 0 6px; }
+  .svc p { margin: 0; font-size: 15px; }
+  .solar { display: grid; grid-template-columns: 1fr 1fr; gap: 5vw; align-items: center; background: var(--ink); color: #fff; }
+  body:not(.on) .solar { background: #141414; color: #777; }
+  .solar label { display: block; font-size: 15px; letter-spacing: .1em; margin-bottom: 14px; }
+  input[type=range] { width: 100%; accent-color: var(--y); height: 32px; }
+  .out { font-size: clamp(54px, 7vw, 110px); line-height: 1; color: var(--y); }
+  .note { font-size: 13px; opacity: .7; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3vw; counter-reset: s; }
+  .steps div { border-top: 6px solid var(--y); padding-top: 16px; }
+  .steps div::before { counter-increment: s; content: "0" counter(s); display: block; font-size: 54px; line-height: 1; margin-bottom: 8px; }
+  .area { display: flex; flex-wrap: wrap; gap: 10px; }
+  .area span { padding: 8px 16px; border: 2px solid currentColor; font-size: 15px; }
+  footer { padding: 40px 5vw 110px; border-top: 3px solid currentColor; display: flex; justify-content: space-between; font-size: 14px; }
+  .bar { display: none; }
+  .concept { position: fixed; left: 12px; bottom: 12px; z-index: 9; padding: 6px 12px; border-radius: 999px; background: rgba(17,17,17,.85); color: #fff; font: 500 11px/1.3 system-ui, sans-serif; }
+  @media (max-width: 760px) {
+    .hero, .solar { grid-template-columns: 1fr; }
+    .switchbox { order: -1; }
+    .plate { width: 150px; height: 220px; } .toggle { width: 70px; height: 116px; }
+    .grid { grid-template-columns: 1fr 1fr; } .svc:nth-child(2) { border-right: 0; } .svc:nth-child(-n+2) { border-bottom: 3px solid currentColor; }
+    .steps { grid-template-columns: 1fr; gap: 26px; }
+    header .call { display: none; }
+    .bar { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; padding: 16px; background: var(--y); color: var(--ink); text-align: center; text-decoration: none; font-size: 20px; }
+    .concept { bottom: 70px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <span class="mark cond"><i></i>Brightside</span>
+  <a class="call cond" href="#quote">Get a quote</a>
+</header>
+<div class="hero">
+  <div>
+    <h1 class="cond">Lights <em>on.</em><br>Bills down.</h1>
+    <p class="lede">Licensed electricians and solar installers for homes and small businesses. Flick the switch.</p>
+    <a class="call cond" href="#quote">Book a sparky</a>
+  </div>
+  <div class="switchbox">
+    <div class="bulb" aria-hidden="true"></div>
+    <div class="plate"><button class="toggle" id="sw" aria-pressed="false" aria-label="Turn the lights on"></button></div>
+    <span class="hint cond" id="hint">Flick me</span>
+  </div>
+</div>
+<div class="tape" aria-hidden="true"></div>
+<section>
+  <h2 class="cond">What we do</h2>
+  <div class="grid">
+    <div class="svc"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="9"/><path d="M24 4v6M24 38v6M4 24h6M38 24h6M10 10l4 4M34 34l4 4M38 10l-4 4M14 34l-4 4"/></svg><b class="cond">Solar</b><p>Panels and batteries, sized to your roof.</p></div>
+    <div class="svc"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="6" width="28" height="36" rx="3"/><path d="M18 18h12M18 26h12M18 34h6"/></svg><b class="cond">Switchboards</b><p>Upgrades and safety switches.</p></div>
+    <div class="svc"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 6c-8 0-13 6-13 13 0 6 4 9 6 12v5h14v-5c2-3 6-6 6-12 0-7-5-13-13-13zM18 42h12"/></svg><b class="cond">Lighting</b><p>Inside, outside, and smart.</p></div>
+    <div class="svc"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M27 4 12 27h11l-3 17 16-24H25z"/></svg><b class="cond">Faults</b><p>Same-day call-outs for power trouble.</p></div>
+  </div>
+</section>
+<section class="solar">
+  <div>
+    <h2 class="cond">What could solar save?</h2>
+    <label class="cond" for="bill">Your power bill each quarter: <span id="billv">$600</span></label>
+    <input id="bill" type="range" min="200" max="1500" step="25" value="600">
+  </div>
+  <div>
+    <div class="out cond" id="save">$1,560</div>
+    <p>A year, if solar covered [65]% of it.</p>
+    <p class="note">Example only, not a quote. Real savings depend on your roof, your usage and your tariff.</p>
+  </div>
+</section>
+<section id="quote">
+  <h2 class="cond">How it works</h2>
+  <div class="steps cond">
+    <div>Tell us the job</div>
+    <div>Get a fixed price</div>
+    <div>We turn up on time</div>
+  </div>
+</section>
+<section>
+  <h2 class="cond">Where we work</h2>
+  <div class="area cond"><span>[Suburb]</span><span>[Suburb]</span><span>[Suburb]</span><span>[Suburb]</span><span>[Suburb]</span></div>
+</section>
+<footer class="cond"><span>Brightside Electrical</span><span>Lic. [number]</span></footer>
+<a class="bar cond" href="#quote">Get a quote</a>
+<div class="concept">Concept design by DDG · not a real business</div>
+<script>
+  const sw = document.getElementById('sw'), hint = document.getElementById('hint');
+  sw.addEventListener('click', () => {
+    const on = document.body.classList.toggle('on');
+    sw.setAttribute('aria-pressed', String(on)); sw.setAttribute('aria-label', on ? 'Turn the lights off' : 'Turn the lights on');
+    hint.textContent = on ? 'Much better' : 'Flick me';
+  });
+  const bill = document.getElementById('bill'), billv = document.getElementById('billv'), save = document.getElementById('save');
+  const fmt = (n) => '$' + Math.round(n).toLocaleString('en-AU');
+  const calc = () => { billv.textContent = fmt(bill.value); save.textContent = fmt(bill.value * 4 * 0.65); };
+  bill.addEventListener('input', calc); calc();
+</script>
+</body>
+</html>

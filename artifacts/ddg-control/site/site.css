@@ -903,3 +903,39 @@ p { margin: 0; }
 
 /* Chosen words in the scroll hint, in their own colour (tune.ts: shHiWords). */
 .cn-scroll-hi { color: var(--sh-hi, #ff4fd8); font-weight: 700; }
+
+/* Designs (19 Nov): a carousel of small browser windows holding concept sites. */
+.j-designs { display: flex; flex-direction: column; gap: 22px; overflow: hidden; }
+.d-car { display: flex; flex-direction: column; gap: 16px; outline: none; }
+.d-track { position: relative; height: clamp(460px, 62vh, 640px); }
+.d-win { position: absolute; top: 0; left: 50%; width: min(820px, 74%); height: 100%; margin-left: max(-410px, -37%); display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; background: #0b0d12; border: 1px solid rgba(255,255,255,.16); box-shadow: 0 40px 80px -40px rgba(0,0,0,.8); transition: transform .5s cubic-bezier(.2,.7,.2,1), opacity .5s; }
+.d-mid { z-index: 3; }
+.d-prev, .d-next { z-index: 2; opacity: .45; cursor: pointer; }
+.d-prev { transform: translateX(-62%) scale(.84); }
+.d-next { transform: translateX(62%) scale(.84); }
+.d-far { opacity: 0; pointer-events: none; transform: scale(.7); }
+.d-bar { flex: none; display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 12px; background: #161a22; border-bottom: 1px solid rgba(255,255,255,.08); font: 500 12px/1 var(--ng-mono, ui-monospace, monospace); color: #9aa6b8; }
+.d-dots3 { display: flex; gap: 6px; } .d-dots3 i { width: 10px; height: 10px; border-radius: 50%; background: #3a4252; }
+.d-host { flex: 1; text-align: center; padding: 6px 10px; border-radius: 8px; background: #0e1118; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.d-bar a { color: #cfe4f5; text-decoration: none; white-space: nowrap; padding: 8px 0; }
+.d-bar a:hover { color: #fff; }
+.d-win iframe { flex: 1; width: 100%; border: 0; background: #fff; }
+.d-cover { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; padding: 28px; }
+.d-cover b { font-size: clamp(26px, 3vw, 40px); font-weight: 600; letter-spacing: -.01em; }
+.d-cover span { font-size: 15px; opacity: .85; }
+.d-ctrl { display: flex; align-items: center; justify-content: center; gap: 18px; }
+.d-ctrl p { margin: 0; min-width: 14em; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.d-ctrl p span { font-size: 14px; color: var(--ng-text-2, rgba(255,255,255,.7)); }
+.d-ctrl button { width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.06); color: #fff; font-size: 20px; cursor: pointer; }
+.d-ctrl button:hover { background: rgba(255,255,255,.14); }
+.d-pips { display: flex; justify-content: center; gap: 4px; }
+.d-pips button { width: 28px; height: 28px; border: 0; background: none; cursor: pointer; padding: 0; display: grid; place-items: center; }
+.d-pips button::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.3); }
+.d-pips button[aria-current='true']::before { background: #6cc7f0; width: 22px; border-radius: 4px; }
+@media (max-width: 760px) {
+  .d-track { height: 70vh; }
+  .d-win { width: 100%; left: 0; margin-left: 0; }
+  .d-prev, .d-next { opacity: 0; pointer-events: none; }
+  .d-bar a { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) { .d-win { transition: none; } }
