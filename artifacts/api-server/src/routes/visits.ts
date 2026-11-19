@@ -37,7 +37,7 @@ setInterval(() => {
 export const visitsPublicRouter: IRouter = Router();
 visitsPublicRouter.post('/public/hit', (req, res) => {
   const event = typeof req.body?.e === 'string' ? req.body.e : '';
-  if (!ALLOWED.has(event) || BOT.test(String(req.headers['user-agent'] ?? ''))) return res.status(204).end();
+  if (!ALLOWED.has(event) || BOT.test(String(req.headers['user-agent'] ?? ''))) { res.status(204).end(); return; }
   const addr = getClientAddress(req) || 'unknown';
   const hour = Math.floor(Date.now() / 3_600_000);
   const seen = perAddress.get(addr);
