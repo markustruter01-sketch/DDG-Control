@@ -6,6 +6,7 @@ import {
 import { makeAirOrb, lightningNow } from './airOrb';
 import { makeSky } from './sky';
 import { heightAt } from './landscapes';
+import { makeWorld } from './world';
 import { makeWater } from './water';
 import { makeAura } from './aura';
 import { makeSurge } from './surge';
@@ -59,7 +60,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     let slowSince = -1, slowFrames = 0, sampled = 0;
     const scene = new Scene();
     scene.fog = new Fog(0x0a0d16, 30, 150);
-    const camera = new PerspectiveCamera(58, 1, 0.1, 500);
+    const camera = new PerspectiveCamera(58, 1, 0.1, 4000); // far enough for the mountains (world.ts)
     const disposables: { dispose: () => void }[] = [];
 
     // One grid of points, drawn twice: a dark surface (hides lines behind hills) and the lines.
@@ -100,6 +101,10 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const landLines = new LineSegments(lineGeo, lineMat);
     scene.add(land, landLines);
     disposables.push(surfGeo, lineGeo, surfMat, lineMat);
+    // The land beyond the canyon: a wide plain and big mountains, so no edge shows when the camera pulls back.
+    const world = makeWorld(small, 0x0a0d16);
+    scene.add(world.mesh);
+    disposables.push(...world.disposables);
 
     // The night sky: stars and the Milky Way. The river mirrors the same sky.
     const sky = makeSky(0x0a0d16);
@@ -275,7 +280,6 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     // The load-in: wait for the fonts and a few drawn frames (so every word has found its place), then fade
     // the black cover away; the orb spawns after that (introStart).
     let fontsIn = false, framesDrawn = 0;
-    let glitch = 0, glitchAt = -1, glitchSeed = 0, glitchShift = 0;
     // Smooth load-in on slow computers (Markus, 19 Nov: "laggy, jumps and skips"). Three parts:
     // 1. warmUp: every effect (spark, bolts, nova, spawn looks) is prepared behind the black cover, so nothing
     //    stalls the first time it appears; 2. the cover lifts only once 8 frames in a row came quickly, and a
@@ -339,7 +343,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const padQ = T.quoteOn ? T.qbPadY * layZoom : 0, hQ = T.quoteOn ? lay.quote!.getBoundingClientRect().height + 2 * padQ : 0;
       // The orb's size on screen, and where it would sit with no shift.
       layCam.fov = camera.fov; layCam.aspect = camera.aspect; layCam.clearViewOffset(); layCam.updateProjectionMatrix();
-      layCam.position.set(0, 9, 42); zoomAway(layCam.position, restLook, Math.max(0.5, T.camZoom)); layCam.position.y += T.camUp; layCam.lookAt(restLook); layCam.updateMatrixWorld();
+      layCam.position.set(0, 9, 42); zoomAway(layCam.position, restLook, Math.max(0.3, T.camZoom * (small ? T.phoneZoom : 1))); layCam.position.y += T.camUp; layCam.lookAt(restLook); layCam.updateMatrixWorld();
       const [y0, r0] = onScreen(layCam, layPos.set(0, CORE.y + T.orbHeight, CORE.z), R);
       const D = 2 * r0, parts = hH > 0 ? 5 : 4;
       const g = Math.max(6, (bottom - top - hB - hH - D - hQ) / parts);
@@ -447,7 +451,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // The camera at load is pulled back along its line of sight (T.camZoom: 2 = twice as far; Markus, 18 Nov).
       // It eases back to the old path as the page scrolls. The hold camera moves by the same amount, and the fog
       // starts and ends that much further away, so the scene keeps its depth.
-      const zoom = lerp(Math.max(0.5, T.camZoom), 1, ease(p * 1.5));
+      const zoom = lerp(Math.max(0.3, T.camZoom * (small ? T.phoneZoom : 1)), 1, ease(p * 1.5));
       const zoomBy = zoomAway(camera.position, look, zoom);
       ISO_POS.add(zoomBy);
       // Camera height at load (T.camUp, Markus 18 Nov): lifted straight up, still looking at the same point, so it
@@ -467,6 +471,8 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const tremble = reduced ? 0 : (T.holdGroundShake * ease(charge) + shock * T.holdShock * 0.6) * 0.12 * Math.sin(clock * 47) * Math.sin(clock * 31 + 1);
       land.position.y = tremble; landLines.position.y = tremble;
       sky.update(camera.position, 1 - k, skyTurn);
+      world.mesh.position.y = tremble;
+      world.update(fog.near, fog.far, lineMat.uniforms.uOpacity.value, T.worldMountains);
 
       // The core drifts up and away as the canyon flattens.
       const away = ease((p - 0.1) / 0.5);
@@ -491,27 +497,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         const endK = 1 + 3.5 * Math.pow(Math.min(1, Math.max(0, (charge - 0.8) / 0.2)), 2);
         if (!reduced) { const sh = 0.14 * T.holdOrbShake * fxCh * (0.4 + fxCh) * (1 + fxCh * fxCh) * endK; orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
       }
-      // Two glitches in the last half second before the blast (Markus, 19 Nov): slices tear sideways with a red and
-      // blue split; the second is stronger, blinks the orb out for a moment and knocks it sideways.
-      glitch = 0;
-      if (building && !reduced && T.holdGlitch > 0) {
-        const toNova = (1 - charge) * Math.max(1, T.holdBuild);
-        if (toNova < 0.42 && toNova > 0.32) glitch = 0.65;
-        else if (toNova < 0.17 && toNova > 0.02) glitch = 1;
-        glitch *= T.holdGlitch;
-        if (glitch > 0) {
-          if (clock - glitchAt > 0.035) { glitchAt = clock; glitchSeed = Math.random() * 100; glitchShift = (Math.random() - 0.5) * R * 0.35 * glitch; }
-          orbit.position.x += glitchShift;
-        }
-        orbit.visible = !(toNova < 0.11 && toNova > 0.075);
-      } else orbit.visible = true;
       // The dial round the orb: 0 to 100% of the build-up, thin lines, like a speedometer.
       dial.update(charge, hold.down ? 1 : 0, ORB_R);
       restCam.fov = camera.fov; restCam.aspect = camera.aspect;
       if (layoutDue(now, p)) phoneLayout(R);
       if (liftPx !== 0) { const H = stableHeight(); restCam.setViewOffset(innerWidth, H, 0, liftPx, innerWidth, H); } else restCam.clearViewOffset();
       restCam.updateProjectionMatrix();
-      restCam.position.set(0, 9, 42); zoomAway(restCam.position, restLook, Math.max(0.5, T.camZoom)); restCam.position.y += T.camUp; restCam.lookAt(restLook); restCam.updateMatrixWorld();
+      restCam.position.set(0, 9, 42); zoomAway(restCam.position, restLook, Math.max(0.3, T.camZoom * (small ? T.phoneZoom : 1))); restCam.position.y += T.camUp; restCam.lookAt(restLook); restCam.updateMatrixWorld();
       pv.set(0, CORE.y + T.orbHeight, CORE.z);
       const [oy0, or0] = onScreen(restCam, pv.clone(), R);
       // The name, frame, quote and hint fade out early, well before the orb has gone.
@@ -576,7 +568,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const flash = bolt.flash * T.orbFlashLight * Math.min(T.orbSparks, 1.5) * (1 - away);
       air.update(clock, 1 - away, spinClock, {
         bands: T.orbStreaks, zap: T.orbSparks * (1 + ch), zapRate: T.orbSparkRate * (1 + 3 * ch), style: T.orbStyle, hue: T.orbHue, flow: T.orbFlow,
-        gate: bolt.gate, flash: flash * 0.6, glitch, glitchSeed, depth: T.orbDepth, glass: T.orbGlass, fringe: T.orbFringe, cam: camera.position,
+        gate: bolt.gate, flash: flash * 0.6, glitch: 0, glitchSeed: 0, depth: T.orbDepth, glass: T.orbGlass, fringe: T.orbFringe, cam: camera.position,
       });
       aura.update(clock, (1 - away) * born, { bloom: T.orbBloom + ch, rays: T.orbRays, sparks: T.orbParticles, flash, pxScale: canvas.height / (2 * Math.tan((camera.fov * Math.PI) / 360)) });
       haloMat.opacity *= 1 + flash;
