@@ -175,6 +175,16 @@ p { margin: 0; }
 .s-price { display: flex; flex-direction: column; gap: 4px; margin-top: auto; padding-top: 6px; }
 .s-price b { font-size: 24px; font-weight: 300; color: var(--ng-text); }
 .s-price .s-found { font-style: normal; font-size: 13px; font-weight: 500; color: var(--ng-ice); }
+.s-kits { margin: 0 0 34px; }
+.s-kits h3 { margin: 6px 0 4px; font-weight: 300; font-size: 26px; color: var(--ng-text); }
+.s-kit-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; }
+.s-kit { display: flex; flex-direction: column; gap: 8px; padding: 20px; border-radius: 16px; }
+.s-kit h4 { margin: 0; font-size: 18px; font-weight: 500; color: var(--ng-text); }
+.s-kit p { margin: 0; color: var(--ng-text-2); }
+.s-kit .s-btn { align-self: flex-start; margin-top: auto; cursor: pointer; background: none; color: var(--ng-text); font: inherit; font-size: 14px; }
+@media (max-width: 900px) { .s-kit-row { grid-template-columns: 1fr; } }
+.s-kit-pick { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 10px; padding: 6px 8px 6px 14px; border-radius: 999px; border: 1px solid var(--ng-ice); color: var(--ng-text); font-size: 14px; }
+.s-kit-pick button { border: 0; background: none; color: var(--ng-text-2); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 6px; }
 .s-founding { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin: 0 0 18px; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(127,214,255,.35); background: rgba(127,214,255,.07); }
 .s-founding b { font-weight: 600; color: var(--ng-text); }
 .s-founding span { color: var(--ng-text-3); font-size: 14px; }

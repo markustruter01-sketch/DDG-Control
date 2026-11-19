@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getListEnquiriesQueryKey, getListQuotesQueryKey, useCreateQuote, useListEnquiries, useListQuotes, useUpdateEnquiry, useWithdrawQuote,
   type Enquiry, type Quote,
@@ -114,6 +114,42 @@ function Row({ e, quotes }: { e: Enquiry; quotes: Quote[] }) {
   );
 }
 
+/** ddg.limited visitors, last 7 and 30 days: did anyone reach the prices or the form? */
+const VISIT_LABELS: Record<string, string> = {
+  view: 'Visits', 'reach:portfolio': 'Saw portfolio', 'reach:build': 'Saw prices', 'reach:start': 'Saw the form', 'form:sent': 'Sent the form',
+  'kit:shop': 'Shop kit clicks', 'kit:control': 'Control room kit clicks', 'kit:desk': 'Front desk kit clicks',
+};
+function Visitors() {
+  const q = useQuery({
+    queryKey: ['site-visits'], refetchInterval: 5 * 60_000,
+    queryFn: async () => {
+      const r = await fetch('/api/site-visits', { credentials: 'same-origin' });
+      if (!r.ok) throw new Error(String(r.status));
+      return (await r.json()) as { events: string[]; rows: { day: string; event: string; count: number }[] };
+    },
+  });
+  const weekFrom = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+  const sum = (ev: string, from?: string) => (q.data?.rows ?? []).filter((r) => r.event === ev && (!from || r.day >= from)).reduce((a, r) => a + r.count, 0);
+  return (
+    <section className="glass panel" aria-label="Website visitors">
+      <div className="panel-head">
+        <h2>Website visitors · ddg.limited</h2>
+        <span className="label">No cookies, nothing personal. Counted once per browser tab. Your own visits count too.</span>
+      </div>
+      {q.isError ? <p className="note">Couldn't load visitor numbers.</p> : (
+        <table className="visits" style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr><th style={{ textAlign: 'left' }}>What</th><th style={{ textAlign: 'right' }}>7 days</th><th style={{ textAlign: 'right' }}>30 days</th></tr></thead>
+          <tbody>
+            {(q.data?.events ?? Object.keys(VISIT_LABELS)).map((ev) => (
+              <tr key={ev}><td>{VISIT_LABELS[ev] ?? ev}</td><td style={{ textAlign: 'right' }}>{q.isLoading ? '…' : sum(ev, weekFrom)}</td><td style={{ textAlign: 'right' }}>{q.isLoading ? '…' : sum(ev)}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
 export function Clients() {
   const list = useListEnquiries({ query: { queryKey: getListEnquiriesQueryKey(), refetchInterval: 60_000 } });
   const quotes = useListQuotes({ query: { queryKey: getListQuotesQueryKey(), refetchInterval: 60_000 } }).data ?? [];
@@ -124,6 +160,7 @@ export function Clients() {
     <div className="ng-page dusk">
       <div className="ng-wrap">
         <Header />
+        <Visitors />
         <section className="glass panel" aria-label="Clients">
           <div className="panel-head">
             <h2>Clients · DDG Build</h2>

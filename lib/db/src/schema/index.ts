@@ -31,3 +31,4 @@ export * from "./clients";
 export * from "./work-management";
 
 export * from "./notification-receipts";
+export * from "./visits";
