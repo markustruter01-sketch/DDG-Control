@@ -1,6 +1,6 @@
 import {
-  AdditiveBlending, BufferAttribute, BufferGeometry, Group, Line, LineBasicMaterial, Mesh, Points, PointsMaterial,
-  ShaderMaterial, SphereGeometry, Vector3,
+  AdditiveBlending, BufferAttribute, BufferGeometry, Group, Line, LineBasicMaterial, Mesh, PlaneGeometry, Points, PointsMaterial,
+  Quaternion, ShaderMaterial, SphereGeometry, Vector3,
 } from 'three';
 
 /**
@@ -67,6 +67,30 @@ void main() {
   gl_FragColor = vec4(col * k, 1.0);
 }`;
 
+// The nova (Markus, 19 Nov: "just shockwaves that look really nice, no streaks or light effects"): two shock
+// rings on one flat square that always faces the camera. Each has a crisp bright front edge and a soft wake that
+// fades inward behind it; the second ring is slower and fainter. p runs -1..1 across the square.
+const NOVA_FX_VERT = /* glsl */ `
+varying vec2 vUv;
+void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const NOVA_FX_FRAG = /* glsl */ `
+uniform float uT; uniform float uA; uniform float uCalm;
+varying vec2 vUv;
+float wave(float r, float at, float w) {
+  float d = r - at;
+  return d > 0.0 ? exp(-pow(d / w, 2.0)) : exp(-pow(d / (w * 4.0), 2.0)) * 0.55 + exp(-pow(d / w, 2.0)) * 0.45;
+}
+void main() {
+  vec2 p = (vUv - 0.5) * 2.0;
+  float r = length(p);
+  if (r > 1.0) discard;
+  float r1 = 0.97 * (1.0 - exp(-uT * 3.0)), r2 = 0.97 * (1.0 - exp(-uT * 1.6));
+  float w1 = 0.008 + 0.02 * uT, w2 = 0.012 + 0.03 * uT;
+  float f1 = exp(-uT * 2.2) * smoothstep(0.0, 0.03, uT), f2 = exp(-uT * 1.5) * smoothstep(0.08, 0.16, uT);
+  float k = wave(r, r1, w1) * f1 * 1.5 + (1.0 - uCalm) * wave(r, r2, w2) * f2 * 0.7;
+  gl_FragColor = vec4(vec3(0.78, 0.9, 1.0) * k * uA, 1.0);
+}`;
+
 export function makeSurge() {
   const group = new Group();
   // Bolts: plain lines, added light, a quick double flicker each.
@@ -83,13 +107,24 @@ export function makeSurge() {
   const novaMat = new ShaderMaterial({ uniforms: { uAlpha: { value: 0 } }, vertexShader: BEAM_VERT, fragmentShader: NOVA_FRAG, transparent: true, depthWrite: false, blending: AdditiveBlending });
   const nova = new Mesh(novaGeo, novaMat); nova.renderOrder = 7; nova.visible = false; nova.frustumCulled = false;
   group.add(nova);
-  /** The nova shell `t` seconds after the blast (nothing after 1.6 s). */
-  const novaAt = (t: number, orb: Vector3, radius: number, size: number) => {
-    nova.visible = t >= 0 && t < 1.6 && size > 0;
-    if (!nova.visible) return;
-    const r = radius * (1.1 + 30 * size * (1 - Math.exp(-t * 2.2)));
-    nova.position.copy(orb); nova.scale.setScalar(r);
-    novaMat.uniforms.uAlpha!.value = Math.exp(-t * 2.4) * Math.min(1, t * 20);
+  const fxGeo = new PlaneGeometry(2, 2);
+  const fxMat = new ShaderMaterial({ uniforms: { uT: { value: 0 }, uA: { value: 0 }, uCalm: { value: 0 } }, vertexShader: NOVA_FX_VERT, fragmentShader: NOVA_FX_FRAG, transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending });
+  const fx = new Mesh(fxGeo, fxMat); fx.renderOrder = 8; fx.visible = false; fx.frustumCulled = false;
+  group.add(fx);
+  /** The nova `t` seconds after the blast: two shock rings facing the camera, and the old shell (fainter). `calm` (reduced motion): one soft ring. */
+  const novaAt = (t: number, orb: Vector3, radius: number, size: number, camQ?: Quaternion, calm = false) => {
+    const live = t >= 0 && size > 0;
+    const k = Math.sqrt(Math.min(3, size / 0.05)); // the size slider: 0.05 (the default) = 1
+    nova.visible = live && t < 1.6 && !calm;
+    if (nova.visible) {
+      nova.position.copy(orb); nova.scale.setScalar(radius * (1.1 + 30 * size * (1 - Math.exp(-t * 2.2))));
+      novaMat.uniforms.uAlpha!.value = 0.5 * Math.exp(-t * 2.4) * Math.min(1, t * 20);
+    }
+    fx.visible = live && t < 2.6;
+    if (fx.visible) {
+      fx.position.copy(orb); if (camQ) fx.quaternion.copy(camQ); fx.scale.setScalar(radius * 9 * k);
+      fxMat.uniforms.uT!.value = t; fxMat.uniforms.uA!.value = Math.min(1.5, 0.6 + 0.4 * k) * (calm ? 0.5 : 1); fxMat.uniforms.uCalm!.value = calm ? 1 : 0;
+    }
   };
   /** Fire every bolt at once (the blast). */
   const burstAll = (orb: Vector3, radius: number, pick: () => Vector3) => {
@@ -257,6 +292,6 @@ export function makeSurge() {
     return { flash, at, sky: skyNow.main };
   };
 
-  const disposables: { dispose: () => void }[] = [novaGeo, novaMat, ...bolts.flatMap((b) => [b.geo, b.mat]), ...[skyMain, ...skyForks].flatMap((b) => [b.geo, b.mat]), sparkGeo, sparkMat];
+  const disposables: { dispose: () => void }[] = [novaGeo, novaMat, fxGeo, fxMat, ...bolts.flatMap((b) => [b.geo, b.mat]), ...[skyMain, ...skyForks].flatMap((b) => [b.geo, b.mat]), sparkGeo, sparkMat];
   return { group, update, novaAt, burstAll, skyStrike, disposables };
 }

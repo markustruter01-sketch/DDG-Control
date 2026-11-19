@@ -14,11 +14,19 @@ varying vec3 vN;
 varying vec3 vV;
 varying vec3 vWN;
 varying vec3 vWP;
+uniform float uGlitch; uniform float uGlitchSeed;
 void main() {
   vObj = normalize(position);
+  // Glitch just before the blast (Markus, 19 Nov): the ball tears into sideways slices that jump left and right.
+  vec3 pos = position;
+  if (uGlitch > 0.0) {
+    float band = floor((vObj.y + 1.0) * 7.0);
+    float h = fract(sin(band * 91.7 + uGlitchSeed * 13.3) * 43758.5453);
+    pos.x += (h - 0.5) * 2.0 * step(0.4, h) * uGlitch * 0.85 * length(position);
+  }
   vWN = mat3(modelMatrix) * normal;
-  vWP = (modelMatrix * vec4(position, 1.0)).xyz;
-  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vWP = (modelMatrix * vec4(pos, 1.0)).xyz;
+  vec4 mv = modelViewMatrix * vec4(pos, 1.0);
   vN = normalMatrix * normal;
   vV = -mv.xyz;
   gl_Position = projectionMatrix * mv;
@@ -83,6 +91,7 @@ float arc(float lane, float rate, float chance) {
   return (line + fork * 0.7 + glow) * flick;
 }
 float fbm(vec3 p) { float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++) { s += a * noise3(p); p = p * 2.03 + vec3(1.7, 9.2, 4.1); a *= 0.5; } return s; }
+uniform float uGlitch;
 // Turn every colour round the colour wheel by the same angle (the tuner's colour slider).
 vec3 hueShift(vec3 c, float a) { vec3 k = vec3(0.57735); float ca = cos(a), sa = sin(a); return c * ca + cross(k, c) * sa + k * dot(k, c) * (1.0 - ca); }
 void main() {
@@ -234,13 +243,16 @@ void main() {
       alpha = max(core * 0.97, clamp(ring + rim * 0.6, 0.0, 1.0));
     }
   }
-  gl_FragColor = vec4(hueShift(col, uHue), alpha * uOpacity);
+  vec3 outCol = hueShift(col, uHue);
+  // Glitch: a red and blue split at the edges.
+  outCol += uGlitch * 0.7 * (vec3(1.0, 0.15, 0.25) * smoothstep(0.35, 0.95, vObj.x) + vec3(0.15, 0.45, 1.0) * smoothstep(0.35, 0.95, -vObj.x));
+  gl_FragColor = vec4(outCol, alpha * uOpacity);
 }`;
 
 export type OrbLook = {
   bands: number; zap: number; zapRate: number; style: number; hue: number; flow: number;
   /** Which lightning stream is firing (see lightningNow), the inside flash, and the extra looks from the tuner. */
-  gate?: [number, number]; flash?: number; depth?: number; glass?: number; fringe?: number; cam?: Vector3;
+  gate?: [number, number]; flash?: number; glitch?: number; glitchSeed?: number; depth?: number; glass?: number; fringe?: number; cam?: Vector3;
 };
 
 /**
@@ -263,7 +275,7 @@ export function makeAirOrb(R: number) {
   const camObj = new Vector3(0, 0, 10);
   const make = (skin: number) => new ShaderMaterial({
     uniforms: { uTime: { value: 0 }, uOpacity: { value: 1 }, uSkin: { value: skin }, uSpinT: { value: 0 }, uBandsK: { value: 1 }, uZapK: { value: 1 }, uZapRate: { value: 1 }, uStyle: { value: 0 }, uHue: { value: 0 }, uFlow: { value: 1 },
-      uGate: { value: [0, 0] }, uFlash: { value: 0 }, uDepth: { value: 0 }, uGlass: { value: 0 }, uFringe: { value: 0 }, uCamObj: { value: new Vector3(0, 0, 10) } },
+      uGate: { value: [0, 0] }, uFlash: { value: 0 }, uGlitch: { value: 0 }, uGlitchSeed: { value: 0 }, uDepth: { value: 0 }, uGlass: { value: 0 }, uFringe: { value: 0 }, uCamObj: { value: new Vector3(0, 0, 10) } },
     vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false,
     ...(skin ? { blending: AdditiveBlending } : {}),
   });
@@ -284,7 +296,7 @@ export function makeAirOrb(R: number) {
       m.uniforms.uTime.value = t; m.uniforms.uOpacity.value = opacity; m.uniforms.uSpinT.value = spinT;
       m.uniforms.uBandsK.value = look.bands; m.uniforms.uZapK.value = look.zap; m.uniforms.uZapRate.value = look.zapRate;
       m.uniforms.uStyle.value = look.style; m.uniforms.uHue.value = (look.hue * Math.PI) / 180; m.uniforms.uFlow.value = look.flow;
-      m.uniforms.uGate.value = look.gate ?? [0, 0]; m.uniforms.uFlash.value = look.flash ?? 0; m.uniforms.uDepth.value = look.depth ?? 0;
+      m.uniforms.uGate.value = look.gate ?? [0, 0]; m.uniforms.uFlash.value = look.flash ?? 0; m.uniforms.uGlitch.value = look.glitch ?? 0; m.uniforms.uGlitchSeed.value = look.glitchSeed ?? 0; m.uniforms.uDepth.value = look.depth ?? 0;
       m.uniforms.uGlass.value = look.glass ?? 0; m.uniforms.uFringe.value = look.fringe ?? 0; m.uniforms.uCamObj.value.copy(camObj);
     }
     group.position.y = Math.sin(t * 1.3) * 0.05;
