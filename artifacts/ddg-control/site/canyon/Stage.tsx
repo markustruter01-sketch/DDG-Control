@@ -131,7 +131,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     // The other two orbs (Markus, 19 Nov): swipe or use the arrows to pick. 0 = the blue air orb,
     // 1 = the black hole (press and hold), 2 = the mercury (grab, drag, flick).
     const blackHole = makeBlackHole(ORB_R);
-    const mercury = makeMercury(ORB_R);
+    const mercury = makeMercury(ORB_R, small);
     orbit.add(blackHole.group, mercury.group);
     disposables.push(...blackHole.disposables, ...mercury.disposables);
     disposables.push(...aura.disposables, ...air.disposables, haloTex, haloMat);
@@ -237,7 +237,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     const flyDir = new Vector3();
     const hold = { down: false, id: -1, x: 0, y: 0, touching: false };
     // Which orb: `orbMode` is the one picked, `shownMode` the one drawn (it changes halfway through the swap).
-    let orbMode = 0, shownMode = 0, swapK = 1, mercId = -1;
+    let orbMode = 0, shownMode = 0, swapK = 1, mercId = -1, pickAt = '', lastJoin = '';
     let swipe: { id: number; x: number; y: number } | null = null;
     const mercAt = new Vector3(), mercRay = new Vector3(), mercN = new Vector3(), pokeDir = new Vector3();
     /** Where the pointer is on the flat sheet through the orb's home that faces the camera. */
@@ -457,9 +457,17 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const fadeEl = document.getElementById(fadeAt);
       const top = fadeEl ? fadeEl.getBoundingClientRect().top : vh;
       const show = Math.min(1, Math.max(0, (top - vh * 0.3) / (vh * 0.55)));
-      stage.style.opacity = String(show);
+      { const so = show.toFixed(3); if (stage.style.opacity !== so) stage.style.opacity = so; }
       if (show <= 0 && fontsIn) revealPage(T.introFade * 1000); // opened part-way down the page: nothing 3D to wait for
-      if (show <= 0) { pickEl.style.opacity = '0'; pickEl.style.pointerEvents = 'none'; document.documentElement.style.setProperty('--pipe-join', '1'); topEl.style.setProperty('--cn-fade', '0'); topEl.style.setProperty('--cn-pe', 'none'); lastAlign = ''; return; }
+      // Scrolled past the first screen: set these once, then skip the frame. (They used to be set on every frame
+      // while reading the page; a change on the page root makes the browser re-check every element's style.)
+      if (show <= 0) {
+        if (lastJoin !== 'off') {
+          lastJoin = 'off'; pickEl.style.opacity = '0'; pickEl.style.pointerEvents = 'none';
+          document.documentElement.style.setProperty('--pipe-join', '1'); topEl.style.setProperty('--cn-fade', '0'); topEl.style.setProperty('--cn-pe', 'none'); lastAlign = '';
+        }
+        return;
+      }
 
       // 0 → 1 over the hero and the room after it: the canyon settles into a flat grid seen from above.
       const p = Math.min(1, Math.max(0, smoothY / (vh * 1.35)));
@@ -678,10 +686,13 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
         const busyOrb = hold.down || charge > 0.01 || camHold > 0.05 || novaT >= 0 || mercury.busy();
         const op = (fadeOut * born * (busyOrb ? 0 : 1) * (orbOnScreen.r > 0 ? 1 : 0)).toFixed(2);
         if (pickEl.style.opacity !== op) pickEl.style.opacity = op;
-        pickEl.style.pointerEvents = +op > 0.5 ? '' : 'none';
-        pickEl.style.setProperty('--px', `${orbOnScreen.x.toFixed(0)}px`);
-        pickEl.style.setProperty('--py', `${orbOnScreen.y.toFixed(0)}px`);
-        pickEl.style.setProperty('--pr', `${Math.max(40, orbOnScreen.r).toFixed(0)}px`);
+        const pe = +op > 0.5 ? '' : 'none'; if (pickEl.style.pointerEvents !== pe) pickEl.style.pointerEvents = pe;
+        // Only touch the page when a number really changed (each change makes the browser redo its layout work).
+        const at = `${orbOnScreen.x.toFixed(0)}|${orbOnScreen.y.toFixed(0)}|${Math.max(40, orbOnScreen.r).toFixed(0)}`;
+        if (at !== pickAt) {
+          pickAt = at; const [px, py, pr] = at.split('|');
+          pickEl.style.setProperty('--px', `${px}px`); pickEl.style.setProperty('--py', `${py}px`); pickEl.style.setProperty('--pr', `${pr}px`);
+        }
       }
       const landFlash = bolt.flash * T.orbFlashLand * (1 - away) * blue;
       lineMat.uniforms.uBolt.value.set(orbit.position.x, orbit.position.z, landFlash, T.orbFlashReach);
@@ -750,7 +761,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       const dist = camera.position.y - 0.15;
       const pxWorld = (2 * dist * Math.tan((camera.fov * Math.PI) / 360)) / vh;
       riverPipe.update(clock, 1 - k, orbit.position, 1, join, (1.75 * pxWorld) / (0.6 * T.pipeRadius));
-      document.documentElement.style.setProperty('--pipe-join', String(join));
+      { const pj = join.toFixed(3); if (pj !== lastJoin) { lastJoin = pj; document.documentElement.style.setProperty('--pipe-join', pj); } }
       // The words face the screen, then sink into the river and fade as the visitor scrolls.
       const wordsOut = ease(p / T.wordsFade);
       if (T.wordsOn > 0.5) words.setFont(T.wordsFont);
