@@ -65,7 +65,7 @@ Listing data says the same thing more bluntly: agencies and stores change hands 
 - **No talking.** No calls, no meetings, no walking in. Everything in writing.
 - **Nobody Markus knows.** No friends, family, suppliers, customers or business contacts. New people only.
 - **Only people who have shown they want a build.** No blanket emails.
-- **Prices:** listed prices stay (already about 25% below typical). First five clients get the founding price, about 13% below listed: website $1,300, store $6,500, platform or app $9,750, AI assistant $3,250.
+- **Prices:** listed prices stay (already about 25% below typical). First five clients get the founding price, 15% below listed (Markus 19 Nov; was 13%): website $1,275, store $6,375, platform or app $9,560, AI assistant $3,185.
 
 **The channels, best chance first**
 

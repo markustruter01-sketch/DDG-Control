@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import type { PublicSummary } from '@workspace/api-client-react';
-import { BUILD_FORM, BUILD_STEPS, CARE, PRICE_BASIS, SERVICES, START, type ServiceKey } from './content';
+import { BUILD_FORM, BUILD_STEPS, CARE, FOUNDING, PRICE_BASIS, SERVICES, START, foundingPrice, type ServiceKey } from './content';
 
 // DDG Build: we build platforms for other businesses. Shown as a teaser until the server says
 // it is open (SERVICES_OPEN_ON on the server). ?preview=build shows the full section; the server
@@ -143,6 +143,7 @@ export function Build({ summary }: { summary: PublicSummary | null }) {
       ) : (
         <>
           {!open && <p className="s-preview" role="note">Preview. Opens {openDate(opensOn)}; until then only a logged-in owner can send a test enquiry.</p>}
+          <p className="s-founding" role="note"><b>{FOUNDING.banner}</b><span>{FOUNDING.sub}</span></p>
           <div className="s-services">
             {SERVICES.map((s) => (
               <article key={s.key} className="s-service glass-plain">
@@ -150,7 +151,7 @@ export function Build({ summary }: { summary: PublicSummary | null }) {
                 <h3>{s.name}</h3>
                 <p>{s.line}</p>
                 <ul className="s-feats">{s.features.slice(0, 3).map((f) => <li key={f}>{f}</li>)}</ul>
-                <p className="s-price"><b>from {aud(s.from)}</b><span>our usual range {aud(s.from)}–{aud(s.to)}</span></p>
+                <p className="s-price"><b>from {aud(s.from)}</b><span>our usual range {aud(s.from)}–{aud(s.to)}</span><em className="s-found">{FOUNDING.line} {aud(foundingPrice(s.from))}</em></p>
                 {s.proof && <p className="s-note">{s.proof}</p>}
               </article>
             ))}
