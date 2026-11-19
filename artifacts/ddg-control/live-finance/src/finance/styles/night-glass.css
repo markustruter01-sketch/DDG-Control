@@ -1,0 +1,389 @@
+/* DDG Finance — Night Glass v5 (brand guidelines, Oct 2026). One stylesheet for the
+   whole app. Tokens and dusk are shared with DDG Control (./night-glass/). Rules:
+   white does the talking; glass over the outdoors (full photo on Home, dusk elsewhere);
+   colour is a signal only (a 1–2 px line, a 6–8 px dot or a chart line; Mint = Finance). */
+@import './night-glass/tokens.css';
+@import './night-glass/dusk.css';
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; }
+body {
+  margin: 0; background: var(--ng-graphite); color: var(--ng-text);
+  font: 14px/1.45 var(--ng-sans); -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ng-ice); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ── Grounds ───────────────────────────────────────────────────────────── */
+.ng-page { min-height: 100vh; background: var(--ng-graphite); }
+.ng-page.photo {
+  background-color: var(--ng-night);
+  background-image: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 55%, rgba(0,0,0,0.8) 100%), var(--ng-photo);
+  background-size: cover; background-position: center 35%; background-attachment: fixed;
+}
+.ng-wrap { max-width: 1880px; margin: 0 auto; padding: 14px 24px 18px; display: flex; flex-direction: column; gap: 12px; }
+/* Home fits the screen: the page itself never scrolls; a card that has more
+   than fits scrolls inside its own frame. Every chart box has a fixed height
+   (see Home below): a chart that measures a 100%-high box inside an auto-high
+   page grows, re-measures and grows again, forever (the "melting" page). */
+.ng-page.fit { height: 100dvh; overflow: hidden; }
+.ng-page.fit .ng-wrap { height: 100%; overflow: hidden; }
+
+/* ── Glass ─────────────────────────────────────────────────────────────── */
+.glass { border-radius: 16px; background: var(--ng-glass-plain); border: 1px solid var(--ng-edge); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); min-width: 0; }
+.photo .glass {
+  background: var(--ng-glass-photo);
+  backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 40px rgba(0,0,0,0.3);
+}
+.panel { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.panel-head h2, .card-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.3; }
+
+/* ── Type ──────────────────────────────────────────────────────────────── */
+.label { font-family: var(--ng-mono); font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--ng-text-3); font-weight: 400; }
+.body { font-size: 14px; color: var(--ng-text-2); }
+.small { font-size: 12.5px; color: var(--ng-text-2); }
+.note { font-size: 12.5px; color: var(--ng-text-3); }
+.muted { color: var(--ng-text-2); }
+.mono { font-family: var(--ng-mono); }
+.tab { font-variant-numeric: tabular-nums; }
+.page-title { margin: 0; font-size: 32px; font-weight: 400; letter-spacing: -0.4px; line-height: 1.15; }
+.heading { margin: 0; font-size: 22px; font-weight: 500; line-height: 1.25; }
+.display { font-size: 60px; font-weight: 300; letter-spacing: -2px; line-height: 1; font-variant-numeric: tabular-nums; }
+.num { font-size: 30px; font-weight: 300; letter-spacing: -0.5px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.num-sm { font-size: 20px; font-weight: 300; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.empty { display: grid; place-items: center; min-height: 64px; padding: 8px; text-align: center; font-size: 12.5px; color: var(--ng-text-3); }
+
+/* Number block: mono label above, light number below; a 2 px line under the
+   number marks a loss (amber); gains stay plain (Markus 31 Oct: Mint is Bullion's
+   colour here). Text stays white. */
+.stat { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.stat .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gain, .loss { display: inline-block; padding-bottom: 3px; border-bottom: 2px solid transparent; }
+.loss { border-bottom-color: var(--ng-problem); }
+
+/* ── Status: always a dot plus a word ──────────────────────────────────── */
+.status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; white-space: nowrap; }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex: none; background: #fff; }
+.dot.late { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ng-amber); }
+.dot.problem { background: var(--ng-problem); }
+.dot.none { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.62); }
+
+/* ── Buttons, pills, nav ───────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 16px;
+  border-radius: 12px; border: 1px solid rgba(255,255,255,0.16); background: transparent;
+  font-size: 13.5px; font-weight: 500; color: var(--ng-text); cursor: pointer; white-space: nowrap;
+}
+.btn:hover { background: rgba(255,255,255,0.06); }
+.btn.fill { background: rgba(255,255,255,0.10); border-color: transparent; }
+.btn.fill:hover { background: rgba(255,255,255,0.16); }
+.btn.danger { border-color: color-mix(in srgb, var(--ng-problem) 60%, transparent); }
+.btn:disabled, .btn[aria-disabled='true'] { opacity: 0.45; cursor: not-allowed; }
+.pill { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 14px; border-radius: 12px; font-family: var(--ng-mono); font-size: 12.5px; color: rgba(255,255,255,0.86); white-space: nowrap; }
+.nav { display: flex; gap: 4px; padding: 4px; border-radius: 14px; }
+.nav a { display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border-radius: 10px; font-size: 13.5px; color: var(--ng-text-2); }
+.nav a[aria-current='page'] { background: rgba(255,255,255,0.10); color: var(--ng-text); }
+.nav a:hover { color: var(--ng-text); }
+.seg { display: inline-flex; gap: 4px; padding: 3px; border-radius: 999px; border: 1px solid var(--ng-edge); }
+.seg button { min-height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font-size: 12.5px; color: var(--ng-text-2); cursor: pointer; }
+.seg button[aria-pressed='true'] { background: rgba(255,255,255,0.10); color: var(--ng-text); }
+
+/* ── Top bar and logo lockup ───────────────────────────────────────────── */
+.topbar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.topbar .btn { min-height: 48px; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 0 14px 0 10px; min-height: 48px; border-radius: 14px; font-size: 20px; }
+.brand img { width: 30px; height: 30px; }
+.brand b { font-weight: 600; letter-spacing: 0.5px; }
+.brand i { width: 1px; height: 20px; background: rgba(255,255,255,0.28); }
+.brand span { font-weight: 300; color: rgba(255,255,255,0.78); }
+.topbar .spacer { flex: 1 1 0; }
+.topbar .statuses { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; padding: 0 16px; min-height: 48px; border-radius: 14px; }
+@media (max-width: 1640px) { .topbar .synced, .topbar .clock-date { display: none; } }
+
+/* ── Lists and tables ──────────────────────────────────────────────────── */
+.list { margin: 0; padding: 0; list-style: none; }
+.list li { display: flex; align-items: center; gap: 12px; min-height: 40px; border-top: 1px solid var(--ng-hairline); }
+.list li:first-child { border-top: 0; }
+.list .grow { flex: 1; min-width: 0; }
+.table-scroll { overflow: auto; min-height: 0; }
+table.ng { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.ng th { text-align: left; font: 400 11px var(--ng-mono); letter-spacing: 1.2px; text-transform: uppercase; color: var(--ng-text-3); padding: 0 12px 8px 0; white-space: nowrap; }
+table.ng td { padding: 10px 12px 10px 0; border-top: 1px solid var(--ng-hairline); vertical-align: top; }
+table.ng .money, table.ng th.money { font-family: var(--ng-mono); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Forms ─────────────────────────────────────────────────────────────── */
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ng-text-2); min-width: 0; }
+.field input, .input {
+  min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04); color: var(--ng-text); min-width: 0;
+}
+.input::placeholder, .field input::placeholder { color: var(--ng-text-3); }
+
+/* ── Meter (share invested): white on a hairline track ─────────────────── */
+.meter { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.10); overflow: hidden; }
+.meter > i { display: block; height: 100%; border-radius: 999px; background: rgba(255,255,255,0.86); }
+
+/* ── Charts (recharts) ─────────────────────────────────────────────────── */
+.chart { position: relative; flex: 1 1 auto; min-height: 96px; }
+.chart-tip { padding: 8px 10px; border-radius: 12px; background: rgba(20,21,24,0.94); border: 1px solid var(--ng-edge); font-size: 12px; }
+.chart-tip .label { display: block; margin-bottom: 4px; }
+.key { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; }
+.key span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ng-text-2); }
+.key i { width: 14px; height: 2px; border-radius: 2px; background: #fff; }
+
+/* ── Two screens on one sheet (components/FlipPages) ──────────────────── */
+.flip-stage { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.flip-page { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.flip-stage.on { perspective: 2400px; perspective-origin: 50% 40%; }
+.flip-stage.on .flip-page { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+  backface-visibility: hidden; transform-origin: 50% 50%; will-change: transform; }
+.flip-stage.on .flip-page::-webkit-scrollbar { display: none; }
+.flip-stage.on .flip-page > .home-main { flex: 1 1 auto; }
+/* On the sheet, each column fills the screen: the race chart and the account
+   cards' charts take whatever height is left, so nothing overlaps. */
+.flip-stage.on .home-left { grid-template-rows: minmax(0, 1fr) auto; align-content: stretch; }
+.flip-stage.on .home-left > .fleet-panel { min-height: 0; }
+.flip-stage.on .home-left > .fleet-panel .chart { flex: 1 1 0; height: auto; min-height: 120px; }
+.flip-stage.on .home-right { grid-template-rows: auto minmax(0, 1fr); align-content: stretch; }
+.flip-stage.on .home-right > .pair > .panel { height: clamp(170px, 21vh, 300px); }
+.flip-stage.on .home-right .engines { min-height: 0; grid-auto-rows: minmax(0, 1fr); }
+.flip-stage.on .home-right .engine { min-height: 0; overflow: hidden; }
+.flip-stage.on .engine .chart.engine-chart { flex: 1 1 0; height: auto; min-height: 24px; }
+/* Short cards (1366x768, 1600x900; sizes are the card content box): what the bot is and what it holds come
+   first; the mini chart, meter and stats row step aside when there is no room
+   (they stay on taller screens, on phones and on Detail). */
+.flip-stage.on .home-right .engine { container-type: size; }
+@container (max-height: 250px) {
+  .home-right .engine .chart.engine-chart, .home-right .engine .meter, .home-right .engine .engine-stats { display: none; }
+}
+@container (max-height: 120px) {
+  .home-right .engine .engine-holds { -webkit-line-clamp: 1; }
+  .home-right .engine > .stat { flex-direction: row; align-items: baseline; gap: 8px; white-space: nowrap; overflow: hidden; }
+  .home-right .engine > .stat .num { font-size: 20px; }
+  .home-right .engine > .stat .small { overflow: hidden; text-overflow: ellipsis; }
+  .home-right .engine > .stat .gain, .home-right .engine > .stat .loss { padding-bottom: 1px; }
+}
+.flip-stage.on .flip-page > .pair.accounts { flex: 1 1 auto; min-height: 0; }
+.flip-stage.on .flip-page > .pair.accounts > .panel { height: auto; min-height: 0; }
+.flip-stage.on .is-away { visibility: hidden; pointer-events: none; }
+.flip-stage.on .flip-out { pointer-events: none; }
+/* The sheet is lifted toward you, turned over on its middle, and laid back down. */
+.flipping-down .flip-out { animation: sheet-out-down 600ms cubic-bezier(.42,0,.9,.7) both; }
+.flipping-down .flip-in  { animation: sheet-in-down 600ms cubic-bezier(.1,.3,.58,1) 560ms both; }
+.flipping-up .flip-out   { animation: sheet-out-up 600ms cubic-bezier(.42,0,.9,.7) both; }
+.flipping-up .flip-in    { animation: sheet-in-up 600ms cubic-bezier(.1,.3,.58,1) 560ms both; }
+@keyframes sheet-out-down { 0% { transform: none; }
+  30% { transform: translateZ(80px) rotateX(16deg); }
+  100% { transform: translateZ(80px) rotateX(90deg); } }
+@keyframes sheet-in-down { 0% { transform: translateZ(80px) rotateX(-90deg); }
+  70% { transform: translateZ(80px) rotateX(-14deg); }
+  100% { transform: none; } }
+@keyframes sheet-out-up { 0% { transform: none; }
+  30% { transform: translateZ(80px) rotateX(-16deg); }
+  100% { transform: translateZ(80px) rotateX(-90deg); } }
+@keyframes sheet-in-up { 0% { transform: translateZ(80px) rotateX(90deg); }
+  70% { transform: translateZ(80px) rotateX(14deg); }
+  100% { transform: none; } }
+/* Blur behind glass is costly to redraw in 3D; turn it off for the 1.2 s of the turn. */
+.flipping-down .flip-page .glass, .flipping-up .flip-page .glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.flip-stage.reduced .flip-out { animation: sheet-fade-out 160ms linear both; }
+.flip-stage.reduced .flip-in { animation: sheet-fade-in 160ms linear 160ms both; }
+@keyframes sheet-fade-out { to { opacity: 0; } }
+@keyframes sheet-fade-in { from { opacity: 0; } }
+.flip-hint { flex: none; align-self: center; background: none; border: 0; color: var(--ng-ink-3, rgba(255,255,255,.62));
+  font: inherit; font-size: 12px; letter-spacing: .04em; cursor: pointer; padding: 2px 10px; }
+.flip-hint:hover { color: #fff; }
+.home-detail-head { display: flex; justify-content: center; }
+.home-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.home-detail .chart, .home-detail .fleet-panel .chart { flex: none; height: clamp(200px, 30vh, 420px); min-height: 0; }
+.flip-page .pair.accounts > .panel { height: clamp(260px, 38vh, 520px); }
+.engine .engine-name .note { margin-top: 1px; }
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; gap: 2px; }
+.seg button { background: none; border: 0; color: rgba(255,255,255,.72); font: inherit; font-size: 13px;
+  padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+.seg button.on { background: rgba(255,255,255,.14); color: #fff; }
+
+/* ── Screen size ───────────────────────────────────────────────────────────
+   Home fits one screen (no scrolling) only when the screen is big enough for
+   its two-column layout; anything narrower or shorter scrolls normally. */
+@media (max-width: 1100px), (max-height: 700px) {
+  .ng-page.fit { height: auto; overflow: visible; }
+  .ng-page.fit .ng-wrap { height: auto; overflow: visible; }
+}
+@media (max-width: 900px) {
+  .ng-page.photo { background-attachment: scroll; }
+  .ng-wrap { padding: 12px 14px 18px; }
+  .display { font-size: 48px; }
+  .topbar .statuses { order: 10; width: 100%; }
+  .topbar > .pill { display: none; }        /* the device shows the time */
+}
+/* Phone: logo and page action on one row, the three pages as equal tabs,
+   then status; the phone shows its own clock. */
+@media (max-width: 640px) {
+  .topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .topbar .brand { grid-column: 1; grid-row: 1; justify-self: start; }
+  .topbar > .btn { grid-column: 2; grid-row: 1; }
+  .topbar .nav { grid-column: 1 / -1; }
+  .topbar .nav a { flex: 1; justify-content: center; }
+  .topbar .statuses { grid-column: 1 / -1; padding: 8px 14px; }
+  .topbar .spacer, .topbar > .pill { display: none; }
+  .page-title { font-size: 28px; }
+  .display { font-size: 42px; }
+}
+/* Big screens: use the width and scale the type with it. */
+@media (min-width: 2200px) {
+  .ng-wrap { max-width: 2480px; padding: 20px 36px 24px; gap: 16px; }
+  body { font-size: 15px; }
+  .label { font-size: 12px; }
+  .small, .note { font-size: 13.5px; }
+  .panel-head h2, .card-title { font-size: 17px; }
+  .heading { font-size: 25px; }
+  .display { font-size: 72px; }
+  .num { font-size: 34px; }
+  .num-sm { font-size: 23px; }
+}
+
+/* ── Home ──────────────────────────────────────────────────────────────── */
+.home-summary { flex: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 14px 40px; padding: 16px 22px; }
+.home-hero { flex: 0 0 auto; }
+.home-stats { flex: 1 1 640px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px 20px; }
+/* Heights are fixed fractions of the screen, never "whatever fits": the sum
+   of a column is under 100dvh on a 1080p screen, and no box can grow. */
+.home-main { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 12px; }
+.home-left { min-height: 0; display: grid; grid-template-rows: auto auto auto; align-content: start; gap: 12px; }
+.home-left .chart, .fleet-panel .chart { flex: none; height: clamp(160px, 28vh, 400px); min-height: 0; }
+.home-right .engines { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.comparison { gap: 6px; }
+.comparison .table-scroll { max-height: 20vh; }
+.comparison table.ng td, .comparison table.ng th { white-space: nowrap; }
+.home-right { min-height: 0; display: grid; grid-template-rows: auto auto auto; align-content: start; gap: 12px; }
+.home-right .chart { flex: none; height: clamp(120px, 16vh, 260px); min-height: 0; }
+.pair { min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pair > .panel { height: clamp(190px, 24vh, 340px); overflow: auto; }
+.pair.accounts { grid-template-columns: repeat(3, minmax(0, 1fr)); }   /* Atlas, Bullion, Momentum */
+.pair.accounts .panel-head h2 { font-size: 13.5px; }
+.engines { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.engine { gap: 8px; }
+.engine .panel-head { flex-wrap: wrap; row-gap: 2px; }
+.engine-name { min-width: 0; flex: 1 1 120px; }
+.clamp { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.engine .chart.engine-chart { flex: none; height: clamp(40px, 6vh, 72px); min-height: 0; }
+.engine { padding: 12px 14px; gap: 6px; }
+.engine .stat .num { font-size: 26px; }
+.engine .engine-stats { padding-top: 6px; }
+/* Holds line (plan item 13b): at most two lines, full text on hover. */
+.engine-holds { line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Stacked pages (phones, small windows): room to read the rule and holds in full. */
+.flip-stage:not(.on) .engine-holds { display: block; }
+.flip-stage:not(.on) .engine-name .clamp { white-space: normal; }
+.engine-invested { display: flex; justify-content: space-between; align-items: baseline; }
+.engine-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding-top: 8px; border-top: 1px solid var(--ng-hairline); }
+.fleet-account { min-height: 0; overflow: auto; gap: 8px; }
+.fleet-account .stat .num { font-size: 26px; }
+.fleet-account .list li { min-height: 26px; }
+.fleet-account .engine-stats { border-top: 0; padding-top: 0; }
+.donut { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: center; gap: 12px; }
+.donut-center .num-sm { font-size: clamp(11px, 0.9vw, 20px); }
+.donut-legend .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.donut-chart { position: relative; height: clamp(110px, 16vh, 200px); }
+.donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; pointer-events: none; text-align: center; }
+.donut-legend li { min-height: 30px; }
+.donut-legend i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+
+@media (max-width: 1280px) {
+  .home-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 1500px) {
+  .engine .num { font-size: 24px; }
+  .engine-chart { flex-basis: 48px; min-height: 48px; }
+  .engine-stats { grid-template-columns: 1fr; gap: 2px; }
+  .engine-stats .stat { flex-direction: row; justify-content: space-between; align-items: baseline; }
+  .engine-stats .num-sm { font-size: 15px; }
+}
+@media (max-width: 1100px) {
+  .engines { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-main { grid-template-columns: minmax(0, 1fr); }
+  .home-right .chart, .home-left .chart, .fleet-panel .chart { height: 220px; }
+  .pair > .panel { height: auto; max-height: 420px; }
+}
+@media (max-width: 760px) {
+  .engines, .home-right .engines, .home-detail { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .home-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pair, .pair.accounts { grid-template-columns: 1fr; }
+  .donut { grid-template-columns: 1fr; }
+  .donut-chart { height: 160px; }
+}
+
+/* ── Page heads, Controls ──────────────────────────────────────────────── */
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 8px 2px 0; }
+.controls { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; }
+.control-row { flex-wrap: wrap; padding: 12px 0; align-items: center; }
+.control-row .grow { display: flex; flex-direction: column; gap: 2px; }
+.control-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.control-actions .input { width: 220px; }
+/* Forex: full width. Scorecard in three columns; days list beside the picked day's decisions. */
+.controls.forex { max-width: none; }
+.forex-score { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+.forex-days { display: grid; grid-template-columns: minmax(340px, 1fr) minmax(0, 3fr); gap: 12px; align-items: start; }
+@media (max-width: 1280px) { .forex-score, .forex-days { grid-template-columns: minmax(0, 1fr); } }
+.stop-panel { border-color: color-mix(in srgb, var(--ng-problem) 35%, transparent); }
+
+/* ── Bench ─────────────────────────────────────────────────────────────── */
+.bench { width: 100%; display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; }
+.bench-intro { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px; }
+.bench-outcomes { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.facts { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px; }
+.facts > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.facts .wide { grid-column: 1 / -1; }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.bench-main { display: grid; grid-template-columns: minmax(0, 1fr) clamp(300px, 27vw, 440px); gap: 18px; }
+.bench-chart-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bench-chart { height: clamp(320px, 54vh, 640px); }
+.bench-under { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 18px; min-height: 40px; }
+.bench-selection { display: flex; flex-direction: column; min-width: 0; text-align: right; }
+/* Experiments sit beside the chart and never make the row taller: the chart
+   column sets the height (contain: size) and the list scrolls inside it. */
+.bench-exps { contain: size; min-height: 0; display: flex; flex-direction: column; gap: 6px; padding-left: 18px; border-left: 1px solid var(--ng-hairline); }
+.bench-exps-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; padding-right: 6px; }
+.bench-exps-group { padding: 12px 0 2px; }
+.bench-exps-scroll section:first-child .bench-exps-group { padding-top: 0; }
+.list li.bench-exp { display: block; min-height: 0; }
+.bench-exp summary { display: flex; align-items: center; gap: 10px; min-height: 36px; cursor: pointer; list-style: none; font-size: 13px; }
+.bench-exp summary::-webkit-details-marker { display: none; }
+.bench-exp summary > svg { flex: none; color: var(--ng-text-3); }
+.bench-exp details[open] summary > svg { transform: rotate(180deg); }
+.bench-exp summary .status { font-size: 12px; }
+.bench-exp-body { display: flex; flex-direction: column; gap: 6px; padding: 2px 0 12px; }
+.bench-notes { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 18px; margin: 0; }
+.disclosure summary { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; cursor: pointer; font-size: 12.5px; color: var(--ng-text-2); list-style: none; }
+.disclosure summary::-webkit-details-marker { display: none; }
+.disclosure[open] summary svg { transform: rotate(180deg); }
+.disclosure > div { display: flex; flex-direction: column; gap: 4px; padding: 8px 0 4px; }
+.disclosure pre, .bench-exp-body pre { margin: 0 0 6px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); font: 12px/1.5 var(--ng-mono); color: var(--ng-text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.bench-table { max-height: 560px; }
+.bench-table thead th { position: sticky; top: 0; background: var(--ng-graphite); }
+.sort { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; }
+select.input { appearance: auto; }
+@media (max-width: 1100px) {
+  .bench-main { grid-template-columns: minmax(0, 1fr); }
+  .bench-exps { contain: none; padding: 12px 0 0; border-left: 0; border-top: 1px solid var(--ng-hairline); }
+  .bench-exps-scroll { max-height: 440px; }
+}
+@media (max-width: 900px) {
+  .bench-intro { grid-template-columns: 1fr; }
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .panel-head { flex-wrap: wrap; }
+  .bench-chart { height: 300px; }
+  .bench-selection { text-align: left; }
+}
+
+/* ── Crash and not-found ───────────────────────────────────────────────── */
+.crash { max-width: 520px; margin: 18vh auto 0; padding: 24px; }

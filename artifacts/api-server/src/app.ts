@@ -26,7 +26,8 @@ app.use(
     },
   }),
 );
-app.use(express.json());
+// The Finance showcase push is bigger than the default 100 kB; that one route reads its own body (routes/showcase.ts).
+app.use((req, res, next) => (req.path === '/api/inbound/finance-showcase' ? next() : express.json()(req, res, next)));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", securityHeaders, router);
