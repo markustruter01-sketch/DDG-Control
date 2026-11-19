@@ -57,6 +57,7 @@ export const SPECS: Spec[] = [
   { group: 'Hold the orb', key: 'holdCamBack', label: 'Camera: how far back', min: -10, max: 40, step: 0.5 },
   { group: 'Hold the orb', key: 'holdCamTilt', label: 'Camera: how much it looks down', min: 0, max: 1, step: 0.05 },
   { group: 'Hold the orb', key: 'holdRise', label: 'Orb lifts', min: 0, max: 5, step: 0.1 },
+  { group: 'Hold the orb', key: 'holdGrow', label: 'Orb grows while charging (0.3 = 30% bigger)', min: 0, max: 1, step: 0.05 },
   { group: 'Hold the orb', key: 'holdOrbShake', label: 'Orb shake', min: 0, max: 24, step: 0.1 },
   { group: 'Hold the orb', key: 'holdScreenShake', label: 'Screen shake', min: 0, max: 2, step: 0.05 },
   { group: 'Hold the orb', key: 'holdGroundShake', label: 'Ground tremble', min: 0, max: 3, step: 0.05 },
@@ -234,7 +235,7 @@ export const SPECS: Spec[] = [
 export const DEFAULTS: Record<string, number> = {
   introFade: 3, introStyle: 2, introSpawn: 1.5, introLoop: 0,
   holdOn: 1, holdVibrate: 1, holdFlyOff: 1, holdBolts: 2, holdSkyStrike: 2.25, holdBoil: 0.25, holdZoom: 1, holdSky: 3,
-  holdCamUp: 13.5, holdCamBack: 30, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 18, holdScreenShake: 2, holdGroundShake: 3, holdShock: 2, holdVignette: 0,
+  holdCamUp: 13.5, holdCamBack: 30, holdCamTilt: 0.7, holdRise: 5, holdOrbShake: 18, holdGrow: 0.3, holdScreenShake: 2, holdGroundShake: 3, holdShock: 2, holdVignette: 0,
     holdBoilArea: 15, holdBoilLift: 3, holdBoilHeight: 1.05, holdBoilSpeed: 2, holdBoilSpecks: 0.35, holdBuild: 5, holdNova: 0.5, holdNovaWave: 25.7, holdNovaWaveSpeed: 123, holdCalm: 2, holdFxGlobs: 0, holdFxGround: 1, shHiHue: 300, shHiSat: 1, holdFxAmount: 3, holdFxSpeed: 3,
   orbBloom: 0.45, orbGlass: 0.65, orbDepth: 0.8, orbFlashLight: 0.1, orbFlashLand: 0.25, orbFlashReach: 75, orbMirror: 1.5, orbRays: 0, orbFringe: 1.5, orbParticles: 0.4,
   orbStyle: 0, orbFlow: 3.5, orbHue: 0, orbSpin: 1.7, orbStreaks: 0.6, orbSparks: 2.05, orbSparkRate: 2.75, orbSize: 2, orbHeight: -1.6, orbGlow: 1,

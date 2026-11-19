@@ -58,6 +58,7 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
     let ratioStep = 0;
     renderer.setPixelRatio(Math.min(devicePixelRatio, ratios[0] ?? 1));
     let slowSince = -1, slowFrames = 0, sampled = 0;
+    let holdSamples = 0, holdSlow = 0, holdDrops = 0, calmSince = 0, baseRatio = 1;
     const scene = new Scene();
     scene.fog = new Fog(0x0a0d16, 30, 150);
     const camera = new PerspectiveCamera(58, 1, 0.1, 4000); // far enough for the mountains (world.ts)
@@ -378,6 +379,21 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
           }
         }
       }
+      // The hold and the blast are much heavier than the scene at rest (Markus, 19 Nov: lag and freezes while it
+      // charges). Same idea as the load-in: while the orb is busy, watch the frames; if 14 of 20 take over 24 ms,
+      // draw a little less sharp (down to 0.75) at once, and again if needed. Back to normal once it has calmed.
+      const busy = hold.down || charge > 0.001 || camHold > 0.001 || novaT >= 0;
+      if (busy && !document.hidden && raw < 250) {
+        holdSamples++; if (raw > 24) holdSlow++;
+        if (holdSamples >= 20) {
+          const cur = renderer.getPixelRatio();
+          if (holdSlow >= 14 && cur > 0.76) { if (!holdDrops) baseRatio = cur; renderer.setPixelRatio(Math.max(0.75, cur * 0.8)); resize(); holdDrops++; }
+          holdSamples = 0; holdSlow = 0;
+        }
+        calmSince = now;
+      } else if (holdDrops > 0 && now - calmSince > 1200) {
+        renderer.setPixelRatio(baseRatio); resize(); holdDrops = 0;
+      }
       if (raw > 0 && raw < 1000) fps += (1000 / raw - fps) * 0.1;
       smoothY += (scrollY - smoothY) * (reduced ? 1 : 0.12);
       const vh = stableHeight();
@@ -493,6 +509,11 @@ export default function Stage({ fadeAt }: { fadeAt: string }) {
       // name and quote stay still while the orb shakes.
       if (ch > 0) {
         orbit.position.y += T.holdRise * ch;
+        // It grows as it charges (T.holdGrow: 0.3 = 30% bigger at full charge), upwards: the bottom edge stays put,
+        // so it never reaches down into the water (Markus, 19 Nov).
+        const grow = 1 + T.holdGrow * ease(ch);
+        orbit.scale.setScalar(orbScale * grow);
+        orbit.position.y += ORB_R * orbScale * (grow - 1);
         // The shake is gentle for most of the build-up, then rattles hard in the last fifth (Markus, 19 Nov).
         const endK = 1 + 3.5 * Math.pow(Math.min(1, Math.max(0, (charge - 0.8) / 0.2)), 2);
         if (!reduced) { const sh = 0.14 * T.holdOrbShake * fxCh * (0.4 + fxCh) * (1 + fxCh * fxCh) * endK; orbit.position.x += (Math.random() - 0.5) * sh; orbit.position.y += (Math.random() - 0.5) * sh * 0.5; orbit.position.z += (Math.random() - 0.5) * sh; }
