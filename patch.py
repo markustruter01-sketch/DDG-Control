@@ -4,7 +4,7 @@ Usage: python3 patch13.py   (run in this folder)"""
 import re
 from nova_glsl import OLD as NOVA_OLD, NEW as NOVA_NEW
 A = 'assets'
-NEW = '45'  # the build number of the files written; rename every time (see HANDOVER.md)
+NEW = '47'  # the build number of the files written; rename every time (see HANDOVER.md)
 def rd(p): return open(p, encoding='utf-8').read()
 def one(s, a, b, n=1):
     assert s.count(a) == n, (a[:70], s.count(a))
@@ -73,12 +73,31 @@ _sg = open('surge.built.js', encoding='utf-8').read()
 _sg = re.sub(r'^import[^;]*;\n', '', _sg, flags=re.M)
 _sg = re.sub(r'^export \{[^}]*\};?\n?', '', _sg, flags=re.M).replace('export function makeSurge', 'function makeSurge')
 assert 'import ' not in _sg.split('\n')[0]
-_sg = 'const __SG=(()=>{const AdditiveBlending=je,BufferAttribute=pe,BufferGeometry=xe,Group=Je,Line=Nc,LineBasicMaterial=Ic,Mesh=ge,Points=ra,PointsMaterial=f0,ShaderMaterial=fe,SphereGeometry=Cn,Vector3=L;\n' + _sg + '\nreturn{makeSurge};})();'
+_sg = 'const __SG=(()=>{const AdditiveBlending=je,BufferAttribute=pe,BufferGeometry=xe,Group=Je,Line=Nc,LineBasicMaterial=Ic,Mesh=ge,PlaneGeometry=Ji,Points=ra,PointsMaterial=f0,Quaternion=$i,ShaderMaterial=fe,SphereGeometry=Cn,Vector3=L;\n' + _sg + '\nreturn{makeSurge};})();'
 s = one(s, 'function vg(){const i=new Je,', _sg + 'function vg(){const i=new Je,')
 s = one(s, 'const ct=vg();', 'const ct=__SG.makeSurge();{const __k=ct.skyStrike;ct.skyStrike=(a1,b1,p1)=>{__k(a1,b1,p1),s||_($.position.x,$.position.z,2.2+.4*p1)}}const __fl=document.createElement("div");__fl.setAttribute("aria-hidden","true"),__fl.style.cssText="position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;background:radial-gradient(ellipse at 50% 18%,rgba(225,242,255,.95),rgba(150,195,255,.35) 55%,rgba(120,170,255,0) 85%)",r.appendChild(__fl);')
 s = one(s, '{bolts:nt.holdBolts},', '{bolts:nt.holdBolts,cam:g.position,calm:s},')
 s = one(s, 'di.at&&di.flash*nt.holdBolts*1.5>As&&', '{const __o=(Math.min(s?.1:.2,di.sky*.11)*(1-Xt)).toFixed(3);__fl.style.opacity!==__o&&(__fl.style.opacity=__o)}di.at&&di.flash*nt.holdBolts*1.5>As&&')
 s = one(s, 'cancelAnimationFrame(Mt),', 'cancelAnimationFrame(Mt),__fl.remove(),')
+# two 3D stick figures by the river: the Coder and the Walker (Markus, 19 Nov 10:03)
+_fg = open('figures.built.js', encoding='utf-8').read()
+_fg = re.sub(r'^import[^;]*;\n', '', _fg, flags=re.M)
+_fg = re.sub(r'^export \{[^}]*\};?\n?', '', _fg, flags=re.M).replace('export function makeFigures', 'function makeFigures')
+assert 'import ' not in _fg[:200] and 'export ' not in _fg
+_fg = 'const __FG=(()=>{const BoxGeometry=Er,BufferAttribute=pe,BufferGeometry=xe,Group=Je,InstancedMesh=Ea,Matrix4=ue,Mesh=ge,MeshBasicMaterial=xa,PerspectiveCamera=Xe,Quaternion=$i,ShaderMaterial=fe,SphereGeometry=Cn,Vector3=L;\n' + _fg + '\nreturn{makeFigures};})();'
+s = one(s, 'function vg(){const i=new Je,', _fg + 'function vg(){const i=new Je,')
+s = one(s, 'const it=Pt=>x.levelAt(Pt)-lt,rt=Ag();', 'let __gl=0,__ga=-1,__gs=0,__gx=0;const __fig=__FG.makeFigures();d.add(__fig.group),v.push(...__fig.disposables);const it=Pt=>x.levelAt(Pt)-lt,rt=Ag();')
+s = one(s, 'ct.novaAt(tt,$.position,me,nt.holdNova),', 'ct.novaAt(tt,$.position,me,nt.holdNova,g.quaternion,s),__fig.update({dt:oe,t:zt,orb:$.position,R:me,charge:ie,building:St,nova:Lt,settled:re>=1&&ie<.02&&tt<0&&!de.down,calmView:H<.01&&ve===0&&ie===0&&re>=1,cam:g,land:(x1,z1)=>zn(x1,z1)*(1-D),water:it,on:nt.figOn>.5,size:nt.figSize*(o?1.4:1),side:nt.figSide,pull:nt.figPull,walk:nt.figWalk,reduced:s,fade:1-Xt}),')
+# orb: harder shake at the end, two glitches before the blast (Markus, 19 Nov 10:14)
+s = one(s, 'varying vec3 vWP;\nvoid main() {\n  vObj = normalize(position);\n  vWN = mat3(modelMatrix) * normal;\n  vWP = (modelMatrix * vec4(position, 1.0)).xyz;\n  vec4 mv = modelViewMatrix * vec4(position, 1.0);',
+        'varying vec3 vWP;\nuniform float uGlitch; uniform float uGlitchSeed;\nvoid main() {\n  vObj = normalize(position);\n  vec3 pos = position;\n  if (uGlitch > 0.0) {\n    float band = floor((vObj.y + 1.0) * 7.0);\n    float h = fract(sin(band * 91.7 + uGlitchSeed * 13.3) * 43758.5453);\n    pos.x += (h - 0.5) * 2.0 * step(0.4, h) * uGlitch * 0.85 * length(position);\n  }\n  vWN = mat3(modelMatrix) * normal;\n  vWP = (modelMatrix * vec4(pos, 1.0)).xyz;\n  vec4 mv = modelViewMatrix * vec4(pos, 1.0);')
+s = one(s, "// Turn every colour round the colour wheel", "uniform float uGlitch;\n// Turn every colour round the colour wheel")
+s = one(s, 'gl_FragColor = vec4(hueShift(col, uHue), alpha * uOpacity);', 'vec3 outCol = hueShift(col, uHue);\n  outCol += uGlitch * 0.7 * (vec3(1.0, 0.15, 0.25) * smoothstep(0.35, 0.95, vObj.x) + vec3(0.15, 0.45, 1.0) * smoothstep(0.35, 0.95, -vObj.x));\n  gl_FragColor = vec4(outCol, alpha * uOpacity);')
+s = one(s, 'uFlash:{value:0},uDepth:{value:0}', 'uFlash:{value:0},uGlitch:{value:0},uGlitchSeed:{value:0},uDepth:{value:0}')
+s = one(s, 'uFlash.value=g.flash??0,', 'uFlash.value=g.flash??0,v.uniforms.uGlitch.value=g.glitch??0,v.uniforms.uGlitchSeed.value=g.glitchSeed??0,')
+s = one(s, 'const Zt=.14*nt.holdOrbShake*fxC*(.4+fxC)*(1+fxC*fxC);', 'const Zt=.14*nt.holdOrbShake*fxC*(.4+fxC)*(1+fxC*fxC)*(1+3.5*Math.pow(Math.min(1,Math.max(0,(ie-.8)/.2)),2));')
+s = one(s, '}if(rt.update(ie,de.down?1:0,et)', '}if(__gl=0,St&&!s&&nt.holdGlitch>0){const __tn=(1-ie)*Math.max(1,nt.holdBuild);__tn<.42&&__tn>.32?__gl=.65:__tn<.17&&__tn>.02&&(__gl=1),__gl*=nt.holdGlitch,__gl>0&&(zt-__ga>.035&&(__ga=zt,__gs=Math.random()*100,__gx=(Math.random()-.5)*me*.35*__gl),$.position.x+=__gx),$.visible=!(__tn<.11&&__tn>.075)}else $.visible=!0;if(rt.update(ie,de.down?1:0,et)')
+s = one(s, 'flash:Tr*.6,depth:nt.orbDepth', 'flash:Tr*.6,glitch:__gl,glitchSeed:__gs,depth:nt.orbDepth')
 open(f'{A}/Stage-ddg{NEW}.js', 'w', encoding='utf-8').write(s)
 
 t = rd(f'{A}/site-ddg11.js')
@@ -142,6 +161,9 @@ t = one(t, '{group:"Name and logo",key:"logoGap"', '{group:"Name and logo",key:"
 t = one(t, '"logoSize","logoGap","brandLift"', '"logoSize","logoPlace","logoGap","brandLift"')
 t, n = re.subn(r'\blogoGap:\s*13\b', 'logoPlace:1,logoGap:13', t); assert n == 1, n
 t, n = re.subn(r'([a-zA-Z_$]+)\.setProperty\("--logo-gap",', lambda m: m.group(1) + '.setProperty("--brand-dir",r.logoPlace>.5?"row":"column"),' + m.group(1) + '.setProperty("--brand-text",r.logoPlace>.5?"left":"center"),' + m.group(1) + '.setProperty("--logo-gap",', t); assert n == 1, n
+# stick figure settings
+t = one(t, '{group:"Hold the orb",key:"holdSkyStrike"', '{group:"Stick figures",key:"figOn",label:"Two stick figures by the river",min:0,max:1,step:1,names:["Off","On"]},{group:"Stick figures",key:"figSize",label:"Size (1 = a standing figure about a quarter of the orb across)",min:.3,max:3,step:.05},{group:"Stick figures",key:"figSide",label:"Which bank the Coder sits on",min:0,max:1,step:1,names:["Left","Right"]},{group:"Stick figures",key:"figPull",label:"How hard the orb pulls them in while it charges",min:0,max:3,step:.05},{group:"Stick figures",key:"figWalk",label:"Walker: walking speed",min:0,max:3,step:.05},{group:"Hold the orb",key:"holdGlitch",label:"Glitch twice just before the blast (0 off)",min:0,max:2,step:.05},{group:"Hold the orb",key:"holdSkyStrike"')
+t = one(t, 'introFade:3,introStyle:2,introSpawn:1.5,introLoop:0,', 'introFade:3,introStyle:2,introSpawn:1.5,introLoop:0,figOn:1,figSize:1,figSide:1,figPull:1,figWalk:1,holdGlitch:1,')
 open(f'{A}/site-ddg{NEW}.js', 'w', encoding='utf-8').write(t)
 # The site itself is site.html (built from the base page, kept as site-base.html). index.html is the phone frame
 # (phone.html in this folder, written by hand) that shows site.html at iPhone size with the settings beside it.
