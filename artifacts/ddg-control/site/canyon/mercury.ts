@@ -87,6 +87,7 @@ export function makeMercury(R: number) {
   let mode: Mode = 'rest', back = 0, poke = 0;
   const wob = { a: 0, av: 0, b: 0, bv: 0, ripple: 0 };
   const MAX = 34; // never further than this from home (world units)
+  const THROW = 16; // a flick reaches at most this far, then it turns straight round (Markus, 19 Nov)
 
   /** Pointer down on the blob: `at` is the pointer on the plane through home that faces the camera (world). */
   const grab = (at: Vector3, home: Vector3, now: number) => {
@@ -110,7 +111,12 @@ export function makeMercury(R: number) {
   const busy = () => mode !== 'rest' || pos.lengthSq() > 0.01;
 
   /** One step. `dt` seconds. Returns the blob's offset from home (world), for the orb's group. */
-  const step = (dt: number) => {
+  /**
+   * One step. `dt` seconds. `floor(x, z)` gives the lowest the blob's centre may be at that offset from home
+   * (ground or water plus its radius), so it rests on, slides over and bounces off the land and the river.
+   * Returns the blob's offset from home (world).
+   */
+  const step = (dt: number, floor?: (x: number, z: number) => number) => {
     prevVel.copy(vel);
     if (mode === 'drag') {
       // Chase the pointer on a stiff spring: it lags a little, so it stretches as you move it.
@@ -118,8 +124,7 @@ export function makeMercury(R: number) {
       vel.addScaledVector(acc, dt);
     } else if (mode === 'fly') {
       vel.multiplyScalar(Math.exp(-2.6 * dt)); // drag slows it down
-      if (pos.length() > MAX) vel.multiplyScalar(Math.exp(-12 * dt));
-      if (vel.length() < 0.6) { mode = 'return'; back = 0; vel.set(0, 0, 0); }
+      if (pos.length() >= THROW || vel.length() < 0.6) { mode = 'return'; back = 0; vel.set(0, 0, 0); }
     } else if (mode === 'return') {
       // The magnet: slow at first, faster and faster, straight home.
       back += dt;
@@ -135,7 +140,26 @@ export function makeMercury(R: number) {
       acc.copy(pos).multiplyScalar(-90).addScaledVector(vel, -11);
       vel.addScaledVector(acc, dt);
     }
+    const was = floor ? floor(pos.x, pos.z) : -Infinity;
     pos.addScaledVector(vel, dt);
+    // The land and the river: no sinking in. A steep step (a canyon wall) bounces it back sideways; flat
+    // ground bounces it up (or it just rests there while dragged). Each bounce kicks the wobble.
+    if (floor) {
+      const f = floor(pos.x, pos.z);
+      if (pos.y < f) {
+        if (f - was > 1.2 && mode !== 'drag') {
+          pos.x -= vel.x * dt; pos.z -= vel.z * dt; vel.x *= -0.55; vel.z *= -0.55;
+          wob.bv += 2.5; wob.ripple = 1;
+        }
+        const g = floor(pos.x, pos.z);
+        if (pos.y < g) {
+          const hit = -vel.y;
+          pos.y = g;
+          if (vel.y < 0) vel.y = mode === 'drag' ? 0 : -vel.y * 0.5;
+          if (hit > 2) { wob.av += -hit * 0.25; wob.ripple = 1; }
+        }
+      }
+    }
     // Wobble springs, kicked by every change of speed (up-down and side to side).
     acc.copy(vel).sub(prevVel).divideScalar(Math.max(dt, 1e-3));
     const kick = 0.0045;

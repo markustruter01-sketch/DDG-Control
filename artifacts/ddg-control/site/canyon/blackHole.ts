@@ -1,4 +1,4 @@
-import { AdditiveBlending, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, type Quaternion, RingGeometry, ShaderMaterial, SphereGeometry } from 'three';
+import { AdditiveBlending, BufferAttribute, BufferGeometry, DoubleSide, DynamicDrawUsage, Group, Mesh, MeshBasicMaterial, PlaneGeometry, Points, type Quaternion, RingGeometry, ShaderMaterial, SphereGeometry } from 'three';
 
 /**
  * The black hole (orb 2 of 3, Markus 19 Nov). Press and hold: it spins up and starts swallowing the scene
@@ -28,7 +28,9 @@ void main() {
   if (u < 0.0 || u > 1.0) discard;
   // Gas streams round, faster near the middle (spiral arms that wind as they turn).
   float swirl = a + uSpin / (0.35 + u) + u * 3.0;
-  float g = bhF(vec2(swirl * 2.2, u * 9.0 - uSpin * 0.4)) * 0.75 + bhF(vec2(swirl * 7.0, u * 30.0)) * 0.35;
+  // Spinning very fast, the gas smears round into fine streaks (fewer bumps along the turn, more across it).
+  float blur = 1.0 + 5.0 * uPower * uPower;
+  float g = bhF(vec2(swirl * 2.2 / blur, u * 9.0 * (1.0 + uPower) - uSpin * 0.05)) * 0.75 + bhF(vec2(swirl * 7.0 / blur, u * 30.0 * (1.0 + uPower))) * 0.35;
   float heat = (1.0 - u) * 0.85 + g * 0.35;
   // Doppler: the side coming towards the camera is brighter.
   float dop = 0.85 + 0.25 * cos(a);
@@ -62,15 +64,19 @@ void main() {
   gl_FragColor = vec4(bhHeat(clamp(0.55 + 0.45 * g, 0.0, 1.0)) * k, k);
 }`;
 
+const ease = (x: number) => { const t = Math.min(1, Math.max(0, x)); return t * t * (3 - 2 * t); };
+
 export function makeBlackHole(R: number) {
   const group = new Group();
-  const HOLE = R * 0.46, IN = R * 0.6, OUT = R * 2.0;
+  // The same size as the other orbs (Markus, 19 Nov): the disk at rest ends just inside the orb's radius, and is
+  // half as wide as first built. It grows to twice its width as it charges (uOut).
+  const HOLE = R * 0.4, IN = R * 0.5, OUT = R * 0.82;
   const holeGeo = new SphereGeometry(HOLE, 32, 24);
   const holeMat = new MeshBasicMaterial({ color: 0x000000 });
   const hole = new Mesh(holeGeo, holeMat); hole.renderOrder = 4; // drawn first: the disk's near side passes in front, its far side is hidden behind
 
   const diskUni = { uT: { value: 0 }, uSpin: { value: 0 }, uPower: { value: 0 }, uIn: { value: IN }, uOut: { value: OUT }, uShow: { value: 1 } };
-  const diskGeo = new RingGeometry(IN, OUT, 96, 1);
+  const diskGeo = new RingGeometry(IN, OUT * 2.05, 128, 1);
   const diskMat = new ShaderMaterial({ uniforms: diskUni, vertexShader: DISK_VERT, fragmentShader: DISK_FRAG, transparent: true, depthWrite: false, blending: AdditiveBlending, side: DoubleSide });
   const disk = new Mesh(diskGeo, diskMat); disk.renderOrder = 5;
   const tilt = new Group(); tilt.rotation.x = -Math.PI / 2 + 0.28; tilt.add(disk); // nearly edge-on, tipped a little towards the camera
@@ -80,22 +86,62 @@ export function makeBlackHole(R: number) {
   const cardMat = new ShaderMaterial({ uniforms: cardUni, vertexShader: CARD_VERT, fragmentShader: CARD_FRAG, transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending });
   const card = new Mesh(cardGeo, cardMat); card.renderOrder = 7; card.frustumCulled = false;
 
+  // Sparks: a small pool of hot points living in the disk's own plane (so they fly off along it).
+  const SPARKS = 90;
+  const sPos = new Float32Array(SPARKS * 3), sVel = new Float32Array(SPARKS * 3), sA = new Float32Array(SPARKS), sLife = new Float32Array(SPARKS), sSpan = new Float32Array(SPARKS);
+  const sparkGeo = new BufferGeometry();
+  sparkGeo.setAttribute('position', new BufferAttribute(sPos, 3).setUsage(DynamicDrawUsage));
+  sparkGeo.setAttribute('aA', new BufferAttribute(sA, 1).setUsage(DynamicDrawUsage));
+  const sparkMat = new ShaderMaterial({
+    uniforms: { uPx: { value: 800 } }, transparent: true, depthWrite: false, blending: AdditiveBlending,
+    vertexShader: `attribute float aA; uniform float uPx; varying float vA;
+      void main() { vA = aA; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = clamp(uPx * 0.09 / -mv.z, 1.5, 9.0) * (0.5 + 0.5 * aA); }`,
+    fragmentShader: `varying float vA; void main() { float d = length(gl_PointCoord - 0.5); if (vA <= 0.0 || d > 0.5) discard;
+      float k = smoothstep(0.5, 0.0, d) * vA; gl_FragColor = vec4(mix(vec3(1.0, 0.55, 0.15), vec3(1.0, 0.95, 0.8), vA) * k, k); }`,
+  });
+  const sparks = new Points(sparkGeo, sparkMat); sparks.frustumCulled = false; sparks.renderOrder = 8;
+  disk.add(sparks);
+  let emit = 0, next = 0;
   group.add(tilt, hole, card);
   let spin = 0;
   /**
    * `power` 0..1 (the charge), `show` 0..1 (fades it in and out), `camQ` the camera's turn (the card faces it).
    * Spins faster and grows a little as it charges.
    */
-  const update = (t: number, dt: number, power: number, show: number, camQ: Quaternion) => {
+  const update = (t: number, dt: number, power: number, show: number, camQ: Quaternion, px = 800) => {
+    sparkMat.uniforms.uPx.value = px;
     group.visible = show > 0.01;
     if (!group.visible) return;
-    spin += dt * (0.6 + 5 * power * power);
+    spin += dt * (0.6 + 22 * power * power); // faster and faster
     diskUni.uT.value = cardUni.uT.value = t;
     diskUni.uSpin.value = cardUni.uSpin.value = spin;
     diskUni.uPower.value = cardUni.uPower.value = power;
     diskUni.uShow.value = cardUni.uShow.value = show;
     card.quaternion.copy(camQ);
-    disk.scale.setScalar(1 + 0.25 * power);
+    // The disk, not the hole, does the spinning (Markus, 19 Nov): faster and faster, and wider, up to twice
+    // its width at full charge.
+    const out = OUT * (1 + ease(power));
+    diskUni.uOut.value = out;
+    // Sparks thrown off its rim, more as it spins faster (never many).
+    emit += dt * 70 * power * power;
+    while (emit >= 1) {
+      emit -= 1;
+      const i = next++ % SPARKS, a = Math.random() * Math.PI * 2, sp = (6 + 10 * power) * (0.7 + 0.6 * Math.random());
+      const rr = out * (0.92 + 0.08 * Math.random());
+      sPos[i * 3] = Math.cos(a) * rr; sPos[i * 3 + 1] = Math.sin(a) * rr; sPos[i * 3 + 2] = 0;
+      // Off the rim along the spin (the gas pattern turns towards -angle), a little outwards and a little off the plane.
+      sVel[i * 3] = Math.sin(a) * sp + Math.cos(a) * sp * 0.25; sVel[i * 3 + 1] = -Math.cos(a) * sp + Math.sin(a) * sp * 0.25; sVel[i * 3 + 2] = (Math.random() - 0.5) * sp * 0.3;
+      sLife[i] = 1; sSpan[i] = 0.45 + 0.5 * Math.random();
+    }
+    for (let i = 0; i < SPARKS; i++) {
+      if (sLife[i]! <= 0) { sA[i] = 0; continue; }
+      sLife[i] = sLife[i]! - dt / sSpan[i]!;
+      const drag = Math.exp(-1.6 * dt);
+      sVel[i * 3] *= drag; sVel[i * 3 + 1] *= drag; sVel[i * 3 + 2] = sVel[i * 3 + 2]! * drag - 3 * dt; // they curve gently down
+      sPos[i * 3] += sVel[i * 3]! * dt; sPos[i * 3 + 1] += sVel[i * 3 + 1]! * dt; sPos[i * 3 + 2] += sVel[i * 3 + 2]! * dt;
+      sA[i] = Math.max(0, sLife[i]!) * show;
+    }
+    sparkGeo.attributes.position!.needsUpdate = true; sparkGeo.attributes.aA!.needsUpdate = true;
   };
-  return { group, update, disposables: [holeGeo, holeMat, diskGeo, diskMat, cardGeo, cardMat] as { dispose: () => void }[] };
+  return { group, update, disposables: [holeGeo, holeMat, diskGeo, diskMat, cardGeo, cardMat, sparkGeo, sparkMat] as { dispose: () => void }[] };
 }
