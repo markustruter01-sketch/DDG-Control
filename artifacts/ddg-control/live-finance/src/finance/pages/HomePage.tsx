@@ -1,14 +1,15 @@
 // Copied from quant-terminal/artifacts/dashboard/src by scripts/vendor-finance-showcase.py. Do not edit here.
 /**
  * DDG Finance home (Night Glass v5): two screens on one sheet. Overview (the
- * fleet at a glance: summary, the 2027 race, vault, holdings, the four
- * accounts) and Detail (daily returns, fleet equity, the FLEET-V1 and MOMO-V2
- * state). Scrolling past Overview flips the sheet over (components/FlipPages);
+ * fleet at a glance: summary, the 2027 race, the four accounts, and the League
+ * top 5 / Allocator / Record keeping row, approved design 20 Nov 2026) and
+ * Detail (daily returns, fleet equity, the 2027 comparison, vault, holdings,
+ * the FLEET-V1 and MOMO-V2 state). Scrolling past Overview flips the sheet over (components/FlipPages);
  * on phones the two simply stack.
  * All money and return figures are server values (Rule 27); the client only
  * formats them, sums market values for the holdings mix and divides equity by
- * fleet equity for allocation shares. Three paper accounts are compared to
- * the end of 2027 (Atlas: FLEET-V1-F1, Atlas V2: FLEET-V1-C1, Momentum: MOMO-V2); the race
+ * fleet equity for allocation shares. Four paper accounts are compared to
+ * the end of 2027 (Atlas: FLEET-V1-F1, Atlas V2: FLEET-V1-C1, Momentum: MOMO-V2, Forex: the AI council); the race
  * chart and the comparison table come from /fleet/comparison, the vault card
  * from /vault/per-bot/summary.
  */
@@ -29,11 +30,11 @@ import { useBotHistory, type BotDay } from "../hooks/use-bot-history";
 import { botColor } from "../lib/bot-identity";
 import { useComparison, useFleetV1State, useHoldings, useMomoV2State, useVaultSummary, type Holdings } from "../hooks/use-fleet-v1";
 import { ComparisonPanel, FleetAccountPanel, MomoPanel, VaultPanel } from "../components/FleetV1";
+import { AllocatorCard, LeagueTop, RecordsCard, useLeague } from "../components/LeagueCards";
 
-// The three accounts in the 2027 comparison. Forex (OANDA, the AI council) gets
-// its own card but stays out of the comparison and the Alpaca-only panels.
-const ACCOUNTS = ["oracle", "spy_qqq_trend", "jerome_macro"] as const;
-const CARDS: readonly string[] = [...ACCOUNTS, "forex_ai"];
+// The four accounts in the 2027 comparison and the return-by-account chart
+// (Forex included since the 20 Nov audit, AU1).
+const ACCOUNTS = ["oracle", "spy_qqq_trend", "jerome_macro", "forex_ai"] as const;
 
 // Chart colours = the brand four (same values as styles/night-glass/tokens.css).
 // Each account has its own colour (lib/bot-identity BOT_COLORS). Only losses get a
@@ -211,11 +212,10 @@ function EngineCard({ e, mktOpen }: { e: Engine; mktOpen: boolean }) {
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
-const HOLDING_GROUPS = ["Stocks & ETFs", "Crypto", "Cash park (SGOV)", "Vault (BIL, VOO)"] as const;
+const HOLDING_GROUPS = ["Stocks & ETFs", "Cash park (SGOV)", "Vault (BIL, VOO)"] as const;
 function holdingGroup(p: LivePos): (typeof HOLDING_GROUPS)[number] {
   if (p.symbol === "SGOV") return "Cash park (SGOV)";
   if (p.symbol === "BIL" || p.symbol === "VOO") return "Vault (BIL, VOO)";
-  if (/USD$/.test(p.symbol)) return "Crypto";
   return "Stocks & ETFs";
 }
 
@@ -230,6 +230,7 @@ export default function HomePage() {
   const vault = useVaultSummary();
   const holdingsByBot = useHoldings();
   const report = useExportReport();
+  const league = useLeague();
   const [side, setSide] = useState<0 | 1>(0);
   // Running/paused comes from bots_state (same read as Controls), not the static registry.
   const pause = useQuery({
@@ -240,7 +241,7 @@ export default function HomePage() {
 
   const engines: Engine[] = useMemo(() => {
     const bots = (registry.data?.bots ?? [])
-      .filter((b) => b.status !== "retired" && CARDS.includes(b.id))
+      .filter((b) => b.status !== "retired" && (ACCOUNTS as readonly string[]).includes(b.id))
       .sort((a, b) => a.display_order - b.display_order);
     return bots.map((b) => ({
       id: b.id,
@@ -387,25 +388,21 @@ export default function HomePage() {
               </div>
             </Panel>
           ) : fleetPanel}
-          <ComparisonPanel data={comparison.data} names={names} />
         </div>
 
         <div className="home-right">
-          <div className="pair">
-            <VaultPanel vault={vault.data} names={names} />
-            <Panel title="Holdings mix">
-              {holdings.length ? (
-                <Donut data={holdings} total={holdingsTotal}
-                  center={<><span className="label">Held</span><span className="num-sm">{fmtEq(holdingsTotal)}</span></>} />
-              ) : <Empty>No open holdings.</Empty>}
-            </Panel>
-          </div>
           <div className="engines">
             {engines.length
-              ? engines.map((e) => <EngineCard key={e.id} e={e} mktOpen={mktOpen} />)
+              ? [...engines].sort((a, b) => (b.slice?.pnl_pct ?? -1e9) - (a.slice?.pnl_pct ?? -1e9))   // best first (Markus 20 Nov)
+                  .map((e) => <EngineCard key={e.id} e={e} mktOpen={mktOpen} />)
               : <Empty>{registry.isError ? "Engine list unavailable. Check the trading API." : "Loading engines…"}</Empty>}
           </div>
         </div>
+      </div>
+      <div className="home-bottom">
+        <LeagueTop board={league.data} error={league.isError} />
+        <AllocatorCard board={league.data} />
+        <RecordsCard />
       </div>
       <button className="flip-hint" onClick={() => setSide(1)}>Scroll for detail ↓</button>
     </>
@@ -440,6 +437,16 @@ export default function HomePage() {
           </div>
         </Panel>
         {fleetPanel}
+      </div>
+      <ComparisonPanel data={comparison.data} names={names} />
+      <div className="pair">
+        <VaultPanel vault={vault.data} names={names} />
+        <Panel title="Holdings mix">
+          {holdings.length ? (
+            <Donut data={holdings} total={holdingsTotal}
+              center={<><span className="label">Held</span><span className="num-sm">{fmtEq(holdingsTotal)}</span></>} />
+          ) : <Empty>No open holdings.</Empty>}
+        </Panel>
       </div>
       <div className="pair accounts">
         {fleetV1.data ? fleetV1.data.accounts.map((a) => (

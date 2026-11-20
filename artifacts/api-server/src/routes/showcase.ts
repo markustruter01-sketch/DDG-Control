@@ -13,6 +13,7 @@ export const SHOWCASE_PATHS = new Set([
   '/fleet/equity', '/market-state', '/status/summary', '/positions/live', '/claude-report', '/fleet/entry-windows',
   '/runner/status', '/bots/pause-state', '/fleet-v1/state', '/fleet-v1/record', '/momo-v2/state', '/fleet/comparison',
   '/vault/per-bot/summary', '/fleet/holdings', '/bot-registry', '/fleet/equity-history', '/fleet/bot-history?days=90',
+  '/league/leaderboard', '/league/records',
 ]);
 const MAX_BYTES = 4_000_000;
 // Never shown in public, whatever Finance sends: account numbers, keys, tokens, secrets.

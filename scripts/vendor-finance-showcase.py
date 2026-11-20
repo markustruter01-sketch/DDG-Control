@@ -16,7 +16,7 @@ SRC = os.path.join(QT, 'artifacts/dashboard/src')
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DST = os.path.join(HERE, 'artifacts/ddg-control/live-finance/src/finance')
 FILES = [
-    'pages/HomePage.tsx', 'components/Shell.tsx', 'components/FlipPages.tsx', 'components/FleetV1.tsx',
+    'pages/HomePage.tsx', 'components/Shell.tsx', 'components/FlipPages.tsx', 'components/FleetV1.tsx', 'components/LeagueCards.tsx',
     'hooks/useFleetData.ts', 'hooks/use-fleet-v1.ts', 'hooks/use-portfolio.ts', 'hooks/use-bot-history.ts',
     'hooks/use-report.ts', 'hooks/use-visibility.ts', 'lib/bot-identity.ts',
     'styles/night-glass.css', 'styles/night-glass/tokens.css', 'styles/night-glass/dusk.css',
