@@ -200,3 +200,16 @@ export async function computePublicFinance(now = new Date()): Promise<PublicFina
     recent: recentRows.map((r) => snap(Number(r.id), r.generated_at)),
   });
 }
+
+/** For an outside uptime monitor (Markus, 21 Nov 2026): is DDG Finance still sending its hourly numbers?
+ *  "ok" when the newest push is under FINANCE_HEALTH_MAX_AGE_MS old (one missed hourly push is allowed).
+ *  Only a yes/no and the push time: no figures, no account details. */
+export const FINANCE_HEALTH_MAX_AGE_MS = 2 * 60 * 60_000;
+export async function financeHealth(now = new Date()): Promise<{ ok: boolean; last_push: string | null; age_minutes: number | null }> {
+  const [row] = await db.select({ at: fleetSnapshotsTable.generated_at }).from(fleetSnapshotsTable)
+    .orderBy(desc(fleetSnapshotsTable.generated_at)).limit(1);
+  if (!row) return { ok: false, last_push: null, age_minutes: null };
+  const at = new Date(row.at);
+  const age = now.getTime() - at.getTime();
+  return { ok: age >= 0 && age < FINANCE_HEALTH_MAX_AGE_MS, last_push: at.toISOString(), age_minutes: Math.round(age / 60_000) };
+}

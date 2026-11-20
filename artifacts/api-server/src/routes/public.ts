@@ -1,5 +1,5 @@
 import { GetPublicFinanceResponse, GetPublicSummaryResponse } from '@workspace/api-zod';
-import { computePublicFinance } from '../lib/public-finance';
+import { computePublicFinance, financeHealth } from '../lib/public-finance';
 import { Router, type IRouter } from 'express';
 import { computeOverview } from './overview';
 import { SERVICES_OPEN_ON, servicesOpen } from './build';
@@ -52,6 +52,18 @@ router.get('/public/finance', async (_req, res) => {
   }
   res.setHeader('Cache-Control', 'public, max-age=300');
   res.json(financeCached.body);
+});
+
+// Outside uptime monitor (UptimeRobot): 200 "ok" while Finance's hourly push is fresh, 503 when it is not.
+router.get('/public/finance-health', async (_req, res) => {
+  try {
+    const h = await financeHealth();
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(h.ok ? 200 : 503).json({ status: h.ok ? 'ok' : 'down', last_push: h.last_push, age_minutes: h.age_minutes });
+  } catch {
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(503).json({ status: 'down', last_push: null, age_minutes: null });
+  }
 });
 
 export default router;
