@@ -126,6 +126,14 @@ export const LIVE: Record<LiveKey, { name: string; eyebrow: string; line: string
   },
 };
 
+// PC view / Phone view pop-up on the live pages (Markus 20 Nov 2026). DRAFT words: Markus approves before publish.
+export const LIVE_VIEWS = {
+  pc: 'PC view',
+  phone: 'Phone view',
+  close: 'Close',
+  note: 'View only: paper money, not open to outside money, not financial advice. The public record starts 1 January 2027.',
+};
+
 export const BUILD_STEPS = [
   { title: 'Tell us', line: 'Five quick questions on one page.' },
   { title: 'Scope in writing', line: 'We agree by email exactly what gets built.' },
