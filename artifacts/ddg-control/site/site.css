@@ -985,3 +985,12 @@ p { margin: 0; }
   .s-footer a, .s-note a, .j-contact dd a { display: inline-block; padding: 12px 0; margin: -12px 0; }
   .s-nav nav a { min-width: 44px; text-align: center; }
 }
+
+/* PC view / Phone view pop-up (Markus 20 Nov): the same display-only page, full screen, in a device-shaped frame. */
+.lv-pop { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 14px; background: rgba(5, 6, 9, 0.88); backdrop-filter: blur(6px); }
+.lv-pop-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: min(1440px, 100%); color: var(--ng-text-2); font-size: 14px; }
+.lv-pop-bar span { flex: 1 1 260px; }
+.lv-frame-pc { flex: 1; width: min(1440px, 100%); min-height: 0; border-radius: 14px; border: 8px solid #1d1f26; overflow: hidden; background: #0b0d12; }
+.lv-frame-phone { width: 390px; max-width: 100%; height: min(844px, calc(100vh - 80px)); border-radius: 46px; border: 11px solid #1d1f26; overflow: hidden; background: #0b0d12; }
+.lv-frame-pc iframe, .lv-frame-phone iframe { display: block; width: 100%; height: 100%; border: 0; }
