@@ -57,13 +57,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .num-sm { font-size: 20px; font-weight: 300; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .empty { display: grid; place-items: center; min-height: 64px; padding: 8px; text-align: center; font-size: 12.5px; color: var(--ng-text-3); }
 
-/* Number block: mono label above, light number below; a 2 px line under the
-   number marks a loss (amber); gains stay plain (Markus 31 Oct: Mint is Bullion's
-   colour here). Text stays white. */
+/* Number block: mono label above, light number below. Gains are green, losses
+   amber with a 2 px line under them (Markus 20 Nov: "about 10% more colour"; the
+   green is darker than Atlas V2's mint so the two never read as the same). */
 .stat { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .stat .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gain, .loss { display: inline-block; padding-bottom: 3px; border-bottom: 2px solid transparent; }
-.loss { border-bottom-color: var(--ng-problem); }
+.gain { color: var(--ng-gain); }
+.loss { color: var(--ng-loss); border-bottom-color: var(--ng-loss); }
 
 /* ── Status: always a dot plus a word ──────────────────────────────────── */
 .status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; white-space: nowrap; }
@@ -148,8 +149,8 @@ table.ng .money, table.ng th.money { font-family: var(--ng-mono); text-align: ri
 .flip-stage.on .home-left { grid-template-rows: minmax(0, 1fr) auto; align-content: stretch; }
 .flip-stage.on .home-left > .fleet-panel { min-height: 0; }
 .flip-stage.on .home-left > .fleet-panel .chart { flex: 1 1 0; height: auto; min-height: 120px; }
-.flip-stage.on .home-right { grid-template-rows: auto minmax(0, 1fr); align-content: stretch; }
-.flip-stage.on .home-right > .pair > .panel { height: clamp(170px, 21vh, 300px); }
+.flip-stage.on .home-right { grid-template-rows: minmax(0, 1fr); align-content: stretch; }
+.flip-stage.on .home-left { grid-template-rows: minmax(0, 1fr); }
 .flip-stage.on .home-right .engines { min-height: 0; grid-auto-rows: minmax(0, 1fr); }
 .flip-stage.on .home-right .engine { min-height: 0; overflow: hidden; }
 .flip-stage.on .engine .chart.engine-chart { flex: 1 1 0; height: auto; min-height: 24px; }
@@ -320,6 +321,16 @@ table.ng .money, table.ng th.money { font-family: var(--ng-mono); text-align: ri
   .donut-chart { height: 160px; }
 }
 
+/* Home's bottom row (approved design 20 Nov 2026): League top 5, Allocator, Record keeping. */
+.home-bottom { flex: none; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.home-bottom > .panel { height: clamp(176px, 22vh, 260px); overflow: auto; }
+.home-bottom table.ng td { padding-top: 6px; padding-bottom: 6px; }
+.alloc-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.alloc-pair .num { font-size: 26px; }
+.list.records li { min-height: 32px; }
+.link { color: var(--ng-ice); }
+@media (max-width: 1100px) { .home-bottom { grid-template-columns: minmax(0, 1fr); } .home-bottom > .panel { height: auto; } }
+
 /* ── Page heads, Controls ──────────────────────────────────────────────── */
 .page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 8px 2px 0; }
 .controls { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; }
@@ -387,3 +398,71 @@ select.input { appearance: auto; }
 
 /* ── Crash and not-found ───────────────────────────────────────────────── */
 .crash { max-width: 520px; margin: 18vh auto 0; padding: 24px; }
+
+/* ── League v2 (approved design 20 Nov): overview first, detail below ───── */
+.glass.panel.league-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px; }
+.glass.panel.league-road { display: grid; grid-template-columns: auto auto auto minmax(0, 1fr); align-items: center; gap: 32px; }
+.multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; }
+.multiple { display: flex; flex-direction: column; gap: 2px; padding: 8px; text-align: left; cursor: pointer;
+  background: var(--ng-glass-plain); border: 1px solid var(--ng-hairline); border-radius: 12px; }
+.multiple:hover, .multiple.on { border-color: rgba(255, 255, 255, 0.35); }
+.multiple:focus-visible, .chip:focus-visible, .th-sort:focus-visible { outline: 2px solid var(--ng-ice); outline-offset: 2px; }
+.multiple-head { display: flex; flex-direction: column; gap: 1px; font-size: 12.5px; }
+.multiple-head > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.chip { min-height: 32px; padding: 4px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
+  background: transparent; border: 1px solid var(--ng-edge); color: var(--ng-text-2); }
+.chip.on { background: rgba(255, 255, 255, 0.14); color: var(--ng-text); border-color: rgba(255, 255, 255, 0.35); }
+.th-sort { all: unset; cursor: pointer; }
+table.ng tr.picked td { background: rgba(255, 255, 255, 0.05); }
+.fold { text-align: center; font: 400 11px var(--ng-mono); letter-spacing: 1.2px; text-transform: uppercase; color: var(--ng-text-3); }
+.league-detail { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 20px; }
+.league-detail-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-content: start; }
+@media (max-width: 900px) {
+  .glass.panel.league-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .glass.panel.league-road { grid-template-columns: repeat(3, auto); }
+  .league-road > p { grid-column: 1 / -1; }
+  .league-detail { grid-template-columns: 1fr; }
+  .chips { flex-wrap: nowrap; overflow-x: auto; }
+  .chip { min-height: 44px; flex: none; }
+}
+
+/* ── Me vs the machines: trade ticket and predictions ─────────────────── */
+.ticket { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: end; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field select, .field input, .field textarea, table.ng select, table.ng input {
+  font: inherit; color: var(--ng-text); background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--ng-edge); border-radius: 10px; padding: 8px 10px; min-height: 40px; }
+table.ng input { width: 7em; }
+.field textarea { resize: vertical; }
+.ticket-reason { grid-column: 1 / -1; }
+.ticket-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 12px; }
+.theses { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.theses summary { cursor: pointer; font-size: 14px; }
+@media (max-width: 900px) { .ticket { grid-template-columns: 1fr; } }
+.me-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 12px; }
+@media (max-width: 900px) { .me-two { grid-template-columns: 1fr; } }
+
+/* ── Phone (approved design 20 Nov): bottom tab bar, swipeable account cards ─ */
+.tabbar, .sheet-backdrop { display: none; }
+@media (max-width: 760px) {
+  .topbar .nav { display: none; }
+  .ng-wrap { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .tabbar { display: flex; position: fixed; z-index: 50; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom));
+    padding: 4px; border-radius: 18px; gap: 2px; }
+  .tabbar a, .tabbar button { all: unset; flex: 1; display: flex; align-items: center; justify-content: center;
+    min-height: 48px; border-radius: 14px; font-size: 13px; color: var(--ng-text-2); cursor: pointer; }
+  .tabbar [aria-current='page'] { background: rgba(255,255,255,0.12); color: var(--ng-text); }
+  .tabbar a:focus-visible, .tabbar button:focus-visible { outline: 2px solid var(--ng-ice); }
+  .sheet-backdrop { display: block; position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,0.45); }
+  .sheet { position: absolute; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 4px; padding: 10px; border-radius: 20px; }
+  .sheet a { display: flex; align-items: center; min-height: 48px; padding: 0 16px; border-radius: 12px; font-size: 17px; color: var(--ng-text); }
+  .sheet a[aria-current='page'] { background: rgba(255,255,255,0.10); }
+  .sheet .btn { margin-top: 6px; justify-content: center; min-height: 48px; }
+  /* Account cards: one card nearly full width, the next one peeking; swipe sideways. */
+  .engines, .home-right .engines { display: flex; grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory;
+    gap: 10px; margin: 0 -14px; padding: 0 14px 6px; scrollbar-width: none; }
+  .engines::-webkit-scrollbar { display: none; }
+  .engines > * { flex: 0 0 86%; scroll-snap-align: center; }
+}
