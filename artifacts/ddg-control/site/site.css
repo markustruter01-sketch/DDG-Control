@@ -567,7 +567,7 @@ p { margin: 0; }
 .pipe-ink { --j-accent: var(--pipe-fluid, #fff); }
 :root { --j-glass: linear-gradient(160deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025) 45%, rgba(255,255,255,0.04)); }
 .j-main { max-width: 1240px; gap: clamp(72px, 9vw, 130px); padding-top: clamp(80px, 10vw, 140px); }
-.j-panel { position: relative; border-radius: 28px; padding: clamp(24px, 3.4vw, 52px); background: var(--j-glass); backdrop-filter: blur(16px); }
+.j-panel { position: relative; border-radius: 28px; padding: clamp(24px, 3.4vw, 52px); background: var(--j-glass); backdrop-filter: blur(8px); }
 .j-panel h2, .j-biz h2 { font-weight: 300; letter-spacing: -0.02em; line-height: 1.04; font-size: clamp(30px, 3.6vw, 54px); margin: 12px 0 16px; }
 .j-line { color: var(--ng-text-2); font-size: clamp(16px, 1.1vw, 19px); line-height: 1.6; max-width: 52ch; }
 .j-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
@@ -589,7 +589,7 @@ p { margin: 0; }
 .j-biz-head h2 span:last-child { grid-column: 3; }
 .j-biz-head .j-line { grid-column: 3; margin: 0; }
 .j-core { width: 132px; height: 132px; border-radius: 50%; margin: 0 auto 56px; display: grid; place-items: center; position: relative;
-  background: var(--j-glass); backdrop-filter: blur(16px); }
+  background: var(--j-glass); backdrop-filter: blur(8px); }
 .j-core img { width: 56px; }
 .j-core::after { content: ''; position: absolute; inset: -14px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.18); animation: j-spin 40s linear infinite; }
 @keyframes j-spin { to { transform: rotate(360deg); } }
@@ -615,7 +615,7 @@ p { margin: 0; }
 .j-soon { margin-top: 18px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(108,199,240,0.5); color: var(--ng-ice); font: 500 11px var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; }
 .j-reel-wrap { position: relative; }
 .j-tabs { position: absolute; z-index: 5; top: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; border-radius: 18px;
-  background: rgba(255,255,255,0.06); border: 1px solid var(--ng-edge); backdrop-filter: blur(16px); }
+  background: rgba(255,255,255,0.06); border: 1px solid var(--ng-edge); backdrop-filter: blur(8px); }
 .j-tab { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 16px 10px 8px; border: 0; border-radius: 13px; background: none; color: var(--ng-text-3); text-align: left; cursor: pointer; font: inherit; transition: background 0.3s, color 0.3s; }
 .j-tab b { display: block; font-size: 14px; font-weight: 500; white-space: nowrap; }
 .j-tab { white-space: nowrap; }
@@ -630,7 +630,7 @@ p { margin: 0; }
 .j-reel .j-card { padding-top: 100px; }
 .j-count { font: 500 11px var(--ng-mono) !important; letter-spacing: 0.14em; color: var(--ng-text-2) !important; margin: 0 0 12px; }
 .j-arrow { position: absolute; z-index: 6; top: calc(50% + 40px); transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.22);
-  background: rgba(255,255,255,0.06); color: var(--ng-text); font-size: 18px; cursor: pointer; backdrop-filter: blur(16px); }
+  background: rgba(255,255,255,0.06); color: var(--ng-text); font-size: 18px; cursor: pointer; backdrop-filter: blur(8px); }
 .j-arrow.prev { left: clamp(-72px, calc((1240px - 100vw) / 2 + 12px), 12px); }
 .j-arrow.next { right: clamp(-72px, calc((1240px - 100vw) / 2 + 12px), 12px); }
 .j-arrow:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); }
@@ -666,7 +666,7 @@ p { margin: 0; }
   --cn-bar: 0px; --cn-safe: env(safe-area-inset-bottom, 0px);
   --cta-gap: clamp(14px, 3.2vh, 40px); --cta-h: clamp(44px, 6vh, 52px); --cta-room: calc(var(--cta-gap) + var(--cta-h) + clamp(12px, 2.4vh, 28px)); }
 @supports (height: 100svh) { .cn-follow { --cn-bar: calc(100lvh - 100svh); } }
-.cn-page .s-charity { background: var(--j-glass); backdrop-filter: blur(16px); }
+.cn-page .s-charity { background: var(--j-glass); backdrop-filter: blur(8px); }
 
 /* ── Page look (tuner: "Page look"). Coloured light behind the glass, a lit edge on each panel,
    and one accent colour on key words. All driven by CSS variables set in tune.ts. ───────────── */
@@ -733,7 +733,7 @@ p { margin: 0; }
 @media (max-width: 760px) { .j-about-top { grid-template-columns: 1fr; justify-items: center; gap: 14px; } .j-about-top .j-brandline { justify-self: start; } }
 /* Charity strip between the DDG core and the prices. */
 .j-give { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: clamp(18px, 3vw, 48px); margin: 0 auto 56px; max-width: 980px;
-  padding: clamp(18px, 2vw, 28px) clamp(20px, 2.6vw, 40px); border-radius: 22px; background: var(--j-glass); backdrop-filter: blur(16px); }
+  padding: clamp(18px, 2vw, 28px) clamp(20px, 2.6vw, 40px); border-radius: 22px; background: var(--j-glass); backdrop-filter: blur(8px); }
 .j-give-sum { margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .j-give-sum b { font-size: clamp(34px, 3.4vw, 54px); font-weight: 300; letter-spacing: -0.02em; line-height: 1; color: #3ddc97; }
 .j-give-sum span { font: 500 11px/1.4 var(--ng-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ng-text-2); }
@@ -760,7 +760,7 @@ p { margin: 0; }
 .j-car-track::-webkit-scrollbar { display: none; }
 /* The still frame the light pipe runs round: exactly where the slide in front sits. */
 .j-car-slot { position: absolute; left: calc(50% - var(--sw) / 2); width: var(--sw); top: 10px; bottom: 52px; border-radius: 28px; pointer-events: none; }
-.j-slide { flex: 0 0 var(--sw); width: var(--sw); box-sizing: border-box; margin: 0; scroll-snap-align: center; border-radius: 28px; padding: clamp(10px, 1.2vw, 18px); background: var(--j-glass); backdrop-filter: blur(16px);
+.j-slide { flex: 0 0 var(--sw); width: var(--sw); box-sizing: border-box; margin: 0; scroll-snap-align: center; border-radius: 28px; padding: clamp(10px, 1.2vw, 18px); background: var(--j-glass); backdrop-filter: blur(8px);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10), 0 18px 50px rgba(0,0,0,0.35); opacity: 0.45; transform: scale(0.94); transition: opacity 0.5s, transform 0.5s; cursor: pointer; }
 .j-slide.on { opacity: 1; transform: none; cursor: default; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18), 0 24px 70px rgba(0,0,0,0.45); }
 .j-slide:not(.on) .j-gal button, .j-slide:not(.on) .j-gal-count { visibility: hidden; }
@@ -969,15 +969,6 @@ p { margin: 0; }
 .lv-foot span { margin-right: auto; }
 @media (max-width: 700px) { .lv-main { padding: 84px 10px 32px; } .lv-win iframe { height: 78vh; min-height: 480px; } }
 
-/* The orb picker (Stage.tsx): two arrows either side of the orb. Swiping across the sky works too. */
-.cn-pick { position: fixed; inset: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
-.cn-pick button { position: absolute; top: var(--py, 50vh); width: 44px; height: 44px; margin-top: -22px; border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.28); background: rgba(10,14,24,0.45); backdrop-filter: blur(6px); color: #fff;
-  font: 300 26px/1 var(--ng-sans, system-ui); display: grid; place-items: center; padding: 0 0 3px; cursor: pointer; pointer-events: auto; }
-.cn-pick button:first-child { left: calc(var(--px, 50vw) - var(--pr, 60px) - 62px); }
-.cn-pick button:last-child { left: calc(var(--px, 50vw) + var(--pr, 60px) + 18px); }
-.cn-pick button:hover { background: rgba(255,255,255,0.14); }
-
 /* Phone design pass (Apple's guidance: every tap target at least 44 x 44 pt, no text under 11-12 pt; Markus, 19 Nov). */
 @media (max-width: 760px) {
   .j-expand { min-height: 44px; padding-top: 0; padding-bottom: 0; }
@@ -994,3 +985,9 @@ p { margin: 0; }
 .lv-frame-pc { flex: 1; width: min(1440px, 100%); min-height: 0; border-radius: 14px; border: 8px solid #1d1f26; overflow: hidden; background: #0b0d12; }
 .lv-frame-phone { width: 390px; max-width: 100%; height: min(844px, calc(100vh - 80px)); border-radius: 46px; border: 11px solid #1d1f26; overflow: hidden; background: #0b0d12; }
 .lv-frame-pc iframe, .lv-frame-phone iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+/* Scroll speed (Markus 21 Nov: the site lagged when scrolling). Every glass panel re-blurs the moving clouds
+   behind it on each frame; the blur was halved (16 px to 8 px) and phones drop it, with a slightly darker glass. */
+@media (max-width: 760px), (hover: none) {
+  .j-panel, .cn-page .s-charity { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(16, 18, 24, 0.72); }
+}

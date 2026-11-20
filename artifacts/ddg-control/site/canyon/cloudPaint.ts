@@ -68,7 +68,13 @@ export function mountPageClouds(): () => void {
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let raf = 0, lastDraw = 0, blurFor = -1, soft: HTMLCanvasElement[] = pics;
   const t0 = performance.now();
-  const size = () => { canvas.width = innerWidth; canvas.height = stableHeight(); lastDraw = 0; };
+  // Drawn at half resolution and stretched by the page (Markus 21 Nov: the site lagged on scroll). The clouds are
+  // soft pictures, so this looks the same and the browser fills a quarter of the pixels on every frame.
+  const SCALE = 0.5;
+  const size = () => {
+    canvas.width = Math.ceil(innerWidth * SCALE); canvas.height = Math.ceil(stableHeight() * SCALE);
+    g.setTransform(SCALE, 0, 0, SCALE, 0, 0); lastDraw = 0;
+  };
   size(); const stopSize = onStableResize(size);
   // Softened copies of the pictures, made once per blur setting (blurring every frame is costly).
   const soften = (b: number) => pics.map((p) => {
@@ -83,7 +89,7 @@ export function mountPageClouds(): () => void {
     // Nothing to draw while the first screen still covers the layer, or the tab is hidden.
     if (document.hidden) return;
     const top = page ? page.getBoundingClientRect().top : 0;
-    if (top > stableHeight()) { if (lastDraw) { g.clearRect(0, 0, canvas.width, canvas.height); lastDraw = 0; } return; }
+    if (top > stableHeight()) { if (lastDraw) { g.clearRect(0, 0, canvas.width / SCALE, canvas.height / SCALE); lastDraw = 0; } return; }
     // About 30 frames a second is plenty for slow clouds; redraw sooner when the page scrolls.
     if (now - lastDraw < 33 && scrollY === lastY) return;
     if (T.glowMove > 0 && !still) {
@@ -93,7 +99,7 @@ export function mountPageClouds(): () => void {
     }
     lastDraw = now; lastY = scrollY;
     if (T.pageCloudBlur !== blurFor) { blurFor = T.pageCloudBlur; soft = soften(blurFor); }
-    const W = canvas.width, H = canvas.height, t = still ? 0 : (now - t0) / 1000;
+    const W = canvas.width / SCALE, H = canvas.height / SCALE, t = still ? 0 : (now - t0) / 1000;
     g.clearRect(0, 0, W, H);
     if (T.pageClouds <= 0) return;
     const n = Math.round(clouds.length * T.pageClouds), span = H * 2.2;
