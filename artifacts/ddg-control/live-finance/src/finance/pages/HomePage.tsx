@@ -27,7 +27,7 @@ import { useFleetData, fmtEq, getBotStatus, type BotSlice, type LivePos } from "
 import { useBotRegistry, useFleetHistory } from "../hooks/use-portfolio";
 import { useExportReport } from "../hooks/use-report";
 import { useBotHistory, type BotDay } from "../hooks/use-bot-history";
-import { botColor } from "../lib/bot-identity";
+import { botColor, botLabel } from "../lib/bot-identity";
 import { useComparison, useFleetV1State, useHoldings, useMomoV2State, useVaultSummary, type Holdings } from "../hooks/use-fleet-v1";
 import { ComparisonPanel, FleetAccountPanel, MomoPanel, VaultPanel } from "../components/FleetV1";
 import { AllocatorCard, LeagueTop, RecordsCard, useLeague } from "../components/LeagueCards";
@@ -39,7 +39,7 @@ const ACCOUNTS = ["oracle", "spy_qqq_trend", "jerome_macro", "forex_ai"] as cons
 // Chart colours = the brand four (same values as styles/night-glass/tokens.css).
 // Each account has its own colour (lib/bot-identity BOT_COLORS). Only losses get a
 // status colour (amber, a thin line, never a fill); gains stay plain. The fleet
-// total is white. Holdings mix (not accounts) uses fading whites.
+// total and the S&P 500 are white (the S&P dashed). Holdings mix (not accounts) uses fading whites.
 const FLEET = "#FFFFFF";
 const AXIS = "rgba(255,255,255,0.62)";
 const HAIRLINE = "rgba(255,255,255,0.10)";
@@ -93,7 +93,7 @@ function Stat({ label, value, sub, mark }: { label: string; value: string | null
   );
 }
 
-type TipRow = { name?: string; value?: number | string | null; payload?: Record<string, unknown> };
+type TipRow = { name?: string; value?: number | string | null; color?: string; payload?: Record<string, unknown> };
 function Tip({ active, payload, label, fmt, title }: {
   active?: boolean; payload?: TipRow[]; label?: string;
   fmt: (v: number, row: TipRow) => string; title?: (label: string, row?: TipRow) => string;
@@ -102,9 +102,11 @@ function Tip({ active, payload, label, fmt, title }: {
   return (
     <div className="chart-tip">
       {label != null && <span className="label">{title ? title(String(label), payload[0]) : String(label)}</span>}
-      {payload.filter((p) => p.value != null).map((p, i) => (
-        <div key={i} className="tab">{fmt(Number(p.value), p)}</div>
-      ))}
+      {payload.filter((p) => p.value != null)
+        .sort((a, b) => Number(b.value) - Number(a.value))      // highest first, each with its line's colour
+        .map((p, i) => (
+          <div key={i} className="tab tip-row">{p.color && <i style={{ background: p.color }} aria-hidden="true" />}{fmt(Number(p.value), p)}</div>
+        ))}
     </div>
   );
 }
@@ -245,7 +247,7 @@ export default function HomePage() {
       .sort((a, b) => a.display_order - b.display_order);
     return bots.map((b) => ({
       id: b.id,
-      name: b.display_name,
+      name: botLabel(b),
       subtitle: b.rule || b.subtitle || b.strategy_label,
       shade: botColor(b.id),
       paused: pause.data ? pause.data.bots.find((r) => r.bot_id === b.id)?.paused !== false : b.status === "paused",
@@ -305,7 +307,7 @@ export default function HomePage() {
     <>
       <FlipButtons side={side} onSide={setSide} labels={["Overview", "Detail"]} />
       <button className="btn glass" onClick={downloadReport} disabled={report.isPending} title="Download the full text report">
-        <Download size={15} aria-hidden="true" /> {report.isPending ? "Preparing" : "Report"}
+        <Download size={15} aria-hidden="true" /> <span className="btn-text">{report.isPending ? "Preparing" : "Report"}</span>
       </button>
     </>
   );
@@ -366,7 +368,7 @@ export default function HomePage() {
             <Panel title={`Since ${shortDate(String(race[0].date))} · return by account`} className="fleet-panel" aside={
               <span className="key">
                 {raceEngines.map((e) => <span key={e.id}><i style={{ background: e.shade }} />{e.name}</span>)}
-                <span><i style={{ background: FLEET }} />S&amp;P 500</span>
+                <span><i className="dashed" style={{ borderColor: FLEET }} />S&amp;P 500</span>
               </span>
             }>
               <div className="chart">
@@ -382,7 +384,7 @@ export default function HomePage() {
                     {raceEngines.map((e) => (
                       <Line key={e.id} dataKey={e.id} name={e.id} stroke={e.shade} strokeWidth={1.5} dot={false} isAnimationActive={false} />
                     ))}
-                    <Line dataKey="spy" name="spy" stroke={FLEET} strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                    <Line dataKey="spy" name="spy" stroke={FLEET} strokeWidth={1.5} strokeDasharray="5 4" dot={false} isAnimationActive={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -408,11 +410,15 @@ export default function HomePage() {
     </>
   );
 
+  // Detail (Markus 21 Nov): one scrolling page, read top to bottom. Nothing on it shrinks,
+  // so panels can no longer slide over each other on short screens.
   const detail = (
-    <>
+    <div className="home-detail-page">
       <div className="home-detail-head">
         <button className="flip-hint" onClick={() => setSide(0)}>↑ Back to overview</button>
       </div>
+      <div className="fold">How each account is doing</div>
+      <ComparisonPanel data={comparison.data} names={names} />
       <div className="home-detail">
         <Panel title="Daily return by account" aside={returnEngines.length ? (
           <span className="key">{returnEngines.map((e) => <span key={e.id}><i style={{ background: e.shade }} />{e.name}</span>)}</span>
@@ -438,17 +444,18 @@ export default function HomePage() {
         </Panel>
         {fleetPanel}
       </div>
-      <ComparisonPanel data={comparison.data} names={names} />
-      <div className="pair">
-        <VaultPanel vault={vault.data} names={names} />
+      <div className="fold">What we hold</div>
+      <div className="home-detail">
         <Panel title="Holdings mix">
           {holdings.length ? (
             <Donut data={holdings} total={holdingsTotal}
               center={<><span className="label">Held</span><span className="num-sm">{fmtEq(holdingsTotal)}</span></>} />
           ) : <Empty>No open holdings.</Empty>}
         </Panel>
+        <VaultPanel vault={vault.data} names={names} />
       </div>
-      <div className="pair accounts">
+      <div className="fold">Strategy state</div>
+      <div className="home-accounts">
         {fleetV1.data ? fleetV1.data.accounts.map((a) => (
           <FleetAccountPanel key={a.bot_id} account={a} state={fleetV1.data!} />
         )) : (
@@ -462,7 +469,7 @@ export default function HomePage() {
           </Panel>
         )}
       </div>
-    </>
+    </div>
   );
 
   return (

@@ -5,6 +5,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { api } from "../../snapshot";
+import { useLeaderboard } from "../hooks/use-leaderboard";
 import { Status, bneTime } from "./Shell";
 
 export type LeagueRow = {
@@ -26,11 +27,7 @@ export const pts = (v: number | null | undefined) =>
   v == null ? "—" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)} pts`;
 
 export function useLeague() {
-  return useQuery({
-    queryKey: ["league-leaderboard"],
-    queryFn: async () => (await api.get("/league/leaderboard")).data as Board,
-    refetchInterval: 15 * 60_000,
-  });
+  return useLeaderboard<Board>();
 }
 
 // The Allocator's table (research_harness/league/allocator.TABLE), for the "leaning to" line.
