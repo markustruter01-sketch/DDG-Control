@@ -33,7 +33,11 @@ p { margin: 0; }
 .s-nav .s-brand { grid-column: 1; justify-self: start; }
 /* The menu sits in the middle of the screen (Markus, 17 Nov). */
 .s-nav nav { grid-column: 2; justify-self: center; }
-@media (max-width: 760px) { .s-nav { gap: 8px; } }
+@media (max-width: 760px) {
+  /* Phones (21 Nov): the 3-column grid let the name run under the links. Logo on the left, links on the right, one row. */
+  .s-nav { display: flex; justify-content: space-between; gap: 8px; }
+  .s-nav .s-brand b { display: none; }
+}
 .s-brand { display: inline-flex; align-items: center; gap: 10px; font-size: clamp(16px, 1.15vw, 20px); letter-spacing: 0.01em; white-space: nowrap; }
 .s-brand b { font-weight: 500; }
 /* The glitch mark is on black; "screen" lets only its light parts show on the dark page. */
@@ -956,18 +960,47 @@ p { margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .d-win { transition: none; } }
 
-/* ddg.limited/live/<name>: one of our platforms running inside a browser-style window (Live.tsx). */
-.lv-main { width: 100%; max-width: 1480px; margin: 0 auto; padding: 96px 24px 48px; display: flex; flex-direction: column; gap: 18px; }
-.lv-head h1 { margin: 4px 0 6px; font-weight: 300; font-size: clamp(30px, 3.6vw, 48px); color: var(--ng-text); }
-.lv-line { margin: 0; max-width: 60em; color: var(--ng-text-2); }
+/* ddg.limited/live/<name> (Live.tsx, redesigned 21 Nov): a PC / Phone switch at the top; PC shows a browser
+   window (the desktop page scaled down on small screens), Phone shows a phone frame with the words beside it. */
+.lv-main { width: 100%; max-width: 1480px; margin: 0 auto; padding: 8px var(--s-gutter) 48px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; }
+.lv-head h1 { margin: 2px 0 6px; font-weight: 300; font-size: clamp(28px, 3.2vw, 44px); color: var(--ng-text); }
+.lv-head .s-eyebrow { margin: 0; }
+.lv-line { margin: 0; max-width: 52em; color: var(--ng-text-2); }
+.lv-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; }
+.lv-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.lv-switch { display: inline-flex; padding: 4px; gap: 4px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); }
+.lv-switch button { min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: none; color: var(--ng-text-2); font: inherit; font-size: 14px; cursor: pointer; }
+.lv-switch button.on { background: rgba(255,255,255,0.16); color: var(--ng-text); }
+.lv-switch button:focus-visible { outline: 2px solid var(--ng-text); outline-offset: 2px; }
+.lv-note { margin: 0; color: var(--ng-text-3); font-size: 13px; max-width: 60em; }
+/* PC: browser window */
 .lv-win { border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,0.16); background: #0b0d12; box-shadow: 0 40px 120px -40px rgba(0,0,0,0.9); }
 .lv-bar { display: flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.08); }
-.lv-bar i { width: 11px; height: 11px; border-radius: 50%; background: rgba(255,255,255,0.18); }
-.lv-bar span { margin-left: 14px; padding: 4px 14px; border-radius: 999px; background: rgba(255,255,255,0.06); color: var(--ng-text-3); font: 500 12px/1.2 var(--ng-mono); }
-.lv-win iframe { display: block; width: 100%; height: min(86vh, 1000px); min-height: 560px; border: 0; background: #0b0d12; }
-.lv-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0; color: var(--ng-text-3); font-size: 14px; }
-.lv-foot span { margin-right: auto; }
-@media (max-width: 700px) { .lv-main { padding: 84px 10px 32px; } .lv-win iframe { height: 78vh; min-height: 480px; } }
+.lv-bar i { width: 11px; height: 11px; border-radius: 50%; background: rgba(255,255,255,0.18); flex: none; }
+.lv-bar span { margin-left: 14px; padding: 4px 14px; border-radius: 999px; background: rgba(255,255,255,0.06); color: var(--ng-text-3); font: 500 12px/1.2 var(--ng-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lv-pc { position: relative; overflow: hidden; }
+.lv-pc iframe { display: block; width: 100%; height: min(calc(100vh - 120px), 1000px); min-height: 560px; border: 0; background: #0b0d12; }
+.lv-pc iframe[style] { min-height: 0; }
+/* Phone: frame with the words beside it on wide screens, above it on phones */
+.lv-phone-layout { display: grid; grid-template-columns: minmax(0, 560px) auto; justify-content: center; align-items: center; gap: 24px clamp(32px, 6vw, 120px); }
+.lv-side { display: flex; flex-direction: column; gap: 18px; }
+.lv-phone { position: relative; width: 390px; height: min(844px, calc(100vh - 120px)); min-height: 600px; box-sizing: border-box; border-radius: 52px; border: 12px solid #1d1f26;
+  background: #0b0d12; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 40px 120px -40px rgba(0,0,0,0.9); }
+.lv-phone { padding-top: 34px; }                 /* the status-bar strip under the notch, as on a real phone */
+.lv-phone iframe { display: block; width: 100%; height: 100%; border: 0; }
+.lv-notch { position: absolute; z-index: 1; top: 8px; left: 50%; translate: -50% 0; width: 96px; height: 26px; border-radius: 999px; background: #1d1f26; pointer-events: none; }
+@media (max-width: 760px) {
+  .lv-main { padding: 4px 12px 32px; gap: 12px; }
+  .lv-top { align-items: flex-start; }
+  .lv-phone-layout { grid-template-columns: minmax(0, 1fr); justify-content: stretch; justify-items: center; }
+  .lv-side { display: contents; }                 /* phone: words, switch, then the phone, then the small print */
+  .lv-phone-layout > *, .lv-side > * { justify-self: stretch; }
+  .lv-phone-layout .lv-phone { order: 2; justify-self: center; }
+  .lv-side .lv-note { order: 3; }
+  .lv-phone { width: min(390px, 100%); height: min(780px, calc(100svh - 40px)); min-height: 520px; border-width: 9px; border-radius: 40px; padding-top: 30px; }
+  .lv-phone-layout { gap: 12px; }
+  .lv-pc iframe:not([style]) { height: 70vh; min-height: 420px; }
+}
 
 /* Phone design pass (Apple's guidance: every tap target at least 44 x 44 pt, no text under 11-12 pt; Markus, 19 Nov). */
 @media (max-width: 760px) {
@@ -977,17 +1010,12 @@ p { margin: 0; }
   .s-nav nav a { min-width: 44px; text-align: center; }
 }
 
-/* PC view / Phone view pop-up (Markus 20 Nov): the same display-only page, full screen, in a device-shaped frame. */
-.lv-pop { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 12px;
-  padding: 14px; background: rgba(5, 6, 9, 0.88); backdrop-filter: blur(6px); }
-.lv-pop-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: min(1440px, 100%); color: var(--ng-text-2); font-size: 14px; }
-.lv-pop-bar span { flex: 1 1 260px; }
-.lv-frame-pc { flex: 1; width: min(1440px, 100%); min-height: 0; border-radius: 14px; border: 8px solid #1d1f26; overflow: hidden; background: #0b0d12; }
-.lv-frame-phone { width: 390px; max-width: 100%; height: min(844px, calc(100vh - 80px)); border-radius: 46px; border: 11px solid #1d1f26; overflow: hidden; background: #0b0d12; }
-.lv-frame-pc iframe, .lv-frame-phone iframe { display: block; width: 100%; height: 100%; border: 0; }
-
 /* Scroll speed (Markus 21 Nov: the site lagged when scrolling). Every glass panel re-blurs the moving clouds
    behind it on each frame; the blur was halved (16 px to 8 px) and phones drop it, with a slightly darker glass. */
 @media (max-width: 760px), (hover: none) {
   .j-panel, .cn-page .s-charity { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(16, 18, 24, 0.72); }
 }
+
+/* Phone nav (21 Nov): logo left, five links right, one row, never wider than the screen. Kept last so it wins. */
+@media (max-width: 760px) { .s-nav nav { gap: 2px; } .s-nav nav a { padding: 0 6px; } }
+@media (max-width: 420px) { .s-nav nav { font-size: 13px; gap: 0; } .s-nav nav a { padding: 0 4px; min-width: 0; } .s-brand img { width: 30px; height: 30px; } }

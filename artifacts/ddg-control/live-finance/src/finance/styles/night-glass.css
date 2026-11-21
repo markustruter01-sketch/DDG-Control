@@ -168,8 +168,6 @@ table.ng .money, table.ng th.money { font-family: var(--ng-mono); text-align: ri
   .home-right .engine > .stat .small { overflow: hidden; text-overflow: ellipsis; }
   .home-right .engine > .stat .gain, .home-right .engine > .stat .loss { padding-bottom: 1px; }
 }
-.flip-stage.on .flip-page > .pair.accounts { flex: 1 1 auto; min-height: 0; }
-.flip-stage.on .flip-page > .pair.accounts > .panel { height: auto; min-height: 0; }
 .flip-stage.on .is-away { visibility: hidden; pointer-events: none; }
 .flip-stage.on .flip-out { pointer-events: none; }
 /* The sheet is lifted toward you, turned over on its middle, and laid back down. */
@@ -225,15 +223,22 @@ table.ng .money, table.ng th.money { font-family: var(--ng-mono); text-align: ri
 /* Phone: logo and page action on one row, the three pages as equal tabs,
    then status; the phone shows its own clock. */
 @media (max-width: 640px) {
-  .topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; }
   .topbar .brand { grid-column: 1; grid-row: 1; justify-self: start; }
-  .topbar > .btn { grid-column: 2; grid-row: 1; }
+  .topbar > .seg { grid-column: 2; grid-row: 1; }
+  .topbar > .btn { grid-column: 3; grid-row: 1; }
+  .topbar .brand { min-width: 0; overflow: hidden; }
   .topbar .nav { grid-column: 1 / -1; }
   .topbar .nav a { flex: 1; justify-content: center; }
   .topbar .statuses { grid-column: 1 / -1; padding: 8px 14px; }
   .topbar .spacer, .topbar > .pill { display: none; }
   .page-title { font-size: 28px; }
   .display { font-size: 42px; }
+}
+/* Narrow phones (21 Nov: "DDG | Finance" ran under Overview/Detail): the mark and DDG only. */
+@media (max-width: 440px) {
+  .topbar .brand i, .topbar .brand span, .topbar > .btn .btn-text { display: none; }
+  .topbar > .btn { padding: 0 12px; }
 }
 /* Big screens: use the width and scale the type with it. */
 @media (min-width: 2200px) {
@@ -333,13 +338,12 @@ table.ng .money, table.ng th.money { font-family: var(--ng-mono); text-align: ri
 
 /* ── Page heads, Controls ──────────────────────────────────────────────── */
 .page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 8px 2px 0; }
-.controls { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; }
+.controls { width: 100%; display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; }
 .control-row { flex-wrap: wrap; padding: 12px 0; align-items: center; }
 .control-row .grow { display: flex; flex-direction: column; gap: 2px; }
 .control-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .control-actions .input { width: 220px; }
 /* Forex: full width. Scorecard in three columns; days list beside the picked day's decisions. */
-.controls.forex { max-width: none; }
 .forex-score { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
 .forex-days { display: grid; grid-template-columns: minmax(340px, 1fr) minmax(0, 3fr); gap: 12px; align-items: start; }
 @media (max-width: 1280px) { .forex-score, .forex-days { grid-template-columns: minmax(0, 1fr); } }
@@ -400,7 +404,7 @@ select.input { appearance: auto; }
 .crash { max-width: 520px; margin: 18vh auto 0; padding: 24px; }
 
 /* ── League v2 (approved design 20 Nov): overview first, detail below ───── */
-.glass.panel.league-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px; }
+.glass.panel.league-kpis { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 20px; }   /* as many equal columns as there are numbers */
 .glass.panel.league-road { display: grid; grid-template-columns: auto auto auto minmax(0, 1fr); align-items: center; gap: 32px; }
 .multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; }
 .multiple { display: flex; flex-direction: column; gap: 2px; padding: 8px; text-align: left; cursor: pointer;
@@ -419,7 +423,7 @@ table.ng tr.picked td { background: rgba(255, 255, 255, 0.05); }
 .league-detail { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 20px; }
 .league-detail-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-content: start; }
 @media (max-width: 900px) {
-  .glass.panel.league-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .glass.panel.league-kpis { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .glass.panel.league-road { grid-template-columns: repeat(3, auto); }
   .league-road > p { grid-column: 1 / -1; }
   .league-detail { grid-template-columns: 1fr; }
@@ -466,3 +470,44 @@ table.ng input { width: 7em; }
   .engines::-webkit-scrollbar { display: none; }
   .engines > * { flex: 0 0 86%; scroll-snap-align: center; }
 }
+
+/* ── Wide layouts (21 Nov 2026): pages use the full width; on big screens
+   related panels sit side by side instead of leaving the right half empty. ── */
+.split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
+.split-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.lg-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px;
+  grid-template-areas: "glance" "road" "table" "detail"; }
+.lg-glance { grid-area: glance; } .lg-road { grid-area: road; } .lg-table { grid-area: table; } .lg-detail { grid-area: detail; min-width: 0; }
+.me-grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  grid-template-areas: "ticket ticket" "hold log"; align-items: start; }
+.me-ticket { grid-area: ticket; } .me-hold { grid-area: hold; } .me-log { grid-area: log; }
+@media (max-width: 900px) { .me-grid { grid-template-columns: 1fr; grid-template-areas: "ticket" "hold" "log"; } }
+@media (min-width: 1400px) {
+  .split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lg-grid { grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); align-items: start;
+    grid-template-areas: "glance road" "glance detail" "table detail"; grid-template-rows: auto auto 1fr; }
+  .lg-detail { align-self: start; position: sticky; top: 12px; }
+  .lg-detail .league-detail { grid-template-columns: 1fr; }
+  .lg-road { grid-template-columns: repeat(3, auto); }
+  .lg-road > p { grid-column: 1 / -1; }
+}
+/* Trade ticket, holdings and log in one row only where the ticket's inputs still fit. */
+@media (min-width: 1700px) {
+  .me-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 1.2fr); grid-template-areas: "ticket hold log"; }
+  .me-grid > .panel { height: 100%; }
+}
+
+/* Home chart: tooltip rows carry their line's colour; the S&P 500 key is dashed like its line. */
+.chart-tip .tip-row { display: flex; align-items: center; gap: 6px; }
+.chart-tip .tip-row i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.key i.dashed { background: none !important; height: 0; border-top: 2px dashed; border-radius: 0; }
+
+/* Home detail (21 Nov 2026): a plain scrolling page. Every block keeps its natural
+   height (no shrinking, no scroll boxes inside panels), so nothing overlaps. */
+.home-detail-page { flex: none; display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; }
+.home-detail-page > * { flex: none; }
+.home-detail-page .fold { margin-top: 4px; }
+.home-accounts { display: grid; gap: 12px; align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); }
+.home-accounts > .panel { height: auto; overflow: visible; }
+@media (max-width: 900px) { .home-detail-page .home-detail { grid-template-columns: 1fr; } }
